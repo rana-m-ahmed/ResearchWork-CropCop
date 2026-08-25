@@ -1,0 +1,10 @@
+[project]
+name = "cropcop-reproducibility"
+version = "0.1.0"
+description = "Validation utilities for the CropCop public research repository"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Rana Muhammad Ahmed"}]
+
+[tool.ruff]
+line-length = 100

@@ -1,0 +1,54 @@
+# Restricted research artifacts
+*.pt
+*.pth
+*.ckpt
+*.pte
+*.onnx
+*.tflite
+*.safetensors
+*.npz
+*.npy
+*.zip
+*.tar
+*.tar.gz
+raw_images/
+private_evidence/
+evidence/restricted/*
+!evidence/restricted/README.md
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# LaTeX build products (the tracked PDF is explicitly re-included)
+*.aux
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+paper/main.pdf
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Generated release assets
+/dist/
+/releases/*.zip
