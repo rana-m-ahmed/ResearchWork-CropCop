@@ -1,0 +1,35 @@
+name: Bootstrap audit-closure tree
+
+on:
+  push:
+    branches: [audit-closure-v0.2.0]
+    paths: [".sync_payload/part-03.txt"]
+
+permissions:
+  contents: write
+
+jobs:
+  synchronize:
+    if: github.actor == 'rana-m-ahmed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Decode validated repository tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .sync_payload/part-*.txt | tr -d '\n' | base64 --decode > /tmp/cropcop-audit-closure.tar.xz
+          echo "97d70ae7868a6c17f61a4a4f829d69ff62004cacec37516b6f2d75ec697c454b  /tmp/cropcop-audit-closure.tar.xz" | sha256sum -c -
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          tar -xJf /tmp/cropcop-audit-closure.tar.xz -C .
+      - name: Commit synchronized closure candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Rana Muhammad Ahmed"
+          git config user.email "ranamuhammadahmed6@gmail.com"
+          git add -A
+          git commit -m "release: synchronize forensic-audit closure candidate"
+          git push origin HEAD:audit-closure-v0.2.0
