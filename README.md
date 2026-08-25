@@ -44,10 +44,10 @@ flowchart LR
 
 The professionally typeset **v0.2.0-rc2** manuscript is a 20-page, six-figure release candidate authored by Rana Muhammad Ahmed and Sabahat Abbas. The revision fixes the Section 9 repository hyperlink, clarifies the interpretation of missing host CPU/thread/OS details, and standardises human-facing **arXiv** capitalization.
 
-The canonical compiled PDF has SHA-256:
+The final deterministic compiled PDF has SHA-256:
 
 ```text
-8b9d115daa0c5716cd3bdc16eb1434fa50a5689da8808d968a8517ab3deb30a7
+000e1a6bc4590b6ce840eb76ee8ef43754f2b74f238865483d38f189108cc904
 ```
 
 See [`MANUSCRIPT_STATUS.md`](MANUSCRIPT_STATUS.md) for the editorial patch record and release boundary. The current `main` branch remains the public evidence bootstrap until the complete validated paper tree is synchronized and reviewed.
