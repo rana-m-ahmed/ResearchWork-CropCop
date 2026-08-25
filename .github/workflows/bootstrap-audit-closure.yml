@@ -3,7 +3,7 @@ name: Bootstrap audit-closure tree
 on:
   push:
     branches: [audit-closure-v0.2.0]
-    paths: [".sync_payload/part-03.txt"]
+    paths: [".sync_payload/part-04.txt"]
 
 permissions:
   contents: write
@@ -13,7 +13,7 @@ jobs:
     if: github.actor == 'rana-m-ahmed'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
       - name: Decode validated repository tree
@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           cat .sync_payload/part-*.txt | tr -d '\n' | base64 --decode > /tmp/cropcop-audit-closure.tar.xz
-          echo "97d70ae7868a6c17f61a4a4f829d69ff62004cacec37516b6f2d75ec697c454b  /tmp/cropcop-audit-closure.tar.xz" | sha256sum -c -
+          echo "2f1a0e5dabf42608b21233442729ae5e316ad14abdab1587149d852df137c77e  /tmp/cropcop-audit-closure.tar.xz" | sha256sum -c -
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           tar -xJf /tmp/cropcop-audit-closure.tar.xz -C .
       - name: Commit synchronized closure candidate
