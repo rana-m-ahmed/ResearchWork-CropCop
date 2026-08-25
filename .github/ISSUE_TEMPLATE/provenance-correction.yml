@@ -1,0 +1,21 @@
+name: Provenance or claim correction
+description: Report a source, licence, label, hash, or claim issue
+title: "[Provenance] "
+labels: [provenance]
+body:
+  - type: input
+    id: artifact
+    attributes:
+      label: Affected artifact or claim ID
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting evidence
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected downstream impact

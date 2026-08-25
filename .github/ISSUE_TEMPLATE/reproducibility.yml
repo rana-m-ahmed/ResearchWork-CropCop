@@ -1,0 +1,28 @@
+name: Reproducibility report
+description: Report a failed check, build, or metric reproduction
+title: "[Reproducibility] "
+labels: [reproducibility]
+body:
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or release tag
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Exact command and environment
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and observed result
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      render: shell

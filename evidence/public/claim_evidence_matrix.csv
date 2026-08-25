@@ -1,0 +1,43 @@
+claim_id,claim,value,evidence,status
+C01,audited source population,117546,dataset v5 audit,verified
+C02,historical cross-split duplicate edges,3233,duplicate audit,verified
+C03,final images,109107,final manifest/certificate,verified
+C04,final classes,120,class map/certificate,verified
+C05,leakage groups crossing final splits,0,forensic audit,verified
+C06,class imbalance ratio,151.7x,class balance table,verified
+C07,reference accuracy,0.985088308989794,final test metrics,verified
+C08,reference macro-F1,0.9687003098483722,final test metrics,verified
+C09,float student macro-F1,0.9627097909722193,quantization evidence float test,verified
+C10,converted INT8 macro-F1,0.9624923532439733,int8 test QA,verified
+C11,PTE runtime macro-F1,0.9622672604655943,PTE runtime QA,verified
+C12,PTE bytes,23696352,exact artifact/manifest,verified
+C13,PTE top1 agreement,0.9996333190735195,runtime QA,verified
+C14,field generalization,not established,external cohort absent,blocked
+C15,physical Android latency,not established,device QA pending,blocked
+C16,causal KD improvement,not established,matched direct baseline absent,blocked
+C17,manual review outcomes,137 kept; 43 deleted; 0 relabelled,manual review decisions/final dataset brief,verified
+C18,historical confirmed duplicate edges,8672,dataset v5 QA summary,verified
+C19,trusted graph edge composition,6196 exact; 445 strong-hash; 1932 corrected-feature; 17 cross-label,dataset v5 QA and final dataset brief,verified
+C20,frozen DINOv3 probe test accuracy,0.8539312114362515,model-readiness linear_probe_metrics.json,verified
+C21,frozen DINOv3 probe test macro-F1,0.6870412701568244,model-readiness linear_probe_metrics.json,verified
+C22,metadata-only shortcut accuracy,0.2062435090720264,metadata_shortcut_metrics.json,verified
+C23,16x16 shortcut accuracy,0.3058725876737912,low_frequency_shortcut_metrics.json,verified
+C24,border shortcut accuracy,0.23739365013488276,low_frequency_shortcut_metrics.json,verified
+C25,split-membership probe accuracy,0.32760536256573586,split_embedding_probe.json,verified
+C26,reference accuracy 95% bootstrap interval,"[0.9831326773818981,0.9867994866467029]",final_test_bootstrap_ci.csv,verified
+C27,reference macro-F1 95% bootstrap interval,"[0.9619174156634811,0.9743448973399403]",final_test_bootstrap_ci.csv,verified
+C28,prequant selected-state bytes,34805405,mobile evidence artifact manifest/exact file,verified
+C29,PTE size reduction from selected float state,31.917608773694774%,derived from exact 34805405 and 23696352 byte artifacts,verified-derived
+C30,selected PTQ candidate validation macro-F1,0.9648822834327858,PTQ_RECIPE_FROZEN_BEFORE_TEST.json,verified
+C31,static cal16 PTQ validation macro-F1,0.9634576812121731,PTQ_RECIPE_FROZEN_BEFORE_TEST.json,verified
+C32,static cal8 PTQ validation macro-F1,0.9634606510695496,PTQ_RECIPE_FROZEN_BEFORE_TEST.json,verified
+C33,complete human-readable mobile optimizer/scheduler/KD hyperparameters,not preserved,mobile evidence archive contains state/config fingerprint but incomplete resolved configuration,unresolved
+C34,converted INT8 minus float macro-F1 95% paired bootstrap interval,"[-0.0009667684884247824,0.00024206902696519982]",int8_full_test_qa.json; 1000 paired class-stratified replicates,verified
+C35,reference-to-PTE macro-F1 paired bootstrap delta,"-0.0064330493827779; 95% CI [-0.012386,-0.000467]",paired_bootstrap_reference_vs_pte.csv; 2000 class-stratified paired replicates,verified-derived
+C36,reference-to-PTE accuracy paired bootstrap delta,"-0.0004889079019739; 95% CI [-0.002140,0.001161]",paired_bootstrap_reference_vs_pte.csv,verified-derived
+C37,reference versus PTE exact McNemar comparison,105 reference-only correct; 97 PTE-only correct; p=0.6224628,mcnemar_reference_vs_pte.json,verified-derived
+C38,converted INT8 versus PTE changed top-1 decisions,6 of 16363 rows,converted_int8_vs_pte_disagreements.csv,verified-derived
+C39,PTE fruit-category recall change versus reference,"-0.069653; 95% CI [-0.124086,-0.017108]",paired_bootstrap_reference_vs_pte.csv,verified-derived
+C40,PTE selective accuracy near 95% validation-targeted coverage,0.996713 accepted-set accuracy at 0.948176 test coverage,validation_derived_selective_policies.csv,verified-derived
+C41,PTE runtime environment,"ExecuTorch 1.3.1; XNNPACK; Python 3.12.13; torch 2.12.1; input [1,3,256,256]",runtime_environment_and_quantization_coverage.json,verified
+C42,physical-device performance,not established,Android device benchmark absent,blocked

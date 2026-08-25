@@ -1,0 +1,13 @@
+{
+  "dataset_name": "CropCop_Final_v1",
+  "semantic_fingerprint": "7c368e6e3d8be3bb3a9a3a5f961075d4faa125bcac2e98a3b55e1a1c61f1c523",
+  "build_fingerprint": "2d7c237981b8943d9b08a522db0489849a4bfe7f488dfb6461489dd36dcdc12b",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "images": 109107,
+  "classes": 120,
+  "train": 76376,
+  "validation": 16368,
+  "test": 16363,
+  "leakage_groups_crossing_splits": 0
+}

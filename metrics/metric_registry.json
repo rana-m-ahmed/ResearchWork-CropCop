@@ -1,0 +1,52 @@
+{
+  "dataset": {
+    "images": 109107,
+    "classes": 120,
+    "train": 76376,
+    "val": 16368,
+    "test": 16363,
+    "max_min_ratio": 151.7
+  },
+  "dataset_audit": {
+    "audited_source_images": 117546,
+    "historical_confirmed_duplicate_edges": 8672,
+    "historical_cross_split_duplicate_edges": 3233,
+    "historical_exact_cross_split_edges": 2876,
+    "historical_near_cross_split_edges": 357,
+    "feature_edges_reverified": 2031,
+    "feature_edges_retained": 1932,
+    "feature_edges_rejected": 99,
+    "trusted_graph": {
+      "exact_edges": 6196,
+      "strong_hash_edges": 445,
+      "corrected_feature_edges": 1932,
+      "confirmed_cross_label_edges": 17
+    },
+    "direct_cover_duplicates_removed": 8355,
+    "automatic_quarantine": {
+      "cross_label_family_images": 34,
+      "hard_quality_images": 6,
+      "under_supported_class_images": 1
+    },
+    "manual_review": {
+      "reviewed": 180,
+      "kept": 137,
+      "deleted": 43,
+      "relabelled": 0,
+      "deletion_reason": "black-screen or severe image distortion"
+    },
+    "final_unique_sha256": 109107,
+    "final_leakage_groups": 109090,
+    "final_crossing_leakage_groups": 0
+  },
+  "pte": {
+    "bytes": 23696352,
+    "mib": 22.598602294921875,
+    "sha256": "7c70d0f307f0d9578310600913cb8ff171b294ae4de0813f7cd1d6a53628bdf1",
+    "converted_top1_agreement": 0.9996333190735195,
+    "prequant_bytes": 34805405,
+    "size_reduction_fraction": 0.3191760877369477,
+    "size_reduction_percent": 31.917608773694774,
+    "prequant_to_pte_size_ratio": 1.4688085744168553
+  }
+}

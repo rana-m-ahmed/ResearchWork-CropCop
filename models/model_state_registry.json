@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "states": [
+    {
+      "id": "reference",
+      "architecture": "DINOv3 ConvNeXt-Tiny",
+      "sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+      "distributed": false,
+      "metrics_path": "metrics/main_results.csv#reference"
+    },
+    {
+      "id": "mobile_float",
+      "architecture": "MobileNetV4 Conv-Medium",
+      "sha256": "b41e76660bcc1042991282aed2ea4067ba94677116604b622eda6a8f1eb00c00",
+      "bytes": 34805405,
+      "distributed": false,
+      "metrics_path": "metrics/main_results.csv#mobile_float"
+    },
+    {
+      "id": "converted_int8",
+      "architecture": "MobileNetV4 Conv-Medium / XNNPACK converted graph",
+      "distributed": false,
+      "metrics_path": "metrics/main_results.csv#converted_int8"
+    },
+    {
+      "id": "pte_runtime",
+      "architecture": "ExecuTorch/XNNPACK PTE",
+      "sha256": "7c70d0f307f0d9578310600913cb8ff171b294ae4de0813f7cd1d6a53628bdf1",
+      "bytes": 23696352,
+      "mib": 22.598602294921875,
+      "distributed": false,
+      "metrics_path": "metrics/main_results.csv#pte_runtime"
+    }
+  ]
+}
