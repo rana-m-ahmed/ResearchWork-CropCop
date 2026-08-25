@@ -5,7 +5,9 @@ type: software
 authors:
   - family-names: "Ahmed"
     given-names: "Rana Muhammad"
-version: "0.1.0"
+  - family-names: "Abbas"
+    given-names: "Sabahat"
+version: "0.2.0-rc2"
 date-released: "2026-08-25"
 repository-code: "https://github.com/rana-m-ahmed/ResearchWork-CropCop"
 license: "MIT"
@@ -21,6 +23,8 @@ preferred-citation:
   authors:
     - family-names: "Ahmed"
       given-names: "Rana Muhammad"
+    - family-names: "Abbas"
+      given-names: "Sabahat"
   title: "CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact"
   year: 2026
   url: "https://github.com/rana-m-ahmed/ResearchWork-CropCop"
