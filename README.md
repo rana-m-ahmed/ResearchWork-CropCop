@@ -131,7 +131,7 @@ Three predeclared XNNPACK-compatible PTQ candidates were evaluated on the valida
 | [`evidence/restricted/`](evidence/restricted/) | Documentation of evidence intentionally excluded from the public repository |
 | [`models/`](models/) | Model-state identifiers, hashes, and non-distribution notice |
 | [`paper/`](paper/) | Manuscript status and paper-release boundary |
-| [`docs/`](docs/) | Reproducibility, provenance, intended use, limitations, release policy, and AI disclosure |
+| [`docs/`](docs/) | Reproducibility, provenance, intended use, limitations, release policy, and V2 validation planning |
 | [`scripts/`](scripts/) | Repository-contract and consistency validation utilities |
 | [`tests/`](tests/) | Automated repository-contract tests |
 | [`releases/`](releases/) | Release packaging policy |
@@ -192,7 +192,7 @@ The current results establish leakage-controlled **internal** recognition and so
 - complete source provenance or redistribution rights for every image;
 - reliable behavior on unsupported crops, novel diseases, non-plant inputs, or open-set conditions.
 
-The next evidence stage is a source-independent smartphone cohort plus prespecified physical-device evaluation. No new model or threshold should be selected using the already consumed internal test set.
+The next evidence stage is a source-independent smartphone cohort plus prespecified physical-device evaluation. No new model or threshold should be selected using the already consumed internal test set. The bounded V2 protocol is documented in [`docs/V2_DEPLOYMENT_VALIDATION_PLAN.md`](docs/V2_DEPLOYMENT_VALIDATION_PLAN.md).
 
 See [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) and [`docs/INTENDED_USE.md`](docs/INTENDED_USE.md).
 
