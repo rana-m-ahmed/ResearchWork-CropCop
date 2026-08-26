@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — post-submission documentation refresh
+
+- Recorded that the CropCop manuscript has been submitted to arXiv and that the public identifier remains pending.
+- Rebuilt the root README as a publication-grade research landing page with bounded claims, benchmark and model-state results, evidence-chain documentation, reproducibility instructions, repository navigation, artifact restrictions, safety limitations, and citation guidance.
+- Updated manuscript, paper-directory, release, CFF, and BibTeX metadata to distinguish submission from public arXiv announcement or peer review.
+- Added an explicit post-assignment release procedure for binding the public arXiv identifier, submitted package, checksums, and immutable repository tag.
+
 ## 0.2.0-rc2 — 2026-08-25
 
 - Added Sabahat Abbas as co-author across the manuscript, PDF metadata, repository README, CFF, and BibTeX citation metadata.

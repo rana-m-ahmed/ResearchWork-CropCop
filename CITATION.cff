@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use CropCop, please cite the preprint and the versioned repository release."
+message: "If you use CropCop, please cite the submitted preprint and this versioned reproducibility repository."
 title: "ResearchWork-CropCop: Auditable Plant-Health Recognition Artifacts"
 type: software
 authors:
@@ -27,4 +27,5 @@ preferred-citation:
       given-names: "Sabahat"
   title: "CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact"
   year: 2026
+  notes: "Submitted to arXiv; public identifier pending"
   url: "https://github.com/rana-m-ahmed/ResearchWork-CropCop"
