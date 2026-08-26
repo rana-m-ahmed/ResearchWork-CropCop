@@ -1,36 +1,68 @@
 # CropCop manuscript status — v0.2.0-rc2
 
-## Revised authorship
+## Current status
+
+The manuscript **“CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact”** has been submitted to arXiv.
+
+- Submission state: **submitted; public arXiv identifier pending**
+- Submission does not imply public announcement, endorsement, acceptance, or peer review.
+- The repository will add the canonical arXiv abstract-page URL and identifier only after assignment.
+- The scientific claim boundary remains unchanged while the identifier is pending.
+
+## Authorship
 
 - Rana Muhammad Ahmed — corresponding author
 - Sabahat Abbas — co-author
 - Department of Computer Science, Bahria University Islamabad, Islamabad, Pakistan
 
-## Editorial corrections completed
+## Submitted manuscript identity
 
-- Section 9 now uses the descriptive hyperlink **GitHub companion repository**, targeting the exact URL `https://github.com/rana-m-ahmed/ResearchWork-CropCop`. No visible or encoded space is present in the compiled PDF annotation.
-- Section 5.4 now clarifies that missing host CPU, thread-count, and operating-system details prevent reproduction of host latency measurements but do not change the archived INT8/PTE prediction-fidelity comparison on identical locked rows.
-- Human-facing submission metadata uses the capitalization **arXiv** consistently.
-- The title page, embedded PDF author metadata, CFF, BibTeX, and repository README list both authors.
-- Figure PDF and PNG outputs use frozen metadata and are byte-stable across repeated regeneration.
+The submitted paper reports the final 120-class audit-to-runtime study, including:
 
-## Validated release candidate
+- 117,546 audited source images;
+- a 109,107-image frozen benchmark;
+- 3,233 confirmed historical cross-split duplicate relationships;
+- zero crossings among the audited trusted leakage groups in the final split;
+- a DINOv3 ConvNeXt-Tiny reference;
+- a compact MobileNetV4 Conv-Medium lineage;
+- validation-only post-training quantisation selection;
+- direct execution of the final 22.60 MiB ExecuTorch/XNNPACK PTE;
+- row-level and paired analysis of the final runtime state.
 
-- Version: `0.2.0-rc2`
-- Pages: 20
-- Embedded scientific figures: 6
-- Canonical PDF SHA-256: `000e1a6bc4590b6ce840eb76ee8ef43754f2b74f238865483d38f189108cc904`
-- Local source commit: `06d73eb`
-- PDF metadata author field: `Rana Muhammad Ahmed; Sabahat Abbas`
-- Independent PDF builds: byte-identical
-- PDF preflight: PASS
-- Repository tests: 8/8 PASS
-- Strict repository validator: PASS
-- Root checksum ledger: PASS
-- Public-evidence checksum ledger: PASS
+The public repository identifies the evaluated dataset, model states, and runtime artifact through fingerprints and cryptographic hashes. Restricted binaries and source data remain outside public Git history.
 
-## Public-repository boundary
+## Completed editorial and integrity checks
 
-This `main` branch currently exposes the public evidence bootstrap and revised manuscript metadata. The complete validated LaTeX tree, deterministic figures, compiled PDF, and release archives are frozen in the `0.2.0-rc2` handoff package and should be synchronized through a reviewed branch before an immutable preprint release is tagged.
+- Both authors are listed consistently in manuscript and repository citation metadata.
+- The manuscript links to the exact companion repository URL.
+- Human-facing metadata uses the capitalization **arXiv** consistently.
+- The paper distinguishes software-runtime execution from physical Android evidence.
+- Host latency claims are excluded where CPU, thread-count, and operating-system details were not archived.
+- Internal recognition results are not presented as field generalisation.
+- The compact-model result is not presented as causal evidence for a new distillation method.
+- Dataset, model, and runtime identities are bound to public registries and checksums.
 
-No raw images, model checkpoints, PTE binary, raw logits, credentials, or restricted forensic evidence are included in the public repository.
+## Repository release boundary
+
+The current repository metadata version is `0.2.0-rc2`.
+
+This branch publishes the public evidence bootstrap, metric registry, claim ledger, model/data identity records, validation utilities, and submission-aware documentation. It does not publish:
+
+- raw source images;
+- model checkpoints;
+- the final PTE binary;
+- raw logits or large prediction bundles;
+- credentials;
+- restricted forensic evidence.
+
+The complete submitted source package and compiled paper should be synchronized only through a reviewed release process that preserves the exact submitted version and excludes restricted material.
+
+## Next release action
+
+After arXiv assigns the identifier:
+
+1. verify the public abstract-page metadata against the submitted title and author order;
+2. update `README.md`, `CITATION.cff`, and `CITATION.bib` with the canonical identifier and URL;
+3. bind the repository release manifest to the submitted PDF/source package and checksums;
+4. create an immutable preprint tag only after repository validation passes;
+5. avoid changing scientific results under the same release identity.
