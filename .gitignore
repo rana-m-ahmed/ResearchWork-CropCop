@@ -15,6 +15,9 @@ raw_images/
 private_evidence/
 evidence/restricted/*
 !evidence/restricted/README.md
+!evidence/restricted/*/
+evidence/restricted/*/*
+!evidence/restricted/*/README.md
 
 # Credentials and local configuration
 .env
