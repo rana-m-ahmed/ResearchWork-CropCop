@@ -7,7 +7,13 @@ import re
 from pathlib import Path
 
 EXPECTED = {
+    "recovered_registry_rows": 117562,
+    "early_manifest_rows": 91528,
     "audited_images": 117546,
+    "manifest_to_v4_complement": 26018,
+    "plantcity_manifest_to_v4_delta": 26017,
+    "bangladesh_manifest_to_v4_delta": 1,
+    "registry_to_v4_attrition": 16,
     "v5_images": 109150,
     "images": 109107,
     "classes": 120,

@@ -1,0 +1,16 @@
+ingestion_registry_key,rows_in_recovered_early_manifest,rows_in_v4_audited_universe,manifest_to_v4_delta,interpretation,evidence_status
+plantvillage,42591,42591,0,no additional V4 rows beyond recovered early manifest,verified_count_reconciliation
+plantdoc,2592,2592,0,no additional V4 rows beyond recovered early manifest,verified_count_reconciliation
+abcgmp,6871,6871,0,no additional V4 rows beyond recovered early manifest,verified_count_reconciliation
+coleaf,119,119,0,no additional V4 rows beyond recovered early manifest,verified_count_reconciliation
+fieldplant,0,0,0,registered historical source with no recovered rows,verified_count_reconciliation
+plant100k,8747,8747,0,no additional V4 rows beyond recovered early manifest,verified_count_reconciliation
+plantcity_pk,9429,35446,26017,remaining historical PlantCity holdout contribution enters the V4 audited universe,verified_count_reconciliation
+kami_pk,0,0,0,registered historical source with no recovered rows,verified_count_reconciliation
+bangladesh,7187,7188,1,one Bangladesh row occurs in V4 beyond the recovered early manifest,verified_count_reconciliation
+plant_segmentation,0,0,0,registered historical source with no recovered rows,verified_count_reconciliation
+cotton,0,0,0,registered historical source with no recovered rows,verified_count_reconciliation
+wheat,0,0,0,registered historical source with no recovered rows,verified_count_reconciliation
+rice,18,18,0,no manifest-to-V4 complement; the separate 34-to-18 registry discrepancy is pre-V4 attrition,verified_count_reconciliation
+corn,75,75,0,no additional V4 rows beyond recovered early manifest,verified_count_reconciliation
+sugarcane,13899,13899,0,no additional V4 rows beyond recovered early manifest,verified_count_reconciliation

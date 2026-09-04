@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "policy": "Confidence labels describe the evidence path for source attribution; they do not imply image redistribution rights.",
+  "levels": [
+    {
+      "id": "verified_exact",
+      "meaning": "Deterministic one-to-one join to the recovered historical dataset manifest; original src_path and source-family metadata are present.",
+      "supports": [
+        "source-family attribution",
+        "historical source path recovery",
+        "historical domain/weight metadata"
+      ],
+      "does_not_support": [
+        "image redistribution rights unless separately licensed",
+        "independent external-validation status"
+      ]
+    },
+    {
+      "id": "reconstructed_unique_complement",
+      "meaning": "No exact historical src_path survives. Source family is assigned by exhaustive count reconciliation against the recovered source registry/manifest and final row accounting, with all other final source families accounted for.",
+      "supports": [
+        "source-family attribution within the recovered source universe"
+      ],
+      "conditions": [
+        "the recovered source universe is complete for the audited lineage",
+        "no untracked intermediate branch introduced a new source family",
+        "all non-complement final rows remain unambiguously accounted for"
+      ],
+      "does_not_support": [
+        "exact original per-image path",
+        "image-level licence",
+        "direct source-row identity",
+        "independent external-validation status"
+      ]
+    },
+    {
+      "id": "unknown",
+      "meaning": "Available evidence does not uniquely support source-family attribution.",
+      "supports": [],
+      "does_not_support": [
+        "source-family attribution",
+        "original source path",
+        "licence"
+      ]
+    }
+  ],
+  "supersession": {
+    "prior_public_label": "verified_exact_source_family",
+    "replacement": "reconstructed_unique_complement",
+    "reason": "The 24,961 PlantCity-attributed rows are complement-derived rather than direct per-image joins. The original restricted reconstruction bytes are preserved; only the public interpretation is superseded."
+  }
+}

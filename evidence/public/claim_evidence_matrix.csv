@@ -42,5 +42,8 @@ C40,PTE selective accuracy near 95% validation-targeted coverage,0.996713 accept
 C41,PTE runtime environment,"ExecuTorch 1.3.1; XNNPACK; Python 3.12.13; torch 2.12.1; input [1,3,256,256]",runtime_environment_and_quantization_coverage.json,verified
 C42,physical-device performance,not established,Android device benchmark absent,blocked
 C43,corrected V5 trusted duplicate graph,8573,data_card/audit/duplicate_edge_history.csv,verified
-C44,final source-family attribution coverage,"109107/109107; exact original source path 84146/109107",data_card/provenance/provenance_coverage.csv,verified
+C44,final source-family attribution coverage,"109107/109107 within recovered source universe; 84146 direct manifest joins; 24961 PlantCity unique-complement reconstructions",data_card/provenance/provenance_coverage.csv,verified-bounded
 C45,PlantCity as independent final external holdout,not established,PlantCity contributes 33872 rows to pooled/group-safe internal benchmark,blocked
+C46,historical manifest-to-V4 complement,"26018 rows = 26017 PlantCity + 1 Bangladesh",data_card/provenance/historical_test_complement.csv,verified
+C47,PlantCity complement provenance confidence,reconstructed_unique_complement,data_card/provenance/provenance_confidence_definitions.json,verified-bounded
+C48,known historical sources eligible as independent external validation without new independence proof,none,data_card/provenance/external_evaluation_exclusion_registry.csv,blocked
