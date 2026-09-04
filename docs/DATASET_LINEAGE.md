@@ -20,7 +20,7 @@ The V4 audited candidate universe contains **121 labels**. V5 quarantines the si
 
 The recovered `dataset_manifest.csv` contains **91,528 rows** with `src_path`, merged destination path, source-family key, domain, weight metadata, and historical split. Its recorded split is 57,426 train, 12,272 validation, and 21,830 test rows.
 
-The V4 audit later sees the same 57,426 train and 12,272 validation rows but **47,848 historical test rows**. Reconciliation shows that the additional test complement is the remaining PlantCity historical holdout plus one `rice_neck_blast` row; that rice row is later quarantined in V5.
+The V4 audit later sees the same 57,426 train and 12,272 validation rows but **47,848 historical test rows**. The recovered early manifest-to-V4 difference is exactly **26,018 rows**. Source-count reconciliation resolves that delta as **26,017 additional PlantCity Pakistan rows plus one Bangladesh row**. The one-image `rice_neck_blast` category is a separate V5 under-supported-class quarantine; it is **not** the non-PlantCity row in this historical test complement. The separate upstream-registry-to-V4 discrepancy is 16 rice rows (34 registry rows versus 18 V4 rows), i.e. pre-V4 attrition rather than test-complement growth.
 
 ### D. Intermediate balancing/rebuild branch
 

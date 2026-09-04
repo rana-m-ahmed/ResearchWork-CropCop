@@ -97,6 +97,8 @@ See [`evidence/public/claim_evidence_matrix.csv`](evidence/public/claim_evidence
 
 The recovered dataset chronology and source bridge are documented in [`docs/DATASET_LINEAGE.md`](docs/DATASET_LINEAGE.md), [`docs/DATASET_PROVENANCE.md`](docs/DATASET_PROVENANCE.md), and [`docs/DATASET_AUDIT_HISTORY.md`](docs/DATASET_AUDIT_HISTORY.md).
 
+Known historical ingestion sources are conservatively excluded from serving as independent external-validation cohorts unless a future cohort passes source-family and image-overlap independence checks; see [`data_card/provenance/external_evaluation_exclusion_registry.csv`](data_card/provenance/external_evaluation_exclusion_registry.csv).
+
 ## Research questions
 
 CropCop is organized around three bounded questions:
