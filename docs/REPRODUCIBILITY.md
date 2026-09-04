@@ -8,6 +8,8 @@ python scripts/validate_repository.py --strict
 
 This verifies the evidence contract without requiring the private image corpus or model binaries.
 
+The strict contract also validates the recovered dataset lineage: historical-versus-corrected duplicate-edge semantics, 117,546 → 109,150 → 109,107 accounting, source-family provenance coverage, final source-by-split totals, manual-review accounting, evidence-registry hashes/schema, and the final dataset certificate.
+
 ## Paper build
 
 ```bash

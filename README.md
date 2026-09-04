@@ -48,7 +48,8 @@ The contribution is the **connected evidence chain**. CropCop does not claim a n
 | Final frozen images | 109,107 |
 | Operational classes | 120 |
 | Train / validation / test | 76,376 / 16,368 / 16,363 |
-| Confirmed duplicate relationships | 8,672 |
+| Historical V4 confirmed relationships | 8,672 |
+| Corrected V5 trusted graph | 8,573 |
 | Historical cross-split relationships | 3,233 |
 | Direct-cover duplicate removals | 8,355 |
 | Audited leakage groups crossing final splits | **0** |
@@ -71,7 +72,7 @@ The reference-to-PTE comparison showed near parity in aggregate accuracy, but no
 
 ```mermaid
 flowchart LR
-    A[117,546 audited images] --> B[8,672 trusted duplicate relations]
+    A[117,546 audited images] --> B[8,573 corrected trusted duplicate relations]
     B --> C[3,233 historical split crossings]
     C --> D[109,107-image group-safe benchmark]
     D --> E[DINOv3 ConvNeXt-Tiny reference]
@@ -93,6 +94,8 @@ Every major transition is represented by one or more of the following:
 - a public claim-to-evidence entry.
 
 See [`evidence/public/claim_evidence_matrix.csv`](evidence/public/claim_evidence_matrix.csv) for the public claim ledger.
+
+The recovered dataset chronology and source bridge are documented in [`docs/DATASET_LINEAGE.md`](docs/DATASET_LINEAGE.md), [`docs/DATASET_PROVENANCE.md`](docs/DATASET_PROVENANCE.md), and [`docs/DATASET_AUDIT_HISTORY.md`](docs/DATASET_AUDIT_HISTORY.md).
 
 ## Research questions
 
@@ -125,13 +128,13 @@ Three predeclared XNNPACK-compatible PTQ candidates were evaluated on the valida
 
 | Path | Purpose |
 | --- | --- |
-| [`data_card/`](data_card/) | Frozen dataset identity, fingerprints, and distribution boundaries |
+| [`data_card/`](data_card/) | Frozen dataset identity, reconstructed lineage/provenance, audit history, and distribution boundaries |
 | [`metrics/`](metrics/) | Canonical result tables, diagnostic probes, PTQ candidates, and metric registry |
 | [`evidence/public/`](evidence/public/) | Public claim-to-evidence mapping and derived evidence |
 | [`evidence/restricted/`](evidence/restricted/) | Documentation of evidence intentionally excluded from the public repository |
 | [`models/`](models/) | Model-state identifiers, hashes, and non-distribution notice |
 | [`paper/`](paper/) | Manuscript status and paper-release boundary |
-| [`docs/`](docs/) | Reproducibility, provenance, intended use, limitations, release policy, and V2 validation planning |
+| [`docs/`](docs/) | Reproducibility, dataset lineage/provenance/audit history, intended use, limitations, release policy, and V2 validation planning |
 | [`scripts/`](scripts/) | Repository-contract and consistency validation utilities |
 | [`tests/`](tests/) | Automated repository-contract tests |
 | [`releases/`](releases/) | Release packaging policy |
@@ -189,7 +192,7 @@ The current results establish leakage-controlled **internal** recognition and so
 - physical Android latency, memory, energy, delegate fallback, or thermal behavior;
 - multi-seed training stability;
 - causal gains from DINOv3 pretraining or teacher-guided compact training;
-- complete source provenance or redistribution rights for every image;
+- exact original per-image source paths for 24,961 PlantCity-attributed rows or image-by-image redistribution rights;
 - reliable behavior on unsupported crops, novel diseases, non-plant inputs, or open-set conditions.
 
 The next evidence stage is a source-independent smartphone cohort plus prespecified physical-device evaluation. No new model or threshold should be selected using the already consumed internal test set. The bounded V2 protocol is documented in [`docs/V2_DEPLOYMENT_VALIDATION_PLAN.md`](docs/V2_DEPLOYMENT_VALIDATION_PLAN.md).
