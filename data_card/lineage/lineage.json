@@ -29,7 +29,13 @@
       "manifest_test_rows": 21830,
       "v4_historical_test_rows": 47848,
       "historical_holdout_intent": "plantcity_pk",
-      "source_metadata_bridge_rows": 91528
+      "source_metadata_bridge_rows": 91528,
+      "manifest_to_v4_test_complement_rows": 26018,
+      "manifest_to_v4_test_complement_breakdown": {
+        "plantcity_pk": 26017,
+        "bangladesh": 1
+      },
+      "complement_note": "The recovered early manifest-to-V4 delta is 26,018 rows: 26,017 PlantCity rows plus one Bangladesh row. rice_neck_blast is a separate V5 under-supported-class quarantine and is not the manifest-to-V4 complement row."
     },
     {
       "stage": "D_intermediate_balancing_branch",
@@ -112,9 +118,16 @@
     "exact_original_source_path_rows": 84146,
     "exact_original_source_path_fraction": 0.7712245777081214,
     "source_family_only_rows": 24961,
-    "source_family_only_method": "verified_registry_complement",
+    "source_family_only_method": "registry_complement_reconstruction",
     "source_family_only_family": "plantcity_pk",
-    "licence_redistribution_status": "not resolved image-by-image"
+    "licence_redistribution_status": "not resolved image-by-image",
+    "source_family_only_confidence": "reconstructed_unique_complement",
+    "source_family_only_assumptions": [
+      "recovered source universe is complete for the audited lineage",
+      "no untracked intermediate source-family introduction",
+      "all other final source-family rows remain unambiguously accounted for"
+    ],
+    "supersedes_prior_confidence_label": "verified_exact_source_family"
   },
   "fingerprints": {
     "v4_build": "48bceb8e0b0740aa66f0ac0ced7a0a4eee78310f7a1de7d9681e8814e2515e1c",

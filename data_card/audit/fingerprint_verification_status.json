@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Separate cryptographic identity claims from what the public repository can independently recompute.",
+  "fingerprints": [
+    {
+      "id": "final_manifest_fingerprint",
+      "value": "7c368e6e3d8be3bb3a9a3a5f961075d4faa125bcac2e98a3b55e1a1c61f1c523",
+      "recorded_by": [
+        "final certification bundle",
+        "public final dataset certificate",
+        "dataset_fingerprints.json",
+        "lineage.json"
+      ],
+      "public_validator_status": "cross_file_consistency_only",
+      "independent_public_recomputation": false,
+      "reason": "The canonical 109,107-row final manifest is restricted and not distributed in public Git.",
+      "authorized_recomputation": "possible when the restricted canonical final manifest and finalization code are available"
+    },
+    {
+      "id": "final_build_fingerprint",
+      "value": "2d7c237981b8943d9b08a522db0489849a4bfe7f488dfb6461489dd36dcdc12b",
+      "recorded_by": [
+        "final certification bundle",
+        "public final dataset certificate",
+        "dataset_fingerprints.json",
+        "lineage.json"
+      ],
+      "public_validator_status": "cross_file_consistency_only",
+      "independent_public_recomputation": false,
+      "reason": "The complete restricted build inputs are not distributed in public Git.",
+      "authorized_recomputation": "possible from the restricted finalization evidence chain when canonicalization/build code is available"
+    },
+    {
+      "id": "restricted_provenance_ledger_sha256",
+      "value": "fe596ead93eff17a5b976b69e347ef614dd38e6d90efd41ffa0d128c54fc7181",
+      "recorded_by": [
+        "restricted evidence boundary",
+        "evidence registry"
+      ],
+      "public_validator_status": "identity_record_only",
+      "independent_public_recomputation": false,
+      "reason": "The 43,837,322-byte row-level provenance ledger is intentionally restricted."
+    }
+  ],
+  "rule": "No public documentation may describe a fingerprint as independently recomputed unless the canonical bytes used for that computation are available to the validator."
+}

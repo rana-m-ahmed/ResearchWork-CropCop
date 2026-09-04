@@ -5,7 +5,7 @@ coleaf,field,false,verified_manifest_join,verified_exact,available,119
 corn,field,false,verified_manifest_join,verified_exact,available,67
 plant100k,lab,false,verified_manifest_join,verified_exact,available,7903
 plantcity_pk,field,true,verified_manifest_join,verified_exact,available,8911
-plantcity_pk,field,true,verified_registry_complement,verified_exact_source_family,unknown,24961
+plantcity_pk,field,true,registry_complement_reconstruction,reconstructed_unique_complement,unknown,24961
 plantdoc,field,false,verified_manifest_join,verified_exact,available,2559
 plantvillage,lab,false,verified_manifest_join,verified_exact,available,39973
 rice,field,false,verified_manifest_join,verified_exact,available,18

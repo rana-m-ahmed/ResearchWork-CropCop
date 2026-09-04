@@ -1,0 +1,16 @@
+registry_key,ingestion_package,historical_relationship,final_rows,external_evaluation_status,reason
+plantvillage,mohitsingh1804/plantvillage/PlantVillage/train,known_final_contributor,39973,exclude_pending_independence_proof,contributed images to CropCop internal benchmark
+plantdoc,mdasim12/plantdoc/DocPlant/train,known_final_contributor,2559,exclude_pending_independence_proof,contributed images to CropCop internal benchmark
+abcgmp,sabahatabbas/abc-fruit-and-leaf/ABCGMP Fruit and Leaf Disease Six Crop Dataset/6  indian Fruit crops Fruit and Leaf Disease Dataset/6  indian Fruit crops Fruit and Leaf Disease Dataset,known_final_contributor,6833,exclude_pending_independence_proof,contributed images to CropCop internal benchmark
+coleaf,sabahatabbas/coleaf/CoLeaf DATASET,known_final_contributor,119,exclude_pending_independence_proof,contributed images to CropCop internal benchmark
+fieldplant,bloox2/fieldplant/train,registered_historical_source_no_recovered_rows,0,exclude_pending_independence_proof,registered in historical ingestion universe; independence requires overlap/source verification
+plant100k,salmasyed1360/plant-diseases-100k-labelled-images/crops,known_final_contributor,7903,exclude_pending_independence_proof,contributed images to CropCop internal benchmark
+plantcity_pk,abdulmannann/plantcity/PlantCity A Comprehensive Image Based on Multi Cro/Images/train/train,known_final_contributor_historical_holdout,33872,exclude_pending_independence_proof,historical holdout intent was superseded by later pooled group-safe splitting
+kami_pk,kamipakistan/plant-diseases-detection-dataset/PlantDisease416x416/PlantDisease416x416/train,registered_historical_source_no_recovered_rows,0,exclude_pending_independence_proof,registered in historical ingestion universe; independence requires overlap/source verification
+bangladesh,nafishamoin/new-bangladeshi-crop-disease/BangladeshiCrops/BangladeshiCrops/Crop___Disease,known_final_contributor,4092,exclude_pending_independence_proof,contributed images to CropCop internal benchmark
+plant_segmentation,ranamuhammadahmed6/plant-segmentation/plantsegv2/images/train,registered_historical_source_no_recovered_rows,0,exclude_pending_independence_proof,registered in historical ingestion universe; independence requires overlap/source verification
+cotton,seroshkarim/cotton-leaf-disease-dataset/cotton,registered_historical_source_no_recovered_rows,0,exclude_pending_independence_proof,registered in historical ingestion universe; independence requires overlap/source verification
+wheat,kushagra3204/wheat-plant-diseases/data/train,registered_historical_source_no_recovered_rows,0,exclude_pending_independence_proof,registered in historical ingestion universe; independence requires overlap/source verification
+rice,vbookshelf/rice-leaf-diseases/rice_leaf_diseases,known_final_contributor,18,exclude_pending_independence_proof,contributed images to CropCop internal benchmark
+corn,smaranjitghose/corn-or-maize-leaf-disease-dataset/data,known_final_contributor,67,exclude_pending_independence_proof,contributed images to CropCop internal benchmark
+sugarcane,akilesh253/sugarcane-plant-diseases-dataset/Sugarcane_leafs,known_final_contributor,13671,exclude_pending_independence_proof,contributed images to CropCop internal benchmark
