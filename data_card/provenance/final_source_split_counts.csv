@@ -1,0 +1,11 @@
+ingestion_registry_key,test,train,val
+abcgmp,1037,4760,1036
+bangladesh,610,2868,614
+coleaf,18,83,18
+corn,10,48,9
+plant100k,1218,5490,1195
+plantcity_pk,5040,23763,5069
+plantdoc,374,1804,381
+plantvillage,6004,27974,5995
+rice,3,13,2
+sugarcane,2049,9573,2049

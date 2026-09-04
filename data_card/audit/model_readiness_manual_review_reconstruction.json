@@ -1,0 +1,25 @@
+{
+  "residual_cross_label_similarity_pairs": 122,
+  "unique_pair_endpoints": 180,
+  "manual_review_queue_rows": 180,
+  "pair_endpoint_set_equals_manual_review_queue": true,
+  "priority_score_formula_reconstructed_from_outputs": "4 + 3*embedding_review_flag + soft_label_review_flag + (cleanlab_flag AND low_given_label_probability) + flag_visual_label_outlier_v5",
+  "priority_score_formula_matches_all_180_rows": true,
+  "priority_score_distribution": {
+    "4": 71,
+    "5": 17,
+    "6": 6,
+    "7": 1,
+    "8": 41,
+    "9": 43,
+    "10": 1
+  },
+  "flag_counts": {
+    "embedding_review_flag": 86,
+    "soft_label_review_flag": 108,
+    "cleanlab_and_low_given_label_probability": 47,
+    "flag_visual_label_outlier_v5": 4
+  },
+  "selector_source_code_status": "not supplied in the recovered evidence bundle",
+  "interpretation": "The supplied tables deterministically recover queue membership and score semantics. This does not prove the exact historical generator implementation beyond those outputs."
+}

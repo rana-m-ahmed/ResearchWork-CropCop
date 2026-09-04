@@ -1,0 +1,15 @@
+dimension,value,deleted_rows
+split,train,29
+split,val,8
+split,test,6
+label,plant_healthy,27
+label,sugarcane_healthy,7
+label,fig_brown_spot,2
+label,sugarcane_mosaic,2
+label,sugarcane_rust,2
+label,corn_gray_leaf_spot,1
+label,corn_holcus_leaf_spot,1
+label,cherry_leaf_scorch,1
+action,DELETE_FROM_DATASET,43
+status,FLAGGED,43
+reason,Black-screen / severe image distortion identified during manual visual inspection,43

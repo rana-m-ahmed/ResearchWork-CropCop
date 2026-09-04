@@ -1,0 +1,6 @@
+stage,edge_category,historical_v4_count,corrected_v5_count,rejected_after_fix,status,semantics
+V4,exact_sha256,6196,6196,0,unchanged,Trusted exact-identity relationships.
+V4_to_V5,strong_hash_near_duplicate,445,445,0,unchanged,V4 strong-hash route retained.
+V4_to_V5,feature_route_near_duplicate,2031,1932,99,reverified,All feature-route edges reopened under corrected geometric verification.
+V4,historical_confirmed_total,8672,8573,99,superseded_count,Historical V4 confirmed set; not the corrected V5 trusted graph total.
+V5,confirmed_cross_label_subset,17,17,0,subset,"17 cross-label edges are a subset of the 8,573 corrected trusted edges, not additive."

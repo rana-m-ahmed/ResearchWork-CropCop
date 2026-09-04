@@ -1,0 +1,9 @@
+transition,starting_rows,delta_rows,ending_rows,interpretation
+v4_audited_candidate_universe,117546,0,117546,Recovered V4 audit universe.
+direct_cover_duplicate_removal,117546,-8355,109191,"Duplicate representatives retained; 8,355 direct-cover duplicates removed."
+cross_label_conflict_quarantine,109191,-34,109157,34 images in confirmed cross-label duplicate families quarantined.
+hard_quality_quarantine,109157,-6,109151,Six hard-quality failures quarantined.
+under_supported_class_quarantine,109151,-1,109150,Single rice_neck_blast row quarantined; operational ontology becomes 120 classes.
+v5_group_safe_benchmark,109150,0,109150,V5 benchmark before final manual review.
+manual_review_deletions,109150,-43,109107,Delete-only finalization; no relabeling and no resplitting.
+final_frozen_benchmark,109107,0,109107,Certified final dataset.
