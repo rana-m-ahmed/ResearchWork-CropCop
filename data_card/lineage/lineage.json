@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0",
+  "dataset": "CropCop_Final_v1",
+  "evidence_policy": "Primary recovered manifests/audit outputs override prior notebook-forensic orientation if they differ.",
+  "stages": [
+    {
+      "stage": "A_upstream_aggregation",
+      "registered_source_families": 15,
+      "source_families_with_rows_in_recovered_registry": 10,
+      "recovered_registry_rows": 117562,
+      "v4_audited_rows": 117546,
+      "reconciliation": "The 16-row difference is confined to the rice registry family; 18 rice rows occur in the V4 audited universe."
+    },
+    {
+      "stage": "B_ontology_harmonization",
+      "historical_raw_label_map_rows": 249,
+      "historical_possible_target_strings": 157,
+      "historical_uploaded_class_index_classes": 80,
+      "v4_candidate_classes": 121,
+      "operational_classes": 120,
+      "dropped_at_v5": "rice_neck_blast",
+      "authority_note": "The uploaded 80-class class_index is historical evidence, not the final class-map authority."
+    },
+    {
+      "stage": "C_early_cleaning_historical_split",
+      "recovered_manifest_rows": 91528,
+      "historical_train": 57426,
+      "historical_val": 12272,
+      "manifest_test_rows": 21830,
+      "v4_historical_test_rows": 47848,
+      "historical_holdout_intent": "plantcity_pk",
+      "source_metadata_bridge_rows": 91528
+    },
+    {
+      "stage": "D_intermediate_balancing_branch",
+      "status": "historical_experimental_or_superseded_not_proven_final_ancestor",
+      "evidence": "Notebook-design evidence exists, but no recovered executed output/fingerprint ties the balancing branch to the V5 final lineage."
+    },
+    {
+      "stage": "E_v4_preflight",
+      "audited_rows": 117546,
+      "classes": 121,
+      "historical_confirmed_edges": 8672,
+      "exact_edges": 6196,
+      "strong_hash_near_edges": 445,
+      "feature_route_near_edges": 2031,
+      "borderline_pairs": 9721,
+      "cross_label_edge_rows": 17,
+      "cross_label_conflict_images": 34,
+      "ambiguous_duplicate_chains": 20,
+      "status": "PRECHECK_FAILED"
+    },
+    {
+      "stage": "F_v5_repair",
+      "feature_edges_reopened": 2031,
+      "feature_edges_retained": 1932,
+      "feature_edges_rejected": 99,
+      "corrected_trusted_graph_edges": 8573,
+      "confirmed_cross_label_edges_subset": 17
+    },
+    {
+      "stage": "G_v5_benchmark",
+      "direct_cover_duplicate_removals": 8355,
+      "quarantine_rows": 41,
+      "quarantine_breakdown": {
+        "cross_label_duplicate_family": 34,
+        "hard_quality": 6,
+        "under_supported_class": 1
+      },
+      "images": 109150,
+      "classes": 120,
+      "train": 76405,
+      "val": 16376,
+      "test": 16369,
+      "unique_sha256": 109150,
+      "leakage_groups": 109133,
+      "leakage_groups_crossing_splits": 0,
+      "trusted_edges_crossing_splits": 0,
+      "five_fold_cv": true
+    },
+    {
+      "stage": "H_model_readiness_QA",
+      "qa_version": "1.3.0-final-robust",
+      "qa_status": "PASS_WITH_QUARANTINE",
+      "qa_manifest_fingerprint": "f298f5bc3a3492d6c14ae4e6c4bc60f2d78fdab924ff0ba9d6e53002747399a5",
+      "manual_review_queue_rows": 180,
+      "residual_cross_label_similarity_pairs": 122,
+      "manual_queue_is_unique_pair_endpoint_set": true,
+      "critical_failures": 0,
+      "warning_failures": 7
+    },
+    {
+      "stage": "I_manual_review_final_freeze",
+      "manual_deletions": 43,
+      "manual_relabels": 0,
+      "resplit_rows": 0,
+      "images": 109107,
+      "classes": 120,
+      "train": 76376,
+      "val": 16368,
+      "test": 16363,
+      "unique_sha256": 109107,
+      "leakage_groups": 109090,
+      "leakage_groups_crossing_splits": 0,
+      "status": "CERTIFIED_FINAL"
+    }
+  ],
+  "provenance_coverage": {
+    "final_rows": 109107,
+    "source_family_attributed_rows": 109107,
+    "source_family_coverage_fraction": 1,
+    "exact_original_source_path_rows": 84146,
+    "exact_original_source_path_fraction": 0.7712245777081214,
+    "source_family_only_rows": 24961,
+    "source_family_only_method": "verified_registry_complement",
+    "source_family_only_family": "plantcity_pk",
+    "licence_redistribution_status": "not resolved image-by-image"
+  },
+  "fingerprints": {
+    "v4_build": "48bceb8e0b0740aa66f0ac0ced7a0a4eee78310f7a1de7d9681e8814e2515e1c",
+    "v5_build": "81df14490f0ff63ea49c24f741aa87c09417be7d3b6a5091afdfdeb30315d631",
+    "qa_manifest": "f298f5bc3a3492d6c14ae4e6c4bc60f2d78fdab924ff0ba9d6e53002747399a5",
+    "final_source_manifest": "0f277823cd6e3f681c3dca876926f4cdcabf66a53bc351c93634f71f1b4208ed",
+    "manual_review": "05bc92da66ca8fdcb0bfe3e1fdf3df3585f1cdc0ab429f1fafa94b81057e079b",
+    "final_manifest": "7c368e6e3d8be3bb3a9a3a5f961075d4faa125bcac2e98a3b55e1a1c61f1c523",
+    "final_build": "2d7c237981b8943d9b08a522db0489849a4bfe7f488dfb6461489dd36dcdc12b"
+  }
+}

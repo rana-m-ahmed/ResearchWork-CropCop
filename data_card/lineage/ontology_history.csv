@@ -1,0 +1,5 @@
+ontology_state,measure,value,interpretation,evidence_status
+historical_label_map,mapping_rows,249,Historical notebook reconstruction contains 249 raw-folder mappings to 157 possible target strings. Not every target is proven instantiated.,secondary_notebook_reconstruction
+historical_class_index,classes,80,Uploaded class_index.json is an earlier historical state and is not final authority.,primary_uploaded_historical_artifact
+v4_candidate_ontology,classes,121,V4 audited candidate universe contains 121 labels.,primary_v4_audit_reconstruction
+v5_operational_ontology,classes,120,Single under-supported rice_neck_blast row quarantined; final operational ontology has 120 classes.,primary_v5_and_final_evidence
