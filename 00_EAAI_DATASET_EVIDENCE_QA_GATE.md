@@ -386,7 +386,15 @@ The previous integration was verified to have successful PR-head and merged-main
 
 The workflow has no `continue-on-error`, no path filter that bypasses evidence changes, and no skipped test command.
 
-**Current repair PR CI and merged-main CI are recorded in the final post-enhancement revision of this document after the repair branch passes.**
+Current repair validation:
+
+- PR: **#6 — Close dataset-evidence QA gate for EAAI amendments**
+- validated head: `8cf3d43eafcb39cf297dad24e59f26421bff0bbf`
+- GitHub Actions run: **33893233205**
+- strict repository validator: **PASS**
+- unit-test suite: **PASS**
+
+The final gate commit is revalidated once more after this status is written. The merged `main` tree is also checked after merge before Stage-01/02/03 amendment work begins.
 
 ---
 
@@ -476,7 +484,14 @@ No cosmetic restructuring was performed.
 - `tests/test_repository_contract.py`
 - `.gitignore`
 
-Logical commit identifiers and PR/merge identifiers are added after the repair branch is cleanly squashed and validated.
+Logical repair commits:
+
+- `13a5be822ee9ebf2ef900619369c9127a299610b` — data: correct provenance evidence and add Q1 locks
+- `cf35121ea632cdebab9504f91286be8f1c678d60` — docs: repair dataset provenance interpretation
+- `a4d37491910217698c7ff760c79c89402730d144` — test: harden dataset evidence QA contract
+- `8cf3d43eafcb39cf297dad24e59f26421bff0bbf` — docs: add independent EAAI dataset evidence gate
+
+PR: **#6**.
 
 ---
 
@@ -524,8 +539,10 @@ The superseding Stage-01/02/03 amendment pass must inherit all of the following 
 
 ## 21. Formal gate
 
-The scientific repairs are complete. Final certification is contingent only on the current repair branch and merged-main CI passing the strengthened contract; the post-CI revision of this file records those run identities.
+The independent audit identified the material provenance discrepancies, repaired them without rewriting historical/restricted evidence, strengthened the evidence contract to detect their recurrence, and obtained a passing strict validator and unit-test run on the repair PR head.
 
-## `GO AFTER REQUIRED PATCHES`
+There are **no unresolved S0 defects and no unresolved S1 defects**. Remaining limitations are explicitly bounded in Section 19 and do not change the frozen benchmark identity.
 
-Required patches are exactly the repairs recorded in Sections 16–18 plus successful PR-head and merged-main execution of the strengthened validator and unit tests.
+The repository is scientifically and structurally suitable to become the authoritative dataset-evidence input for the superseding EAAI Stage-01/02/03 amendment pass, subject to the operational requirement that the identical validated tree is merged to `main` and the merged-main CI remains green.
+
+## `GO — DATASET EVIDENCE FOUNDATION VERIFIED`
