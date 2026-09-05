@@ -135,6 +135,23 @@ class SmokeSRTests(unittest.TestCase):
         self.assertNotIn("KAGGLE_KEY", restore)
         self.assertNotIn("kaggle datasets", restore.lower())
 
+    def test_00_batch_gate_has_actionable_saved_version_instruction(self):
+        from cropcop_je.smoke_handoff import require_qualifying_kaggle_batch
+        with self.assertRaisesRegex(SmokeHandoffError, "Save Version -> Save & Run All"):
+            require_qualifying_kaggle_batch(
+                context="fixture",
+                run_type="Interactive",
+            )
+        self.assertEqual(
+            require_qualifying_kaggle_batch(context="fixture", run_type="Batch"),
+            "Batch",
+        )
+
+    def test_00b_bootstrap_records_and_enforces_batch_run_type(self):
+        self.assertIn("require_qualifying_kaggle_batch(", self.bootstrap_source)
+        self.assertIn('"kaggle_run_type": run_type', self.bootstrap_source)
+        self.assertIn('context=f"canonical bootstrap ({args.phase})"', self.bootstrap_source)
+
     def test_03_smoke_bootstrap_only_requires_github_token(self):
         self.assertIn('return ("CROPCOP_GITHUB_TOKEN",)', self.bootstrap_source)
         smoke_branch = self.bootstrap_source[
