@@ -34,6 +34,128 @@ jobs:
         run: python scripts/validate_repository.py --strict --json-report validation-report.json
       - name: Validate JE static contract
         run: python scripts/validate_je.py --repo-root . --json-report je-validation-report.json
+      - name: Verify MGPU science-diff sentinel and amendment hash
+        run: python journal_extension/scripts/check_science_diff.py --repo-root . --json-report science-diff-report.json
+      - name: Compile canonical notebook code
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("journal_extension/kaggle/canonical_lane.ipynb")
+          nb = json.loads(path.read_text(encoding="utf-8"))
+          for i, cell in enumerate(nb.get("cells", [])):
+              if cell.get("cell_type") == "code":
+                  source = "".join(cell.get("source", []))
+                  compile(source, f"{path.name}:cell-{i}", "exec")
+          PY
+      - name: Verify tracked tree has no forbidden model artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -Eiq '\.(pt|pth|ckpt|pte|safetensors)        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests -v 2>&1 | tee unittest-report.txt
+      - name: Record exact-head CI context
+        if: always()
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          checked_out = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          Path("ci-verification.json").write_text(json.dumps({
+              "workflow": os.environ.get("GITHUB_WORKFLOW"),
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "run_number": os.environ.get("GITHUB_RUN_NUMBER"),
+              "workflow_context_sha": os.environ.get("GITHUB_SHA"),
+              "expected_source_sha": os.environ.get("EXPECTED_SOURCE_SHA"),
+              "checked_out_source_sha": checked_out,
+              "exact_source_sha_match": checked_out == os.environ.get("EXPECTED_SOURCE_SHA"),
+              "ref": os.environ.get("GITHUB_REF"),
+              "event": os.environ.get("GITHUB_EVENT_NAME"),
+              "tests_step_reached_artifact_stage": True
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validation-report
+          path: |
+            validation-report.json
+            je-validation-report.json
+            science-diff-report.json
+            unittest-report.txt
+            ci-verification.json
+; then
+            echo "forbidden tracked model/checkpoint artifact detected"
+            git ls-files | grep -Ei '\.(pt|pth|ckpt|pte|safetensors)        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests -v 2>&1 | tee unittest-report.txt
+      - name: Record exact-head CI context
+        if: always()
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          checked_out = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          Path("ci-verification.json").write_text(json.dumps({
+              "workflow": os.environ.get("GITHUB_WORKFLOW"),
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "run_number": os.environ.get("GITHUB_RUN_NUMBER"),
+              "workflow_context_sha": os.environ.get("GITHUB_SHA"),
+              "expected_source_sha": os.environ.get("EXPECTED_SOURCE_SHA"),
+              "checked_out_source_sha": checked_out,
+              "exact_source_sha_match": checked_out == os.environ.get("EXPECTED_SOURCE_SHA"),
+              "ref": os.environ.get("GITHUB_REF"),
+              "event": os.environ.get("GITHUB_EVENT_NAME"),
+              "tests_step_reached_artifact_stage": True
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validation-report
+          path: |
+            validation-report.json
+            je-validation-report.json
+            unittest-report.txt
+            ci-verification.json
+
+            exit 1
+          fi
+      - name: Scan tracked text for live-looking GitHub secrets
+        run: |
+          python - <<'PY'
+          import re, subprocess
+          from pathlib import Path
+          patterns = [
+              re.compile(r"gh[pousr]_[A-Za-z0-9_]{30,}"),
+              re.compile(r"github_pat_[A-Za-z0-9_]{30,}"),
+          ]
+          offenders = []
+          for rel in subprocess.check_output(["git", "ls-files"], text=True).splitlines():
+              p = Path(rel)
+              if not p.is_file():
+                  continue
+              try:
+                  text = p.read_text(encoding="utf-8")
+              except (UnicodeDecodeError, OSError):
+                  continue
+              for pattern in patterns:
+                  if pattern.search(text):
+                      offenders.append((rel, pattern.pattern))
+          if offenders:
+              raise SystemExit("live-looking GitHub credential pattern in tracked tree: " + repr(offenders))
+          PY
+      - name: Run MGPU dual-envelope contract tests
+        run: python -m unittest discover -s tests -p 'test_je_mgpu_envelope.py' -v
       - name: Run complete CPU-safe test suite
         shell: bash
         run: |
