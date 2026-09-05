@@ -8,6 +8,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "journal_extension" / "scripts"
+SRC = ROOT / "journal_extension" / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from cropcop_je.smoke_handoff import require_qualifying_kaggle_batch
 
 
 def req(name: str) -> str:
@@ -23,6 +28,7 @@ def execute(script: str, args: list[str]) -> None:
 
 
 def main() -> int:
+    require_qualifying_kaggle_batch(context="G1 model-identity sealing")
     source_sha = req("CROPCOP_SOURCE_GIT_COMMIT")
     smoke = req("CROPCOP_INFRA_SMOKE_EVIDENCE")
     bundle = Path(req("CROPCOP_G1_BUNDLE_DIR")).resolve()
