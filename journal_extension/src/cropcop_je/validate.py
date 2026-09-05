@@ -111,7 +111,8 @@ def validate_static(repo_root: Path) -> dict:
                 "CROPCOP_NOTEBOOK_STARTED_MONOTONIC",
                 "PYTHONDONTWRITEBYTECODE",
                 "GIT_ASKPASS",
-                "checkout','--detach',AUTHORIZED_SOURCE_SHA",
+                '"checkout"',
+                '"--detach"',
                 "run_g1.py",
                 "smoke_infrastructure.py",
                 "smoke-write",
@@ -121,8 +122,15 @@ def validate_static(repo_root: Path) -> dict:
             ):
                 if token not in code:
                     errors.append(f"canonical Kaggle bootstrap missing: {token}")
-            if code.find("CROPCOP_NOTEBOOK_STARTED_MONOTONIC") > code.find("git','clone"):
-                errors.append("notebook-global clock is not established before clone/bootstrap work")
+            clock_index = code.find("CROPCOP_NOTEBOOK_STARTED_MONOTONIC")
+            clone_index = code.find('"clone"')
+            pip_index = code.find('"pip"')
+            if clone_index < 0:
+                errors.append("canonical Kaggle notebook clone command token is missing")
+            if pip_index < 0:
+                errors.append("canonical Kaggle notebook pip-install command token is missing")
+            if clock_index < 0 or (clone_index >= 0 and clock_index > clone_index) or (pip_index >= 0 and clock_index > pip_index):
+                errors.append("notebook-global clock is not established before clone/install work")
             try:
                 compile(code, "canonical_lane.ipynb", "exec")
             except SyntaxError as exc:

@@ -224,3 +224,12 @@ The hotfix is intentionally narrow:
 Runs #31, #32 and #33 remain historical evidence. Run #33 verified the prior wrapper but does not verify
 this serialization repair. A fresh exact-head workflow is mandatory before the repaired notebook is
 authorized for manual Smoke A.
+
+
+Exact-head Actions run #34 / ID `33967049644` on
+`f61f7df8a71bc5d688234b866c975fc54c0a9951` preserved the serialization repair but rejected two
+legacy JE-static textual checks. Those checks searched for compact source fragments
+`git','clone` and `checkout','--detach'`; normal multiline Python formatting no longer contains those
+serialization-specific substrings. The new notebook compilation check itself did not fail. The
+validator was corrected to use formatting-independent command tokens and source-order checks rather
+than requiring a particular Python list-literal serialization. Run #34 remains historical failed CI.
