@@ -10,6 +10,44 @@ are verified before use; V1 test and sealed external surfaces are not resolvable
 - Lock SHA-256: `aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74`
 - Repository baseline at Stage 00: `32190dd86293caa82170df3feea505e3c7443b4b`
 
+
+<!-- QA1_OPERATOR_BEGIN -->
+## Current Stage-01A-MGPU-QA1 operator path
+
+**Active pre-QA execution source:** `ba5dd4661b97d072593af4646b76552686953a2d`  
+The final source is replaced only after Wave-C exact-head freeze. The generator is authoritative for the active source SHA.
+
+```text
+smoke-write
+→ fresh smoke-restore
+→ independent audit
+→ dual-gpu-smoke
+→ independent audit
+→ g1
+→ calibration-dual
+→ principal-dual
+```
+
+Canonical operator phases are exactly:
+
+- `smoke-write`
+- `smoke-restore`
+- `dual-gpu-smoke`
+- `g1`
+- `calibration-dual`
+- `principal-dual`
+
+`smoke-write` and `smoke-restore` require only `CROPCOP_GITHUB_TOKEN`. Smoke B consumes the exact attached Smoke-A output through `CROPCOP_SMOKE_A_INPUT_ROOT`.
+
+`dual-gpu-smoke` consumes the exact attached Smoke-B output through `CROPCOP_SMOKE_B_INPUT_ROOT`. G1 and later dual phases require both the exact Smoke-B evidence and exact dual-GPU-smoke evidence through `CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT`.
+
+G1 / calibration-dual / principal-dual preserve production durable-store and restricted-artifact requirements, including `KAGGLE_USERNAME` and `KAGGLE_KEY`.
+
+Interactive runs are diagnostic only. No G1 may start before terminal Batch dual-GPU-smoke evidence passes the canonical validator.
+
+See `journal_extension/kaggle/README_SMOKE.md` for the active human handoff. Older Stage 01A-H/P/SR sections below are historical implementation chronology and are not current operator instructions.
+<!-- QA1_OPERATOR_END -->
+
 ## Restricted inputs
 
 Scientific jobs require explicit paths to restricted bytes. Nothing here downloads or guesses them.
