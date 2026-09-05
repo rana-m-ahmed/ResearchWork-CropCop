@@ -303,3 +303,26 @@ creates a brand-new local clone with system/global Git configuration disabled, c
 candidate HEAD detached, and requires `git status --porcelain=v1 --untracked-files=all` to be empty.
 This directly reproduces the clean-checkout invariant that Kaggle exposed, rather than relying only on
 index-EOL inspection.
+
+
+### Clean execution source re-freeze after Kaggle checkout defect
+
+The EOL canonicalization plus fresh-clone regression candidate is frozen at
+`939455c2cc8787bb295e073d706c32768820bfab`.
+
+Exact-head Actions run #40 / ID `33968396009` verified:
+
+- expected SHA = actual SHA = `939455c2cc8787bb295e073d706c32768820bfab`;
+- Python compile PASS;
+- strict repository validator PASS;
+- JE static validator PASS;
+- `test_42_tracked_lf_text_blobs_are_canonical_in_git_index` PASS;
+- `test_43_fresh_linux_checkout_of_exact_head_is_clean` PASS;
+- 124/124 tests PASS;
+- validation artifact ID `9970156417`;
+- validation artifact digest
+  `sha256:45f078ccd802d8759be70aac0cda3661627e5ededc5aae139c96438faca50588`.
+
+No additional LF-governed CRLF/mixed tracked blob was found after normalizing
+`journal_extension/evidence/claim_registry.csv`. The Smoke A/B scientific/non-scientific execution
+logic itself was not changed by this canonicalization.

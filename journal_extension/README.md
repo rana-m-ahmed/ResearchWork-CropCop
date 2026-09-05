@@ -200,7 +200,11 @@ A checkpoint for B cannot be created until the state machine has reached verifie
 
 ### Source-SHA configuration note
 
-The smoke execution implementation was first frozen and exact-head verified at
-`045fcf5c80366438b69a54288d9081e9b57ed973` (Actions run #32). A later notebook-wrapper commit may therefore safely hard-bind
-`AUTHORIZED_SOURCE_SHA` to that already-verified implementation without creating a commit-SHA
-self-reference. Real Smoke A/B executes repository code from exactly `045fcf5c80366438b69a54288d9081e9b57ed973`.
+The Smoke A/B state machine was first verified at `045fcf5c80366438b69a54288d9081e9b57ed973`, but the first real Kaggle
+checkout exposed a repository line-ending canonicalization defect outside that state machine.
+The clean execution source is now frozen and exact-head verified at
+`939455c2cc8787bb295e073d706c32768820bfab` (Actions run #40, 124/124 tests PASS), including both a repository-wide
+`git ls-files --eol` invariant and a brand-new exact-head Linux clone cleanliness test.
+The later notebook-wrapper commit may safely hard-bind `AUTHORIZED_SOURCE_SHA` to this already
+verified clean execution source without creating a commit-SHA self-reference. Real Smoke A/B now
+executes repository code from exactly `939455c2cc8787bb295e073d706c32768820bfab`.

@@ -18,7 +18,7 @@ secret, a private recovery dataset, or any CropCop dataset.
    
    A classic PAT must have private-repository `repo` scope, but a fine-grained PAT is preferred.
 3. Open `journal_extension/kaggle/canonical_lane.ipynb`.
-4. Leave the frozen execution source unchanged: `045fcf5c80366438b69a54288d9081e9b57ed973`.
+4. Leave the frozen execution source unchanged: `939455c2cc8787bb295e073d706c32768820bfab`.
 5. Set:
    ```
    EXECUTION_PHASE = "smoke-write"
