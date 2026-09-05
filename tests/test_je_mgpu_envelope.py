@@ -363,7 +363,10 @@ class MGPUContinuationAndEvidenceTests(unittest.TestCase):
         self.assertTrue(validate_manifest(manifest))
 
     def test_43_terminal_prior_child_is_skipped(self):
-        state = {"children": [{"child_id": "A", "status": "PASS"}, {"child_id": "B", "status": "CONTINUATION_REQUIRED"}]}
+        state = {"children": [
+            {"child_id": "A", "status": "PASS", "execution_status": "PASS", "publication_status": "PASS", "evidence_chain_complete": True},
+            {"child_id": "B", "status": "CONTINUATION_REQUIRED", "execution_status": "CONTINUATION_REQUIRED", "publication_status": "PASS", "evidence_chain_complete": False},
+        ]}
         self.assertEqual(continuation_skip_set(state), {"A"})
 
     def test_44_continuation_source_drift_is_rejected(self):
@@ -438,10 +441,10 @@ class MGPUContinuationAndEvidenceTests(unittest.TestCase):
         self.assertNotIn("for sibling", terminal_block)
         self.assertNotIn("terminate_process_group(obj)", terminal_block.split("rc = obj.process.poll()")[1])
 
-    def test_54_host_global_stop_terminates_running_children(self):
+    def test_54_host_global_stop_gracefully_finalizes_running_children(self):
         source = (ROOT / "journal_extension/kaggle/run_envelope.py").read_text()
-        self.assertIn('if global_stop["reason"]:', source)
-        self.assertIn("terminate_process_group(obj)", source)
+        self.assertIn('if global_stop["reason"] and not finalization_started:', source)
+        self.assertIn("gracefully_finalize_process_groups(", source)
 
     def test_55_third_g2_child_is_first_free_not_metric_driven(self):
         cfg = json.loads((ROOT / "journal_extension/kaggle/envelopes/G2_DUAL_T4.json").read_text())
@@ -511,10 +514,12 @@ class MGPUContinuationAndEvidenceTests(unittest.TestCase):
         terminal = source[source.index("if rc == 0:"):source.index("else:", source.index("if rc == 0:"))]
         self.assertLess(terminal.index("_validated_child_preflight"), terminal.index("_result_for_child"))
 
-    def test_66_publication_failure_does_not_relabel_child_science_directly(self):
+    def test_66_publication_failure_is_separate_from_execution_status(self):
         source = (ROOT / "journal_extension/kaggle/run_envelope.py").read_text()
-        self.assertIn("Preserve child scientific/calibration terminal state", source)
-        self.assertIn('result.get("publication_status") == "FAIL"', source)
+        self.assertIn('"execution_status"', source)
+        self.assertIn('"publication_status"', source)
+        self.assertIn('"evidence_chain_complete"', source)
+        self.assertIn("continuation_publication_repair_set", source)
 
 
 
