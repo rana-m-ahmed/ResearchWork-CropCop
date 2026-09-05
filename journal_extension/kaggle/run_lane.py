@@ -89,6 +89,9 @@ def env_path(name: str) -> str:
 
 
 def common_args(source_sha: str, lane_id: str) -> list[str]:
+    workers = int(os.environ.get("CROPCOP_NUM_WORKERS_PER_CHILD", "4"))
+    if workers < 0 or workers > 16:
+        raise RuntimeError("CROPCOP_NUM_WORKERS_PER_CHILD must be between 0 and 16")
     args = [
         "--repo-root", str(ROOT),
         "--manifest", env_path("CROPCOP_MANIFEST"),
@@ -96,6 +99,7 @@ def common_args(source_sha: str, lane_id: str) -> list[str]:
         "--image-root", env_path("CROPCOP_IMAGE_ROOT"),
         "--source-git-commit", source_sha,
         "--lane-id", lane_id,
+        "--num-workers", str(workers),
     ]
     for flag, env_name in COLUMN_ENV.items():
         args += ["--" + flag.replace("_", "-"), env_path(env_name)]
@@ -406,6 +410,12 @@ def main() -> int:
     from cropcop_je.session import SessionBudget
     from cropcop_je.source_state import verify_clean_source
     SessionBudget.from_environment(require_global_clock=True)
+    if os.environ.get("CROPCOP_DUAL_ENVELOPE", "").strip() == "1":
+        import torch
+        if not torch.cuda.is_available() or torch.cuda.device_count() != 1:
+            raise SystemExit(
+                "dual-envelope child isolation failed: each child must see exactly one CUDA device"
+            )
     output_roots = [
         env_path("CROPCOP_OUTPUT_ROOT"),
         env_path("CROPCOP_G1_BUNDLE_DIR"),
