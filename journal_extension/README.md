@@ -14,8 +14,8 @@ are verified before use; V1 test and sealed external surfaces are not resolvable
 <!-- QA1_OPERATOR_BEGIN -->
 ## Current Stage-01A-MGPU-QA1 operator path
 
-**Frozen QA1 execution source:** `be9b6965d760ff6e8674623b658f66572cd57093`  
-This source is frozen by Wave-C exact-head CI. The generator is authoritative for the active source SHA.
+**Current post-Smoke-A-debug execution source:** `fe88e426b4698977d65efe9702f1d48cf5ff96a3`  
+This source is frozen by the post-Smoke-A-debug exact-head source CI. The generator is authoritative for the active source SHA.
 
 ```text
 smoke-write
@@ -43,7 +43,7 @@ Canonical operator phases are exactly:
 
 G1 / calibration-dual / principal-dual preserve production durable-store and restricted-artifact requirements, including `KAGGLE_USERNAME` and `KAGGLE_KEY`.
 
-Interactive runs are diagnostic only. No G1 may start before terminal Batch dual-GPU-smoke evidence passes the canonical validator.
+Interactive editor runs are diagnostic only and are rejected before setup; use Save Version → Save & Run All for qualification. No G1 may start before terminal Batch dual-GPU-smoke evidence passes the canonical validator.
 
 See `journal_extension/kaggle/README_SMOKE.md` for the active human handoff. Older Stage 01A-H/P/SR sections below are historical implementation chronology and are not current operator instructions.
 <!-- QA1_OPERATOR_END -->
