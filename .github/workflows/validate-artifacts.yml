@@ -98,6 +98,8 @@ jobs:
         run: python journal_extension/scripts/validate_operator_docs.py --repo-root . --json-report operator-docs-report.json
       - name: Run QA1 Wave-A contract tests
         run: python -m unittest discover -s tests -p 'test_je_qa1_wave_a.py' -v
+      - name: Run QA1 Wave-B recovery tests
+        run: python -m unittest discover -s tests -p 'test_je_qa1_wave_b.py' -v
       - name: Run MGPU dual-envelope contract tests
         run: python -m unittest discover -s tests -p 'test_je_mgpu_envelope.py' -v
       - name: Run complete CPU-safe test suite
