@@ -147,6 +147,18 @@ def _publish(run_id: str, source_sha: str, files: list[Path]) -> str | None:
     )
 
 
+def _try_publish(run_id: str, source_sha: str, files: list[Path]) -> dict:
+    try:
+        branch = _publish(run_id, source_sha, files)
+        return {"publication_status": "PASS", "publication_branch": branch, "publication_error": None}
+    except Exception as exc:
+        return {
+            "publication_status": "FAIL",
+            "publication_branch": None,
+            "publication_error": f"{type(exc).__name__}: {exc}",
+        }
+
+
 def _write_telemetry(path: Path) -> None:
     row = {"timestamp_utc": utc_now(), **gpu_telemetry()}
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -233,12 +245,12 @@ def _result_for_child(
             tmp = dest.with_suffix(".json.tmp")
             shutil.copy2(summary_path, tmp)
             os.replace(tmp, dest)
-        branch = _publish(child["experiment_id"], source_sha, [dest])
+        publication = _try_publish(child["experiment_id"], source_sha, [dest])
         return {
             "status": "PASS",
             "continuation_required": False,
             "result_relative_path": f"central_g2/{dest.name}",
-            "publication_branch": branch,
+            **publication,
         }
 
     record = paths["output"] / child["lane"] / "principal" / run_id / "run_record.json"
@@ -250,7 +262,7 @@ def _result_for_child(
         p = record.parent / name
         if p.is_file():
             evidence.append(p)
-    branch_name = _publish(run_id, source_sha, evidence)
+    publication = _try_publish(run_id, source_sha, evidence)
     status = data.get("status")
     continuation = bool(data.get("continuation_required"))
     if status == "PASS" and not continuation:
@@ -263,7 +275,7 @@ def _result_for_child(
         "status": terminal,
         "continuation_required": continuation,
         "result_relative_path": f"children/{child['child_id']}/output/{child['lane']}/principal/{run_id}/run_record.json",
-        "publication_branch": branch_name,
+        **publication,
         "g1_seal_sha256": data.get("g1_seal_sha256"),
         "g2_barrier_sha256": data.get("g2_barrier_sha256"),
     }
@@ -627,6 +639,10 @@ def main() -> int:
     elif all(row.get("status") == "PASS" for row in state["children"]):
         envelope_status = "PASS"
     else:
+        envelope_status = "FAIL_TECHNICAL"
+
+    if any(result.get("publication_status") == "FAIL" for result in results.values()):
+        # Preserve child scientific/calibration terminal state, but fail the envelope evidence chain.
         envelope_status = "FAIL_TECHNICAL"
 
     final_g2 = None
