@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .hashing import require_sha256, sha256_file, sha256_json
+from .smoke_handoff import validate_terminal_smoke_b_evidence
 
 AUTHORITY_ID = "EAAI-JE-SDL-v2.1-QA"
 AUTHORITY_SHA256 = "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74"
@@ -367,24 +368,24 @@ def validate_mounted_g1(
     if sha256_json(order) != seal.get("teacher", {}).get("class_order_evidence_sha256"):
         errors.append("teacher class-order evidence differs from G1 seal")
 
-    smoke = _load(infra_smoke_evidence_path)
-    if not (
-        smoke.get("status") == "PASS"
-        and smoke.get("scientific") is False
-        and smoke.get("synthetic_unprotected_data_only") is True
-        and smoke.get("source_git_sha") == authorized_source_sha
-        and smoke.get("restore_success") is True
-        and smoke.get("resume_success") is True
-    ):
-        errors.append("mounted infrastructure-smoke evidence is not a valid pre-G1 attestation")
-    if sha256_json(smoke) != seal.get("infra_smoke_evidence_sha256"):
-        errors.append("infrastructure-smoke evidence differs from G1 seal")
-
     dep = _load(dependency_lock_path)
     errors.extend(validate_dependency_lock_object(dep))
     if dep.get("dependency_lock_sha256") != seal.get("dependency_lock_sha256"):
         errors.append("dependency lock differs from G1 seal")
     errors.extend(validate_dependency_environment(dep))
+
+    smoke = _load(infra_smoke_evidence_path)
+    errors.extend(
+        "mounted infrastructure-smoke evidence: " + message
+        for message in validate_terminal_smoke_b_evidence(
+            smoke,
+            expected_source_sha=authorized_source_sha,
+            expected_dependency_lock_sha256=dep.get("dependency_lock_sha256", ""),
+            require_batch=True,
+        )
+    )
+    if sha256_json(smoke) != seal.get("infra_smoke_evidence_sha256"):
+        errors.append("infrastructure-smoke evidence differs from G1 seal")
     return errors
 
 
