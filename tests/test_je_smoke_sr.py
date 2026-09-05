@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -400,6 +401,56 @@ class SmokeSRTests(unittest.TestCase):
             if "eol=lf" in meta and index_eol in {"i/crlf", "i/mixed"}:
                 offenders.append((path, meta))
         self.assertEqual(offenders, [], f"non-canonical LF blobs: {offenders}")
+
+
+
+    def test_43_fresh_linux_checkout_of_exact_head_is_clean(self):
+        head = subprocess.check_output(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            text=True,
+        ).strip()
+        with tempfile.TemporaryDirectory() as td:
+            clone = Path(td) / "fresh-checkout"
+            env = dict(os.environ)
+            env["GIT_CONFIG_NOSYSTEM"] = "1"
+            env["GIT_CONFIG_GLOBAL"] = os.devnull
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "--quiet",
+                    "--no-hardlinks",
+                    "--no-checkout",
+                    str(ROOT),
+                    str(clone),
+                ],
+                env=env,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "-C", str(clone), "checkout", "--quiet", "--detach", head],
+                env=env,
+                check=True,
+            )
+            actual = subprocess.check_output(
+                ["git", "-C", str(clone), "rev-parse", "HEAD"],
+                env=env,
+                text=True,
+            ).strip()
+            status = subprocess.check_output(
+                [
+                    "git",
+                    "-C",
+                    str(clone),
+                    "status",
+                    "--porcelain=v1",
+                    "--untracked-files=all",
+                ],
+                env=env,
+                text=True,
+            )
+            self.assertEqual(actual, head)
+            self.assertEqual(status, "", f"fresh exact-head checkout is dirty: {status}")
 
 
 

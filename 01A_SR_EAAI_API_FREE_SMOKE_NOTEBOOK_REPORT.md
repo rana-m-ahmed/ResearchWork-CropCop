@@ -296,3 +296,10 @@ The hotfix normalizes the CSV bytes to LF without changing any CSV field/content
 guard based on `git ls-files --eol`. Any tracked file governed by `eol=lf` that is stored as
 `i/crlf` or `i/mixed` now fails JE static validation and the unit suite with the exact path. The
 clean-tree gate is not bypassed or special-cased.
+
+
+After the EOL canonicalization candidate passed run #39, an additional regression test was added that
+creates a brand-new local clone with system/global Git configuration disabled, checks out the exact
+candidate HEAD detached, and requires `git status --porcelain=v1 --untracked-files=all` to be empty.
+This directly reproduces the clean-checkout invariant that Kaggle exposed, rather than relying only on
+index-EOL inspection.
