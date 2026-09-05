@@ -381,7 +381,7 @@ class PreG1IntegrityTests(unittest.TestCase):
         nb = json.loads((ROOT / "journal_extension/kaggle/canonical_lane.ipynb").read_text())
         code = "".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code")
         self.assertLess(code.index("CROPCOP_NOTEBOOK_STARTED_MONOTONIC"), code.index("git','clone"))
-        for phase in ("smoke", "g1", "calibration", "principal"):
+        for phase in ("smoke-write", "smoke-restore", "g1", "calibration", "principal"):
             self.assertIn(phase, code)
         self.assertIn("PYTHONDONTWRITEBYTECODE", code)
         self.assertIn("GIT_ASKPASS", code)

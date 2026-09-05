@@ -155,3 +155,53 @@ a recoverable previous generation across the target/staging rename window.
 Real G1/G2 remains blocked until the real Kaggle synthetic smoke is green and the restricted model/data
 and historical teacher-class-order evidence are available. Repository code never manufactures those
 inputs.
+
+
+## Stage 01A-SR — API-free cross-session smoke
+
+The Stage-01A smoke path is now split into two explicit clean-session phases:
+
+- `smoke-write`: create and verify a deterministic synthetic checkpoint, then export the complete
+  recovery bundle beneath `/kaggle/working/cropcop-smoke-a-export` and stop.
+- `smoke-restore`: in a fresh Saved Version, consume the exact attached Smoke-A Notebook Output from
+  an explicit `/kaggle/input/...` root, verify it before any training/output write, restore/recover,
+  load model/optimizer/scheduler/scaler, advance the optimizer step, write a separate Smoke-B export,
+  publish audited text evidence, and stop.
+
+This qualification path is deliberately **Kaggle-API-free**. Smoke A/B require only the Kaggle Secret
+`CROPCOP_GITHUB_TOKEN`. They do not require `KAGGLE_USERNAME`, `KAGGLE_KEY`, Kaggle CLI dataset
+creation/versioning/download, a private recovery dataset, or any CropCop dataset/model artifact.
+
+The later `KagglePrivateDatasetStore` remains intact for future execution paths; Stage 01A-SR does not
+redesign scientific persistence.
+
+### Saved-Version handoff boundary
+
+Smoke A writes:
+
+```
+/kaggle/working/cropcop-smoke-a-export/
+    SMOKE_A_MANIFEST.json
+    SMOKE_A_EVIDENCE.json
+    checkpoint_index.json
+    objects/<content-addressed-checkpoint>
+```
+
+The human operator uses **Save & Run All**, then attaches that exact Notebook Output to a fresh Smoke-B
+Saved Version using **Add Input → Notebook Output Files**. Smoke B is given one explicit
+`SMOKE_A_INPUT_ROOT` and searches only within that selected root. It fingerprints the attached input
+before/after and never modifies it.
+
+The machine-enforced Smoke-B sequence is:
+
+`READ_A → VERIFY_A → RESTORE_A → RECOVER_A → LOAD_A → RESUME → CHECKPOINT_B`.
+
+A checkpoint for B cannot be created until the state machine has reached verified resume.
+
+### Source-SHA configuration note
+
+The corrected notebook itself changes repository history, so its final commit SHA cannot be embedded
+inside the same commit without a self-reference loop. The canonical configuration therefore retains
+the prior frozen SHA as a non-secret placeholder/default and explicitly instructs the operator to set
+`AUTHORIZED_SOURCE_SHA` to the final exact Stage-01A-SR PR-head SHA recorded in the non-self-referential
+PR attestation before real execution.

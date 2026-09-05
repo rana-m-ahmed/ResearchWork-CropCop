@@ -18,16 +18,30 @@ from cropcop_je.source_state import verify_clean_source
 
 OUTPUT_ENV_KEYS = (
     "CROPCOP_OUTPUT_ROOT",
+    "CROPCOP_SYNTHETIC_SMOKE_ROOT",
+    "CROPCOP_SMOKE_A_EXPORT_ROOT",
+    "CROPCOP_SMOKE_B_EXPORT_ROOT",
     "CROPCOP_G1_BUNDLE_DIR",
     "CROPCOP_G2_SUMMARIES_DIR",
     "CROPCOP_TERMINAL_EVIDENCE_DIR",
 )
+SMOKE_PHASES = {"smoke-write", "smoke-restore"}
+NON_SMOKE_PHASES = {"g1", "calibration", "principal"}
+
+
+def _required_secret_names(phase: str) -> tuple[str, ...]:
+    if phase in SMOKE_PHASES:
+        return ("CROPCOP_GITHUB_TOKEN",)
+    if phase in NON_SMOKE_PHASES:
+        return ("CROPCOP_GITHUB_TOKEN", "KAGGLE_USERNAME", "KAGGLE_KEY")
+    raise ValueError(f"unsupported execution phase: {phase}")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-root", required=True)
     ap.add_argument("--authorized-source-sha", required=True)
+    ap.add_argument("--phase", required=True, choices=sorted(SMOKE_PHASES | NON_SMOKE_PHASES))
     ap.add_argument("--dependency-lock", default="journal_extension/locks/execution_dependency_lock.json")
     ap.add_argument("--output", required=True)
     args = ap.parse_args()
@@ -50,10 +64,9 @@ def main() -> int:
         errors.append("CROPCOP_SOURCE_GIT_COMMIT differs from authorized source SHA")
     if os.environ.get("CROPCOP_LANE") not in {"K1", "K2", "K3"}:
         errors.append("CROPCOP_LANE is missing/invalid")
-    if not os.environ.get("CROPCOP_GITHUB_TOKEN"):
-        errors.append("private Git credential was not retrieved into the process environment")
-    if not os.environ.get("KAGGLE_USERNAME") or not os.environ.get("KAGGLE_KEY"):
-        errors.append("Kaggle API credentials were not retrieved into the process environment")
+    for name in _required_secret_names(args.phase):
+        if not os.environ.get(name):
+            errors.append(f"required secret missing: {name}")
 
     try:
         budget = SessionBudget.from_environment(require_global_clock=True)
@@ -63,16 +76,14 @@ def main() -> int:
         errors.append(str(exc))
 
     report = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "status": "PASS" if not errors else "FAIL",
+        "phase": args.phase,
         "source_state": source,
         "dependency_lock_sha256": dep.get("dependency_lock_sha256"),
         "notebook_session": session,
-        "secret_presence": {
-            "private_git": bool(os.environ.get("CROPCOP_GITHUB_TOKEN")),
-            "kaggle_username": bool(os.environ.get("KAGGLE_USERNAME")),
-            "kaggle_key": bool(os.environ.get("KAGGLE_KEY")),
-        },
+        "required_secret_names": list(_required_secret_names(args.phase)),
+        "secret_presence": {name: bool(os.environ.get(name)) for name in _required_secret_names(args.phase)},
         "errors": errors,
     }
     atomic_write_json(args.output, report)

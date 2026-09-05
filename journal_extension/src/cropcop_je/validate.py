@@ -114,12 +114,18 @@ def validate_static(repo_root: Path) -> dict:
                 "checkout','--detach',source_sha",
                 "run_g1.py",
                 "smoke_infrastructure.py",
+                "smoke-write",
+                "smoke-restore",
+                "SMOKE_A_INPUT_ROOT",
                 "run_lane.py",
             ):
                 if token not in code:
                     errors.append(f"canonical Kaggle bootstrap missing: {token}")
             if code.find("CROPCOP_NOTEBOOK_STARTED_MONOTONIC") > code.find("git','clone"):
                 errors.append("notebook-global clock is not established before clone/bootstrap work")
+            for forbidden in ("EXECUTION_PHASE == 'smoke'", "phase == 'smoke'"):
+                if forbidden in code:
+                    errors.append("ambiguous legacy production smoke phase remains in canonical notebook")
     except Exception as exc:
         errors.append(f"canonical Kaggle notebook invalid: {exc}")
 

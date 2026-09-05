@@ -1,0 +1,12 @@
+{
+  "authorized_source_sha": "731fcf18bd6aaf72322457d6e766296dc95d5c94",
+  "note": "Replace authorized_source_sha with the final Stage-01A-SR PR-head SHA from the non-self-referential PR attestation before real execution.",
+  "lane": "K1",
+  "repository_url": "https://github.com/rana-m-ahmed/ResearchWork-CropCop.git",
+  "repo_workdir": "/kaggle/working/cropcop-je",
+  "output_root": "/kaggle/working/cropcop-je-output",
+  "synthetic_smoke_root": "/kaggle/working/cropcop-smoke-input",
+  "smoke_a_export_root": "/kaggle/working/cropcop-smoke-a-export",
+  "smoke_b_export_root": "/kaggle/working/cropcop-smoke-b-export",
+  "smoke_a_input_root": "<SET_ONLY_FOR_SMOKE_RESTORE>"
+}
