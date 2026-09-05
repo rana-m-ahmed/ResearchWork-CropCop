@@ -255,13 +255,16 @@ class SmokeSRTests(unittest.TestCase):
             self.assertTrue(any("non-scientific" in e for e in errors))
 
     def test_24_neither_smoke_mode_falls_through_to_g1(self):
-        smoke_route = self.code[self.code.index("if EXECUTION_PHASE in {'smoke-write','smoke-restore'}"):self.code.index("elif EXECUTION_PHASE == 'g1'")]
+        smoke_route = self.code[
+            self.code.index('if EXECUTION_PHASE in {"smoke-write", "smoke-restore"}:'):
+            self.code.index('elif EXECUTION_PHASE == "g1":')
+        ]
         self.assertNotIn("run_g1.py", smoke_route)
 
     def test_25_notebook_clock_begins_before_clone_and_install(self):
         clock = self.code.index("CROPCOP_NOTEBOOK_STARTED_MONOTONIC")
-        self.assertLess(clock, self.code.index("git','clone"))
-        self.assertLess(clock, self.code.index("'pip','install"))
+        self.assertLess(clock, self.code.index('"clone"'))
+        self.assertLess(clock, self.code.index('"pip"'))
 
     def test_26_canonical_notebook_is_valid_nbformat_and_thin(self):
         self.assertEqual(self.notebook["nbformat"], 4)

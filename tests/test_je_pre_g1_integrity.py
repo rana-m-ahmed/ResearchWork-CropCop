@@ -380,7 +380,7 @@ class PreG1IntegrityTests(unittest.TestCase):
     def test_canonical_notebook_starts_clock_before_clone_and_supports_explicit_phases(self):
         nb = json.loads((ROOT / "journal_extension/kaggle/canonical_lane.ipynb").read_text())
         code = "".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code")
-        self.assertLess(code.index("CROPCOP_NOTEBOOK_STARTED_MONOTONIC"), code.index("git','clone"))
+        self.assertLess(code.index("CROPCOP_NOTEBOOK_STARTED_MONOTONIC"), code.index('"clone"'))
         for phase in ("smoke-write", "smoke-restore", "g1", "calibration", "principal"):
             self.assertIn(phase, code)
         self.assertIn("PYTHONDONTWRITEBYTECODE", code)

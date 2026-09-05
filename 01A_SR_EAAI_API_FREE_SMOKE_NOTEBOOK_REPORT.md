@@ -233,3 +233,13 @@ legacy JE-static textual checks. Those checks searched for compact source fragme
 serialization-specific substrings. The new notebook compilation check itself did not fail. The
 validator was corrected to use formatting-independent command tokens and source-order checks rather
 than requiring a particular Python list-literal serialization. Run #34 remains historical failed CI.
+
+
+Exact-head Actions run #35 / ID `33967104420` on
+`0bfe49340a052ee776a6f94211ba7fb5fc067dfa` passed exact checkout, Python compilation, the strict
+repository validator, and the strengthened JE static validator. The three new serialization tests also
+passed: decoded-notebook `compile(...)`, physical multiline structure, and generator serialization.
+The full suite discovered 116 tests and rejected three older formatting-sensitive test assertions that
+still searched for compact/single-quoted notebook source fragments. Those legacy tests were updated to
+assert the same semantic ordering/routes against the normalized multiline source. No notebook or smoke
+execution code changed in this correction. Run #35 remains historical failed CI.
