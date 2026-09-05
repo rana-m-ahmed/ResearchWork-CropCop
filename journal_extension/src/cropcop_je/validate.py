@@ -7,11 +7,15 @@ from pathlib import Path
 
 from .g1 import validate_dependency_lock_object
 from .hashing import sha256_json
+from .envelope import AMENDMENT_ID, AMENDMENT_SHA256, validate_envelope_config
+from .science_diff import validate_science_diff
 from .runlog import IDENTITY_FIELDS, validate_run_record
 from .surfaces import validate_training_config
 
 EXPECTED_AUTHORITY_SHA = "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74"
 EXPECTED_STAGE04_SHA = "a1bc1f8bb2d7a133a46c3f59f83dd2ba8ca3bf0fa8d77ae323553276931bc079"
+EXPECTED_AMENDMENT_ID = AMENDMENT_ID
+EXPECTED_AMENDMENT_SHA = AMENDMENT_SHA256
 EXPECTED_SEEDS = [21270083, 606135704, 1153870846]
 EXPECTED_IDS = {
     *(f"R04-MNV4-DIRECT-S{i}" for i in (1, 2, 3)),
@@ -51,6 +55,13 @@ def validate_static(repo_root: Path) -> dict:
         errors.append("03R authority SHA mismatch")
     if authority.get("stage04_sha256") != EXPECTED_STAGE04_SHA:
         errors.append("Stage-04 architecture SHA mismatch")
+    if authority.get("stage04_execution_amendment_id") != EXPECTED_AMENDMENT_ID:
+        errors.append("Stage-04A execution amendment ID mismatch")
+    if authority.get("stage04_execution_amendment_sha256") != EXPECTED_AMENDMENT_SHA:
+        errors.append("Stage-04A execution amendment SHA mismatch")
+
+    science = validate_science_diff(repo_root)
+    errors.extend("science-diff: " + x for x in science.get("errors", []))
 
     principal = [x for x in registry["experiments"] if x["experiment_id"] in EXPECTED_IDS]
     if {x["experiment_id"] for x in principal} != EXPECTED_IDS:
@@ -175,6 +186,27 @@ def validate_static(repo_root: Path) -> dict:
     for token in ("validate_g1_barrier.py", "validate_prelaunch.py", "--g1-seal", "--g2-barrier"):
         if token not in runner:
             errors.append(f"production lane runner missing hard gate token: {token}")
+    for forbidden in ("DistributedDataParallel", "nn.DataParallel", "SyncBatchNorm"):
+        if forbidden in runner:
+            errors.append(f"production lane runner contains forbidden MGPU scientific path: {forbidden}")
+    for token in ("CROPCOP_DUAL_ENVELOPE", "torch.cuda.device_count() != 1", "CROPCOP_NUM_WORKERS_PER_CHILD"):
+        if token not in runner:
+            errors.append(f"production lane runner missing MGPU child-isolation token: {token}")
+
+    for envelope_name in ("G2_DUAL_T4.json", "P1_S1_PAIR.json", "P2_S2_PAIR.json", "P3_S3_PAIR.json"):
+        envelope_path = je / "kaggle/envelopes" / envelope_name
+        if not envelope_path.is_file():
+            errors.append(f"MGPU envelope config missing: {envelope_name}")
+            continue
+        errors.extend(
+            f"{envelope_name}: {message}"
+            for message in validate_envelope_config(_load(envelope_path))
+        )
+
+    bootstrap = (je / "kaggle/bootstrap_clean_session.py").read_text(encoding="utf-8")
+    for phase in ("dual-gpu-smoke", "calibration-dual", "principal-dual"):
+        if phase not in bootstrap:
+            errors.append(f"clean-session bootstrap missing MGPU phase: {phase}")
 
     for i in (1, 2, 3):
         lane = _load(je / "kaggle/lanes" / f"K{i}.json")
@@ -189,8 +221,13 @@ def validate_static(repo_root: Path) -> dict:
         "scripts/seal_g1.py",
         "scripts/validate_g1_barrier.py",
         "scripts/smoke_infrastructure.py",
+        "scripts/smoke_dual_gpu.py",
+        "scripts/check_science_diff.py",
+        "src/cropcop_je/envelope.py",
+        "src/cropcop_je/science_diff.py",
         "kaggle/bootstrap_clean_session.py",
         "kaggle/run_g1.py",
+        "kaggle/run_envelope.py",
     ):
         if not (je / required).is_file():
             errors.append(f"Stage-01A-P execution component missing: journal_extension/{required}")
@@ -235,6 +272,9 @@ def validate_static(repo_root: Path) -> dict:
         "status": "PASS" if not errors else "FAIL",
         "authority_sha256": authority.get("authority_sha256"),
         "dependency_lock_sha256": dep_lock.get("dependency_lock_sha256"),
+        "stage04_execution_amendment_id": authority.get("stage04_execution_amendment_id"),
+        "stage04_execution_amendment_sha256": authority.get("stage04_execution_amendment_sha256"),
+        "science_diff_status": science.get("status"),
         "principal_config_sha256": hashes,
         "errors": errors,
     }
