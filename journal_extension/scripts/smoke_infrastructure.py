@@ -30,6 +30,9 @@ from cropcop_je.smoke_handoff import (
     snapshot_files,
     validate_smoke_a_manifest,
     verify_smoke_a_export,
+    observed_kaggle_run_type,
+    require_qualifying_kaggle_batch,
+    validate_terminal_smoke_b_evidence,
 )
 from cropcop_je.source_state import verify_clean_source
 
@@ -174,6 +177,10 @@ def _common_preflight(args, *, mutable_roots: list[Path]) -> tuple[Path, dict, d
         output_roots=mutable_roots,
     )
     dep, env, env_sha = _load_runtime(repo)
+    require_qualifying_kaggle_batch(
+        context=f"terminal infrastructure smoke ({args.mode})",
+        run_type=observed_kaggle_run_type({"environment": env}),
+    )
     budget = SessionBudget.from_environment(require_global_clock=True)
     if not budget.can_start_phase(900, estimated_checkpoint_seconds=60, estimated_sync_seconds=0):
         raise RuntimeError("not enough notebook-global safe time remains for infrastructure smoke")
@@ -225,6 +232,7 @@ def smoke_write(args) -> int:
         "dependency_lock_sha256": dep["dependency_lock_sha256"],
         "environment_identity_sha256": env_sha,
         "environment": env,
+        "kaggle_run_type": observed_kaggle_run_type({"environment": env}),
         "lane": args.lane,
         "checkpoint_sha256": ref.sha256,
         "checkpoint_bytes": ref.bytes,
@@ -408,6 +416,7 @@ def smoke_restore(args) -> int:
         "dependency_lock_sha256": dep["dependency_lock_sha256"],
         "environment_identity_sha256": env_sha,
         "environment": env,
+        "kaggle_run_type": observed_kaggle_run_type({"environment": env}),
         "lane": args.lane,
         "smoke_a_manifest_sha256": manifest["manifest_sha256"],
         "smoke_a_evidence_sha256": manifest["smoke_a_evidence_sha256"],
@@ -436,6 +445,14 @@ def smoke_restore(args) -> int:
     branch_b, evidence_b_sha = _publish_terminal_evidence(
         repo, args.authorized_source_sha, f"SMOKE-B-{qualification_id}", evidence_b_path, evidence_b
     )
+    terminal_errors = validate_terminal_smoke_b_evidence(
+        evidence_b,
+        expected_source_sha=args.authorized_source_sha,
+        expected_dependency_lock_sha256=dep["dependency_lock_sha256"],
+        require_batch=True,
+    )
+    if terminal_errors:
+        raise RuntimeError("Smoke-B terminal evidence failed canonical validation: " + "; ".join(terminal_errors))
     recovery_files_b = recovery_file_records(b_export)
     manifest_b = {
         "schema_version": "1.0",
