@@ -133,7 +133,7 @@ GitHub comparison after publication reported:
 
 Draft PR #8 was created so repository CI can validate the committed branch.
 
-At the last in-stage check, GitHub had not yet surfaced a workflow run or combined status for the new commit. Therefore CI is recorded as **not yet observed**, not as PASS.
+GitHub Actions subsequently executed the committed branch snapshot as **Validate public evidence — run #24** on PR #8. The workflow completed with **conclusion: success** against branch head `9d55acb8b229df702f8048ef6be10c5d5fe2cf84`. Therefore the repository validator, JE static validator, and unit-test workflow are recorded as **PASS** for the committed snapshot.
 
 ## 6. Calibration status
 
