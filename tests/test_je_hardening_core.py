@@ -161,7 +161,10 @@ class HardeningCoreTests(unittest.TestCase):
         self.assertEqual(notebook.get("nbformat"), 4)
         code_cells = [c for c in notebook.get("cells", []) if c.get("cell_type") == "code"]
         self.assertEqual(len(code_cells), 1)
-        self.assertIn("journal_extension/kaggle/run_lane.py", "".join(code_cells[0].get("source", [])))
+        code = "".join(code_cells[0].get("source", []))
+        self.assertIn("journal_extension/kaggle/run_envelope.py", code)
+        self.assertIn("journal_extension/scripts/smoke_dual_gpu.py", code)
+        self.assertNotIn("journal_extension/kaggle/run_lane.py", code)
         expected = {"K1", "K2", "K3"}
         observed = set()
         experiment_ids = set()
