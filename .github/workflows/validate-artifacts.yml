@@ -49,87 +49,14 @@ jobs:
                   compile(source, f"{path.name}:cell-{i}", "exec")
           PY
       - name: Verify tracked tree has no forbidden model artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git ls-files | grep -Eiq '\.(pt|pth|ckpt|pte|safetensors)        shell: bash
-        run: |
-          set -o pipefail
-          python -m unittest discover -s tests -v 2>&1 | tee unittest-report.txt
-      - name: Record exact-head CI context
-        if: always()
-        shell: bash
-        env:
-          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python - <<'PY'
-          import json, os, subprocess
-          from pathlib import Path
-          checked_out = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-          Path("ci-verification.json").write_text(json.dumps({
-              "workflow": os.environ.get("GITHUB_WORKFLOW"),
-              "run_id": os.environ.get("GITHUB_RUN_ID"),
-              "run_number": os.environ.get("GITHUB_RUN_NUMBER"),
-              "workflow_context_sha": os.environ.get("GITHUB_SHA"),
-              "expected_source_sha": os.environ.get("EXPECTED_SOURCE_SHA"),
-              "checked_out_source_sha": checked_out,
-              "exact_source_sha_match": checked_out == os.environ.get("EXPECTED_SOURCE_SHA"),
-              "ref": os.environ.get("GITHUB_REF"),
-              "event": os.environ.get("GITHUB_EVENT_NAME"),
-              "tests_step_reached_artifact_stage": True
-          }, indent=2, sort_keys=True) + "\n")
+          import re, subprocess
+          forbidden = re.compile(r"\.(?:pt|pth|ckpt|pte|safetensors)$", re.I)
+          offenders = [p for p in subprocess.check_output(["git", "ls-files"], text=True).splitlines() if forbidden.search(p)]
+          if offenders:
+              raise SystemExit("forbidden tracked model/checkpoint artifacts: " + repr(offenders))
           PY
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: validation-report
-          path: |
-            validation-report.json
-            je-validation-report.json
-            science-diff-report.json
-            unittest-report.txt
-            ci-verification.json
-; then
-            echo "forbidden tracked model/checkpoint artifact detected"
-            git ls-files | grep -Ei '\.(pt|pth|ckpt|pte|safetensors)        shell: bash
-        run: |
-          set -o pipefail
-          python -m unittest discover -s tests -v 2>&1 | tee unittest-report.txt
-      - name: Record exact-head CI context
-        if: always()
-        shell: bash
-        env:
-          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          python - <<'PY'
-          import json, os, subprocess
-          from pathlib import Path
-          checked_out = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-          Path("ci-verification.json").write_text(json.dumps({
-              "workflow": os.environ.get("GITHUB_WORKFLOW"),
-              "run_id": os.environ.get("GITHUB_RUN_ID"),
-              "run_number": os.environ.get("GITHUB_RUN_NUMBER"),
-              "workflow_context_sha": os.environ.get("GITHUB_SHA"),
-              "expected_source_sha": os.environ.get("EXPECTED_SOURCE_SHA"),
-              "checked_out_source_sha": checked_out,
-              "exact_source_sha_match": checked_out == os.environ.get("EXPECTED_SOURCE_SHA"),
-              "ref": os.environ.get("GITHUB_REF"),
-              "event": os.environ.get("GITHUB_EVENT_NAME"),
-              "tests_step_reached_artifact_stage": True
-          }, indent=2, sort_keys=True) + "\n")
-          PY
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: validation-report
-          path: |
-            validation-report.json
-            je-validation-report.json
-            unittest-report.txt
-            ci-verification.json
-
-            exit 1
-          fi
       - name: Scan tracked text for live-looking GitHub secrets
         run: |
           python - <<'PY'
@@ -145,11 +72,11 @@ jobs:
               if not p.is_file():
                   continue
               try:
-                  text = p.read_text(encoding="utf-8")
+                  value = p.read_text(encoding="utf-8")
               except (UnicodeDecodeError, OSError):
                   continue
               for pattern in patterns:
-                  if pattern.search(text):
+                  if pattern.search(value):
                       offenders.append((rel, pattern.pattern))
           if offenders:
               raise SystemExit("live-looking GitHub credential pattern in tracked tree: " + repr(offenders))
@@ -191,5 +118,6 @@ jobs:
           path: |
             validation-report.json
             je-validation-report.json
+            science-diff-report.json
             unittest-report.txt
             ci-verification.json
