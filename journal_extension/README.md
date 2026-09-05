@@ -80,3 +80,78 @@ No real G1/G2 calibration or R04/R05 scientific run is represented by this repos
 Restricted bytes and a qualified Kaggle GPU environment must be supplied and verified in the next
 execution stage. Calibration IDs and lane definitions in the repository are orchestration definitions,
 not evidence that a Kaggle job has run.
+
+
+## Stage 01A-P — pre-G1/G2 launch integrity
+
+Stage 01A-P closes orchestration and identity gaps discovered after the 01A-H hardening gate. It does
+not change R04/R05 science.
+
+### Canonical Saved-Version phases
+
+The one canonical notebook now requires an explicit phase:
+
+1. `smoke` — synthetic/unprotected infrastructure only;
+2. `g1` — official-pretrained verification, teacher-lineage verification, one-time pair creation and
+   global G1 sealing;
+3. `calibration` — one authorized non-scientific G2 calibration for the selected lane;
+4. `principal` — exactly one explicitly selected R04/R05 state, only after terminal G1 + G2.
+
+A calibration Saved Version always exits after calibration/G2 integration. It never falls through into
+principal science. A principal Saved Version executes only `CROPCOP_PRINCIPAL_EXPERIMENT` and exits
+after that state becomes terminal or reaches a planned notebook-global rollover boundary.
+
+### Global G1
+
+Real G1 produces one private `G1_MODEL_IDENTITY_SEAL.json`. The seal binds:
+
+- EAAI scientific authority and exact source commit;
+- frozen V1 manifest and class-map identities;
+- `mobilenetv4_conv_medium.e500_r256_in1k` under exact `timm==1.0.26`;
+- tensor-exact verification against timm's own official pretrained object and its pretrained_cfg;
+- all three S1/S2/S3 paired student initialization hashes/bytes/consumers;
+- exact historical teacher bytes;
+- a complete trusted teacher-factory source-bundle hash;
+- independently supplied historical class-order evidence;
+- the pre-results execution dependency lock;
+- the real non-scientific Kaggle infrastructure-smoke attestation.
+
+After a G1 seal or any pair-init material exists, `seal_g1.py` refuses in-place regeneration.
+
+### Exact execution dependency lock
+
+Production execution is frozen before JE results to:
+
+- Python 3.12.13
+- torch 2.12.1
+- torchvision 0.27.1
+- timm 1.0.26
+- NumPy 2.5.2
+- Pillow 12.3.0
+- safetensors 0.8.0
+- kaggle 2.2.4
+- huggingface-hub 1.30.0
+
+The canonical notebook fails closed if Python differs and installs the exact requirements lock before
+the repository execution code is invoked. The runtime validates every locked package again before G1,
+G2 or principal execution.
+
+### Source and session integrity
+
+The notebook establishes one monotonic 12-hour clock before clone/install/bootstrap work and propagates
+that start time to every subprocess. Children cannot receive a fresh wall-clock budget. Mutable output,
+G1, G2 and terminal-evidence roots must remain outside the repository. The execution repository must be
+at the exact authorized detached commit with a clean tracked and untracked working tree.
+
+Private Git access uses a temporary askpass program with credentials supplied through the environment;
+tokens are never embedded in clone URLs or committed Git configuration.
+
+### Durable recovery
+
+Scientific/calibration run locators must be unique per run ID. The Kaggle private-dataset backend is the
+production path. The filesystem backend remains supported for controlled environments and now preserves
+a recoverable previous generation across the target/staging rename window.
+
+Real G1/G2 remains blocked until the real Kaggle synthetic smoke is green and the restricted model/data
+and historical teacher-class-order evidence are available. Repository code never manufactures those
+inputs.
