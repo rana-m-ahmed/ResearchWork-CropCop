@@ -8,7 +8,7 @@
 - **PR:** #8
 - **Current `main` HEAD:** `32190dd86293caa82170df3feea505e3c7443b4b`
 - **Pre-hardening branch HEAD:** `7c2c4c54fb00eb465629588ac3152d3b4bc0bbcb`
-- **Hardening implementation commit:** `1a23d18f64bfb0b42b447cb9940bae2b57253ffd`
+- **Hardening implementation commit:** `a7de96d359ec69a9d647bc3ccd3c7d6b6fb74cbd`
 - **Scientific authority:** `03R_EAAI_SCIENTIFIC_DESIGN_LOCK_v2.md` / `EAAI-JE-SDL-v2.1-QA`
 - **Scientific authority SHA-256:** `aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74`
 - **Execution authority:** `04_EAAI_REPOSITORY_EXECUTION_BLUEPRINT_v2.md` / `EAAI-JE-REA-v2.2-LEAN`
@@ -51,7 +51,7 @@ branching was possible.
 | S1 | Calibration resume timing could contaminate scheduling telemetry | Separate save→resume qualification from measured calibration; record checkpoint load/save separately |
 | S1 | Three-account calibration could race into principal science before all G2 evidence was visible | Persist three calibration summaries and require one hash-bound G2 barrier; recover summaries from evidence branches |
 | S1 | Small Git evidence publication could accidentally expose secrets/private paths/restricted file types | Explicit text-file allowlist, size cap, sensitive-pattern scan, isolated `run-evidence/<run_id>` branches, no main push |
-| S1 | Lane files contained apparent principal run IDs before a real launch | Removed static principal run IDs; resolve deterministic/explicit IDs only when the real lane executes |
+| S1 | Lane files contained apparent principal run IDs before a real launch | Removed static principal run IDs; resolve deterministic/explicit IDs only when the real lane executes |\n| S1 | Canonical notebook serialized with a literal trailing `\\n`, making the `.ipynb` invalid JSON | Removed the stray token and made the hardened suite parse the notebook and assert one thin launcher code cell |
 | S2 | Hardware/software/runtime evidence was too shallow for later forensic reproduction | Capture package family, CUDA/cuDNN, GPU/driver identity and safe Kaggle context |
 | S2 | Validation/dataloader costs were not represented in scheduling evidence | Record dataloader wait/throughput and bounded validation forward throughput |
 | S2 | Multiple notebooks would risk logic drift | One canonical thin notebook delegates to repository code; only K1/K2/K3 JSON lane specs differ |

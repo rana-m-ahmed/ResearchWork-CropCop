@@ -210,7 +210,7 @@ that mattered before spending the three-account Kaggle budget.
 The subsequent hardening implementation is bound to:
 
 - **pre-hardening branch head:** `7c2c4c54fb00eb465629588ac3152d3b4bc0bbcb`;
-- **final hardening implementation commit:** `1a23d18f64bfb0b42b447cb9940bae2b57253ffd`;
+- **final hardening implementation commit:** `a7de96d359ec69a9d647bc3ccd3c7d6b6fb74cbd`;
 - **scientific authority:** unchanged `EAAI-JE-SDL-v2.1-QA`;
 - **execution authority:** unchanged `EAAI-JE-REA-v2.2-LEAN`.
 
