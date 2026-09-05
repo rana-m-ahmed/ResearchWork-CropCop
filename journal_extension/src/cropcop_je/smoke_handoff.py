@@ -125,6 +125,162 @@ def validate_terminal_smoke_b_evidence(
     return errors
 
 
+DUAL_GPU_SMOKE_SCHEMA = "1.0"
+DUAL_GPU_SMOKE_QUALIFICATION_ID = "MGPU-DUAL-SMOKE-T4X2-V1"
+DUAL_GPU_SMOKE_CHILD_IDS = ("DUAL-SMOKE-A", "DUAL-SMOKE-B")
+DUAL_GPU_SMOKE_T4_NAMES = {"Tesla T4", "NVIDIA T4"}
+
+
+def validate_terminal_dual_gpu_smoke_evidence(
+    evidence: dict[str, Any],
+    *,
+    expected_source_sha: str,
+    expected_dependency_lock_sha256: str,
+    expected_amendment_id: str,
+    expected_amendment_sha256: str,
+    expected_smoke_b_evidence_sha256: str,
+    require_batch: bool = True,
+) -> list[str]:
+    errors: list[str] = []
+    if evidence.get("schema_version") != DUAL_GPU_SMOKE_SCHEMA:
+        errors.append("unsupported dual-GPU-smoke evidence schema")
+    if evidence.get("status") != "PASS":
+        errors.append("dual-GPU-smoke status is not PASS")
+    if evidence.get("qualification_id") != DUAL_GPU_SMOKE_QUALIFICATION_ID:
+        errors.append("dual-GPU-smoke qualification ID mismatch")
+    if evidence.get("scientific") is not False:
+        errors.append("dual-GPU-smoke is not explicitly non-scientific")
+    if evidence.get("synthetic_unprotected_data_only") is not True:
+        errors.append("dual-GPU-smoke is not synthetic/unprotected-only")
+    if evidence.get("source_git_sha") != expected_source_sha:
+        errors.append("dual-GPU-smoke source Git SHA mismatch")
+    if evidence.get("dependency_lock_sha256") != expected_dependency_lock_sha256:
+        errors.append("dual-GPU-smoke dependency-lock SHA mismatch")
+    if evidence.get("amendment_id") != expected_amendment_id:
+        errors.append("dual-GPU-smoke Stage-04A amendment ID mismatch")
+    if evidence.get("amendment_sha256") != expected_amendment_sha256:
+        errors.append("dual-GPU-smoke Stage-04A amendment SHA mismatch")
+    if evidence.get("smoke_b_evidence_sha256") != expected_smoke_b_evidence_sha256:
+        errors.append("dual-GPU-smoke terminal Smoke-B evidence digest mismatch")
+
+    run_type = observed_kaggle_run_type(evidence)
+    if require_batch and run_type not in QUALIFYING_KAGGLE_RUN_TYPES:
+        errors.append(
+            "dual-GPU-smoke terminal qualification requires clean Kaggle Saved-Version/Batch execution "
+            f"(observed {run_type or '<missing>'})"
+        )
+
+    inventory = evidence.get("parent_gpu_inventory")
+    inventory_by_slot: dict[int, dict[str, Any]] = {}
+    if not isinstance(inventory, list) or len(inventory) != 2:
+        errors.append("dual-GPU-smoke parent inventory must contain exactly two GPUs")
+        inventory = []
+    for row in inventory:
+        try:
+            slot = int(row.get("index"))
+        except (TypeError, ValueError):
+            errors.append("dual-GPU-smoke parent GPU index invalid")
+            continue
+        inventory_by_slot[slot] = row
+        if row.get("name") not in DUAL_GPU_SMOKE_T4_NAMES:
+            errors.append(f"dual-GPU-smoke parent GPU {slot} is not T4")
+        if not str(row.get("uuid", "")).strip():
+            errors.append(f"dual-GPU-smoke parent GPU {slot} UUID missing")
+    if inventory and set(inventory_by_slot) != {0, 1}:
+        errors.append("dual-GPU-smoke parent inventory must be physical slots 0 and 1")
+    inventory_uuids = [str(row.get("uuid", "")) for row in inventory]
+    if len(inventory_uuids) == 2 and len(set(inventory_uuids)) != 2:
+        errors.append("dual-GPU-smoke parent physical GPU UUIDs are not distinct")
+
+    children = evidence.get("children")
+    if not isinstance(children, list) or len(children) != 2:
+        errors.append("dual-GPU-smoke must contain exactly two child evidence rows")
+        children = []
+    if {str(row.get("child_id", "")) for row in children} != set(DUAL_GPU_SMOKE_CHILD_IDS):
+        errors.append("dual-GPU-smoke child IDs mismatch")
+    child_uuids: list[str] = []
+    parent_clock = evidence.get("notebook_started_monotonic")
+    for row in children:
+        child_id = str(row.get("child_id", ""))
+        expected_slot = 0 if child_id == "DUAL-SMOKE-A" else 1 if child_id == "DUAL-SMOKE-B" else None
+        try:
+            slot = int(row.get("requested_physical_slot"))
+        except (TypeError, ValueError):
+            errors.append(f"{child_id or '<unknown>'}: requested physical slot invalid")
+            continue
+        if expected_slot is not None and slot != expected_slot:
+            errors.append(f"{child_id}: requested physical slot mismatch")
+        if row.get("visible_cuda_device_count") != 1:
+            errors.append(f"{child_id}: visible CUDA device count is not one")
+        if row.get("visible_gpu_name") not in DUAL_GPU_SMOKE_T4_NAMES:
+            errors.append(f"{child_id}: visible GPU is not T4")
+        try:
+            if int(row.get("optimizer_step", 0)) <= 0:
+                errors.append(f"{child_id}: optimizer step did not advance")
+        except (TypeError, ValueError):
+            errors.append(f"{child_id}: optimizer step invalid")
+        if len(str(row.get("checkpoint_sha256", ""))) != 64:
+            errors.append(f"{child_id}: checkpoint SHA-256 missing/invalid")
+        try:
+            if int(row.get("checkpoint_bytes", 0)) <= 0:
+                errors.append(f"{child_id}: checkpoint byte count invalid")
+        except (TypeError, ValueError):
+            errors.append(f"{child_id}: checkpoint byte count invalid")
+        if row.get("git_credentials_present_in_child") is not False:
+            errors.append(f"{child_id}: Git credentials were present in child")
+        physical_uuid = str(row.get("physical_gpu_uuid", ""))
+        if not physical_uuid:
+            errors.append(f"{child_id}: physical GPU UUID missing")
+        else:
+            child_uuids.append(physical_uuid)
+            parent_row = inventory_by_slot.get(slot)
+            if parent_row and physical_uuid != str(parent_row.get("uuid", "")):
+                errors.append(f"{child_id}: physical GPU UUID does not match parent slot inventory")
+        try:
+            if parent_clock is None or float(row.get("notebook_started_monotonic")) != float(parent_clock):
+                errors.append(f"{child_id}: notebook-global clock mismatch")
+        except (TypeError, ValueError):
+            errors.append(f"{child_id}: notebook-global clock invalid")
+
+    if len(child_uuids) == 2 and len(set(child_uuids)) != 2:
+        errors.append("dual-GPU-smoke child physical GPU UUIDs are not distinct")
+    try:
+        if float(evidence.get("overlap_duration_seconds", 0.0)) <= 0.0:
+            errors.append("dual-GPU-smoke children did not overlap")
+    except (TypeError, ValueError):
+        errors.append("dual-GPU-smoke overlap duration invalid")
+    for field in ("no_output_collision", "no_git_child_publication", "common_session_clock", "parent_finalized_both"):
+        if evidence.get(field) is not True:
+            errors.append(f"dual-GPU-smoke {field} is not true")
+    if evidence.get("restricted_cropcop_data_accessed") is not False:
+        errors.append("dual-GPU-smoke accessed or did not explicitly exclude restricted CropCop data")
+    for field in ("g1_executed", "g2_executed", "r04_r05_executed"):
+        if evidence.get(field) is not False:
+            errors.append(f"dual-GPU-smoke forbidden execution flag is not false: {field}")
+    if evidence.get("science_diff_status") != "PASS":
+        errors.append("dual-GPU-smoke science-diff status is not PASS")
+    if evidence.get("git_publication_status") != "PASS":
+        errors.append("dual-GPU-smoke public-safe evidence publication is not PASS")
+    if evidence.get("public_safe_evidence_branch") != "run-evidence/DUAL-GPU-SMOKE":
+        errors.append("dual-GPU-smoke public-safe evidence branch mismatch")
+    if evidence.get("errors") not in ([], None):
+        errors.append("dual-GPU-smoke producer recorded terminal errors")
+    return errors
+
+
+def locate_exact_evidence_file(input_root: str | Path, filename: str, *, label: str) -> Path:
+    root = Path(input_root).resolve()
+    if not root.is_dir():
+        raise SmokeHandoffError(f"{label} input root does not exist or is not a directory: {root}")
+    matches = sorted(path.resolve() for path in root.rglob(filename) if path.is_file())
+    matches = [path for path in matches if path == root or root in path.parents]
+    if len(matches) != 1:
+        raise SmokeHandoffError(
+            f"{label} input root must contain exactly one {filename}; found {len(matches)}"
+        )
+    return matches[0]
+
+
 def _hash_without(payload: dict[str, Any], field: str) -> str:
     clean = dict(payload)
     clean.pop(field, None)
