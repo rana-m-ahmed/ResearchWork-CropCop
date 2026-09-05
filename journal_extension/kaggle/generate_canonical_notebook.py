@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-MGPU_EXECUTION_SOURCE_SHA = "be9b6965d760ff6e8674623b658f66572cd57093"
-AUTHORIZED_SOURCE_SHA = "be9b6965d760ff6e8674623b658f66572cd57093"
+MGPU_EXECUTION_SOURCE_SHA = "fe88e426b4698977d65efe9702f1d48cf5ff96a3"
+AUTHORIZED_SOURCE_SHA = "fe88e426b4698977d65efe9702f1d48cf5ff96a3"
 
 MARKDOWN = """# CropCop EAAI — Canonical Stage-01A-MGPU Kaggle Wrapper
 
@@ -28,7 +28,7 @@ from urllib.request import Request, urlopen
 # CROPCOP EAAI — KAGGLE OPERATOR CONFIGURATION
 # ============================================================
 # Frozen Stage-01A-MGPU execution source. Wrapper commits are not execution sources.
-AUTHORIZED_SOURCE_SHA = "be9b6965d760ff6e8674623b658f66572cd57093"
+AUTHORIZED_SOURCE_SHA = "fe88e426b4698977d65efe9702f1d48cf5ff96a3"
 LANE = os.environ.get("CROPCOP_LANE", "K1")
 EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "smoke-write")
 PRINCIPAL_ENVELOPE = os.environ.get("CROPCOP_PRINCIPAL_ENVELOPE", "P1").strip().upper()
@@ -96,6 +96,21 @@ if EXECUTION_PHASE == "principal-dual":
             "CROPCOP_PRINCIPAL_ENVELOPE must be exactly P1, P2, or P3 for principal-dual"
         )
     os.environ["CROPCOP_ENVELOPE_ID"] = PRINCIPAL_ENVELOPE
+
+# Qualification runs must be Kaggle Saved-Version/Batch jobs.
+# Fail before secrets, network access, clone, package installation, or any smoke output.
+_kaggle_run_type = str(os.environ.get("KAGGLE_KERNEL_RUN_TYPE", "")).strip()
+if _kaggle_run_type != "Batch":
+    raise RuntimeError(
+        "CROPCOP QUALIFICATION NOT STARTED: this notebook is running in the Kaggle editor "
+        f"with KAGGLE_KERNEL_RUN_TYPE={_kaggle_run_type or '<missing>'}. "
+        "Do not qualify by pressing Run/Run All in the editor. "
+        "Use Save Version -> Save & Run All, and select the required GPU accelerator "
+        "in the Save Version advanced options. Interactive execution is diagnostic only. "
+        "No source clone, dependency install, smoke checkpoint, or qualification evidence "
+        "has been accepted from this session."
+    )
+print(f"Kaggle Saved-Version/Batch preflight: PASS (run_type={_kaggle_run_type})")
 
 def _locate_exact_attached_evidence(root_value: str, filename: str, label: str) -> str:
     if not root_value or root_value.startswith("<"):
