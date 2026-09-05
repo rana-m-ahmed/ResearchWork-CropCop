@@ -17,7 +17,11 @@ from cropcop_je.g1 import (
 from cropcop_je.hashing import require_sha256, sha256_file, sha256_json
 from cropcop_je.models import create_student_from_pretrained, save_pair_initialization
 from cropcop_je.source_state import verify_clean_source
-from cropcop_je.smoke_handoff import validate_terminal_smoke_b_evidence
+from cropcop_je.envelope import AMENDMENT_ID, AMENDMENT_SHA256
+from cropcop_je.smoke_handoff import (
+    validate_terminal_dual_gpu_smoke_evidence,
+    validate_terminal_smoke_b_evidence,
+)
 
 
 def _load(path: str | Path) -> dict:
@@ -39,6 +43,7 @@ def main() -> int:
     ap.add_argument("--teacher-class-order-evidence", required=True)
     ap.add_argument("--dependency-lock", default="journal_extension/locks/execution_dependency_lock.json")
     ap.add_argument("--infra-smoke-evidence", required=True)
+    ap.add_argument("--dual-gpu-smoke-evidence", required=True)
     ap.add_argument("--bundle-dir", required=True)
     args = ap.parse_args()
 
@@ -67,6 +72,22 @@ def main() -> int:
         raise SystemExit(
             "real G1 sealing requires a green real-Kaggle canonical terminal Batch Smoke-B evidence: "
             + "; ".join(smoke_errors)
+        )
+
+    dual_smoke = _load(args.dual_gpu_smoke_evidence)
+    dual_errors = validate_terminal_dual_gpu_smoke_evidence(
+        dual_smoke,
+        expected_source_sha=args.authorized_source_sha,
+        expected_dependency_lock_sha256=dependency["dependency_lock_sha256"],
+        expected_amendment_id=AMENDMENT_ID,
+        expected_amendment_sha256=AMENDMENT_SHA256,
+        expected_smoke_b_evidence_sha256=sha256_json(smoke),
+        require_batch=True,
+    )
+    if dual_errors:
+        raise SystemExit(
+            "real G1 sealing requires green terminal dual-GPU-smoke evidence: "
+            + "; ".join(dual_errors)
         )
 
     require_sha256(args.manifest, MANIFEST_SHA256, "V1 manifest")
