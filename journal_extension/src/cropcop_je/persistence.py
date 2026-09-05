@@ -173,6 +173,105 @@ def validate_durable_locator_template(kind: str, template: str, run_ids: list[st
     return resolved
 
 
+def validate_durable_access_plan(
+    kind: str,
+    resolved: dict[str, str],
+    *,
+    env: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Fail-closed production durability preflight without mutating scientific generations.
+
+    Filesystem stores receive an actual write/read/delete probe in every distinct root.
+    Kaggle private datasets receive authenticated read probes and an exact owner binding;
+    the first scientific/calibration sync remains the authoritative write exercise because
+    creating a throwaway dataset version would itself mutate the durable history.
+    """
+    env = dict(os.environ if env is None else env)
+    errors: list[str] = []
+    checks: dict[str, Any] = {}
+
+    if kind == "filesystem":
+        roots = sorted({str(Path(locator).expanduser().resolve().parent) for locator in resolved.values()})
+        for root_text in roots:
+            root = Path(root_text)
+            probe = root / f".cropcop-durable-probe-{os.getpid()}"
+            try:
+                root.mkdir(parents=True, exist_ok=True)
+                payload = b"cropcop-durable-preflight\n"
+                probe.write_bytes(payload)
+                if probe.read_bytes() != payload:
+                    raise PersistenceError("filesystem durability read-after-write probe mismatch")
+                checks[root_text] = {"write": True, "read": True, "probe_removed": True}
+            except Exception as exc:
+                errors.append(f"filesystem durable access failed for {root}: {type(exc).__name__}: {exc}")
+            finally:
+                try:
+                    probe.unlink(missing_ok=True)
+                except Exception as exc:
+                    errors.append(f"filesystem durable probe cleanup failed for {root}: {type(exc).__name__}: {exc}")
+
+    elif kind == "kaggle-dataset":
+        username = str(env.get("KAGGLE_USERNAME", "")).strip()
+        key = str(env.get("KAGGLE_KEY", "")).strip()
+        if not username or not key:
+            errors.append("Kaggle durable access requires KAGGLE_USERNAME and KAGGLE_KEY")
+        else:
+            cli_env = dict(env)
+            cli_env["KAGGLE_CONFIG_DIR"] = cli_env.get("KAGGLE_CONFIG_DIR", str(Path.home() / ".kaggle"))
+            for run_id, locator in resolved.items():
+                owner, _, dataset = locator.partition("/")
+                row = {
+                    "locator": locator,
+                    "owner_matches_authenticated_user": owner.casefold() == username.casefold(),
+                    "authenticated_read": False,
+                    "write_authorization_basis": "dataset owner identity",
+                    "write_generation_mutated_by_preflight": False,
+                }
+                if not row["owner_matches_authenticated_user"]:
+                    errors.append(
+                        f"Kaggle durable locator owner mismatch for {run_id}: "
+                        f"locator owner={owner!r}, authenticated user={username!r}"
+                    )
+                if not dataset:
+                    errors.append(f"invalid Kaggle durable locator for {run_id}: {locator}")
+                    checks[run_id] = row
+                    continue
+                try:
+                    cp = subprocess.run(
+                        ["kaggle", "datasets", "files", "-d", locator],
+                        env=cli_env,
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                        timeout=180,
+                    )
+                    if cp.returncode != 0:
+                        detail = (cp.stderr or cp.stdout or "").strip()[-800:]
+                        errors.append(f"Kaggle durable read probe failed for {run_id}: {detail}")
+                    else:
+                        row["authenticated_read"] = True
+                except Exception as exc:
+                    errors.append(f"Kaggle durable read probe failed for {run_id}: {type(exc).__name__}: {exc}")
+                checks[run_id] = row
+    else:
+        errors.append(f"unsupported durable-store kind: {kind}")
+
+    return {
+        "schema_version": "1.0",
+        "status": "PASS" if not errors else "FAIL",
+        "kind": kind,
+        "resolved_locator_count": len(resolved),
+        "checks": checks,
+        "errors": errors,
+        "note": (
+            "Kaggle write authorization is bound to authenticated dataset ownership; "
+            "the first real calibration/scientific sync is the non-fabricated write exercise."
+            if kind == "kaggle-dataset" else
+            "Filesystem access was exercised with an actual write/read/delete probe."
+        ),
+    }
+
+
 def build_store(kind: str, locator: str) -> DurableStore:
     if kind == "filesystem":
         return FilesystemStore(locator)
