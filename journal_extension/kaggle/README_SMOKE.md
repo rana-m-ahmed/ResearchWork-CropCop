@@ -4,9 +4,9 @@ This is the **active** operator handoff. Historical Stage-01A-SR reports are not
 
 Final generator-authorized QA1 execution source:
 
-`be9b6965d760ff6e8674623b658f66572cd57093`
+`fe88e426b4698977d65efe9702f1d48cf5ff96a3`
 
-This is the frozen QA1 execution source proven by exact-head source CI. Always verify the literal `AUTHORIZED_SOURCE_SHA` in `generate_canonical_notebook.py` before a real run.
+This is the post-Smoke-A-debug execution source proven by exact-head source CI. Always verify the literal `AUTHORIZED_SOURCE_SHA` in `generate_canonical_notebook.py` before a real run.
 
 ## Required chronology
 
@@ -27,7 +27,7 @@ No G1 is authorized before independently audited terminal dual-GPU-smoke evidenc
 
 ### `smoke-write`
 
-Use clean Kaggle **Save & Run All / Batch** execution with a GPU accelerator.
+Use clean Kaggle **Save Version → Save & Run All / Batch** execution with a GPU accelerator. Do not press Run/Run All in the editor for qualification; the wrapper now refuses `Interactive` before secrets, clone, or package installation.
 
 Only secret required:
 - `CROPCOP_GITHUB_TOKEN`
