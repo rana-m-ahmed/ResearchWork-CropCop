@@ -11,7 +11,7 @@ from typing import Any
 
 from .atomic_io import atomic_write_json
 from .hashing import sha256_json
-from .persistence import validate_durable_locator_template
+from .persistence import validate_durable_access_plan, validate_durable_locator_template
 from .session import SessionBudget
 from .smoke_handoff import require_qualifying_kaggle_batch
 
@@ -170,26 +170,57 @@ def validate_t4x2_inventory(inventory: list[dict[str, Any]]) -> list[str]:
     return errors
 
 
-def gpu_telemetry() -> list[dict[str, Any]]:
+def gpu_telemetry() -> dict[str, Any]:
     fields = "index,uuid,name,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw"
+    output: dict[str, Any] = {"gpus": [], "compute_processes": []}
     try:
         rows = _nvidia_query(fields)
+        for row in rows:
+            output["gpus"].append(
+                {
+                    "index": int(row[0]),
+                    "uuid": row[1],
+                    "name": row[2],
+                    "gpu_utilization_percent": row[3],
+                    "memory_used_mib": row[4],
+                    "memory_total_mib": row[5],
+                    "temperature_c": row[6],
+                    "power_w": row[7] if len(row) > 7 else None,
+                }
+            )
     except Exception as exc:
-        return [{"telemetry_error": f"{type(exc).__name__}: {exc}"}]
-    output = []
-    for row in rows:
-        output.append(
-            {
-                "index": int(row[0]),
-                "uuid": row[1],
-                "name": row[2],
-                "gpu_utilization_percent": row[3],
-                "memory_used_mib": row[4],
-                "memory_total_mib": row[5],
-                "temperature_c": row[6],
-                "power_w": row[7] if len(row) > 7 else None,
-            }
+        output["gpu_telemetry_error"] = f"{type(exc).__name__}: {exc}"
+
+    try:
+        cp = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-compute-apps=pid,gpu_uuid,process_name,used_memory",
+                "--format=csv,noheader,nounits",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=15,
         )
+        if cp.returncode == 0:
+            for line in cp.stdout.splitlines():
+                if not line.strip():
+                    continue
+                parts = [part.strip() for part in line.split(",")]
+                if len(parts) >= 4:
+                    output["compute_processes"].append(
+                        {
+                            "pid": int(parts[0]),
+                            "gpu_uuid": parts[1],
+                            "process_name": parts[2],
+                            "used_memory_mib": parts[3],
+                        }
+                    )
+        else:
+            output["compute_process_query_error"] = (cp.stderr or cp.stdout or "").strip()[-500:]
+    except Exception as exc:
+        output["compute_process_query_error"] = f"{type(exc).__name__}: {exc}"
     return output
 
 
@@ -216,8 +247,8 @@ def all_reserved_run_ids(source_sha: str, env: dict[str, str] | None = None) -> 
     return [*CALIBRATION_IDS, *(resolve_run_id(eid, source_sha, env) for eid in principal)]
 
 
-def durable_plan(source_sha: str, env: dict[str, str] | None = None) -> dict[str, str]:
-    env = env or os.environ
+def durable_plan(source_sha: str, env: dict[str, str] | None = None) -> tuple[dict[str, str], dict[str, Any]]:
+    env = dict(os.environ if env is None else env)
     kind = str(env.get("CROPCOP_DURABLE_STORE_KIND", "")).strip()
     template = str(env.get("CROPCOP_DURABLE_LOCATOR_TEMPLATE", "")).strip()
     if not kind or not template:
@@ -226,7 +257,11 @@ def durable_plan(source_sha: str, env: dict[str, str] | None = None) -> dict[str
         for key in ("KAGGLE_USERNAME", "KAGGLE_KEY"):
             if not str(env.get(key, "")).strip():
                 raise EnvelopeError(f"production Kaggle durability requires {key}")
-    return validate_durable_locator_template(kind, template, all_reserved_run_ids(source_sha, env))
+    resolved = validate_durable_locator_template(kind, template, all_reserved_run_ids(source_sha, env))
+    access = validate_durable_access_plan(kind, resolved, env=env)
+    if access.get("status") != "PASS":
+        raise EnvelopeError("production durable access preflight failed: " + "; ".join(access.get("errors", [])))
+    return resolved, access
 
 
 def child_environment(
