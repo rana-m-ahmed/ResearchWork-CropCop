@@ -65,7 +65,7 @@ def main() -> int:
     )
     if smoke_errors:
         raise SystemExit(
-            "real G1 sealing requires canonical terminal Batch Smoke-B evidence: "
+            "real G1 sealing requires a green real-Kaggle canonical terminal Batch Smoke-B evidence: "
             + "; ".join(smoke_errors)
         )
 
