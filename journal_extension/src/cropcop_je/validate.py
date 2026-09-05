@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
 
 from .g1 import validate_dependency_lock_object
@@ -193,6 +194,29 @@ def validate_static(repo_root: Path) -> dict:
     ):
         if not (je / required).is_file():
             errors.append(f"Stage-01A-P execution component missing: journal_extension/{required}")
+
+    try:
+        eol_output = subprocess.check_output(
+            ["git", "-C", str(repo_root), "ls-files", "--eol"],
+            text=True,
+            stderr=subprocess.STDOUT,
+        )
+        eol_offenders = []
+        for line in eol_output.splitlines():
+            if "\t" not in line:
+                continue
+            meta, path = line.split("\t", 1)
+            fields = meta.split()
+            index_eol = fields[0] if fields else ""
+            if "eol=lf" in meta and index_eol in {"i/crlf", "i/mixed"}:
+                eol_offenders.append(f"{path} ({index_eol}; {meta})")
+        if eol_offenders:
+            errors.append(
+                "tracked LF text blobs are not canonically normalized: "
+                + "; ".join(eol_offenders)
+            )
+    except Exception as exc:
+        errors.append(f"unable to validate tracked text EOL canonicalization: {exc}")
 
     gitignore = (repo_root / ".gitignore").read_text(encoding="utf-8")
     for token in ("*.pt", "*.pth", "*.ckpt", "*.pte", "*.safetensors", ".env"):

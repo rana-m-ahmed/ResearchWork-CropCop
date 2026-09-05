@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -381,6 +382,24 @@ class SmokeSRTests(unittest.TestCase):
         self.assertIn("CROPCOP_GITHUB_TOKEN contains whitespace/newlines", self.code)
         self.assertIn("appears to include surrounding quotes", self.code)
 
+
+
+
+    def test_42_tracked_lf_text_blobs_are_canonical_in_git_index(self):
+        output = subprocess.check_output(
+            ["git", "-C", str(ROOT), "ls-files", "--eol"],
+            text=True,
+        )
+        offenders = []
+        for line in output.splitlines():
+            if "\t" not in line:
+                continue
+            meta, path = line.split("\t", 1)
+            fields = meta.split()
+            index_eol = fields[0] if fields else ""
+            if "eol=lf" in meta and index_eol in {"i/crlf", "i/mixed"}:
+                offenders.append((path, meta))
+        self.assertEqual(offenders, [], f"non-canonical LF blobs: {offenders}")
 
 
 

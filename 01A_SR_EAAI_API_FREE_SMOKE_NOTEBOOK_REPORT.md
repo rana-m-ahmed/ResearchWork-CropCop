@@ -279,3 +279,20 @@ auth hardening intentionally added `import json` and `urllib` imports ahead of t
 The validator and matching structural test were updated to require the new exact import prefix. The
 authentication logic and regenerated notebook were not otherwise changed. Run #37 remains historical
 failed CI.
+
+
+## Stage 01A-SR-EOL — Clean Checkout Canonicalization Hotfix
+
+The next real Kaggle retry passed GitHub API authorization, Git-over-HTTPS read, exact detached checkout
+and the evidence-branch write dry-run, then correctly failed the clean-tree assertion because
+`journal_extension/evidence/claim_registry.csv` appeared modified immediately after checkout.
+
+Root cause: the Git blob stored CRLF bytes while the same source lineage's `.gitattributes` declares
+`*.csv text eol=lf`. On Linux/Kaggle Git's attribute normalization therefore makes the worktree/index
+comparison dirty even though no notebook step edits the file. This is a repository canonicalization
+defect, not a Kaggle mutation.
+
+The hotfix normalizes the CSV bytes to LF without changing any CSV field/content and adds a whole-repo
+guard based on `git ls-files --eol`. Any tracked file governed by `eol=lf` that is stored as
+`i/crlf` or `i/mixed` now fails JE static validation and the unit suite with the exact path. The
+clean-tree gate is not bypassed or special-cased.
