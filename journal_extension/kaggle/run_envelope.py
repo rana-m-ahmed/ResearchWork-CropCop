@@ -473,8 +473,11 @@ def main() -> int:
     if hw_errors:
         raise EnvelopeError("dual-T4 host preflight failed: " + "; ".join(hw_errors))
 
-    durable, durable_access = durable_plan(source_sha)
     run_ids = {child["child_id"]: _child_run_id(child, source_sha) for child in config["children"]}
+    durable, durable_access = durable_plan(
+        source_sha,
+        current_run_ids=[run_ids[child["child_id"]] for child in config["children"]],
+    )
     child_rows = []
     for child in config["children"]:
         paths = _child_paths(envelope_root, child["child_id"])
