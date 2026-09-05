@@ -123,6 +123,22 @@ def validate_static(repo_root: Path) -> dict:
                     errors.append(f"canonical Kaggle bootstrap missing: {token}")
             if code.find("CROPCOP_NOTEBOOK_STARTED_MONOTONIC") > code.find("git','clone"):
                 errors.append("notebook-global clock is not established before clone/bootstrap work")
+            try:
+                compile(code, "canonical_lane.ipynb", "exec")
+            except SyntaxError as exc:
+                errors.append(f"canonical Kaggle notebook code does not compile: {exc}")
+            lines = code.splitlines()
+            if len(lines) <= 100:
+                errors.append(
+                    f"canonical Kaggle notebook source is not physically multiline enough: {len(lines)} lines"
+                )
+            if not lines or lines[0] != "import os, platform, shutil, stat, subprocess, sys, tempfile, time":
+                errors.append("canonical Kaggle notebook first Python line is unexpected")
+            expected_source_binding = (
+                'AUTHORIZED_SOURCE_SHA = "045fcf5c80366438b69a54288d9081e9b57ed973"'
+            )
+            if expected_source_binding not in lines:
+                errors.append("canonical Kaggle notebook frozen execution-source binding mismatch")
             for forbidden in ("EXECUTION_PHASE == 'smoke'", "phase == 'smoke'"):
                 if forbidden in code:
                     errors.append("ambiguous legacy production smoke phase remains in canonical notebook")

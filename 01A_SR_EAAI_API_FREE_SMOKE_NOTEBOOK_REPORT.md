@@ -201,3 +201,26 @@ This report never authorizes:
 `PASS — REAL KAGGLE INFRASTRUCTURE SMOKE QUALIFIED`
 
 That later gate requires the actual human-operated Smoke A and fresh-session Smoke B Saved Versions.
+
+
+## Stage 01A-SR-N — Canonical Notebook Serialization Hotfix
+
+A manual pre-execution inspection identified that the PR-head notebook at
+`112c1083f4abfb80888a44aa4224d432e7bf146c` decoded its orchestration code cell to one physical
+Python line containing textual `\\n` separators. Structure/token tests passed because they joined the
+cell source without compiling the result. No Kaggle execution had occurred.
+
+The hotfix is intentionally narrow:
+
+- the frozen Smoke A/B execution implementation remains
+  `045fcf5c80366438b69a54288d9081e9b57ed973`;
+- `canonical_lane.ipynb` is regenerated from a normal multiline Python source;
+- `generate_canonical_notebook.py` serializes source with `splitlines(keepends=True)`;
+- legitimate escaped newlines inside the temporary `GIT_ASKPASS` script remain escaped;
+- the decoded orchestration cell now contains 207 physical Python lines;
+- the unit suite now calls real Python `compile(..., "canonical_lane.ipynb", "exec")`;
+- the suite and JE static validator both require sane real-line structure and the exact frozen source binding.
+
+Runs #31, #32 and #33 remain historical evidence. Run #33 verified the prior wrapper but does not verify
+this serialization repair. A fresh exact-head workflow is mandatory before the repaired notebook is
+authorized for manual Smoke A.

@@ -317,5 +317,35 @@ class SmokeSRTests(unittest.TestCase):
         self.assertNotIn("KAGGLE_KEY", common)
 
 
+    def test_33_canonical_notebook_code_compiles_as_jupyter_source(self):
+        code_cells = [c for c in self.notebook["cells"] if c["cell_type"] == "code"]
+        self.assertEqual(len(code_cells), 1)
+        raw = code_cells[0]["source"]
+        source = "".join(raw) if isinstance(raw, list) else raw
+        compile(source, "canonical_lane.ipynb", "exec")
+
+    def test_34_canonical_notebook_has_real_multiline_python_structure(self):
+        code_cells = [c for c in self.notebook["cells"] if c["cell_type"] == "code"]
+        raw = code_cells[0]["source"]
+        source = "".join(raw) if isinstance(raw, list) else raw
+        lines = source.splitlines()
+        self.assertGreater(len(lines), 100)
+        self.assertEqual(lines[0], "import os, platform, shutil, stat, subprocess, sys, tempfile, time")
+        self.assertEqual(lines[1], "from pathlib import Path")
+        self.assertIn(
+            'AUTHORIZED_SOURCE_SHA = "045fcf5c80366438b69a54288d9081e9b57ed973"',
+            lines,
+        )
+        # Escaped newlines are legitimate inside the askpass Python string literal.
+        self.assertIn('"#!/usr/bin/env python3\\n"', source)
+
+    def test_35_notebook_generator_serializes_physical_source_lines(self):
+        generator = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text()
+        self.assertIn("splitlines(keepends=True)", generator)
+        self.assertIn('compile(CODE, "canonical_lane.ipynb", "exec")', generator)
+        self.assertIn("len(CODE.splitlines()) <= 40", generator)
+
+
+
 if __name__ == "__main__":
     unittest.main()
