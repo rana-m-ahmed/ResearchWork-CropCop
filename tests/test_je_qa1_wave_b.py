@@ -241,7 +241,7 @@ class QA1WaveBTests(unittest.TestCase):
         with mock.patch.object(
             module,
             "_copy_prior_terminal_result",
-            return_value=({"status": "PASS", "publication_status": "FAIL"}, [Path("/tmp/a")]),
+            return_value=({"status": "PASS", "publication_status": "FAIL", "run_id": "run-a"}, [Path("/tmp/a")]),
         ), mock.patch.object(
             module,
             "_try_publish",
