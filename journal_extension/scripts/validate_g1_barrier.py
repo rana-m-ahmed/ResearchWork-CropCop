@@ -6,7 +6,10 @@ from pathlib import Path
 
 import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
+from cropcop_je.envelope import AMENDMENT_ID, AMENDMENT_SHA256
 from cropcop_je.g1 import validate_mounted_g1
+from cropcop_je.hashing import sha256_json
+from cropcop_je.smoke_handoff import validate_terminal_dual_gpu_smoke_evidence
 from cropcop_je.source_state import verify_clean_source
 
 
@@ -22,6 +25,7 @@ def main() -> int:
     ap.add_argument("--teacher-factory-root", default="")
     ap.add_argument("--dependency-lock", default="journal_extension/locks/execution_dependency_lock.json")
     ap.add_argument("--infra-smoke-evidence", required=True)
+    ap.add_argument("--dual-gpu-smoke-evidence", required=True)
     ap.add_argument("--output", default="")
     args = ap.parse_args()
 
@@ -56,6 +60,21 @@ def main() -> int:
         infra_smoke_evidence_path=args.infra_smoke_evidence,
         repo_root=repo,
     ))
+    dependency = json.loads((repo / args.dependency_lock).read_text(encoding="utf-8"))
+    smoke = json.loads(Path(args.infra_smoke_evidence).read_text(encoding="utf-8"))
+    dual_smoke = json.loads(Path(args.dual_gpu_smoke_evidence).read_text(encoding="utf-8"))
+    errors.extend(
+        "dual-GPU-smoke: " + message
+        for message in validate_terminal_dual_gpu_smoke_evidence(
+            dual_smoke,
+            expected_source_sha=args.authorized_source_sha,
+            expected_dependency_lock_sha256=dependency.get("dependency_lock_sha256", ""),
+            expected_amendment_id=AMENDMENT_ID,
+            expected_amendment_sha256=AMENDMENT_SHA256,
+            expected_smoke_b_evidence_sha256=sha256_json(smoke),
+            require_batch=True,
+        )
+    )
     report = {
         "schema_version": "1.0",
         "status": "PASS" if not errors else "FAIL",
