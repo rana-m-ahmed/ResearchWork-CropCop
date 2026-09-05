@@ -134,20 +134,43 @@ class HardeningCoreTests(unittest.TestCase):
         ])
         self.assertEqual(drift["status"], "FAIL")
 
+    def test_persistent_worker_epoch_is_carried_in_sampler_key(self):
+        train_source = (ROOT / "journal_extension/src/cropcop_je/train.py").read_text()
+        data_source = (ROOT / "journal_extension/src/cropcop_je/data.py").read_text()
+        self.assertIn("return iter((index, self.epoch) for index in self.order)", train_source)
+        self.assertIn("if isinstance(index,tuple)", data_source)
+        self.assertIn("row_augmentation_seed(self.training_seed,int(epoch),row.stable_row_id)", data_source)
+
+    def test_teacher_projection_probe_restores_mode_and_isolates_rng(self):
+        source = (ROOT / "journal_extension/src/cropcop_je/models.py").read_text()
+        for token in (
+            "student.eval()",
+            "teacher.eval()",
+            "student.train(student_was_training)",
+            "teacher.train(teacher_was_training)",
+            "with torch.no_grad():",
+            "with torch.random.fork_rng(devices=[]):",
+        ):
+            self.assertIn(token, source)
+
     def test_one_canonical_notebook_and_three_small_lane_configs(self):
         kaggle = ROOT / "journal_extension" / "kaggle"
         notebooks = list(kaggle.glob("*.ipynb"))
         self.assertEqual([p.name for p in notebooks], ["canonical_lane.ipynb"])
         expected = {"K1", "K2", "K3"}
         observed = set()
-        run_ids = set()
+        experiment_ids = set()
         for p in sorted((kaggle / "lanes").glob("K*.json")):
             data = json.loads(p.read_text())
             observed.add(data["lane_id"])
             for item in data["principal"]:
-                self.assertNotIn(item["run_id"], run_ids)
-                run_ids.add(item["run_id"])
+                self.assertNotIn("run_id", item)
+                self.assertNotIn(item["experiment_id"], experiment_ids)
+                experiment_ids.add(item["experiment_id"])
         self.assertEqual(observed, expected)
+        runner = (kaggle / "run_lane.py").read_text()
+        self.assertIn("def resolve_run_id", runner)
+        self.assertIn("source_sha[:12]", runner)
 
 
 if __name__ == "__main__":

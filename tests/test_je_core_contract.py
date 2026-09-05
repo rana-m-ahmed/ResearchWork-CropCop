@@ -37,7 +37,7 @@ class JECoreContractTests(unittest.TestCase):
         assert_resume_identity(b,dict(b)); c=dict(b); c["seed"]=1
         with self.assertRaises(ValueError): assert_resume_identity(b,c)
     def test_run_record_rejects_test(self):
-        r={"run_id":"x","experiment_id":"R04-MNV4-DIRECT-S1","authority_id":"EAAI-JE-SDL-v2.1-QA","source_git_commit":"0"*40,"config_sha256":"a"*64,"manifest_sha256":"b"*64,"class_map_sha256":"c"*64,"seed":21270083,"allowed_surfaces":["DS-V1-TRAIN","DS-V1-VAL"],"status":"RUNNING"}
+        r={"run_id":"x","experiment_id":"R04-MNV4-DIRECT-S1","authority_id":"EAAI-JE-SDL-v2.1-QA","source_git_commit":"0"*40,"config_sha256":"a"*64,"manifest_sha256":"b"*64,"class_map_sha256":"c"*64,"seed":21270083,"allowed_surfaces":["DS-V1-TRAIN","DS-V1-VAL"],"status":"LAUNCHED"}
         validate_run_record(r); r["allowed_surfaces"].append("DS-V1-TEST-CONSUMED")
         with self.assertRaises(ValueError): validate_run_record(r)
 if __name__=="__main__": unittest.main()

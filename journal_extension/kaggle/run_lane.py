@@ -99,6 +99,21 @@ def common_args(source_sha: str, lane_id: str) -> list[str]:
     return args
 
 
+def resolve_run_id(item: dict, source_sha: str) -> str:
+    experiment_id = item["experiment_id"]
+    env_key = "CROPCOP_RUN_ID_" + "".join(ch if ch.isalnum() else "_" for ch in experiment_id).upper()
+    explicit = os.environ.get(env_key, "").strip()
+    if explicit:
+        if not all(ch.isalnum() or ch in "._-" for ch in explicit) or len(explicit) > 160:
+            raise RuntimeError(f"invalid explicit run ID in {env_key}")
+        return explicit
+    attempt_key = env_key + "_ATTEMPT"
+    attempt = int(os.environ.get(attempt_key, "1"))
+    if attempt < 1 or attempt > 99:
+        raise RuntimeError(f"{attempt_key} must be between 1 and 99")
+    return f"JE-{experiment_id}-{source_sha[:12]}-A{attempt:02d}"
+
+
 def durable_args(run_id: str) -> list[str]:
     kind = os.environ.get("CROPCOP_DURABLE_STORE_KIND", "").strip()
     template = os.environ.get("CROPCOP_DURABLE_LOCATOR_TEMPLATE", "").strip()
@@ -222,21 +237,22 @@ def g2_barrier(shared_dir: Path, output_root: Path) -> Path | None:
     return barrier
 
 
-def run_principal(lane: dict, source_sha: str, item: dict) -> dict:
+def run_principal(lane: dict, source_sha: str, item: dict) -> tuple[str, dict]:
     idx = lane["seed_index"]
+    run_id = resolve_run_id(item, source_sha)
     evidence = Path(env_path("CROPCOP_G1_EVIDENCE_DIR"))
     pair_dir = Path(env_path("CROPCOP_PAIR_INIT_DIR"))
-    out = Path(env_path("CROPCOP_OUTPUT_ROOT")) / lane["lane_id"] / "principal" / item["run_id"]
+    out = Path(env_path("CROPCOP_OUTPUT_ROOT")) / lane["lane_id"] / "principal" / run_id
     cmd = [
         sys.executable, str(SCRIPTS / "run_training.py"),
         "--config", item["config"],
         "--pair-init", str(pair_dir / f"PAIR_INIT_S{idx}.pt"),
         "--pair-init-evidence", str(evidence / f"PAIR_INIT_S{idx}.json"),
-        "--run-id", item["run_id"],
+        "--run-id", run_id,
         "--output-dir", str(out),
         "--resume-mode", "auto",
         *common_args(source_sha, lane["lane_id"]),
-        *durable_args(item["run_id"]),
+        *durable_args(run_id),
     ]
     if item["condition"] == "teacher":
         cmd += [
@@ -251,8 +267,8 @@ def run_principal(lane: dict, source_sha: str, item: dict) -> dict:
     for candidate in (out / "metrics.json", out / "segments.jsonl"):
         if candidate.exists():
             evidence_files.append(candidate)
-    publish_public_safe(item["run_id"], source_sha, evidence_files)
-    return record
+    publish_public_safe(run_id, source_sha, evidence_files)
+    return run_id, record
 
 
 def main() -> int:
@@ -288,12 +304,12 @@ def main() -> int:
         raise SystemExit("G2 barrier source commit does not match this lane")
 
     for item in lane["principal"]:
-        record = run_principal(lane, source_sha, item)
+        run_id, record = run_principal(lane, source_sha, item)
         if record["status"] == "LAUNCHED" and record.get("continuation_required"):
-            print(f"{item['run_id']} reached a planned session boundary; rerun this identical lane to continue.")
+            print(f"{run_id} reached a planned session boundary; rerun this identical lane to continue.")
             return 0
         if record["status"] != "PASS":
-            raise SystemExit(f"principal run did not complete validly: {item['run_id']} status={record['status']}")
+            raise SystemExit(f"principal run did not complete validly: {run_id} status={record['status']}")
     print(f"{args.lane} principal pair is terminal PASS.")
     return 0
 

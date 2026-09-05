@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from .atomic_io import atomic_write_json, fsync_directory
+from .hashing import sha256_json
 
 
 class CheckpointError(RuntimeError):
@@ -56,7 +57,14 @@ def _load_torch(path: Path) -> dict[str, Any]:
 def _validate_payload(payload: dict[str, Any], *, expected_identity: dict[str, Any]) -> None:
     if payload.get("identity") != expected_identity:
         raise CheckpointCorruptionError("checkpoint scientific identity mismatch")
-    required = {"student", "optimizer", "scheduler", "scaler", "rng", "epoch", "batch_in_epoch", "optimizer_step", "selection_state"}
+    expected_identity_sha = sha256_json(expected_identity)
+    if payload.get("identity_sha256") != expected_identity_sha:
+        raise CheckpointCorruptionError("checkpoint identity digest mismatch")
+    required = {
+        "student", "optimizer", "scheduler", "scaler", "rng", "epoch",
+        "batch_in_epoch", "optimizer_step", "selection_state", "data_order_state",
+        "examples_seen", "created_at_utc",
+    }
     missing = required.difference(payload)
     if missing:
         raise CheckpointCorruptionError(f"checkpoint missing fields: {sorted(missing)}")
@@ -88,6 +96,11 @@ def _verify_ref(root: Path, ref: dict[str, Any], *, expected_identity: dict[str,
         raise CheckpointCorruptionError(f"checkpoint SHA-256 mismatch: {path}")
     payload = _load_torch(path)
     _validate_payload(payload, expected_identity=expected_identity)
+    if ref.get("identity_sha256") != payload.get("identity_sha256"):
+        raise CheckpointCorruptionError("checkpoint index identity digest mismatch")
+    for field in ("optimizer_step", "epoch", "batch_in_epoch"):
+        if int(ref.get(field, -1)) != int(payload.get(field, -2)):
+            raise CheckpointCorruptionError(f"checkpoint index/payload {field} mismatch")
     return path, payload
 
 
