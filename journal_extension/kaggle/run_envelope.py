@@ -505,12 +505,16 @@ def main() -> int:
         )
         g2_sha = g2_barrier["barrier_sha256"]
 
+    prior_bundle = None
     prior_state = None
+    prior_control_before = None
+    carried_results: dict[str, dict] = {}
     input_root = os.environ.get("CROPCOP_ENVELOPE_INPUT_ROOT", "").strip()
     if input_root:
-        _prior_path, prior_state = locate_prior_state(input_root)
-        cont_errors = validate_continuation_state(
-            prior_state,
+        prior_bundle = locate_prior_bundle(input_root)
+        prior_state = prior_bundle.state
+        cont_errors = validate_prior_envelope_bundle(
+            prior_bundle,
             envelope_id=envelope_id,
             source_sha=source_sha,
             g1_seal_sha256=g1["g1_seal_sha256"],
@@ -518,8 +522,30 @@ def main() -> int:
             expected_run_ids=run_ids,
         )
         if cont_errors:
-            raise EnvelopeError("continuation validation failed: " + "; ".join(cont_errors))
+            raise EnvelopeError("continuation bundle validation failed: " + "; ".join(cont_errors))
+        prior_control_before = _prior_control_fingerprint(prior_bundle)
+
     skip = continuation_skip_set(prior_state)
+    repair = continuation_publication_repair_set(prior_state)
+    handled_prior = skip | repair
+    if prior_bundle is not None:
+        prior_results = prior_bundle.evidence.get("child_results", {})
+        for child in config["children"]:
+            child_id = child["child_id"]
+            if child_id not in handled_prior:
+                continue
+            carried_results[child_id] = _repair_prior_child_publication(
+                prior_bundle,
+                child=child,
+                prior_result=prior_results[child_id],
+                phase=phase,
+                envelope_root=envelope_root,
+                central_g2=central_g2,
+                source_sha=source_sha,
+                g1_sha=g1["g1_seal_sha256"],
+                g2_sha=g2_sha,
+                repair_publication=(child_id in repair),
+            )
 
     manifest = finalize_manifest(
         {
@@ -580,7 +606,26 @@ def main() -> int:
                 "child_id": child["child_id"],
                 "experiment_id": child["experiment_id"],
                 "run_id": run_ids[child["child_id"]],
-                "status": "PASS" if child["child_id"] in skip else "PLANNED",
+                "status": (
+                    carried_results[child["child_id"]]["status"]
+                    if child["child_id"] in carried_results
+                    else "PLANNED"
+                ),
+                "execution_status": (
+                    carried_results[child["child_id"]]["status"]
+                    if child["child_id"] in carried_results
+                    else "PLANNED"
+                ),
+                "publication_status": (
+                    carried_results[child["child_id"]].get("publication_status")
+                    if child["child_id"] in carried_results
+                    else "NOT_ATTEMPTED"
+                ),
+                "evidence_chain_complete": (
+                    bool(carried_results[child["child_id"]].get("evidence_chain_complete"))
+                    if child["child_id"] in carried_results
+                    else False
+                ),
             }
             for child in config["children"]
         ],
@@ -593,19 +638,13 @@ def main() -> int:
     child_timeout = float(os.environ.get("CROPCOP_CHILD_MAX_RUNTIME_SECONDS", "0") or 0)
     running = {}
     free_slots = {0, 1}
-    pending = [child for child in config["children"] if child["child_id"] not in skip]
-    results = {
-        row["child_id"]: {
-            "status": "PASS",
-            "continuation_required": False,
-            "skipped_terminal_from_prior_envelope": True,
-        }
-        for row in child_rows
-        if row["child_id"] in skip
-    }
+    pending = [child for child in config["children"] if child["child_id"] not in handled_prior]
+    results = dict(carried_results)
     starts = {}
     ends = {}
     global_stop = {"reason": None}
+    finalization_outcomes: dict[str, dict] = {}
+    finalization_started = False
 
     def _signal(signum, _frame):
         try:
