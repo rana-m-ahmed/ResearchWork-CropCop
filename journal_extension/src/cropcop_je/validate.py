@@ -111,7 +111,7 @@ def validate_static(repo_root: Path) -> dict:
                 "CROPCOP_NOTEBOOK_STARTED_MONOTONIC",
                 "PYTHONDONTWRITEBYTECODE",
                 "GIT_ASKPASS",
-                "checkout','--detach',source_sha",
+                "checkout','--detach',AUTHORIZED_SOURCE_SHA",
                 "run_g1.py",
                 "smoke_infrastructure.py",
                 "smoke-write",

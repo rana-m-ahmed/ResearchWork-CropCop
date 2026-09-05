@@ -158,6 +158,12 @@ exact-head Actions on the final PR head.
 
 Run #30 verifies only `731fcf18bd6aaf72322457d6e766296dc95d5c94` and cannot verify this changed source.
 
+The first Stage-01A-SR candidate `e796a5992ab2f272798d67efb5aeeb1ff7beb274` was rejected by
+exact-head Actions run #31 because the JE static validator still expected the old notebook variable
+token `source_sha` in the detached-checkout expression. The notebook had intentionally renamed that
+operator-facing value to `AUTHORIZED_SOURCE_SHA`. Compile and the strict repository validator passed
+on that candidate. The stale validator token was corrected; run #31 remains historical failed evidence.
+
 After these changes are committed, PR #8 must receive a fresh exact-head workflow proving:
 
 - expected SHA equals checked-out SHA;
