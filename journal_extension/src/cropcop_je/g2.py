@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from .atomic_io import atomic_write_json
+from .g1 import TEACHER_SHA256
 from .hashing import sha256_json
 
 REQUIRED_CALIBRATIONS = ("CAL-MNV4-DIRECT", "CAL-MNV4-TEACHER", "CAL-CNXTT")
@@ -20,10 +21,17 @@ TELEMETRY_FIELDS = (
 )
 
 
+def barrier_hash(barrier: dict[str, Any]) -> str:
+    clean = dict(barrier)
+    clean.pop("barrier_sha256", None)
+    return sha256_json(clean)
+
+
 def validate_calibration_summary(summary: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    if summary.get("calibration_id") not in REQUIRED_CALIBRATIONS:
-        errors.append(f"unexpected calibration_id={summary.get('calibration_id')}")
+    cid = summary.get("calibration_id")
+    if cid not in REQUIRED_CALIBRATIONS:
+        errors.append(f"unexpected calibration_id={cid}")
     if summary.get("status") != "PASS":
         errors.append("calibration status is not PASS")
     if summary.get("resume_success") is not True:
@@ -34,10 +42,15 @@ def validate_calibration_summary(summary: dict[str, Any]) -> list[str]:
     for field in TELEMETRY_FIELDS:
         if measured.get(field) is None:
             errors.append(f"missing telemetry: {field}")
-    if not summary.get("source_git_commit"):
-        errors.append("source_git_commit missing")
-    if not summary.get("software_stack_sha256"):
-        errors.append("software_stack_sha256 missing")
+    for field in ("source_git_commit", "software_stack_sha256", "g1_seal_sha256",
+                  "dependency_lock_sha256", "mnv4_pretrained_sha256"):
+        if not summary.get(field):
+            errors.append(f"{field} missing")
+    if cid == "CAL-MNV4-TEACHER":
+        if summary.get("teacher_checkpoint_sha256") != TEACHER_SHA256:
+            errors.append("teacher calibration checkpoint SHA mismatch")
+        if len(str(summary.get("teacher_factory_bundle_sha256", ""))) != 64:
+            errors.append("teacher calibration factory bundle SHA missing/invalid")
     return errors
 
 
@@ -48,12 +61,32 @@ def build_g2_barrier(summaries: list[dict[str, Any]]) -> dict[str, Any]:
     for cid in REQUIRED_CALIBRATIONS:
         if cid in by_id:
             errors.extend(f"{cid}: {e}" for e in validate_calibration_summary(by_id[cid]))
-    commits = {by_id[c].get("source_git_commit") for c in REQUIRED_CALIBRATIONS if c in by_id}
-    stacks = {by_id[c].get("software_stack_sha256") for c in REQUIRED_CALIBRATIONS if c in by_id}
-    if len(commits) > 1:
-        errors.append(f"calibrations were not produced from one source Git SHA: {sorted(commits)}")
-    if len(stacks) > 1:
-        errors.append(f"calibrations used different software stacks: {sorted(stacks)}")
+
+    def values(field: str):
+        return {by_id[c].get(field) for c in REQUIRED_CALIBRATIONS if c in by_id}
+
+    commits = values("source_git_commit")
+    stacks = values("software_stack_sha256")
+    g1s = values("g1_seal_sha256")
+    deps = values("dependency_lock_sha256")
+    mnv4 = values("mnv4_pretrained_sha256")
+    for label, vals in (
+        ("source Git SHA", commits),
+        ("software stack", stacks),
+        ("G1 seal", g1s),
+        ("dependency lock", deps),
+        ("MobileNetV4 pretrained identity", mnv4),
+    ):
+        if len(vals) > 1:
+            errors.append(f"calibrations used different {label}: {sorted(str(x) for x in vals)}")
+
+    teacher_summary = by_id.get("CAL-MNV4-TEACHER", {})
+    teacher_sha = teacher_summary.get("teacher_checkpoint_sha256")
+    factory_sha = teacher_summary.get("teacher_factory_bundle_sha256")
+    if teacher_summary and teacher_sha != TEACHER_SHA256:
+        errors.append("teacher calibration did not bind the frozen historical teacher")
+    if teacher_summary and len(str(factory_sha or "")) != 64:
+        errors.append("teacher calibration did not bind one teacher factory bundle")
 
     forecast = {}
     if not errors:
@@ -76,24 +109,84 @@ def build_g2_barrier(summaries: list[dict[str, Any]]) -> dict[str, Any]:
                 "estimated_train_seconds": train_seconds,
                 "estimated_validation_seconds": validation_seconds,
                 "estimated_run_seconds": raw,
+                "estimated_checkpoint_seconds": float(m.get("checkpoint_save_seconds") or 0.0),
+                "estimated_durable_sync_seconds": float(m.get("durable_sync_seconds") or 0.0),
                 "estimated_safe_segments_at_11h": max(1, math.ceil(raw / (11 * 3600))),
                 "forecast_is_scheduling_only": True,
             }
     barrier = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "status": "PASS" if not errors else "FAIL",
         "required_calibrations": list(REQUIRED_CALIBRATIONS),
         "source_git_commit": next(iter(commits)) if len(commits) == 1 else None,
         "software_stack_sha256": next(iter(stacks)) if len(stacks) == 1 else None,
+        "g1_seal_sha256": next(iter(g1s)) if len(g1s) == 1 else None,
+        "dependency_lock_sha256": next(iter(deps)) if len(deps) == 1 else None,
+        "mnv4_pretrained_sha256": next(iter(mnv4)) if len(mnv4) == 1 else None,
+        "teacher_checkpoint_sha256": teacher_sha,
+        "teacher_factory_bundle_sha256": factory_sha,
         "errors": errors,
         "forecast": forecast,
         "input_summary_sha256": {cid: sha256_json(by_id[cid]) for cid in REQUIRED_CALIBRATIONS if cid in by_id},
     }
-    barrier["barrier_sha256"] = sha256_json(barrier)
+    barrier["barrier_sha256"] = barrier_hash(barrier)
     return barrier
+
+
+def validate_g2_barrier_object(barrier: dict[str, Any], *, expected_source_sha: str | None = None,
+                               expected_g1_seal_sha256: str | None = None) -> list[str]:
+    errors: list[str] = []
+    if barrier.get("schema_version") != "2.0":
+        errors.append("unsupported G2 barrier schema")
+    if barrier.get("status") != "PASS" or barrier.get("errors"):
+        errors.append("G2 barrier is not terminal PASS")
+    if barrier.get("barrier_sha256") != barrier_hash(barrier):
+        errors.append("G2 barrier self-hash mismatch")
+    if expected_source_sha and barrier.get("source_git_commit") != expected_source_sha:
+        errors.append("G2 source Git SHA mismatch")
+    if expected_g1_seal_sha256 and barrier.get("g1_seal_sha256") != expected_g1_seal_sha256:
+        errors.append("G2 G1-seal binding mismatch")
+    for field in ("dependency_lock_sha256", "software_stack_sha256", "mnv4_pretrained_sha256"):
+        if len(str(barrier.get(field, ""))) != 64:
+            errors.append(f"G2 {field} missing/invalid")
+    if barrier.get("teacher_checkpoint_sha256") != TEACHER_SHA256:
+        errors.append("G2 teacher checkpoint identity mismatch")
+    if len(str(barrier.get("teacher_factory_bundle_sha256", ""))) != 64:
+        errors.append("G2 teacher factory bundle identity missing")
+    return errors
 
 
 def write_g2_barrier(path: str | Path, summaries: list[dict[str, Any]]) -> dict[str, Any]:
     barrier = build_g2_barrier(summaries)
     atomic_write_json(path, barrier)
     return barrier
+
+
+def validate_principal_gate_bindings(
+    g1_seal: dict[str, Any] | None,
+    g2_barrier: dict[str, Any] | None,
+    *,
+    source_git_sha: str,
+) -> list[str]:
+    errors: list[str] = []
+    if not g1_seal:
+        return ["principal launch requires G1 seal", "principal launch requires G2 barrier"] if not g2_barrier else ["principal launch requires G1 seal"]
+    from .g1 import validate_g1_seal_object
+    errors.extend("G1: " + e for e in validate_g1_seal_object(g1_seal))
+    if g1_seal.get("source_git_sha") != source_git_sha:
+        errors.append("G1 source Git SHA mismatch")
+    if not g2_barrier:
+        errors.append("principal launch requires G2 barrier")
+        return errors
+    errors.extend("G2: " + e for e in validate_g2_barrier_object(
+        g2_barrier,
+        expected_source_sha=source_git_sha,
+        expected_g1_seal_sha256=g1_seal.get("g1_seal_sha256"),
+    ))
+    if g2_barrier.get("dependency_lock_sha256") != g1_seal.get("dependency_lock_sha256"):
+        errors.append("G1/G2 dependency-lock binding mismatch")
+    if g2_barrier.get("mnv4_pretrained_sha256") != g1_seal.get("student", {}).get("pretrained", {}).get("sha256"):
+        errors.append("G1/G2 MobileNetV4 pretrained binding mismatch")
+    if g2_barrier.get("teacher_factory_bundle_sha256") != g1_seal.get("teacher", {}).get("factory_bundle_sha256"):
+        errors.append("G1/G2 teacher-factory bundle binding mismatch")
+    return errors

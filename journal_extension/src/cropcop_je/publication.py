@@ -71,10 +71,17 @@ def publish_to_github_branch(
     branch = f"run-evidence/{run_id}"
     with tempfile.TemporaryDirectory() as td:
         worktree = Path(td) / "worktree"
+        askpass = Path(td) / "askpass.sh"
+        askpass.write_text('#!/bin/sh\ncase "$1" in *Username*) echo x-access-token ;; *) printf "%s\\n" "$CROPCOP_GITHUB_TOKEN" ;; esac\n')
+        askpass.chmod(0o700)
+        env = dict(os.environ)
+        env["CROPCOP_GITHUB_TOKEN"] = token
+        env["GIT_ASKPASS"] = str(askpass)
+        env["GIT_TERMINAL_PROMPT"] = "0"
         remote_ref = f"refs/remotes/{remote_name}/{branch}"
         remote_exists = False
         try:
-            _run_git(["git", "-C", str(repo_dir), "fetch", remote_name, f"refs/heads/{branch}:{remote_ref}"])
+            _run_git(["git", "-C", str(repo_dir), "fetch", remote_name, f"refs/heads/{branch}:{remote_ref}"], env=env)
             remote_exists = True
         except subprocess.CalledProcessError:
             remote_exists = False
@@ -102,13 +109,6 @@ def publish_to_github_branch(
             if not diff:
                 return branch
             _run_git(["git", "-C", str(worktree), "commit", "-m", f"evidence({run_id}): publish public-safe run evidence"])
-            askpass = Path(td) / "askpass.sh"
-            askpass.write_text('#!/bin/sh\ncase "$1" in *Username*) echo x-access-token ;; *) printf "%s\\n" "$CROPCOP_GITHUB_TOKEN" ;; esac\n')
-            askpass.chmod(0o700)
-            env = dict(os.environ)
-            env["CROPCOP_GITHUB_TOKEN"] = token
-            env["GIT_ASKPASS"] = str(askpass)
-            env["GIT_TERMINAL_PROMPT"] = "0"
             _run_git(["git", "-C", str(worktree), "push", remote_name, f"HEAD:refs/heads/{branch}"], env=env)
             return branch
         finally:

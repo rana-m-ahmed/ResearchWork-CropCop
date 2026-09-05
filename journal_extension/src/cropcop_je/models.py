@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import importlib
 import inspect
+import sys
 from pathlib import Path
 from typing import Any
 
+from .g1 import factory_bundle_hash, validate_teacher_factory_bundle
 from .hashing import require_sha256, sha256_file
 
 MNV4_MODEL_NAME = "mobilenetv4_conv_medium.e500_r256_in1k"
@@ -75,6 +77,7 @@ def load_pair_initialization(path: str | Path, *, expected_sha256: str, pair_id:
 
 
 def teacher_factory_identity(factory_spec: str) -> dict[str, Any]:
+    """Legacy single-file identity retained only for historical diagnostics."""
     if ":" not in factory_spec:
         raise ValueError("teacher factory must be specified as module:function")
     module_name, fn_name = factory_spec.split(":", 1)
@@ -90,14 +93,58 @@ def teacher_factory_identity(factory_spec: str) -> dict[str, Any]:
         "function": fn_name,
         "source_basename": source_path.name,
         "source_sha256": sha256_file(source_path),
+        "identity_scope": "legacy_single_file_only",
     }
 
 
-def load_exact_teacher(checkpoint_path: str | Path, *, factory_spec: str):
+def teacher_factory_bundle_identity(
+    factory_spec: str,
+    *,
+    factory_bundle_manifest: str | Path,
+    repo_root: str | Path,
+    factory_source_root: str | Path | None = None,
+) -> dict[str, Any]:
+    import json
+    manifest = json.loads(Path(factory_bundle_manifest).read_text(encoding="utf-8"))
+    errors = validate_teacher_factory_bundle(
+        manifest,
+        source_root=factory_source_root or repo_root,
+        expected_entrypoint=factory_spec,
+    )
+    if errors:
+        raise RuntimeError("teacher factory bundle invalid: " + "; ".join(errors))
+    return {
+        "factory_spec": factory_spec,
+        "bundle_sha256": manifest["bundle_sha256"],
+        "manifest_sha256": __import__("cropcop_je.hashing", fromlist=["sha256_json"]).sha256_json(manifest),
+        "output_order_transform": manifest.get("output_order_transform"),
+        "files": manifest.get("files", []),
+    }
+
+
+def load_exact_teacher(
+    checkpoint_path: str | Path,
+    *,
+    factory_spec: str,
+    factory_bundle_manifest: str | Path | None = None,
+    repo_root: str | Path = ".",
+    factory_source_root: str | Path | None = None,
+):
     import torch
     require_sha256(checkpoint_path, TEACHER_SHA256, "historical DINO teacher")
-    identity = teacher_factory_identity(factory_spec)
+    if not factory_bundle_manifest:
+        raise ValueError("sealed teacher factory bundle manifest is required")
+    identity = teacher_factory_bundle_identity(
+        factory_spec,
+        factory_bundle_manifest=factory_bundle_manifest,
+        repo_root=repo_root,
+        factory_source_root=factory_source_root,
+    )
     module_name, fn_name = factory_spec.split(":", 1)
+    if factory_source_root:
+        source_root = str(Path(factory_source_root).resolve())
+        if source_root not in sys.path:
+            sys.path.insert(0, source_root)
     teacher = getattr(importlib.import_module(module_name), fn_name)(str(checkpoint_path))
     if not isinstance(teacher, torch.nn.Module):
         raise TypeError("teacher factory did not return torch.nn.Module")

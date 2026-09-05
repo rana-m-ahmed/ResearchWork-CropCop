@@ -61,6 +61,7 @@ def capture_environment() -> dict[str, Any]:
             "Pillow": _version("Pillow"),
             "safetensors": _version("safetensors"),
             "kaggle": _version("kaggle"),
+            "huggingface-hub": _version("huggingface-hub"),
         },
         "kaggle": {k: os.environ[k] for k in SAFE_KAGGLE_ENV_KEYS if k in os.environ},
         "nvidia_smi": _nvidia_smi(),

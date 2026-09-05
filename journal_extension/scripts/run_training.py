@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 import traceback
 from pathlib import Path
 
@@ -10,6 +11,11 @@ import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.data import CropCopManifestDataset, ManifestColumns, load_manifest_rows
 from cropcop_je.environment import capture_environment, software_stack_identity, validate_locked_core
+from cropcop_je.g1 import (
+    validate_dependency_environment, validate_dependency_lock_object,
+    validate_g1_seal_object, validate_teacher_class_order_evidence,
+)
+from cropcop_je.g2 import validate_g2_barrier_object
 from cropcop_je.hashing import require_sha256, sha256_file, sha256_json
 from cropcop_je.models import build_projection_without_state_drift, load_exact_teacher, load_pair_initialization
 from cropcop_je.persistence import build_store
@@ -37,7 +43,7 @@ def require_software_identity() -> tuple[dict, str]:
     return env, sha256_json(software_stack_identity(env))
 
 
-def prepare(args):
+def prepare(args, *, mode: str):
     config = load_json(args.config)
     validate_training_config(config)
     if not args.run_id.strip():
@@ -46,6 +52,43 @@ def prepare(args):
         raise ValueError(f"invalid lane_id: {args.lane_id}")
 
     env, stack_sha = require_software_identity()
+
+    dependency_path = Path(args.dependency_lock)
+    if not dependency_path.is_absolute():
+        dependency_path = Path(args.repo_root) / dependency_path
+    dependency_lock = load_json(dependency_path)
+    dep_errors = validate_dependency_lock_object(dependency_lock) + validate_dependency_environment(dependency_lock)
+    if dep_errors:
+        raise RuntimeError("execution dependency lock mismatch: " + "; ".join(dep_errors))
+
+    if not args.g1_seal:
+        raise RuntimeError("G1 seal is mandatory for calibration and scientific execution")
+    g1_seal = load_json(args.g1_seal)
+    g1_errors = validate_g1_seal_object(g1_seal)
+    if g1_errors:
+        raise RuntimeError("G1 seal invalid: " + "; ".join(g1_errors))
+    if g1_seal.get("source_git_sha") != args.source_git_commit:
+        raise RuntimeError("G1 seal source SHA differs from requested execution source")
+    if g1_seal.get("dependency_lock_sha256") != dependency_lock.get("dependency_lock_sha256"):
+        raise RuntimeError("G1 seal dependency lock differs from mounted execution lock")
+
+    g2_barrier = None
+    g2_sha = None
+    if mode == "scientific":
+        if not args.g2_barrier:
+            raise RuntimeError("principal scientific execution requires a terminal G2 barrier")
+        g2_barrier = load_json(args.g2_barrier)
+        g2_errors = validate_g2_barrier_object(
+            g2_barrier,
+            expected_source_sha=args.source_git_commit,
+            expected_g1_seal_sha256=g1_seal["g1_seal_sha256"],
+        )
+        if g2_errors:
+            raise RuntimeError("G2 barrier invalid: " + "; ".join(g2_errors))
+        if g2_barrier.get("dependency_lock_sha256") != dependency_lock.get("dependency_lock_sha256"):
+            raise RuntimeError("G2 dependency lock differs from mounted execution lock")
+        g2_sha = g2_barrier["barrier_sha256"]
+
     ctc_path = Path(args.repo_root) / config["ctc_config"]
     ctc = load_json(ctc_path)
     config_sha = sha256_json(config)
@@ -76,6 +119,18 @@ def prepare(args):
     pair_evidence = load_json(args.pair_init_evidence)
     if pair_evidence.get("pair_id") != config["pair_id"] or int(pair_evidence.get("seed", -1)) != int(config["seed"]):
         raise ValueError("pair-init evidence does not match config pair/seed")
+    seal_pair = next(
+        (row for row in g1_seal.get("pair_initializations", {}).values() if row.get("pair_id") == config["pair_id"]),
+        None,
+    )
+    if not seal_pair:
+        raise ValueError("config pair is not authorized by the global G1 seal")
+    if seal_pair.get("sha256") != pair_evidence.get("student_init_sha256"):
+        raise ValueError("pair-init evidence SHA differs from the global G1 seal")
+    if seal_pair.get("pretrained_sha256") != pair_evidence.get("pretrained_sha256"):
+        raise ValueError("pair-init pretrained identity differs from the global G1 seal")
+    if config["experiment_id"] not in set(seal_pair.get("authorized_consumers", [])):
+        raise ValueError("experiment is not an authorized consumer of the sealed pair initialization")
     init_sha = pair_evidence["student_init_sha256"]
     student, init_payload = load_pair_initialization(
         args.pair_init,
@@ -91,10 +146,13 @@ def prepare(args):
     projection = None
     teacher_sha = None
     teacher_factory_sha = None
+    teacher_factory_bundle_sha = None
     teacher_factory_identity = None
     if config["condition"] == "teacher":
         if not args.teacher_checkpoint or not args.teacher_factory or not args.teacher_evidence:
             raise ValueError("teacher run requires --teacher-checkpoint, --teacher-factory and --teacher-evidence")
+        if not args.teacher_factory_manifest or not args.teacher_class_order_evidence:
+            raise ValueError("teacher run requires sealed factory-bundle and class-order evidence")
         teacher_evidence = load_json(args.teacher_evidence)
         teacher_sha = require_sha256(
             args.teacher_checkpoint,
@@ -105,10 +163,25 @@ def prepare(args):
             raise ValueError("teacher evidence SHA does not match actual teacher bytes")
         if teacher_evidence.get("class_map_sha256") != class_map_sha:
             raise ValueError("teacher evidence does not bind the frozen 120-way class map")
+        teacher_order = load_json(args.teacher_class_order_evidence)
+        order_errors = validate_teacher_class_order_evidence(
+            teacher_order,
+            factory_bundle_sha256=g1_seal.get("teacher", {}).get("factory_bundle_sha256"),
+        )
+        if order_errors:
+            raise ValueError("teacher class-order evidence invalid: " + "; ".join(order_errors))
+        if sha256_json(teacher_order) != g1_seal.get("teacher", {}).get("class_order_evidence_sha256"):
+            raise ValueError("teacher class-order evidence differs from G1 seal")
         teacher, teacher_factory_identity = load_exact_teacher(
             args.teacher_checkpoint,
             factory_spec=args.teacher_factory,
+            factory_bundle_manifest=args.teacher_factory_manifest,
+            repo_root=args.repo_root,
+            factory_source_root=(args.teacher_factory_root or args.repo_root),
         )
+        teacher_factory_bundle_sha = teacher_factory_identity["bundle_sha256"]
+        if teacher_factory_bundle_sha != g1_seal.get("teacher", {}).get("factory_bundle_sha256"):
+            raise ValueError("teacher factory bundle differs from G1 seal")
         teacher_factory_sha = sha256_json(teacher_factory_identity)
         projection = build_projection_without_state_drift(student, teacher, seed=config["seed"])
 
@@ -130,7 +203,11 @@ def prepare(args):
         "pretrained_sha256": pretrained_sha,
         "teacher_sha256": teacher_sha,
         "teacher_factory_sha256": teacher_factory_sha,
+        "teacher_factory_bundle_sha256": teacher_factory_bundle_sha,
         "software_stack_sha256": stack_sha,
+        "dependency_lock_sha256": dependency_lock["dependency_lock_sha256"],
+        "g1_seal_sha256": g1_seal["g1_seal_sha256"],
+        "g2_barrier_sha256": g2_sha,
         "allowed_surfaces": ["DS-V1-TRAIN", "DS-V1-VAL"],
     }
     return (
@@ -159,7 +236,7 @@ def execute(args, *, max_optimizer_steps=None, resume_mode="auto", mode="scienti
     (
         config, ctc, student, teacher, projection, train_ds, val_ds,
         run_identity, env, teacher_factory_identity,
-    ) = prepare(args)
+    ) = prepare(args, mode=mode)
 
     output = Path(args.output_dir)
     claim_run_directory(
@@ -226,6 +303,7 @@ def execute(args, *, max_optimizer_steps=None, resume_mode="auto", mode="scienti
         "continuation_required": bool(resume),
         "entrypoint": Path(sys.argv[0]).name,
         "started_at_utc": utc_now(),
+        "notebook_session_clock": SessionBudget.from_environment(require_global_clock=True).snapshot(),
     }
     write_run_record(record_path, record)
     append_segment_event(
@@ -249,7 +327,8 @@ def execute(args, *, max_optimizer_steps=None, resume_mode="auto", mode="scienti
         },
     )
 
-    budget = SessionBudget(
+    budget = SessionBudget.from_environment(
+        require_global_clock=True,
         hard_limit_seconds=float(args.session_hard_limit_seconds),
         finalization_margin_seconds=float(args.finalization_margin_seconds),
     )
@@ -277,12 +356,16 @@ def execute(args, *, max_optimizer_steps=None, resume_mode="auto", mode="scienti
         atomic_write_json(segment_result_path, result)
 
         persistence = None
+        durable_sync_seconds = 0.0
         if store is not None:
+            sync_started = time.perf_counter()
             persistence = store.sync(
                 checkpoint_root,
                 run_id=args.run_id,
                 segment_id=segment_id,
             ).to_dict()
+            durable_sync_seconds = time.perf_counter() - sync_started
+        result["durable_sync_seconds"] = durable_sync_seconds
         elif args.durable_required:
             raise RuntimeError("durable persistence is required but no durable store is configured")
 
@@ -348,6 +431,7 @@ def execute(args, *, max_optimizer_steps=None, resume_mode="auto", mode="scienti
                             "peak_gpu_memory_bytes",
                             "checkpoint_save_seconds",
                             "checkpoint_load_seconds",
+                            "durable_sync_seconds",
                             "selected_epoch",
                             "selected_metrics",
                             "selected_checkpoint_sha256",
@@ -436,6 +520,12 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--teacher-checkpoint", default="")
     ap.add_argument("--teacher-evidence", default="")
     ap.add_argument("--teacher-factory", default="")
+    ap.add_argument("--teacher-factory-manifest", default="")
+    ap.add_argument("--teacher-factory-root", default="")
+    ap.add_argument("--teacher-class-order-evidence", default="")
+    ap.add_argument("--g1-seal", required=True)
+    ap.add_argument("--g2-barrier", default="")
+    ap.add_argument("--dependency-lock", default="journal_extension/locks/execution_dependency_lock.json")
     ap.add_argument("--run-id", required=True)
     ap.add_argument("--lane-id", choices=["K1", "K2", "K3"], required=True)
     ap.add_argument("--source-git-commit", required=True)

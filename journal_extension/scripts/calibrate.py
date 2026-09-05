@@ -77,6 +77,11 @@ def main() -> int:
         "calibration_weights_scientific": False,
         "source_git_commit": measured["source_git_commit"],
         "software_stack_sha256": measured["software_stack_sha256"],
+        "g1_seal_sha256": measured["g1_seal_sha256"],
+        "dependency_lock_sha256": measured["dependency_lock_sha256"],
+        "mnv4_pretrained_sha256": measured["pretrained_sha256"],
+        "teacher_checkpoint_sha256": measured.get("teacher_sha256"),
+        "teacher_factory_bundle_sha256": measured.get("teacher_factory_bundle_sha256"),
         "measured": m,
         "observed_kaggle_constraints": {
             "configured_hard_session_seconds": args.session_hard_limit_seconds,

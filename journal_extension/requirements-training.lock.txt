@@ -1,6 +1,5 @@
 # Stage 01A-P pre-results execution dependency lock.
-# Core scientific versions remain inherited from EAAI-JE-SDL-v2.1-QA.
-# Non-core versions are frozen before any JE empirical result for compatibility/reproducibility.
+# These versions are frozen for compatibility/reproducibility before any JE result exists.
 torch==2.12.1
 torchvision==0.27.1
 timm==1.0.26

@@ -125,7 +125,11 @@ def _identity(r):
         "pretrained_sha256",
         "teacher_sha256",
         "teacher_factory_sha256",
+        "teacher_factory_bundle_sha256",
         "software_stack_sha256",
+        "dependency_lock_sha256",
+        "g1_seal_sha256",
+        "g2_barrier_sha256",
         "lane_id",
     )
     return {k: r.get(k) for k in keys}
