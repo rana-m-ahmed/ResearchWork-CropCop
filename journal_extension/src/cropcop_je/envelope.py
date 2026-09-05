@@ -258,7 +258,12 @@ def all_reserved_run_ids(source_sha: str, env: dict[str, str] | None = None) -> 
     return [*CALIBRATION_IDS, *(resolve_run_id(eid, source_sha, env) for eid in principal)]
 
 
-def durable_plan(source_sha: str, env: dict[str, str] | None = None) -> tuple[dict[str, str], dict[str, Any]]:
+def durable_plan(
+    source_sha: str,
+    env: dict[str, str] | None = None,
+    *,
+    current_run_ids: list[str] | tuple[str, ...] | None = None,
+) -> tuple[dict[str, str], dict[str, Any]]:
     env = dict(os.environ if env is None else env)
     kind = str(env.get("CROPCOP_DURABLE_STORE_KIND", "")).strip()
     template = str(env.get("CROPCOP_DURABLE_LOCATOR_TEMPLATE", "")).strip()
@@ -268,8 +273,19 @@ def durable_plan(source_sha: str, env: dict[str, str] | None = None) -> tuple[di
         for key in ("KAGGLE_USERNAME", "KAGGLE_KEY"):
             if not str(env.get(key, "")).strip():
                 raise EnvelopeError(f"production Kaggle durability requires {key}")
-    resolved = validate_durable_locator_template(kind, template, all_reserved_run_ids(source_sha, env))
-    access = validate_durable_access_plan(kind, resolved, env=env)
+
+    all_ids = all_reserved_run_ids(source_sha, env)
+    resolved = validate_durable_locator_template(kind, template, all_ids)
+    requested = list(current_run_ids or all_ids)
+    unknown = sorted(set(requested).difference(resolved))
+    if unknown:
+        raise EnvelopeError(f"current envelope requested unknown durable run IDs: {unknown}")
+    current_resolved = {run_id: resolved[run_id] for run_id in requested}
+    access = validate_durable_access_plan(kind, current_resolved, env=env)
+    access["global_reserved_locator_count"] = len(resolved)
+    access["current_envelope_locator_count"] = len(current_resolved)
+    access["current_envelope_run_ids"] = requested
+    access["global_namespace_validation"] = "PASS"
     if access.get("status") != "PASS":
         raise EnvelopeError("production durable access preflight failed: " + "; ".join(access.get("errors", [])))
     return resolved, access
