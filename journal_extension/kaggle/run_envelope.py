@@ -22,27 +22,31 @@ from cropcop_je.envelope import (
     EnvelopeError,
     child_environment,
     close_child_log,
+    continuation_publication_repair_set,
     continuation_skip_set,
     durable_plan,
     ensure_common_time_for_new_child,
     finalize_manifest,
     gpu_inventory,
     gpu_telemetry,
+    gracefully_finalize_process_groups,
     launch_process,
     load_json,
-    locate_prior_state,
+    locate_prior_bundle,
+    planned_finalization_grace_seconds,
     require_parent_batch,
     resolve_run_id,
     terminate_process_group,
-    validate_continuation_state,
+    validate_prior_envelope_bundle,
     validate_disjoint_mutable_roots,
     validate_envelope_config,
     validate_manifest,
     validate_t4x2_inventory,
 )
 from cropcop_je.g2 import build_g2_barrier, validate_calibration_summary, validate_g2_barrier_object
-from cropcop_je.hashing import sha256_json
+from cropcop_je.hashing import sha256_file, sha256_json
 from cropcop_je.publication import publish_to_github_branch
+from cropcop_je.runlog import validate_run_record
 from cropcop_je.science_diff import validate_science_diff
 from cropcop_je.session import SessionBudget
 from cropcop_je.smoke_handoff import (
