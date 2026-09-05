@@ -79,7 +79,7 @@
   "export_integrity": "PENDING",
   "g1_executed": false,
   "g2_executed": false,
-  "git_publication_status": "PENDING",
+  "git_publication_status": "PASS",
   "kaggle_run_type": "Batch",
   "lane": "K1",
   "mode": "WRITE",
@@ -92,6 +92,7 @@
     "started_monotonic": 677.0079482
   },
   "optimizer_step": 3,
+  "public_safe_evidence_branch": "run-evidence/SMOKE-A-INFRA-SMOKE-fe88e426b469-f402d5b86f74",
   "qualification_id": "INFRA-SMOKE-fe88e426b469-f402d5b86f74",
   "r04_r05_executed": false,
   "recovery_candidate": "latest",
