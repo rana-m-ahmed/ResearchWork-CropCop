@@ -654,6 +654,10 @@ def gracefully_finalize_process_groups(
                 os.killpg(child.process.pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
+            try:
+                child.process.wait(timeout=5.0)
+            except Exception:
+                pass
             mode = "sigkill_after_finalization_grace"
         else:
             mode = "graceful_sigterm"
