@@ -1,6 +1,6 @@
 {
-  "authorized_source_sha": "be9b6965d760ff6e8674623b658f66572cd57093",
-  "source_authority": "Frozen Stage-01A-MGPU-QA1 execution source; verify the same literal in journal_extension/kaggle/generate_canonical_notebook.py.",
+  "authorized_source_sha": "fe88e426b4698977d65efe9702f1d48cf5ff96a3",
+  "source_authority": "Post-Smoke-A-debug frozen execution source; verify the same literal in journal_extension/kaggle/generate_canonical_notebook.py.",
   "phase_vocabulary": [
     "smoke-write",
     "smoke-restore",
