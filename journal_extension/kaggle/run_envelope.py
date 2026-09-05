@@ -148,7 +148,7 @@ def _publish(run_id: str, source_sha: str, files: list[Path]) -> str | None:
 
 
 def _write_telemetry(path: Path) -> None:
-    row = {"timestamp_utc": utc_now(), "gpus": gpu_telemetry()}
+    row = {"timestamp_utc": utc_now(), **gpu_telemetry()}
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, sort_keys=True) + "\n")
@@ -285,7 +285,7 @@ def main() -> int:
     if hw_errors:
         raise EnvelopeError("dual-T4 host preflight failed: " + "; ".join(hw_errors))
 
-    durable = durable_plan(source_sha)
+    durable, durable_access = durable_plan(source_sha)
     run_ids = {child["child_id"]: _child_run_id(child, source_sha) for child in config["children"]}
     child_rows = []
     for child in config["children"]:
@@ -346,6 +346,7 @@ def main() -> int:
             "notebook_started_monotonic": float(req("CROPCOP_NOTEBOOK_STARTED_MONOTONIC")),
             "parent_gpu_inventory": inventory,
             "workers_per_child": int(os.environ.get("CROPCOP_NUM_WORKERS_PER_CHILD", "2")),
+            "durable_access_preflight": durable_access,
             "no_git_child_policy": True,
             "science_diff_status": science["status"],
             "protected_surfaces_unchanged": science["protected_surfaces_unchanged"],
@@ -642,6 +643,7 @@ def main() -> int:
         "overlap_duration_seconds": overlap,
         "no_git_child_policy": True,
         "parent_publication_serialized": True,
+        "durable_access_preflight": durable_access,
         "science_diff_status": science["status"],
         "protected_surfaces_unchanged": science["protected_surfaces_unchanged"],
         "g1_seal_sha256": g1["g1_seal_sha256"],
