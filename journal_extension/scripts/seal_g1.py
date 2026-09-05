@@ -17,6 +17,7 @@ from cropcop_je.g1 import (
 from cropcop_je.hashing import require_sha256, sha256_file, sha256_json
 from cropcop_je.models import create_student_from_pretrained, save_pair_initialization
 from cropcop_je.source_state import verify_clean_source
+from cropcop_je.smoke_handoff import validate_terminal_smoke_b_evidence
 
 
 def _load(path: str | Path) -> dict:
@@ -50,25 +51,27 @@ def main() -> int:
     evidence_dir = bundle / "evidence"
     assert_g1_creation_target_fresh(bundle)
 
-    smoke = _load(args.infra_smoke_evidence)
-    if not (
-        smoke.get("status") == "PASS"
-        and smoke.get("scientific") is False
-        and smoke.get("synthetic_unprotected_data_only") is True
-        and smoke.get("source_git_sha") == args.authorized_source_sha
-        and smoke.get("restore_success") is True
-        and smoke.get("resume_success") is True
-    ):
-        raise SystemExit("real G1 sealing requires a green real-Kaggle non-scientific infrastructure smoke attestation")
-
-    require_sha256(args.manifest, MANIFEST_SHA256, "V1 manifest")
-    require_sha256(args.class_map, CLASS_MAP_SHA256, "class map")
-    require_sha256(args.teacher_checkpoint, TEACHER_SHA256, "historical teacher")
-
     dependency = _load(repo / args.dependency_lock)
     dep_errors = validate_dependency_lock_object(dependency) + validate_dependency_environment(dependency)
     if dep_errors:
         raise SystemExit("dependency lock validation failed: " + "; ".join(dep_errors))
+
+    smoke = _load(args.infra_smoke_evidence)
+    smoke_errors = validate_terminal_smoke_b_evidence(
+        smoke,
+        expected_source_sha=args.authorized_source_sha,
+        expected_dependency_lock_sha256=dependency["dependency_lock_sha256"],
+        require_batch=True,
+    )
+    if smoke_errors:
+        raise SystemExit(
+            "real G1 sealing requires canonical terminal Batch Smoke-B evidence: "
+            + "; ".join(smoke_errors)
+        )
+
+    require_sha256(args.manifest, MANIFEST_SHA256, "V1 manifest")
+    require_sha256(args.class_map, CLASS_MAP_SHA256, "class map")
+    require_sha256(args.teacher_checkpoint, TEACHER_SHA256, "historical teacher")
 
     provenance = _load(args.pretrained_provenance)
     prov_errors = validate_pretrained_provenance(provenance, artifact_path=args.pretrained)
