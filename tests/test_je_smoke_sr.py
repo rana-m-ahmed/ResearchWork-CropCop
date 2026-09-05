@@ -13,6 +13,11 @@ sys.path.insert(0, str(ROOT / "journal_extension" / "src"))
 
 from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.hashing import sha256_file, sha256_json
+from cropcop_je.publication import (
+    EVIDENCE_AUTHOR_EMAIL,
+    EVIDENCE_AUTHOR_NAME,
+    publish_to_github_branch,
+)
 from cropcop_je.smoke_handoff import (
     RestoreSequence,
     SmokeHandoffError,
@@ -451,6 +456,117 @@ class SmokeSRTests(unittest.TestCase):
             )
             self.assertEqual(actual, head)
             self.assertEqual(status, "", f"fresh exact-head checkout is dirty: {status}")
+
+
+
+    def test_44_publication_sets_isolated_git_identity(self):
+        source = (ROOT / "journal_extension/src/cropcop_je/publication.py").read_text()
+        self.assertIn('env["GIT_AUTHOR_NAME"] = EVIDENCE_AUTHOR_NAME', source)
+        self.assertIn('env["GIT_AUTHOR_EMAIL"] = EVIDENCE_AUTHOR_EMAIL', source)
+        self.assertIn('env["GIT_COMMITTER_NAME"] = EVIDENCE_AUTHOR_NAME', source)
+        self.assertIn('env["GIT_COMMITTER_EMAIL"] = EVIDENCE_AUTHOR_EMAIL', source)
+
+    def test_45_publication_twice_works_without_global_git_identity(self):
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            remote = td / "remote.git"
+            repo = td / "repo"
+            empty_home = td / "empty-home"
+            empty_home.mkdir()
+
+            isolated = dict(os.environ)
+            isolated["HOME"] = str(empty_home)
+            isolated["GIT_CONFIG_NOSYSTEM"] = "1"
+            isolated["GIT_CONFIG_GLOBAL"] = os.devnull
+
+            subprocess.run(["git", "init", "--bare", "--quiet", str(remote)], env=isolated, check=True)
+            subprocess.run(["git", "init", "--quiet", str(repo)], env=isolated, check=True)
+            (repo / "README.md").write_text("source\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repo), "add", "README.md"], env=isolated, check=True)
+            source_env = dict(isolated)
+            source_env.update({
+                "GIT_AUTHOR_NAME": "Source Fixture",
+                "GIT_AUTHOR_EMAIL": "source@localhost.invalid",
+                "GIT_COMMITTER_NAME": "Source Fixture",
+                "GIT_COMMITTER_EMAIL": "source@localhost.invalid",
+            })
+            subprocess.run(
+                ["git", "-C", str(repo), "commit", "--quiet", "-m", "source"],
+                env=source_env,
+                check=True,
+            )
+            source_sha = subprocess.check_output(
+                ["git", "-C", str(repo), "rev-parse", "HEAD"],
+                env=isolated,
+                text=True,
+            ).strip()
+            subprocess.run(["git", "-C", str(repo), "remote", "add", "origin", str(remote)], env=isolated, check=True)
+
+            evidence = td / "metrics.json"
+            evidence.write_text('{"status":"PENDING"}\n', encoding="utf-8")
+            publish_env = dict(isolated)
+            publish_env.update({
+                "CROPCOP_GITHUB_TOKEN": "dummy-local-transport-token",
+                "CROPCOP_GIT_USERNAME": "rana-m-ahmed",
+            })
+            with mock.patch.dict(os.environ, publish_env, clear=True):
+                branch1 = publish_to_github_branch(
+                    repo_dir=repo,
+                    source_git_sha=source_sha,
+                    run_id="SMOKE-LOCAL",
+                    files=[evidence],
+                )
+                evidence.write_text('{"status":"PASS"}\n', encoding="utf-8")
+                branch2 = publish_to_github_branch(
+                    repo_dir=repo,
+                    source_git_sha=source_sha,
+                    run_id="SMOKE-LOCAL",
+                    files=[evidence],
+                )
+
+            self.assertEqual(branch1, "run-evidence/SMOKE-LOCAL")
+            self.assertEqual(branch2, branch1)
+            remote_ref = "refs/heads/run-evidence/SMOKE-LOCAL"
+            count = int(subprocess.check_output(
+                ["git", "--git-dir", str(remote), "rev-list", "--count", remote_ref],
+                env=isolated,
+                text=True,
+            ).strip())
+            self.assertEqual(count, 3)
+            author = subprocess.check_output(
+                ["git", "--git-dir", str(remote), "log", "-1", "--format=%an <%ae>", remote_ref],
+                env=isolated,
+                text=True,
+            ).strip()
+            self.assertEqual(author, f"{EVIDENCE_AUTHOR_NAME} <{EVIDENCE_AUTHOR_EMAIL}>")
+            published = subprocess.check_output(
+                [
+                    "git",
+                    "--git-dir",
+                    str(remote),
+                    "show",
+                    f"{remote_ref}:journal_extension/evidence/public/runs/SMOKE-LOCAL/metrics.json",
+                ],
+                env=isolated,
+                text=True,
+            )
+            self.assertEqual(published, '{"status":"PASS"}\n')
+
+    def test_46_publication_git_error_redacts_token(self):
+        from cropcop_je.publication import _run_git
+        secret = "github_pat_" + ("x" * 40)
+        env = dict(os.environ)
+        env["CROPCOP_GITHUB_TOKEN"] = secret
+        with mock.patch(
+            "cropcop_je.publication.subprocess.run",
+            return_value=subprocess.CompletedProcess(
+                ["git"], 128, "", f"fatal: rejected {secret}"
+            ),
+        ):
+            with self.assertRaises(Exception) as ctx:
+                _run_git(["git", "push"], env=env, context="synthetic publication")
+        self.assertNotIn(secret, str(ctx.exception))
+        self.assertIn("<redacted>", str(ctx.exception))
 
 
 

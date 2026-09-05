@@ -127,10 +127,12 @@ class FailureInjectionMatrix(unittest.TestCase):
         import subprocess
         with tempfile.TemporaryDirectory() as td:
             p = Path(td) / "metrics.json"; p.write_text("{}")
+            failed = subprocess.CompletedProcess(["git"], 128, "", "synthetic push failure")
             with mock.patch.dict(os.environ, {"CROPCOP_GITHUB_TOKEN": "dummy"}, clear=False), \
-                 mock.patch("cropcop_je.publication._run_git", side_effect=subprocess.CalledProcessError(1, ["git"])):
-                with self.assertRaises(subprocess.CalledProcessError):
+                 mock.patch("cropcop_je.publication.subprocess.run", return_value=failed):
+                with self.assertRaises(PublicationError) as ctx:
                     publish_to_github_branch(repo_dir=td, source_git_sha="a" * 40, run_id="X", files=[p])
+                self.assertIn("synthetic push failure", str(ctx.exception))
 
     def test_publication_rejects_secret_content(self):
         with tempfile.TemporaryDirectory() as td:

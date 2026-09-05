@@ -326,3 +326,31 @@ Exact-head Actions run #40 / ID `33968396009` verified:
 No additional LF-governed CRLF/mixed tracked blob was found after normalizing
 `journal_extension/evidence/claim_registry.csv`. The Smoke A/B scientific/non-scientific execution
 logic itself was not changed by this canonicalization.
+
+
+## Stage 01A-SR-PUB — Evidence Publication Clean-Host Hotfix
+
+The real Smoke-A execution on clean source `939455c2cc8787bb295e073d706c32768820bfab`
+passed bootstrap/source/dependency/session qualification and reached the first public-safe evidence
+publication. The temporary evidence worktree then failed at `git commit` with exit status 128.
+
+Root cause: `publication.py` assumed a preconfigured Git `user.name` / `user.email`. A clean Kaggle
+host is not guaranteed to provide either, so the evidence commit could not be created even though the
+PAT had already passed both read and write authorization checks.
+
+The publication transaction is hardened without changing Smoke A/B science or checkpoint semantics:
+
+- deterministic isolated author/committer identity is supplied through process environment;
+- no global/repository Git identity mutation is required;
+- askpass now uses the same non-empty Git username/PAT-password convention as notebook auth;
+- credential helpers are disabled for the publication transaction;
+- branch existence uses `git ls-remote --exit-code --heads`, distinguishing a missing branch from a
+  real auth/network failure;
+- authenticated branch fetch/push remains fail-closed;
+- Git errors surface bounded stderr/stdout with token redaction instead of opaque
+  `CalledProcessError`;
+- repeat publication to the same run-evidence branch is explicitly tested.
+
+A new real Git regression test creates a bare remote and source repository with system/global Git
+configuration disabled, then calls `publish_to_github_branch()` twice for the same run ID. It requires
+two evidence commits, correct final content, and the deterministic evidence author identity.
