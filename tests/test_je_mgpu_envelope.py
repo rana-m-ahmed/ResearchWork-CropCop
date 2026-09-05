@@ -511,7 +511,9 @@ class MGPUContinuationAndEvidenceTests(unittest.TestCase):
 
     def test_65_parent_validates_child_preflight_before_result_collection(self):
         source = (ROOT / "journal_extension/kaggle/run_envelope.py").read_text()
-        terminal = source[source.index("if rc == 0:"):source.index("else:", source.index("if rc == 0:"))]
+        start = source.index("for child_id, obj in list(running.items())")
+        end = source.index("result.update(", start)
+        terminal = source[start:end]
         self.assertLess(terminal.index("_validated_child_preflight"), terminal.index("_result_for_child"))
 
     def test_66_publication_failure_is_separate_from_execution_status(self):
