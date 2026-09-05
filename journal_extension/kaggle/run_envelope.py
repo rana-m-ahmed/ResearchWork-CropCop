@@ -273,7 +273,7 @@ def _result_for_child(
         return {
             "status": "PASS",
             "continuation_required": False,
-            "result_relative_path": f"central_g2/{dest.name}",
+            "result_relative_path": f"children/{child['child_id']}/g2_summaries/{summary_path.name}",
             **publication,
         }
 
@@ -303,6 +303,128 @@ def _result_for_child(
         "g1_seal_sha256": data.get("g1_seal_sha256"),
         "g2_barrier_sha256": data.get("g2_barrier_sha256"),
     }
+
+
+def _prior_control_fingerprint(bundle) -> dict[str, str]:
+    return {
+        "manifest": sha256_file(bundle.manifest_path),
+        "evidence": sha256_file(bundle.evidence_path),
+        "state": sha256_file(bundle.state_path),
+    }
+
+
+def _copy_prior_terminal_result(
+    bundle,
+    *,
+    child: dict,
+    result: dict,
+    phase: str,
+    envelope_root: Path,
+    central_g2: Path,
+    source_sha: str,
+    g1_sha: str,
+    g2_sha: str | None,
+) -> tuple[dict, list[Path]]:
+    child_id = child["child_id"]
+    rel = Path(str(result["result_relative_path"]))
+    source = (bundle.root / rel).resolve()
+    if bundle.root not in source.parents or not source.is_file():
+        raise EnvelopeError(f"prior terminal result missing/unsafe for {child_id}")
+
+    if phase == "calibration-dual":
+        summary = load_json(source)
+        errors = validate_calibration_summary(summary)
+        if errors:
+            raise EnvelopeError(f"prior calibration summary invalid for {child_id}: " + "; ".join(errors))
+        if summary.get("source_git_commit") != source_sha:
+            raise EnvelopeError(f"prior calibration summary source mismatch for {child_id}")
+        if summary.get("g1_seal_sha256") != g1_sha:
+            raise EnvelopeError(f"prior calibration summary G1 mismatch for {child_id}")
+        dest = envelope_root / "children" / child_id / "g2_summaries" / source.name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, dest)
+        central_g2.mkdir(parents=True, exist_ok=True)
+        central = central_g2 / source.name
+        if central.exists():
+            if load_json(central) != summary:
+                raise EnvelopeError(f"central G2 summary collision during continuation for {child_id}")
+        else:
+            tmp = central.with_suffix(".json.tmp")
+            shutil.copy2(source, tmp)
+            os.replace(tmp, central)
+        updated = dict(result)
+        updated["result_relative_path"] = dest.relative_to(envelope_root).as_posix()
+        return updated, [dest]
+
+    record = load_json(source)
+    validate_run_record(record)
+    if record.get("run_id") != result.get("run_id", record.get("run_id")):
+        raise EnvelopeError(f"prior principal run ID mismatch for {child_id}")
+    if record.get("status") != "PASS" or record.get("continuation_required") is not False:
+        raise EnvelopeError(f"prior principal result is not terminal PASS for {child_id}")
+    if record.get("source_git_commit") != source_sha:
+        raise EnvelopeError(f"prior principal source mismatch for {child_id}")
+    if record.get("g1_seal_sha256") != g1_sha or record.get("g2_barrier_sha256") != g2_sha:
+        raise EnvelopeError(f"prior principal G1/G2 identity mismatch for {child_id}")
+
+    prior_dir = source.parent
+    metrics = prior_dir / "metrics.json"
+    segments = prior_dir / "segments.jsonl"
+    if not metrics.is_file() or not segments.is_file():
+        raise EnvelopeError(f"prior principal metrics/segments missing for {child_id}")
+    artifact_metrics = record.get("artifact_locators", {}).get("metrics", {})
+    expected_metrics_sha = artifact_metrics.get("sha256")
+    if expected_metrics_sha and sha256_file(metrics) != expected_metrics_sha:
+        raise EnvelopeError(f"prior principal metrics SHA mismatch for {child_id}")
+
+    dest_dir = envelope_root / "children" / child_id / "prior_result"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    copied = []
+    for src in (source, metrics, segments):
+        dst = dest_dir / src.name
+        shutil.copy2(src, dst)
+        copied.append(dst)
+    updated = dict(result)
+    updated["result_relative_path"] = copied[0].relative_to(envelope_root).as_posix()
+    updated["run_id"] = record["run_id"]
+    return updated, copied
+
+
+def _repair_prior_child_publication(
+    bundle,
+    *,
+    child: dict,
+    prior_result: dict,
+    phase: str,
+    envelope_root: Path,
+    central_g2: Path,
+    source_sha: str,
+    g1_sha: str,
+    g2_sha: str | None,
+    repair_publication: bool,
+) -> dict:
+    carried, files = _copy_prior_terminal_result(
+        bundle,
+        child=child,
+        result=prior_result,
+        phase=phase,
+        envelope_root=envelope_root,
+        central_g2=central_g2,
+        source_sha=source_sha,
+        g1_sha=g1_sha,
+        g2_sha=g2_sha,
+    )
+    carried["status"] = "PASS"
+    carried["continuation_required"] = False
+    carried["carried_from_prior_envelope"] = True
+    if repair_publication:
+        run_id = child["experiment_id"] if phase == "calibration-dual" else carried["run_id"]
+        publication = _try_publish(run_id, source_sha, files)
+        carried.update(publication)
+        carried["publication_repair_only"] = True
+        carried["training_relaunched"] = False
+    carried["evidence_chain_complete"] = carried.get("publication_status") == "PASS"
+    return carried
 
 
 def main() -> int:
