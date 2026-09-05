@@ -200,8 +200,7 @@ A checkpoint for B cannot be created until the state machine has reached verifie
 
 ### Source-SHA configuration note
 
-The corrected notebook itself changes repository history, so its final commit SHA cannot be embedded
-inside the same commit without a self-reference loop. The canonical configuration therefore retains
-the prior frozen SHA as a non-secret placeholder/default and explicitly instructs the operator to set
-`AUTHORIZED_SOURCE_SHA` to the final exact Stage-01A-SR PR-head SHA recorded in the non-self-referential
-PR attestation before real execution.
+The smoke execution implementation was first frozen and exact-head verified at
+`045fcf5c80366438b69a54288d9081e9b57ed973` (Actions run #32). A later notebook-wrapper commit may therefore safely hard-bind
+`AUTHORIZED_SOURCE_SHA` to that already-verified implementation without creating a commit-SHA
+self-reference. Real Smoke A/B executes repository code from exactly `045fcf5c80366438b69a54288d9081e9b57ed973`.

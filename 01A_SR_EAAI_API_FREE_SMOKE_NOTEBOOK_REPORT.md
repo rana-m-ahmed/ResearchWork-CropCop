@@ -12,6 +12,10 @@
 - **R04/R05 science:** unchanged
 - **V1 / protected external access:** none
 - **Kaggle runtime execution:** none
+- **Verified smoke execution implementation:** `045fcf5c80366438b69a54288d9081e9b57ed973`
+- **Implementation exact-head CI:** run #32 / ID `33966118966`
+- **Implementation CI result:** compile PASS; strict validator PASS; JE static validator PASS; 113/113 tests PASS
+- **Implementation validation artifact SHA-256:** `509d155ec16f553bcbbc61ef0430e2d0c3c8d1f199dd7dd38124f4d1115b94e9`
 - **Current real-environment state:** `BLOCKED — REAL KAGGLE INFRASTRUCTURE SMOKE NOT EXECUTED`
 
 ## 1. Purpose
@@ -120,10 +124,10 @@ orchestration code cell. It exposes exactly:
 
 The legacy ambiguous production `smoke` route is removed.
 
-For Stage 01A-SR the operator normally changes the phase; for Smoke B they additionally set
-`SMOKE_A_INPUT_ROOT`. Because a commit cannot embed its own final SHA, the operator must also set the
-non-secret `AUTHORIZED_SOURCE_SHA` once to the exact final Stage-01A-SR PR head given by the PR
-attestation after this patch passes CI.
+For Stage 01A-SR the operator normally changes only the phase; for Smoke B they additionally set
+`SMOKE_A_INPUT_ROOT`. The smoke implementation was frozen and exact-head verified first at
+`045fcf5c80366438b69a54288d9081e9b57ed973`, so this later canonical-notebook wrapper can safely hard-bind that already-verified
+implementation SHA without a self-reference loop.
 
 ## 7. Files generated for operator use
 
@@ -184,7 +188,11 @@ Until repository CI closes:
 
 `BLOCKED — STAGE 01A-SR REPOSITORY VERIFICATION PENDING`
 
-After repository verification only, the allowed verdict is:
+The smoke execution implementation at `045fcf5c80366438b69a54288d9081e9b57ed973` has already passed exact-head Actions run #32.
+This wrapper commit still requires its own fresh exact-head CI because it changes the canonical notebook
+configuration and operator documentation.
+
+After wrapper repository verification only, the allowed verdict is:
 
 `PASS — API-FREE CROSS-SESSION SMOKE MACHINERY + KAGGLE NOTEBOOK VERIFIED; REAL SMOKE-WRITE MAY BEGIN`
 

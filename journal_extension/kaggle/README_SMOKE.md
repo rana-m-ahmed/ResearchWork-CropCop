@@ -10,7 +10,7 @@ secret, a private recovery dataset, or any CropCop dataset.
 2. Add exactly one Kaggle Secret:
    - `CROPCOP_GITHUB_TOKEN`
 3. Open `journal_extension/kaggle/canonical_lane.ipynb`.
-4. Set `AUTHORIZED_SOURCE_SHA` to the exact Stage-01A-SR PR-head SHA from the final PR attestation.
+4. Leave the frozen execution source unchanged: `045fcf5c80366438b69a54288d9081e9b57ed973`.
 5. Set:
    ```
    EXECUTION_PHASE = "smoke-write"

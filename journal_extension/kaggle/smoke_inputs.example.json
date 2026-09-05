@@ -1,6 +1,6 @@
 {
-  "authorized_source_sha": "731fcf18bd6aaf72322457d6e766296dc95d5c94",
-  "note": "Replace authorized_source_sha with the final Stage-01A-SR PR-head SHA from the non-self-referential PR attestation before real execution.",
+  "authorized_source_sha": "045fcf5c80366438b69a54288d9081e9b57ed973",
+  "note": "Frozen exact Stage-01A-SR execution implementation verified by exact-head Actions run #32. Do not change for this qualification.",
   "lane": "K1",
   "repository_url": "https://github.com/rana-m-ahmed/ResearchWork-CropCop.git",
   "repo_workdir": "/kaggle/working/cropcop-je",
