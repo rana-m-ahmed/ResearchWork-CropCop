@@ -66,6 +66,10 @@ jobs:
               re.compile(r"gh[pousr]_[A-Za-z0-9_]{30,}"),
               re.compile(r"github_pat_[A-Za-z0-9_]{30,}"),
           ]
+          # Exact fake credential fixture required by the publication failure-injection test.
+          allowed_fixtures = {
+              ("tests/test_je_failure_injection_matrix.py", "github_pat_abcdefghijklmnopqrstuvwxyz123456"),
+          }
           offenders = []
           for rel in subprocess.check_output(["git", "ls-files"], text=True).splitlines():
               p = Path(rel)
@@ -76,8 +80,9 @@ jobs:
               except (UnicodeDecodeError, OSError):
                   continue
               for pattern in patterns:
-                  if pattern.search(value):
-                      offenders.append((rel, pattern.pattern))
+                  for match in pattern.finditer(value):
+                      if (rel, match.group(0)) not in allowed_fixtures:
+                          offenders.append((rel, match.group(0)[:12] + "...", pattern.pattern))
           if offenders:
               raise SystemExit("live-looking GitHub credential pattern in tracked tree: " + repr(offenders))
           PY
