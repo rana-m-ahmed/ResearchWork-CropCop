@@ -10,8 +10,12 @@ MARKDOWN = """# CropCop EAAI — Canonical Clean Kaggle Session
 Thin orchestration only. For Stage 01A-SR use `smoke-write` in Saved Version A and `smoke-restore` in a completely fresh Saved Version B with the exact Smoke-A Notebook Output attached read-only. No CropCop dataset is required.
 """
 
-CODE = r'''import os, platform, shutil, stat, subprocess, sys, tempfile, time
+CODE = r'''import json
+import os, platform, shutil, stat, subprocess, sys, tempfile, time
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 # ============================================================
 # CROPCOP EAAI — KAGGLE OPERATOR CONFIGURATION
@@ -91,6 +95,76 @@ for _key in _required_secrets:
         except Exception as _exc:
             raise RuntimeError(f"Required Kaggle Secret missing: {_key}") from _exc
 
+_token = str(os.environ.get("CROPCOP_GITHUB_TOKEN", "")).strip()
+if not _token:
+    raise RuntimeError("CROPCOP_GITHUB_TOKEN is empty after Kaggle Secrets retrieval")
+if any(ch.isspace() for ch in _token):
+    raise RuntimeError(
+        "CROPCOP_GITHUB_TOKEN contains whitespace/newlines; store the raw token only"
+    )
+if (_token.startswith("'") and _token.endswith("'")) or (
+    _token.startswith('"') and _token.endswith('"')
+):
+    raise RuntimeError(
+        "CROPCOP_GITHUB_TOKEN appears to include surrounding quotes; store the raw token only"
+    )
+os.environ["CROPCOP_GITHUB_TOKEN"] = _token
+
+_repo_parts = urlparse(REPOSITORY_URL)
+if _repo_parts.scheme != "https" or _repo_parts.netloc.lower() != "github.com":
+    raise RuntimeError("Stage 01A-SR requires an HTTPS github.com repository URL")
+_repo_segments = [part for part in _repo_parts.path.strip("/").split("/") if part]
+if len(_repo_segments) != 2:
+    raise RuntimeError(f"Unexpected GitHub repository URL path: {_repo_parts.path}")
+_repo_owner = _repo_segments[0]
+_repo_name = _repo_segments[1][:-4] if _repo_segments[1].endswith(".git") else _repo_segments[1]
+_git_username = _repo_owner
+os.environ["CROPCOP_GIT_USERNAME"] = _git_username
+
+_api_url = f"https://api.github.com/repos/{_repo_owner}/{_repo_name}"
+_api_request = Request(
+    _api_url,
+    headers={
+        "Authorization": f"Bearer {_token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "cropcop-kaggle-auth-preflight",
+    },
+)
+try:
+    with urlopen(_api_request, timeout=30) as _response:
+        _repo_payload = json.loads(_response.read().decode("utf-8"))
+except HTTPError as _exc:
+    if _exc.code == 401:
+        raise RuntimeError(
+            "GitHub rejected CROPCOP_GITHUB_TOKEN (HTTP 401). "
+            "The token is invalid, expired, revoked, or was copied incorrectly."
+        ) from _exc
+    if _exc.code == 404:
+        raise RuntimeError(
+            "GitHub could not expose the private repository to this token (HTTP 404). "
+            "For a fine-grained PAT, select resource owner 'rana-m-ahmed', include "
+            "repository 'ResearchWork-CropCop', and grant Contents: Read and write."
+        ) from _exc
+    if _exc.code == 403:
+        raise RuntimeError(
+            "GitHub denied the token by policy/permission (HTTP 403). "
+            "Check token repository access, organization/SSO policy if applicable, and expiry."
+        ) from _exc
+    raise RuntimeError(f"GitHub repository authorization preflight failed with HTTP {_exc.code}") from _exc
+except URLError as _exc:
+    raise RuntimeError(f"GitHub authorization preflight network failure: {_exc.reason}") from _exc
+
+if _repo_payload.get("full_name") != f"{_repo_owner}/{_repo_name}":
+    raise RuntimeError("GitHub authorization preflight returned an unexpected repository identity")
+if _repo_payload.get("private") is not True:
+    raise RuntimeError("Expected CropCop repository to be private during smoke qualification")
+
+print(
+    "GitHub API auth preflight: PASS "
+    f"(repo={_repo_owner}/{_repo_name}, token_value_not_printed=true)"
+)
+
 if repo_workdir.exists():
     shutil.rmtree(repo_workdir)
 
@@ -99,13 +173,38 @@ with tempfile.TemporaryDirectory() as td:
     askpass.write_text(
         "#!/usr/bin/env python3\n"
         "import os,sys\n"
-        "p=sys.argv[1] if len(sys.argv)>1 else ''\n"
-        "print('x-access-token' if 'Username' in p else os.environ['CROPCOP_GITHUB_TOKEN'])\n"
+        "p=(sys.argv[1] if len(sys.argv)>1 else '').lower()\n"
+        "if 'username' in p:\n"
+        "    print(os.environ['CROPCOP_GIT_USERNAME'])\n"
+        "elif 'password' in p:\n"
+        "    print(os.environ['CROPCOP_GITHUB_TOKEN'])\n"
+        "else:\n"
+        "    raise SystemExit(2)\n"
     )
     askpass.chmod(askpass.stat().st_mode | stat.S_IXUSR)
     env = dict(os.environ)
     env["GIT_ASKPASS"] = str(askpass)
+    env["GIT_ASKPASS_REQUIRE"] = "force"
     env["GIT_TERMINAL_PROMPT"] = "0"
+    env["GIT_CONFIG_COUNT"] = "1"
+    env["GIT_CONFIG_KEY_0"] = "credential.helper"
+    env["GIT_CONFIG_VALUE_0"] = ""
+
+    _ls_remote = subprocess.run(
+        ["git", "ls-remote", "--exit-code", REPOSITORY_URL, "HEAD"],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    if _ls_remote.returncode != 0:
+        _safe_stderr = (_ls_remote.stderr or "").replace(_token, "<redacted>")
+        raise RuntimeError(
+            "GitHub API token validation passed, but Git-over-HTTPS read authentication failed. "
+            "The token may lack repository Contents read permission. "
+            f"git ls-remote stderr: {_safe_stderr[-1200:]}"
+        )
+    print("GitHub Git-over-HTTPS read preflight: PASS")
+
     subprocess.run(
         [
             "git",
@@ -119,10 +218,36 @@ with tempfile.TemporaryDirectory() as td:
         check=True,
     )
 
-subprocess.run(
-    ["git", "-C", str(repo_workdir), "checkout", "--detach", AUTHORIZED_SOURCE_SHA],
-    check=True,
-)
+    subprocess.run(
+        ["git", "-C", str(repo_workdir), "checkout", "--detach", AUTHORIZED_SOURCE_SHA],
+        env=env,
+        check=True,
+    )
+
+    _probe_ref = f"refs/heads/run-evidence/auth-probe-{AUTHORIZED_SOURCE_SHA[:12]}"
+    _push_probe = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_workdir),
+            "push",
+            "--dry-run",
+            "origin",
+            f"HEAD:{_probe_ref}",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    if _push_probe.returncode != 0:
+        _safe_stderr = (_push_probe.stderr or "").replace(_token, "<redacted>")
+        raise RuntimeError(
+            "Private clone/read succeeded, but GitHub evidence-branch write preflight failed. "
+            "For a fine-grained PAT, grant Contents: Read and write on ResearchWork-CropCop. "
+            f"git push --dry-run stderr: {_safe_stderr[-1200:]}"
+        )
+    print("GitHub evidence-branch write preflight: PASS (dry-run only; no ref created)")
+
 actual = subprocess.check_output(
     ["git", "-C", str(repo_workdir), "rev-parse", "HEAD"],
     text=True,

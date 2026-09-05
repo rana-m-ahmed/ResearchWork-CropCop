@@ -9,6 +9,14 @@ secret, a private recovery dataset, or any CropCop dataset.
 1. Enable a GPU accelerator.
 2. Add exactly one Kaggle Secret:
    - `CROPCOP_GITHUB_TOKEN`
+   
+   For a **fine-grained PAT**, configure it as:
+   - Resource owner: `rana-m-ahmed`
+   - Repository access: only `ResearchWork-CropCop` (or all repositories if intentionally broader)
+   - Repository permission: **Contents — Read and write**
+   - Store the raw token value only in Kaggle Secrets: no quotes, spaces or line breaks.
+   
+   A classic PAT must have private-repository `repo` scope, but a fine-grained PAT is preferred.
 3. Open `journal_extension/kaggle/canonical_lane.ipynb`.
 4. Leave the frozen execution source unchanged: `045fcf5c80366438b69a54288d9081e9b57ed973`.
 5. Set:
@@ -25,6 +33,13 @@ secret, a private recovery dataset, or any CropCop dataset.
    SMOKE_B_EXPORT_ROOT = "/kaggle/working/cropcop-smoke-b-export"
    ```
 7. Use **Save & Run All**.
+
+Before cloning, the notebook now performs three non-secret-leaking checks:
+- GitHub API private-repository authorization;
+- Git-over-HTTPS `git ls-remote` read authorization;
+- `git push --dry-run` to a dedicated `run-evidence/auth-probe-...` ref to prove write access without creating a branch.
+
+If one fails, use the specific error rather than regenerating checkpoints or changing scientific settings.
 
 A successful Smoke A prints an unmistakable `CROPCOP SMOKE A COMPLETE` block. Preserve that exact
 Saved Version. Its output contains `SMOKE_A_MANIFEST.json`, `SMOKE_A_EVIDENCE.json`,

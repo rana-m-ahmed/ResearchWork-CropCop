@@ -348,6 +348,38 @@ class SmokeSRTests(unittest.TestCase):
         self.assertIn('compile(CODE, "canonical_lane.ipynb", "exec")', generator)
         self.assertIn("len(CODE.splitlines()) <= 40", generator)
 
+    def test_36_github_auth_preflight_never_prints_token_value(self):
+        self.assertIn("token_value_not_printed=true", self.code)
+        self.assertNotIn('print(os.environ["CROPCOP_GITHUB_TOKEN"])', self.code)
+
+    def test_37_github_auth_uses_nonempty_username_and_pat_as_password(self):
+        self.assertIn('os.environ["CROPCOP_GIT_USERNAME"] = _git_username', self.code)
+        self.assertIn("if 'username' in p:", self.code)
+        self.assertIn("print(os.environ['CROPCOP_GIT_USERNAME'])", self.code)
+        self.assertIn("elif 'password' in p:", self.code)
+        self.assertIn("print(os.environ['CROPCOP_GITHUB_TOKEN'])", self.code)
+
+    def test_38_github_auth_proves_private_repo_before_clone(self):
+        self.assertLess(self.code.index("GitHub API auth preflight: PASS"), self.code.index('"clone"'))
+        self.assertIn("https://api.github.com/repos/", self.code)
+        self.assertIn("_repo_payload.get(\"private\") is not True", self.code)
+
+    def test_39_git_https_read_preflight_occurs_before_clone(self):
+        self.assertLess(self.code.index('"ls-remote"'), self.code.index('"clone"'))
+        self.assertIn("GitHub Git-over-HTTPS read preflight: PASS", self.code)
+
+    def test_40_evidence_write_permission_is_dry_run_and_pre_smoke(self):
+        self.assertIn('"--dry-run"', self.code)
+        self.assertIn("run-evidence/auth-probe-", self.code)
+        self.assertIn("no ref created", self.code)
+        self.assertLess(self.code.index('"--dry-run"'), self.code.index("smoke_infrastructure.py"))
+
+    def test_41_auth_errors_are_token_redacted(self):
+        self.assertIn('.replace(_token, "<redacted>")', self.code)
+        self.assertIn("CROPCOP_GITHUB_TOKEN contains whitespace/newlines", self.code)
+        self.assertIn("appears to include surrounding quotes", self.code)
+
+
 
 
 if __name__ == "__main__":

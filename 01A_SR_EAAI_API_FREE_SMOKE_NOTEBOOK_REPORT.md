@@ -243,3 +243,30 @@ The full suite discovered 116 tests and rejected three older formatting-sensitiv
 still searched for compact/single-quoted notebook source fragments. Those legacy tests were updated to
 assert the same semantic ordering/routes against the normalized multiline source. No notebook or smoke
 execution code changed in this correction. Run #35 remains historical failed CI.
+
+
+## Stage 01A-SR-AUTH — Kaggle GitHub Authentication Preflight Hotfix
+
+The first real Kaggle Smoke-A attempt reached GitHub clone and failed with
+`Invalid username or token`. Because Kaggle Secrets retrieval had already completed, this isolated the
+failure to GitHub credential authorization rather than notebook serialization or smoke execution.
+
+The human-facing notebook authentication boundary was hardened without changing scientific settings or
+the Smoke A/B training/recovery state machine:
+
+- trim and validate the Kaggle secret without printing its value;
+- reject empty, whitespace/newline-contaminated, or quote-wrapped token values;
+- validate the exact private repository through the GitHub REST API;
+- use the repository owner as an explicit non-empty HTTPS Git username and the PAT as the password,
+  matching GitHub's documented PAT-over-HTTPS flow;
+- force `GIT_ASKPASS`, disable interactive prompting and ignore any cached credential helper;
+- run authenticated `git ls-remote HEAD` before clone;
+- clone only after read authorization succeeds;
+- check out the frozen execution source while the authenticated Git environment is active;
+- perform `git push --dry-run` to a dedicated evidence probe ref before smoke execution so a read-only
+  PAT cannot fail late during evidence publication;
+- redact the token from any captured Git stderr used in diagnostic exceptions.
+
+No GitHub API token value, token prefix or secret body is printed. The dry-run creates no remote ref.
+For the preferred fine-grained PAT, the operator guide now explicitly requires resource owner
+`rana-m-ahmed`, repository `ResearchWork-CropCop`, and Contents: Read and write.
