@@ -14,8 +14,8 @@ are verified before use; V1 test and sealed external surfaces are not resolvable
 <!-- QA1_OPERATOR_BEGIN -->
 ## Current Stage-01A-MGPU-QA1 operator path
 
-**Active pre-QA execution source:** `ba5dd4661b97d072593af4646b76552686953a2d`  
-The final source is replaced only after Wave-C exact-head freeze. The generator is authoritative for the active source SHA.
+**Frozen QA1 execution source:** `be9b6965d760ff6e8674623b658f66572cd57093`  
+This source is frozen by Wave-C exact-head CI. The generator is authoritative for the active source SHA.
 
 ```text
 smoke-write
