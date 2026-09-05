@@ -661,19 +661,22 @@ def main() -> int:
 
     last_telemetry = 0.0
     while pending or running:
-        if global_stop["reason"]:
-            for obj in list(running.values()):
-                terminate_process_group(obj)
-            break
-
         budget = SessionBudget.from_environment(require_global_clock=True)
-        if budget.remaining_safe_seconds <= 300 and running:
+        if budget.remaining_safe_seconds <= 300 and running and not global_stop["reason"]:
             global_stop["reason"] = "COMMON_SAFE_DEADLINE"
-            for obj in list(running.values()):
-                terminate_process_group(obj)
-            break
 
-        launched = True
+        if global_stop["reason"] and not finalization_started:
+            pending.clear()
+            grace = planned_finalization_grace_seconds(budget)
+            finalization_outcomes.update(
+                gracefully_finalize_process_groups(
+                    list(running.values()),
+                    grace_seconds=grace,
+                )
+            )
+            finalization_started = True
+
+        launched = not bool(global_stop["reason"])
         while launched and pending:
             launched = False
             child = pending[0]
@@ -730,7 +733,14 @@ def main() -> int:
             starts[child["child_id"]] = obj.started_monotonic
             for row in state["children"]:
                 if row["child_id"] == child["child_id"]:
-                    row.update({"status": "RUNNING", "physical_slot": slot, "started_at_utc": utc_now()})
+                    row.update({
+                        "status": "RUNNING",
+                        "execution_status": "RUNNING",
+                        "publication_status": "NOT_ATTEMPTED",
+                        "evidence_chain_complete": False,
+                        "physical_slot": slot,
+                        "started_at_utc": utc_now(),
+                    })
             state["state"] = "RUNNING"
             state["updated_at_utc"] = utc_now()
             atomic_write_json(state_path, state)
@@ -744,7 +754,13 @@ def main() -> int:
         any_terminal = False
         for child_id, obj in list(running.items()):
             if obj.timeout_seconds and now - obj.started_monotonic > obj.timeout_seconds and obj.process.poll() is None:
-                terminate_process_group(obj)
+                mode = terminate_process_group(obj)
+                finalization_outcomes[child_id] = {
+                    "termination_mode": mode,
+                    "termination_duration_seconds": 30.0,
+                    "returncode": obj.process.poll(),
+                    "reason": "CHILD_RUNTIME_TIMEOUT",
+                }
             rc = obj.process.poll()
             if rc is None:
                 continue
@@ -755,29 +771,26 @@ def main() -> int:
             del running[child_id]
             child = next(x for x in config["children"] if x["child_id"] == child_id)
             paths = _child_paths(envelope_root, child_id)
-            if rc == 0:
-                try:
-                    preflight = _validated_child_preflight(child, paths, slot=obj.slot, envelope_id=envelope_id)
-                    result = _result_for_child(
-                        child,
-                        paths=paths,
-                        run_id=obj.run_id,
-                        phase=phase,
-                        central_g2=central_g2,
-                        source_sha=source_sha,
-                    )
-                    result["child_preflight"] = preflight
-                except Exception as exc:
-                    result = {
-                        "status": "FAIL_TECHNICAL",
-                        "continuation_required": False,
-                        "error": f"{type(exc).__name__}: {exc}",
-                    }
-            else:
+            try:
+                preflight = _validated_child_preflight(child, paths, slot=obj.slot, envelope_id=envelope_id)
+                result = _result_for_child(
+                    child,
+                    paths=paths,
+                    run_id=obj.run_id,
+                    phase=phase,
+                    central_g2=central_g2,
+                    source_sha=source_sha,
+                )
+                result["child_preflight"] = preflight
+                result["process_returncode"] = rc
+            except Exception as exc:
                 result = {
-                    "status": "FAIL_TECHNICAL",
-                    "continuation_required": False,
+                    "status": "CONTINUATION_REQUIRED" if global_stop["reason"] else "FAIL_TECHNICAL",
+                    "continuation_required": bool(global_stop["reason"]),
                     "returncode": rc,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "publication_status": "NOT_ATTEMPTED",
+                    "evidence_chain_complete": False,
                 }
             result.update(
                 {
@@ -789,6 +802,11 @@ def main() -> int:
                     "child_visible_cuda_count_required": 1,
                     "git_credentials_present_in_child": False,
                     "console_log": f"children/{child_id}/console.log",
+                    "termination": finalization_outcomes.get(child_id),
+                    "evidence_chain_complete": (
+                        result.get("status") == "PASS"
+                        and result.get("publication_status") == "PASS"
+                    ),
                 }
             )
             results[child_id] = result
@@ -797,9 +815,13 @@ def main() -> int:
                     row.update(
                         {
                             "status": result["status"],
+                            "execution_status": result["status"],
+                            "publication_status": result.get("publication_status", "NOT_ATTEMPTED"),
+                            "evidence_chain_complete": bool(result.get("evidence_chain_complete")),
                             "physical_slot": obj.slot,
                             "ended_at_utc": utc_now(),
                             "continuation_required": result.get("continuation_required", False),
+                            "termination": finalization_outcomes.get(child_id),
                         }
                     )
             state["state"] = "PARTIAL_TERMINAL" if pending or running else "RUNNING"
@@ -810,26 +832,25 @@ def main() -> int:
             time.sleep(0.5)
 
     for obj in list(running.values()):
-        terminate_process_group(obj)
+        mode = terminate_process_group(obj)
+        finalization_outcomes[obj.child_id] = {
+            "termination_mode": mode,
+            "termination_duration_seconds": 30.0,
+            "returncode": obj.process.poll(),
+            "reason": "POST_LOOP_EMERGENCY_CLEANUP",
+        }
         close_child_log(obj)
 
-    if global_stop["reason"]:
-        for row in state["children"]:
-            if row["status"] == "RUNNING":
-                row["status"] = "CONTINUATION_REQUIRED"
-                row["continuation_required"] = True
-        envelope_status = "CONTINUATION_REQUIRED"
-    elif any(row.get("status") == "FAIL_TECHNICAL" for row in state["children"]):
+    if any(row.get("execution_status", row.get("status")) == "FAIL_TECHNICAL" for row in state["children"]):
         envelope_status = "FAIL_TECHNICAL"
-    elif any(row.get("status") == "CONTINUATION_REQUIRED" for row in state["children"]):
+    elif any(row.get("execution_status", row.get("status")) == "CONTINUATION_REQUIRED" for row in state["children"]):
         envelope_status = "CONTINUATION_REQUIRED"
-    elif all(row.get("status") == "PASS" for row in state["children"]):
-        envelope_status = "PASS"
+    elif all(row.get("execution_status", row.get("status")) == "PASS" for row in state["children"]):
+        if all(row.get("evidence_chain_complete") is True for row in state["children"]):
+            envelope_status = "PASS"
+        else:
+            envelope_status = "FAIL_TECHNICAL"
     else:
-        envelope_status = "FAIL_TECHNICAL"
-
-    if any(result.get("publication_status") == "FAIL" for result in results.values()):
-        # Preserve child scientific/calibration terminal state, but fail the envelope evidence chain.
         envelope_status = "FAIL_TECHNICAL"
 
     final_g2 = None
@@ -885,6 +906,7 @@ def main() -> int:
         "dual_gpu_smoke_evidence_sha256": sha256_json(dual_smoke),
         "g2_publication_branch": final_g2_branch,
         "host_global_stop_reason": global_stop["reason"],
+        "finalization_outcomes": finalization_outcomes,
         "created_at_utc": utc_now(),
         "scientific_configuration_changed": False,
     }
@@ -896,7 +918,10 @@ def main() -> int:
     state["updated_at_utc"] = utc_now()
     atomic_write_json(state_path, state)
 
-    envelope_branch = _publish(envelope_id, source_sha, [manifest_path, evidence_path, state_path])
+    if prior_bundle is not None and prior_control_before != _prior_control_fingerprint(prior_bundle):
+        raise EnvelopeError("attached prior envelope control files changed during continuation")
+
+        envelope_branch = _publish(envelope_id, source_sha, [manifest_path, evidence_path, state_path])
     evidence["envelope_publication_branch"] = envelope_branch
     atomic_write_json(evidence_path, evidence)
     envelope_branch2 = _publish(envelope_id, source_sha, [manifest_path, evidence_path, state_path])
