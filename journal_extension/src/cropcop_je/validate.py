@@ -147,8 +147,16 @@ def validate_static(repo_root: Path) -> dict:
                 errors.append(
                     f"canonical Kaggle notebook source is not physically multiline enough: {len(lines)} lines"
                 )
-            if not lines or lines[0] != "import os, platform, shutil, stat, subprocess, sys, tempfile, time":
-                errors.append("canonical Kaggle notebook first Python line is unexpected")
+            expected_prefix = [
+                "import json",
+                "import os, platform, shutil, stat, subprocess, sys, tempfile, time",
+                "from pathlib import Path",
+                "from urllib.error import HTTPError, URLError",
+                "from urllib.parse import urlparse",
+                "from urllib.request import Request, urlopen",
+            ]
+            if lines[:len(expected_prefix)] != expected_prefix:
+                errors.append("canonical Kaggle notebook Python import prefix is unexpected")
             expected_source_binding = (
                 'AUTHORIZED_SOURCE_SHA = "045fcf5c80366438b69a54288d9081e9b57ed973"'
             )

@@ -270,3 +270,12 @@ the Smoke A/B training/recovery state machine:
 No GitHub API token value, token prefix or secret body is printed. The dry-run creates no remote ref.
 For the preferred fine-grained PAT, the operator guide now explicitly requires resource owner
 `rana-m-ahmed`, repository `ResearchWork-CropCop`, and Contents: Read and write.
+
+
+Exact-head Actions run #37 / ID `33967626505` on
+`f12c0168b91f556d2f9e2e74712b83bd629b1372` passed exact checkout, Python compilation and the strict
+repository validator, then was rejected by one legacy JE-static notebook-prefix assertion because the
+auth hardening intentionally added `import json` and `urllib` imports ahead of the previous first line.
+The validator and matching structural test were updated to require the new exact import prefix. The
+authentication logic and regenerated notebook were not otherwise changed. Run #37 remains historical
+failed CI.

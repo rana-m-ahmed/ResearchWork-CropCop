@@ -333,8 +333,10 @@ class SmokeSRTests(unittest.TestCase):
         source = "".join(raw) if isinstance(raw, list) else raw
         lines = source.splitlines()
         self.assertGreater(len(lines), 100)
-        self.assertEqual(lines[0], "import os, platform, shutil, stat, subprocess, sys, tempfile, time")
-        self.assertEqual(lines[1], "from pathlib import Path")
+        self.assertEqual(lines[0], "import json")
+        self.assertEqual(lines[1], "import os, platform, shutil, stat, subprocess, sys, tempfile, time")
+        self.assertEqual(lines[2], "from pathlib import Path")
+        self.assertEqual(lines[3], "from urllib.error import HTTPError, URLError")
         self.assertIn(
             'AUTHORIZED_SOURCE_SHA = "045fcf5c80366438b69a54288d9081e9b57ed973"',
             lines,
