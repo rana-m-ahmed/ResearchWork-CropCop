@@ -14,6 +14,7 @@ if str(SRC) not in sys.path:
 from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.g1 import validate_dependency_environment, validate_dependency_lock_object
 from cropcop_je.session import SessionBudget
+from cropcop_je.smoke_handoff import observed_kaggle_run_type, require_qualifying_kaggle_batch
 from cropcop_je.source_state import verify_clean_source
 
 OUTPUT_ENV_KEYS = (
@@ -53,6 +54,15 @@ def main() -> int:
     dep = json.loads(dep_path.read_text(encoding="utf-8"))
     errors = validate_dependency_lock_object(dep) + validate_dependency_environment(dep)
 
+    run_type = observed_kaggle_run_type()
+    try:
+        require_qualifying_kaggle_batch(
+            context=f"canonical bootstrap ({args.phase})",
+            run_type=run_type,
+        )
+    except Exception as exc:
+        errors.append(str(exc))
+
     roots = [os.environ[k] for k in OUTPUT_ENV_KEYS if os.environ.get(k)]
     try:
         source = verify_clean_source(repo, authorized_source_sha=args.authorized_source_sha, output_roots=roots)
@@ -79,6 +89,7 @@ def main() -> int:
         "schema_version": "2.0",
         "status": "PASS" if not errors else "FAIL",
         "phase": args.phase,
+        "kaggle_run_type": run_type,
         "source_state": source,
         "dependency_lock_sha256": dep.get("dependency_lock_sha256"),
         "notebook_session": session,
