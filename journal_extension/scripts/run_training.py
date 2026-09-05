@@ -9,7 +9,6 @@ from pathlib import Path
 
 import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
-from cropcop_je.checkpointing import recover_latest, verify_selected
 from cropcop_je.data import CropCopManifestDataset, ManifestColumns, load_manifest_rows
 from cropcop_je.environment import capture_environment, software_stack_identity, validate_locked_core
 from cropcop_je.g1 import (
@@ -24,6 +23,7 @@ from cropcop_je.runlog import claim_run_directory, write_run_record
 from cropcop_je.segments import append_segment_event, host_identity, new_segment_id, utc_now
 from cropcop_je.session import SessionBudget
 from cropcop_je.surfaces import validate_training_config
+from cropcop_je.terminal_recovery import completed_scientific_checkpoint_result
 from cropcop_je.train import _identity as checkpoint_identity
 from cropcop_je.train import run_training
 
@@ -234,88 +234,6 @@ def _public_locator(args) -> str | None:
     return "restricted-filesystem-locator"
 
 
-def _completed_scientific_checkpoint_result(
-    checkpoint_root: Path,
-    *,
-    run_identity: dict,
-    ctc: dict,
-) -> dict | None:
-    """Execution-layer terminal recovery. Never advances optimizer/scheduler or recomputes metrics."""
-    started = time.perf_counter()
-    try:
-        _path, payload, recovery = recover_latest(
-            checkpoint_root,
-            expected_identity=checkpoint_identity(run_identity),
-        )
-    except Exception:
-        return None
-
-    if not recovery or recovery.get("candidate") != "latest":
-        return None
-    locked_epochs = int(ctc["schedule"]["epochs"])
-    if int(payload.get("epoch", -1)) < locked_epochs:
-        return None
-    if int(payload.get("batch_in_epoch", -1)) != 0:
-        return None
-    data_order = payload.get("data_order_state") or {}
-    if int(data_order.get("epoch", -1)) < locked_epochs or int(data_order.get("next_batch_in_epoch", -1)) != 0:
-        return None
-    optimizer_step = int(payload.get("optimizer_step", -1))
-    if optimizer_step <= 0:
-        return None
-
-    selection_state = payload.get("selection_state") or {}
-    history = selection_state.get("history")
-    best = selection_state.get("best")
-    if not isinstance(history, list) or len(history) < locked_epochs or not isinstance(best, dict):
-        return None
-    selected_sha = str(best.get("checkpoint_sha256", ""))
-    if len(selected_sha) != 64:
-        return None
-    verify_selected(
-        checkpoint_root,
-        expected_identity=checkpoint_identity(run_identity),
-        expected_sha256=selected_sha,
-    )
-    recovered = recovery.get("recovered") or {}
-    latest_sha = str(recovered.get("sha256", ""))
-    if len(latest_sha) != 64:
-        return None
-
-    return {
-        "mode": "scientific_terminal_recovery",
-        "terminal_checkpoint_recovery": True,
-        "planned_rollover": False,
-        "optimizer_steps_segment": 0,
-        "optimizer_step_total": optimizer_step,
-        "examples_segment": 0,
-        "examples_total": int(payload.get("examples_seen", 0)),
-        "wall_seconds_segment": max(0.0, time.perf_counter() - started),
-        "sec_per_optimizer_step": 0.0,
-        "examples_per_second": 0.0,
-        "dataloader_wait_seconds": 0.0,
-        "dataloader_examples_per_wait_second": 0.0,
-        "peak_gpu_memory_bytes": 0,
-        "checkpoint_save_seconds": 0.0,
-        "checkpoint_load_seconds": max(0.0, time.perf_counter() - started),
-        "history": list(history),
-        "selected_epoch": int(best["epoch"]),
-        "selected_metrics": dict(best["metrics"]),
-        "selected_checkpoint_sha256": selected_sha,
-        "latest_checkpoint_sha256": latest_sha,
-        "validation_forward_benchmark": None,
-        "recovery_events": [
-            recovery,
-            {
-                "event": "TERMINAL_COMPLETED_CHECKPOINT_RECOVERY",
-                "locked_epochs": locked_epochs,
-                "recovered_epoch": int(payload["epoch"]),
-                "optimizer_steps_advanced": 0,
-            },
-        ],
-    }
-
-
 def execute(args, *, max_optimizer_steps=None, resume_mode="auto", mode="scientific") -> dict:
     (
         config, ctc, student, teacher, projection, train_ds, val_ds,
@@ -419,10 +337,10 @@ def execute(args, *, max_optimizer_steps=None, resume_mode="auto", mode="scienti
     try:
         result = None
         if resume and mode == "scientific":
-            result = _completed_scientific_checkpoint_result(
+            result = completed_scientific_checkpoint_result(
                 checkpoint_root,
-                run_identity=run_identity,
-                ctc=ctc,
+                expected_identity=checkpoint_identity(run_identity),
+                locked_epochs=int(ctc["schedule"]["epochs"]),
             )
         if result is None:
             result = run_training(
