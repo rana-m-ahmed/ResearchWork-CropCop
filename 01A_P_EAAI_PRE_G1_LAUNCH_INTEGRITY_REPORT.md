@@ -9,8 +9,9 @@
 - **PR:** #8
 - **Current `main` HEAD:** `32190dd86293caa82170df3feea505e3c7443b4b`
 - **Prior audited Stage-01A-H head:** `ac39ebd1ba1ad87de6d17ddfa027cd03a5bb7d59`
-- **Stage-01A-P implementation commit:** `78089ec8e87f33c05b521b03d25cbaed923058f6`
-- **Final documentation/PR head:** not self-embedded; exact final branch SHA is attested by PR #8 and its exact-head CI after publication
+- **Stage-01A-P initial implementation commit:** `78089ec8e87f33c05b521b03d25cbaed923058f6`
+- **Initial publication candidate:** `5897b530c4d588d98bfd916867f15624b3408b90` — exact-head Actions run #28 correctly failed at Python compilation and was not accepted
+- **Final corrected documentation/PR head:** not self-embedded; exact final branch SHA is attested by PR #8 and its exact-head CI after publication
 - **Scientific authority:** `EAAI-JE-SDL-v2.1-QA`
 - **Scientific authority SHA-256:** `aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74`
 - **Execution authority:** `EAAI-JE-REA-v2.2-LEAN`
@@ -217,11 +218,13 @@ the final pushed head and must not be guessed in this report.
 
 ## 12. Repository publication and exact-head CI
 
-The source implementation is frozen at:
+The initial implementation was committed at `78089ec8e87f33c05b521b03d25cbaed923058f6`.
+The first documentation candidate `5897b530c4d588d98bfd916867f15624b3408b90` was rejected by exact-head
+Actions run #28 because a durable-sync timing edit left an `elif` after an intervening assignment.
+That syntax defect was corrected before any validator, Kaggle execution or scientific run could occur.
 
-`78089ec8e87f33c05b521b03d25cbaed923058f6`
-
-This report is added afterward, so the final PR head necessarily differs from the implementation commit.
+This report is part of the corrected publication series, so the final PR head necessarily differs from
+the initial implementation commit.
 Embedding the final report commit's own SHA or its future Actions run ID into itself would be
 self-referential. As in Stage 01A-H, the exact final branch SHA, Actions run number/ID, checkout assertion,
 test count and conclusion are recorded in PR #8 metadata after CI completes on that exact head.

@@ -365,9 +365,9 @@ def execute(args, *, max_optimizer_steps=None, resume_mode="auto", mode="scienti
                 segment_id=segment_id,
             ).to_dict()
             durable_sync_seconds = time.perf_counter() - sync_started
-        result["durable_sync_seconds"] = durable_sync_seconds
         elif args.durable_required:
             raise RuntimeError("durable persistence is required but no durable store is configured")
+        result["durable_sync_seconds"] = durable_sync_seconds
 
         if result.get("planned_rollover"):
             record.update(
