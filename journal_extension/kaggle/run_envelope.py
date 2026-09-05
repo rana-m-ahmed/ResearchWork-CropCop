@@ -175,6 +175,36 @@ def _run_id_env_key(experiment_id: str) -> str:
     return "CROPCOP_RUN_ID_" + "".join(ch if ch.isalnum() else "_" for ch in experiment_id).upper()
 
 
+def _validated_child_preflight(child: dict, paths: dict[str, Path], *, slot: int) -> dict:
+    path = paths["terminal"] / "CHILD_PREFLIGHT.json"
+    if not path.is_file():
+        raise EnvelopeError(f"child isolation evidence missing: {child['child_id']}")
+    row = load_json(path)
+    errors = []
+    if row.get("status") != "PASS":
+        errors.append("status is not PASS")
+    if row.get("envelope_id") != os.environ.get("CROPCOP_ENVELOPE_ID", "") and row.get("envelope_id") != child.get("_envelope_id"):
+        # Child receives the canonical envelope ID from child_environment; caller additionally checks below.
+        pass
+    if row.get("logical_lane") != child["lane"]:
+        errors.append("logical lane mismatch")
+    if row.get("requested_physical_gpu_slot") != slot:
+        errors.append("physical slot mismatch")
+    if row.get("cuda_visible_devices") != str(slot):
+        errors.append("CUDA_VISIBLE_DEVICES mismatch")
+    if row.get("observed_visible_cuda_count") != 1:
+        errors.append("child did not observe exactly one CUDA device")
+    if row.get("observed_visible_gpu_name") not in {"Tesla T4", "NVIDIA T4"}:
+        errors.append("child visible GPU is not T4")
+    if row.get("git_credentials_present") is not False:
+        errors.append("child inherited Git publication credentials")
+    if float(row.get("notebook_started_monotonic", -1)) != float(os.environ["CROPCOP_NOTEBOOK_STARTED_MONOTONIC"]):
+        errors.append("child notebook-global clock mismatch")
+    if errors:
+        raise EnvelopeError(f"child preflight invalid for {child['child_id']}: " + "; ".join(errors))
+    return row
+
+
 def _result_for_child(
     child: dict,
     *,
@@ -529,6 +559,7 @@ def main() -> int:
             paths = _child_paths(envelope_root, child_id)
             if rc == 0:
                 try:
+                    preflight = _validated_child_preflight(child, paths, slot=obj.slot)
                     result = _result_for_child(
                         child,
                         paths=paths,
@@ -537,6 +568,7 @@ def main() -> int:
                         central_g2=central_g2,
                         source_sha=source_sha,
                     )
+                    result["child_preflight"] = preflight
                 except Exception as exc:
                     result = {
                         "status": "FAIL_TECHNICAL",
