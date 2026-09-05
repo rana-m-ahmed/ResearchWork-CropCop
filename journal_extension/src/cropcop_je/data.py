@@ -98,10 +98,14 @@ class CropCopManifestDataset:
         self.rows=list(rows); self.image_root=Path(image_root); self.training_seed=int(training_seed); self.train=bool(train); self.epoch=0
     def set_epoch(self,epoch:int): self.epoch=int(epoch)
     def __len__(self): return len(self.rows)
-    def __getitem__(self,index:int):
+    def __getitem__(self,index):
         from PIL import Image
-        row=self.rows[index]; path=(self.image_root/row.relative_path).resolve(); root=self.image_root.resolve()
+        epoch=self.epoch
+        if isinstance(index,tuple):
+            if len(index)!=2: raise ValueError(f"invalid sampler key: {index!r}")
+            index,epoch=index
+        row=self.rows[int(index)]; path=(self.image_root/row.relative_path).resolve(); root=self.image_root.resolve()
         if root not in path.parents and path!=root: raise ValueError(f"manifest path escapes image root: {row.relative_path}")
         with Image.open(path) as im:
-            x=ctc_v2_training_transform(im,seed=row_augmentation_seed(self.training_seed,self.epoch,row.stable_row_id)) if self.train else ctc_v2_eval_transform(im)
+            x=ctc_v2_training_transform(im,seed=row_augmentation_seed(self.training_seed,int(epoch),row.stable_row_id)) if self.train else ctc_v2_eval_transform(im)
         return x,row.class_index,row.stable_row_id

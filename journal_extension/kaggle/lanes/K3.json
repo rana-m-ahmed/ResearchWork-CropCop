@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "lane_id": "K3",
+  "seed_index": 3,
+  "calibration": {
+    "calibration_id": "CAL-CNXTT",
+    "kind": "cnxtt",
+    "condition": "context_direct"
+  },
+  "principal": [
+    {"experiment_id": "R04-MNV4-DIRECT-S3", "run_id": "JE-R04-S3-A01", "config": "journal_extension/configs/r04_direct/s3.json", "condition": "direct"},
+    {"experiment_id": "R05-MNV4-TEACHER-S3", "run_id": "JE-R05-S3-A01", "config": "journal_extension/configs/r05_teacher/s3.json", "condition": "teacher"}
+  ]
+}
