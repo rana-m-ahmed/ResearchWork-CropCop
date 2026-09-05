@@ -47,7 +47,10 @@ def require_qualifying_kaggle_batch(*, context: str, run_type: str | None = None
         label = observed or "<missing>"
         raise SmokeHandoffError(
             f"{context} requires clean Kaggle Saved-Version/Batch execution; "
-            f"observed KAGGLE_KERNEL_RUN_TYPE={label}. Interactive execution is DIAGNOSTIC_NOT_QUALIFYING."
+            f"observed KAGGLE_KERNEL_RUN_TYPE={label}. "
+            "Interactive editor execution is DIAGNOSTIC_NOT_QUALIFYING. "
+            "Use Kaggle Save Version -> Save & Run All (with the required GPU accelerator); "
+            "do not qualify by manually running the notebook cell in the editor."
         )
     return observed
 
