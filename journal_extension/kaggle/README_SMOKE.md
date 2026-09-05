@@ -1,82 +1,94 @@
-# Stage 01A-SR — Kaggle Smoke Operator Guide
+# Stage 01A-MGPU-QA1 — Active Kaggle Operator Guide
 
-This smoke is **API-free**. It uses Kaggle Saved-Version output persistence and the
-**Add Input → Notebook Output Files** UI. It does not require a Kaggle API token, Kaggle username
-secret, a private recovery dataset, or any CropCop dataset.
+This is the **active** operator handoff. Historical Stage-01A-SR reports are not execution instructions.
 
-## Before Smoke A
+Current generator-authorized pre-QA source:
 
-1. Enable a GPU accelerator.
-2. Add exactly one Kaggle Secret:
-   - `CROPCOP_GITHUB_TOKEN`
-   
-   For a **fine-grained PAT**, configure it as:
-   - Resource owner: `rana-m-ahmed`
-   - Repository access: only `ResearchWork-CropCop` (or all repositories if intentionally broader)
-   - Repository permission: **Contents — Read and write**
-   - Store the raw token value only in Kaggle Secrets: no quotes, spaces or line breaks.
-   
-   A classic PAT must have private-repository `repo` scope, but a fine-grained PAT is preferred.
-3. Open `journal_extension/kaggle/canonical_lane.ipynb`.
-4. Leave the frozen execution source unchanged: `67370145c9104edd52330b788c3b41b28f5cab87`.
-5. Set:
-   ```
-   EXECUTION_PHASE = "smoke-write"
-   LANE = "K1"
-   ```
-6. Normally keep these defaults:
-   ```
-   REPO_WORKDIR = "/kaggle/working/cropcop-je"
-   OUTPUT_ROOT = "/kaggle/working/cropcop-je-output"
-   SYNTHETIC_SMOKE_ROOT = "/kaggle/working/cropcop-smoke-input"
-   SMOKE_A_EXPORT_ROOT = "/kaggle/working/cropcop-smoke-a-export"
-   SMOKE_B_EXPORT_ROOT = "/kaggle/working/cropcop-smoke-b-export"
-   ```
-7. Use **Save & Run All**.
+`ba5dd4661b97d072593af4646b76552686953a2d`
 
-Before cloning, the notebook now performs three non-secret-leaking checks:
-- GitHub API private-repository authorization;
-- Git-over-HTTPS `git ls-remote` read authorization;
-- `git push --dry-run` to a dedicated `run-evidence/auth-probe-...` ref to prove write access without creating a branch.
+This source is replaced only after the final QA1 execution-source freeze in Wave C. Always verify the literal `AUTHORIZED_SOURCE_SHA` in `generate_canonical_notebook.py` before a real run.
 
-If one fails, use the specific error rather than regenerating checkpoints or changing scientific settings.
+## Required chronology
 
-A successful Smoke A prints an unmistakable `CROPCOP SMOKE A COMPLETE` block. Preserve that exact
-Saved Version. Its output contains `SMOKE_A_MANIFEST.json`, `SMOKE_A_EVIDENCE.json`,
-`checkpoint_index.json`, and the content-addressed checkpoint beneath `objects/`.
+```text
+smoke-write
+→ fresh smoke-restore
+→ independent audit
+→ dual-gpu-smoke
+→ independent audit
+→ g1
+→ calibration-dual
+→ principal-dual
+```
 
-## Before Smoke B
+No G1 is authorized before independently audited terminal dual-GPU-smoke evidence.
 
-1. Start a **fresh** Kaggle Saved Version/session.
-2. Enable a GPU.
-3. Keep the same `CROPCOP_GITHUB_TOKEN` secret.
-4. Use **Add Input → Notebook Output Files** and select the exact successful Smoke-A Saved Version.
-5. Inspect the mounted input path under `/kaggle/input/...`.
-6. Set:
-   ```
-   EXECUTION_PHASE = "smoke-restore"
-   SMOKE_A_INPUT_ROOT = "/kaggle/input/<actual-mounted-smoke-a-output>"
-   ```
-7. Keep the exact same authorized source SHA and lane.
-8. Use **Save & Run All**.
+## Phase requirements
 
-Smoke B refuses to train or create a new recovery checkpoint until the attached A manifest, evidence,
-checkpoint bytes, source SHA, dependency-lock SHA, qualification ID, identity digest and optimizer step
-have been verified. The attached Smoke-A input is read-only and is fingerprinted before/after recovery.
+### `smoke-write`
 
-## Not required for Stage 01A-SR
+Use clean Kaggle **Save & Run All / Batch** execution with a GPU accelerator.
 
-Do not provide:
+Only secret required:
+- `CROPCOP_GITHUB_TOKEN`
 
+Do not provide Kaggle API credentials or CropCop scientific data/model artifacts.
+
+### `smoke-restore`
+
+Use a **fresh Saved Version**, attach the exact successful Smoke-A Notebook Output, and set:
+
+```text
+CROPCOP_SMOKE_A_INPUT_ROOT=/kaggle/input/<exact-smoke-a-output>
+```
+
+The wrapper searches only below that explicit root.
+
+### `dual-gpu-smoke`
+
+After independent Smoke A/B audit, attach the exact successful Smoke-B Notebook Output and set:
+
+```text
+CROPCOP_SMOKE_B_INPUT_ROOT=/kaggle/input/<exact-smoke-b-output>
+```
+
+The wrapper requires exactly one `SMOKE_B_EVIDENCE.json` below that root and exports `CROPCOP_INFRA_SMOKE_EVIDENCE`.
+
+This phase remains synthetic and technical only: no CropCop data, no G1, no G2, no R04/R05.
+
+### `g1`
+
+Only after independent dual-smoke audit. Attach both exact successful outputs and set:
+
+```text
+CROPCOP_SMOKE_B_INPUT_ROOT=/kaggle/input/<exact-smoke-b-output>
+CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT=/kaggle/input/<exact-dual-gpu-smoke-output>
+```
+
+The wrapper requires exactly one expected evidence JSON below each explicit root.
+
+G1/later production routes preserve the frozen execution implementation's real artifact variables and require:
+- `CROPCOP_GITHUB_TOKEN`
 - `KAGGLE_USERNAME`
 - `KAGGLE_KEY`
-- Kaggle API token
-- private Kaggle recovery dataset
-- V1 manifest/images/test
-- class map
-- MobileNetV4 pretrained bytes
-- historical DINO teacher/factory/lineage
-- PlantCity / PlantDoc / PlantVillage
-- protected external data
+- the required G1 model/data/teacher artifact paths
 
-Those belong to later stages.
+### `calibration-dual`
+
+Requires terminal Smoke-B + dual-smoke evidence, completed G1 bundle, production durable-store configuration, and the execution code's required calibration inputs.
+
+### `principal-dual`
+
+Set `CROPCOP_PRINCIPAL_ENVELOPE` to exactly `P1`, `P2`, or `P3`. The repository envelope configs own the fixed pair mapping.
+
+## Batch qualification
+
+Interactive runs are diagnostic only. They cannot become terminal qualifying evidence.
+
+## Prohibited shortcuts
+
+- do not search all of `/kaggle/input`;
+- do not bypass Smoke-B or dual-smoke evidence;
+- do not edit scientific configs/batch semantics;
+- do not provide CropCop scientific artifacts for Smoke A/B/dual-smoke;
+- do not treat historical Interactive Smoke A as current qualification.
