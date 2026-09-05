@@ -12,7 +12,13 @@ SRC = ROOT / "journal_extension" / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from cropcop_je.smoke_handoff import require_qualifying_kaggle_batch
+from cropcop_je.envelope import AMENDMENT_ID, AMENDMENT_SHA256
+from cropcop_je.hashing import sha256_json
+from cropcop_je.smoke_handoff import (
+    require_qualifying_kaggle_batch,
+    validate_terminal_dual_gpu_smoke_evidence,
+    validate_terminal_smoke_b_evidence,
+)
 
 
 def req(name: str) -> str:
@@ -31,6 +37,29 @@ def main() -> int:
     require_qualifying_kaggle_batch(context="G1 model-identity sealing")
     source_sha = req("CROPCOP_SOURCE_GIT_COMMIT")
     smoke = req("CROPCOP_INFRA_SMOKE_EVIDENCE")
+    dual_smoke = req("CROPCOP_DUAL_GPU_SMOKE_EVIDENCE")
+    dependency = json.loads((ROOT / "journal_extension/locks/execution_dependency_lock.json").read_text(encoding="utf-8"))
+    smoke_object = json.loads(Path(smoke).read_text(encoding="utf-8"))
+    smoke_errors = validate_terminal_smoke_b_evidence(
+        smoke_object,
+        expected_source_sha=source_sha,
+        expected_dependency_lock_sha256=dependency["dependency_lock_sha256"],
+        require_batch=True,
+    )
+    if smoke_errors:
+        raise RuntimeError("G1 preflight terminal Smoke-B invalid: " + "; ".join(smoke_errors))
+    dual_object = json.loads(Path(dual_smoke).read_text(encoding="utf-8"))
+    dual_errors = validate_terminal_dual_gpu_smoke_evidence(
+        dual_object,
+        expected_source_sha=source_sha,
+        expected_dependency_lock_sha256=dependency["dependency_lock_sha256"],
+        expected_amendment_id=AMENDMENT_ID,
+        expected_amendment_sha256=AMENDMENT_SHA256,
+        expected_smoke_b_evidence_sha256=sha256_json(smoke_object),
+        require_batch=True,
+    )
+    if dual_errors:
+        raise RuntimeError("G1 preflight terminal dual-GPU-smoke invalid: " + "; ".join(dual_errors))
     bundle = Path(req("CROPCOP_G1_BUNDLE_DIR")).resolve()
     output_root = Path(req("CROPCOP_OUTPUT_ROOT")).resolve()
     preseal = output_root / "g1-preseal"
@@ -84,6 +113,7 @@ def main() -> int:
         "--teacher-factory-root", factory_root,
         "--teacher-class-order-evidence", str(order_evidence),
         "--infra-smoke-evidence", smoke,
+        "--dual-gpu-smoke-evidence", dual_smoke,
         "--bundle-dir", str(bundle),
     ])
 
@@ -97,6 +127,7 @@ def main() -> int:
         "--teacher-checkpoint", req("CROPCOP_TEACHER_CHECKPOINT"),
         "--teacher-factory-root", factory_root,
         "--infra-smoke-evidence", smoke,
+        "--dual-gpu-smoke-evidence", dual_smoke,
         "--output", str(output_root / "G1_BARRIER.json"),
     ])
 
