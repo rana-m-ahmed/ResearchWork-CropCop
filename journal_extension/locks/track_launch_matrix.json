@@ -7,14 +7,98 @@
     "A": {
       "name": "model_science",
       "scientific_go": true,
-      "dependencies": ["G0_EVIDENCE_CONTRACT","G1_MODEL_IDENTITY","G2_COMPUTE_CALIBRATION"],
-      "missing_engineering_prerequisites": ["restricted V1 manifest/data binding","exact MobileNetV4 pretrained byte verification","exact teacher byte verification + trusted teacher factory","Kaggle GPU execution"],
-      "forbidden_surfaces": ["DS-V1-TEST-CONSUMED","DS-EXT-POTATO-SEALED","DS-EXT-AGRIVISION-SEALED"],
-      "authorized_experiment_ids": ["R04-MNV4-DIRECT-S1","R04-MNV4-DIRECT-S2","R04-MNV4-DIRECT-S3","R05-MNV4-TEACHER-S1","R05-MNV4-TEACHER-S2","R05-MNV4-TEACHER-S3","R12-MNV4-LOGITS-S1","R12-MNV4-FEATURE-S1","R06-EFFB0-CONTEXT-S1","R07-CNXTT-CONTEXT-S1"],
-      "downstream_protected_gate": "G5_V1_CONTINUITY_ONLY_AFTER_FIXED_TEN_STATES_TERMINAL"
+      "dependencies": [
+        "G0_EVIDENCE_CONTRACT",
+        "G1_MODEL_IDENTITY",
+        "G2_COMPUTE_CALIBRATION"
+      ],
+      "missing_engineering_prerequisites": [
+        "restricted V1 manifest/data binding",
+        "exact MobileNetV4 pretrained byte verification",
+        "exact teacher byte verification + trusted teacher factory",
+        "Kaggle GPU execution"
+      ],
+      "forbidden_surfaces": [
+        "DS-V1-TEST-CONSUMED",
+        "DS-EXT-POTATO-SEALED",
+        "DS-EXT-AGRIVISION-SEALED"
+      ],
+      "authorized_experiment_ids": [
+        "R04-MNV4-DIRECT-S1",
+        "R04-MNV4-DIRECT-S2",
+        "R04-MNV4-DIRECT-S3",
+        "R05-MNV4-TEACHER-S1",
+        "R05-MNV4-TEACHER-S2",
+        "R05-MNV4-TEACHER-S3",
+        "R12-MNV4-LOGITS-S1",
+        "R12-MNV4-FEATURE-S1",
+        "R06-EFFB0-CONTEXT-S1",
+        "R07-CNXTT-CONTEXT-S1"
+      ],
+      "downstream_protected_gate": "G5_V1_CONTINUITY_ONLY_AFTER_FIXED_TEN_STATES_TERMINAL",
+      "execution_profile": "dual_independent_single_gpu_children"
     },
-    "B": {"name":"external_validity","scientific_go":true,"dependencies":["prediction_blind_audit"],"missing_engineering_prerequisites":["candidate bytes","historical comparison surface"],"forbidden_surfaces":["classifier_predictions_before_candidate_seal"],"authorized_experiment_ids":["R01-EXT-AUDIT-POTATO","R10-EXT-AUDIT-AGRIVISION","R02-EXT-POTATO-FINAL","R11-EXT-AGRIVISION-FINAL"],"downstream_protected_gate":"G3_CANDIDATE_SPECIFIC_SEAL"},
-    "C": {"name":"runtime_device","scientific_go":true,"dependencies":["exact_historical_pte","verified_physical_android_device"],"missing_engineering_prerequisites":["PTE bytes","device identity","Android harness"],"forbidden_surfaces":["new_JE_PTQ_branch","DS-V1-TEST-CONSUMED"],"authorized_experiment_ids":["R03-DEVICE-V1-PTE","R09-DEVICE-PROFILE"],"downstream_protected_gate":"G4_PTE_IDENTITY_AND_DEVICE_READINESS"},
-    "D": {"name":"evidence_stewardship","scientific_go":true,"dependencies":[],"missing_engineering_prerequisites":[],"forbidden_surfaces":["becoming_a_serial_pre_results_gate"],"authorized_experiment_ids":["R00-CONTRACT","R17-PUBLIC-REPLICATION-AUDIT"],"downstream_protected_gate":"G7_EVIDENCE_FREEZE"}
+    "B": {
+      "name": "external_validity",
+      "scientific_go": true,
+      "dependencies": [
+        "prediction_blind_audit"
+      ],
+      "missing_engineering_prerequisites": [
+        "candidate bytes",
+        "historical comparison surface"
+      ],
+      "forbidden_surfaces": [
+        "classifier_predictions_before_candidate_seal"
+      ],
+      "authorized_experiment_ids": [
+        "R01-EXT-AUDIT-POTATO",
+        "R10-EXT-AUDIT-AGRIVISION",
+        "R02-EXT-POTATO-FINAL",
+        "R11-EXT-AGRIVISION-FINAL"
+      ],
+      "downstream_protected_gate": "G3_CANDIDATE_SPECIFIC_SEAL"
+    },
+    "C": {
+      "name": "runtime_device",
+      "scientific_go": true,
+      "dependencies": [
+        "exact_historical_pte",
+        "verified_physical_android_device"
+      ],
+      "missing_engineering_prerequisites": [
+        "PTE bytes",
+        "device identity",
+        "Android harness"
+      ],
+      "forbidden_surfaces": [
+        "new_JE_PTQ_branch",
+        "DS-V1-TEST-CONSUMED"
+      ],
+      "authorized_experiment_ids": [
+        "R03-DEVICE-V1-PTE",
+        "R09-DEVICE-PROFILE"
+      ],
+      "downstream_protected_gate": "G4_PTE_IDENTITY_AND_DEVICE_READINESS"
+    },
+    "D": {
+      "name": "evidence_stewardship",
+      "scientific_go": true,
+      "dependencies": [],
+      "missing_engineering_prerequisites": [],
+      "forbidden_surfaces": [
+        "becoming_a_serial_pre_results_gate"
+      ],
+      "authorized_experiment_ids": [
+        "R00-CONTRACT",
+        "R17-PUBLIC-REPLICATION-AUDIT"
+      ],
+      "downstream_protected_gate": "G7_EVIDENCE_FREEZE"
+    }
+  },
+  "stage04_execution_amendment": {
+    "id": "EAAI-JE-MGPU-A1",
+    "sha256": "3f08f2dbe7e83143c7e6f1fcf6732c7d88086295a600a74b323b89b46caed3f6",
+    "scope": "execution_packaging_only"
   }
 }
