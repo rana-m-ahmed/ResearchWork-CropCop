@@ -25,8 +25,8 @@ OUTPUT_ENV_KEYS = (
     "CROPCOP_G2_SUMMARIES_DIR",
     "CROPCOP_TERMINAL_EVIDENCE_DIR",
 )
-SMOKE_PHASES = {"smoke-write", "smoke-restore"}
-NON_SMOKE_PHASES = {"g1", "calibration", "principal"}
+SMOKE_PHASES = {"smoke-write", "smoke-restore", "dual-gpu-smoke"}
+NON_SMOKE_PHASES = {"g1", "calibration-dual", "principal-dual"}
 
 
 def _required_secret_names(phase: str) -> tuple[str, ...]:
