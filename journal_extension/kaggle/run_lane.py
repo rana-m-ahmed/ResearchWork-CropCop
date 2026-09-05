@@ -416,6 +416,25 @@ def main() -> int:
             raise SystemExit(
                 "dual-envelope child isolation failed: each child must see exactly one CUDA device"
             )
+        terminal_root = Path(env_path("CROPCOP_TERMINAL_EVIDENCE_DIR"))
+        terminal_root.mkdir(parents=True, exist_ok=True)
+        preflight = {
+            "schema_version": "1.0",
+            "status": "PASS",
+            "envelope_id": os.environ.get("CROPCOP_ENVELOPE_ID"),
+            "logical_lane": args.lane,
+            "requested_physical_gpu_slot": int(os.environ["CROPCOP_PHYSICAL_GPU_SLOT"]),
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+            "observed_visible_cuda_count": torch.cuda.device_count(),
+            "observed_visible_gpu_name": torch.cuda.get_device_name(0),
+            "git_credentials_present": bool(
+                os.environ.get("CROPCOP_GITHUB_TOKEN") or os.environ.get("GITHUB_TOKEN")
+            ),
+            "notebook_started_monotonic": float(os.environ["CROPCOP_NOTEBOOK_STARTED_MONOTONIC"]),
+        }
+        tmp = terminal_root / "CHILD_PREFLIGHT.json.tmp"
+        tmp.write_text(json.dumps(preflight, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(tmp, terminal_root / "CHILD_PREFLIGHT.json")
     output_roots = [
         env_path("CROPCOP_OUTPUT_ROOT"),
         env_path("CROPCOP_G1_BUNDLE_DIR"),
