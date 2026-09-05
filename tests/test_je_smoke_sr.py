@@ -346,7 +346,7 @@ class SmokeSRTests(unittest.TestCase):
         self.assertEqual(lines[2], "from pathlib import Path")
         self.assertEqual(lines[3], "from urllib.error import HTTPError, URLError")
         self.assertIn(
-            'AUTHORIZED_SOURCE_SHA = "67370145c9104edd52330b788c3b41b28f5cab87"',
+            'AUTHORIZED_SOURCE_SHA = "ba5dd4661b97d072593af4646b76552686953a2d"',
             lines,
         )
         # Escaped newlines are legitimate inside the askpass Python string literal.

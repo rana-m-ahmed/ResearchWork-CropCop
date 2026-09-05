@@ -48,6 +48,14 @@ jobs:
                   source = "".join(cell.get("source", []))
                   compile(source, f"{path.name}:cell-{i}", "exec")
           PY
+      - name: Verify canonical notebook matches generator output
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp journal_extension/kaggle/canonical_lane.ipynb /tmp/canonical_lane.before.ipynb
+          python journal_extension/kaggle/generate_canonical_notebook.py
+          diff -u /tmp/canonical_lane.before.ipynb journal_extension/kaggle/canonical_lane.ipynb
+          git diff --exit-code -- journal_extension/kaggle/canonical_lane.ipynb
       - name: Verify tracked tree has no forbidden model artifacts
         run: |
           python - <<'PY'

@@ -3,11 +3,18 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-AUTHORIZED_SOURCE_SHA = "67370145c9104edd52330b788c3b41b28f5cab87"
+MGPU_EXECUTION_SOURCE_SHA = "ba5dd4661b97d072593af4646b76552686953a2d"
+AUTHORIZED_SOURCE_SHA = "ba5dd4661b97d072593af4646b76552686953a2d"
 
-MARKDOWN = """# CropCop EAAI — Canonical Clean Kaggle Session
+MARKDOWN = """# CropCop EAAI — Canonical Stage-01A-MGPU Kaggle Wrapper
 
-Thin orchestration only. For Stage 01A-SR use `smoke-write` in Saved Version A and `smoke-restore` in a completely fresh Saved Version B with the exact Smoke-A Notebook Output attached read-only. No CropCop dataset is required.
+Thin orchestration only, hard-bound to the frozen Stage-01A-MGPU execution source.
+
+Operator phases: `smoke-write`, `smoke-restore`, `dual-gpu-smoke`, `g1`, `calibration-dual`, `principal-dual`.
+
+For `principal-dual`, set non-secret `CROPCOP_PRINCIPAL_ENVELOPE` to `P1`, `P2`, or `P3`. The notebook delegates the fixed experiment mapping to repository envelope configs.
+
+Smoke A/B remain cross-Saved-Version and API-free. `smoke-restore` requires the exact Smoke-A Notebook Output attached read-only.
 """
 
 CODE = r'''import json
@@ -20,12 +27,12 @@ from urllib.request import Request, urlopen
 # ============================================================
 # CROPCOP EAAI — KAGGLE OPERATOR CONFIGURATION
 # ============================================================
-# Frozen Stage-01A-SR execution source. Do not change for this qualification.
-AUTHORIZED_SOURCE_SHA = "67370145c9104edd52330b788c3b41b28f5cab87"
+# Frozen Stage-01A-MGPU execution source. Wrapper commits are not execution sources.
+AUTHORIZED_SOURCE_SHA = "ba5dd4661b97d072593af4646b76552686953a2d"
 LANE = os.environ.get("CROPCOP_LANE", "K1")
 EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "smoke-write")
-# Stage 01A-SR qualification phases: smoke-write | smoke-restore
-# Future phases retained but not authorized by this stage: g1 | calibration | principal
+PRINCIPAL_ENVELOPE = os.environ.get("CROPCOP_PRINCIPAL_ENVELOPE", "P1").strip().upper()
+# Exact operator phases: smoke-write | smoke-restore | dual-gpu-smoke | g1 | calibration-dual | principal-dual
 REPOSITORY_URL = os.environ.get(
     "CROPCOP_REPOSITORY_URL",
     "https://github.com/rana-m-ahmed/ResearchWork-CropCop.git",
@@ -67,7 +74,20 @@ assert platform.python_version() == "3.12.13", (
 assert len(AUTHORIZED_SOURCE_SHA) == 40
 assert all(c in "0123456789abcdef" for c in AUTHORIZED_SOURCE_SHA.lower())
 assert LANE in {"K1", "K2", "K3"}
-assert EXECUTION_PHASE in {"smoke-write", "smoke-restore", "g1", "calibration", "principal"}
+assert EXECUTION_PHASE in {
+    "smoke-write",
+    "smoke-restore",
+    "dual-gpu-smoke",
+    "g1",
+    "calibration-dual",
+    "principal-dual",
+}
+if EXECUTION_PHASE == "principal-dual":
+    if PRINCIPAL_ENVELOPE not in {"P1", "P2", "P3"}:
+        raise RuntimeError(
+            "CROPCOP_PRINCIPAL_ENVELOPE must be exactly P1, P2, or P3 for principal-dual"
+        )
+    os.environ["CROPCOP_ENVELOPE_ID"] = PRINCIPAL_ENVELOPE
 
 repo_workdir = Path(REPO_WORKDIR).resolve()
 for _mutable in (
@@ -85,7 +105,7 @@ from kaggle_secrets import UserSecretsClient
 
 _secrets = UserSecretsClient()
 _required_secrets = ["CROPCOP_GITHUB_TOKEN"]
-if EXECUTION_PHASE in {"g1", "calibration", "principal"}:
+if EXECUTION_PHASE in {"g1", "calibration-dual", "principal-dual"}:
     _required_secrets += ["KAGGLE_USERNAME", "KAGGLE_KEY"]
 
 for _key in _required_secrets:
@@ -112,7 +132,7 @@ os.environ["CROPCOP_GITHUB_TOKEN"] = _token
 
 _repo_parts = urlparse(REPOSITORY_URL)
 if _repo_parts.scheme != "https" or _repo_parts.netloc.lower() != "github.com":
-    raise RuntimeError("Stage 01A-SR requires an HTTPS github.com repository URL")
+    raise RuntimeError("Stage 01A-MGPU requires an HTTPS github.com repository URL")
 _repo_segments = [part for part in _repo_parts.path.strip("/").split("/") if part]
 if len(_repo_segments) != 2:
     raise RuntimeError(f"Unexpected GitHub repository URL path: {_repo_parts.path}")
@@ -323,25 +343,26 @@ if EXECUTION_PHASE in {"smoke-write", "smoke-restore"}:
             )
         cmd += ["--smoke-a-input-root", SMOKE_A_INPUT_ROOT]
     subprocess.run(cmd, cwd=repo_workdir, check=True)
+elif EXECUTION_PHASE == "dual-gpu-smoke":
+    subprocess.run(
+        [sys.executable, str(repo_workdir / "journal_extension/scripts/smoke_dual_gpu.py")],
+        cwd=repo_workdir,
+        check=True,
+    )
 elif EXECUTION_PHASE == "g1":
     subprocess.run(
         [sys.executable, str(repo_workdir / "journal_extension/kaggle/run_g1.py")],
         cwd=repo_workdir,
         check=True,
     )
-else:
+elif EXECUTION_PHASE in {"calibration-dual", "principal-dual"}:
     subprocess.run(
-        [
-            sys.executable,
-            str(repo_workdir / "journal_extension/kaggle/run_lane.py"),
-            "--lane",
-            LANE,
-            "--phase",
-            EXECUTION_PHASE,
-        ],
+        [sys.executable, str(repo_workdir / "journal_extension/kaggle/run_envelope.py")],
         cwd=repo_workdir,
         check=True,
     )
+else:
+    raise RuntimeError(f"unsupported canonical execution phase: {EXECUTION_PHASE}")
 '''
 
 

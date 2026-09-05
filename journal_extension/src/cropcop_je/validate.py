@@ -133,11 +133,20 @@ def validate_static(repo_root: Path) -> dict:
                 '"checkout"',
                 '"--detach"',
                 "run_g1.py",
+                "run_envelope.py",
                 "smoke_infrastructure.py",
+                "smoke_dual_gpu.py",
                 "smoke-write",
                 "smoke-restore",
+                "dual-gpu-smoke",
+                "g1",
+                "calibration-dual",
+                "principal-dual",
+                "CROPCOP_PRINCIPAL_ENVELOPE",
+                '"P1"',
+                '"P2"',
+                '"P3"',
                 "SMOKE_A_INPUT_ROOT",
-                "run_lane.py",
             ):
                 if token not in code:
                     errors.append(f"canonical Kaggle bootstrap missing: {token}")
@@ -170,13 +179,22 @@ def validate_static(repo_root: Path) -> dict:
             if lines[:len(expected_prefix)] != expected_prefix:
                 errors.append("canonical Kaggle notebook Python import prefix is unexpected")
             expected_source_binding = (
-                'AUTHORIZED_SOURCE_SHA = "67370145c9104edd52330b788c3b41b28f5cab87"'
+                'AUTHORIZED_SOURCE_SHA = "ba5dd4661b97d072593af4646b76552686953a2d"'
             )
             if expected_source_binding not in lines:
                 errors.append("canonical Kaggle notebook frozen execution-source binding mismatch")
-            for forbidden in ("EXECUTION_PHASE == 'smoke'", "phase == 'smoke'"):
+            for forbidden in (
+                "EXECUTION_PHASE == 'smoke'",
+                'EXECUTION_PHASE == "smoke"',
+                "phase == 'smoke'",
+                'phase == "smoke"',
+                'EXECUTION_PHASE == "calibration"',
+                'EXECUTION_PHASE == "principal"',
+                '"--phase", "calibration"',
+                '"--phase", "principal"',
+            ):
                 if forbidden in code:
-                    errors.append("ambiguous legacy production smoke phase remains in canonical notebook")
+                    errors.append(f"ambiguous/legacy canonical phase route remains: {forbidden}")
     except Exception as exc:
         errors.append(f"canonical Kaggle notebook invalid: {exc}")
 
