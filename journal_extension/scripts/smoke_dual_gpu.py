@@ -24,9 +24,13 @@ from cropcop_je.envelope import (
     terminate_process_group,
     validate_t4x2_inventory,
 )
+from cropcop_je.hashing import sha256_json
 from cropcop_je.publication import publish_to_github_branch
 from cropcop_je.science_diff import validate_science_diff
-from cropcop_je.smoke_handoff import validate_terminal_smoke_b_evidence
+from cropcop_je.smoke_handoff import (
+    validate_terminal_dual_gpu_smoke_evidence,
+    validate_terminal_smoke_b_evidence,
+)
 from cropcop_je.source_state import verify_clean_source
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -138,6 +142,7 @@ def _parent(args) -> int:
     )
     if smoke_errors:
         raise EnvelopeError("dual-gpu-smoke preflight Smoke-B invalid: " + "; ".join(smoke_errors))
+    smoke_b_evidence_sha256 = sha256_json(smoke)
 
     output_root = Path(
         args.output_root
@@ -266,6 +271,8 @@ def _parent(args) -> int:
         "amendment_id": AMENDMENT_ID,
         "amendment_sha256": AMENDMENT_SHA256,
         "kaggle_run_type": run_type,
+        "smoke_b_evidence_sha256": smoke_b_evidence_sha256,
+        "notebook_started_monotonic": float(os.environ["CROPCOP_NOTEBOOK_STARTED_MONOTONIC"]),
         "parent_gpu_inventory": inventory,
         "children": [
             {
@@ -312,6 +319,17 @@ def _parent(args) -> int:
     )
     evidence["git_publication_status"] = "PASS"
     evidence["public_safe_evidence_branch"] = branch
+    terminal_errors = validate_terminal_dual_gpu_smoke_evidence(
+        evidence,
+        expected_source_sha=source_sha,
+        expected_dependency_lock_sha256=dependency["dependency_lock_sha256"],
+        expected_amendment_id=AMENDMENT_ID,
+        expected_amendment_sha256=AMENDMENT_SHA256,
+        expected_smoke_b_evidence_sha256=smoke_b_evidence_sha256,
+        require_batch=True,
+    )
+    if terminal_errors:
+        raise EnvelopeError("dual-gpu-smoke terminal evidence invalid: " + "; ".join(terminal_errors))
     atomic_write_json(evidence_path, evidence)
     branch2 = publish_to_github_branch(
         repo_dir=ROOT,
