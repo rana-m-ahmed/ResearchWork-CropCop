@@ -55,6 +55,14 @@ SMOKE_A_INPUT_ROOT = os.environ.get(
     "CROPCOP_SMOKE_A_INPUT_ROOT",
     "<SET_AFTER_ATTACHING_SMOKE_A_OUTPUT>",
 )
+SMOKE_B_INPUT_ROOT = os.environ.get(
+    "CROPCOP_SMOKE_B_INPUT_ROOT",
+    "<SET_AFTER_ATTACHING_SMOKE_B_OUTPUT>",
+)
+DUAL_GPU_SMOKE_INPUT_ROOT = os.environ.get(
+    "CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT",
+    "<SET_AFTER_ATTACHING_DUAL_GPU_SMOKE_OUTPUT>",
+)
 
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 os.environ["CROPCOP_NOTEBOOK_STARTED_MONOTONIC"] = repr(time.monotonic())
@@ -88,6 +96,40 @@ if EXECUTION_PHASE == "principal-dual":
             "CROPCOP_PRINCIPAL_ENVELOPE must be exactly P1, P2, or P3 for principal-dual"
         )
     os.environ["CROPCOP_ENVELOPE_ID"] = PRINCIPAL_ENVELOPE
+
+def _locate_exact_attached_evidence(root_value: str, filename: str, label: str) -> str:
+    if not root_value or root_value.startswith("<"):
+        raise RuntimeError(f"Set {label} to the exact attached Notebook Output root")
+    root = Path(root_value).resolve()
+    if not root.is_dir():
+        raise RuntimeError(f"{label} does not exist or is not a directory: {root}")
+    matches = sorted(path.resolve() for path in root.rglob(filename) if path.is_file())
+    matches = [path for path in matches if path == root or root in path.parents]
+    if len(matches) != 1:
+        raise RuntimeError(
+            f"{label} must contain exactly one {filename}; found {len(matches)} below explicit root {root}"
+        )
+    return str(matches[0])
+
+
+if EXECUTION_PHASE == "dual-gpu-smoke":
+    os.environ["CROPCOP_INFRA_SMOKE_EVIDENCE"] = _locate_exact_attached_evidence(
+        SMOKE_B_INPUT_ROOT,
+        "SMOKE_B_EVIDENCE.json",
+        "CROPCOP_SMOKE_B_INPUT_ROOT",
+    )
+elif EXECUTION_PHASE in {"g1", "calibration-dual", "principal-dual"}:
+    os.environ["CROPCOP_INFRA_SMOKE_EVIDENCE"] = _locate_exact_attached_evidence(
+        SMOKE_B_INPUT_ROOT,
+        "SMOKE_B_EVIDENCE.json",
+        "CROPCOP_SMOKE_B_INPUT_ROOT",
+    )
+    os.environ["CROPCOP_DUAL_GPU_SMOKE_EVIDENCE"] = _locate_exact_attached_evidence(
+        DUAL_GPU_SMOKE_INPUT_ROOT,
+        "DUAL_GPU_SMOKE_EVIDENCE.json",
+        "CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT",
+    )
+
 
 repo_workdir = Path(REPO_WORKDIR).resolve()
 for _mutable in (
