@@ -179,19 +179,21 @@ def collect_g2_summaries_from_evidence_branches(shared_dir: Path) -> None:
 
 
 def validate_smoke(source_sha: str) -> dict:
+    from cropcop_je.smoke_handoff import validate_terminal_smoke_b_evidence
     path = Path(env_path("CROPCOP_INFRA_SMOKE_EVIDENCE"))
     evidence = json.loads(path.read_text(encoding="utf-8"))
-    required_true = (
-        evidence.get("status") == "PASS",
-        evidence.get("scientific") is False,
-        evidence.get("synthetic_unprotected_data_only") is True,
-        evidence.get("source_git_sha") == source_sha,
-        evidence.get("restore_success") is True,
-        evidence.get("resume_success") is True,
-        evidence.get("secret_retrieval_proved_without_value_disclosure") is True,
+    dependency = json.loads(DEPENDENCY_LOCK.read_text(encoding="utf-8"))
+    errors = validate_terminal_smoke_b_evidence(
+        evidence,
+        expected_source_sha=source_sha,
+        expected_dependency_lock_sha256=dependency["dependency_lock_sha256"],
+        require_batch=True,
     )
-    if not all(required_true):
-        raise RuntimeError("real Kaggle infrastructure smoke evidence is missing, stale or incomplete")
+    if errors:
+        raise RuntimeError(
+            "real Kaggle terminal Smoke-B evidence is missing, stale or incomplete: "
+            + "; ".join(errors)
+        )
     return evidence
 
 
