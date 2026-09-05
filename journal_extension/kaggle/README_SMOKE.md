@@ -2,11 +2,11 @@
 
 This is the **active** operator handoff. Historical Stage-01A-SR reports are not execution instructions.
 
-Current generator-authorized pre-QA source:
+Final generator-authorized QA1 execution source:
 
-`ba5dd4661b97d072593af4646b76552686953a2d`
+`be9b6965d760ff6e8674623b658f66572cd57093`
 
-This source is replaced only after the final QA1 execution-source freeze in Wave C. Always verify the literal `AUTHORIZED_SOURCE_SHA` in `generate_canonical_notebook.py` before a real run.
+This is the frozen QA1 execution source proven by exact-head source CI. Always verify the literal `AUTHORIZED_SOURCE_SHA` in `generate_canonical_notebook.py` before a real run.
 
 ## Required chronology
 
