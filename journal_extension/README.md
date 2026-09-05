@@ -41,3 +41,42 @@ the manifest hash before reading rows and authorizes only `DS-V1-TRAIN` and `DS-
 5. Only after G0/G1/G2 pass, launch the six principal configs.
 
 Calibration outputs are scheduling evidence only and must never become scientific checkpoints.
+
+
+## Stage 01A-H execution hardening
+
+The original Stage-01A G0 core is preserved, but its execution machinery is now hardened for
+multi-session Kaggle use before any real G1/G2 run begins.
+
+The hardened path adds:
+
+- one canonical thin notebook: `journal_extension/kaggle/canonical_lane.ipynb`;
+- three small lane specifications for K1/K2/K3;
+- runtime-only principal run-ID resolution rather than predeclared fake launched IDs;
+- atomic, content-addressed checkpoint objects;
+- `latest` / `previous` / `selected` recovery generations;
+- SHA-256 + load validation before checkpoint publication;
+- persisted best-validation state and complete validation history across resume;
+- exact mid-epoch cursor and deterministic resumed data order;
+- explicit epoch propagation in sampler keys so persistent workers cannot use stale augmentation epochs;
+- teacher projection probing in eval/no-grad mode with RNG isolation and original train/eval modes restored;
+- checkpoint scientific identity bound to source Git SHA, lane, software-stack identity, teacher-factory source,
+  model/data/config hashes, seed, and paired initialization;
+- append-only execution-segment ledgers;
+- bounded session rollover with a finalization margin;
+- Layer-A local recovery plus pluggable Layer-B durable persistence;
+- scheduling-only calibration with real dataloader/checkpoint/validation telemetry;
+- a persisted three-calibration G2 barrier;
+- cross-lane calibration-summary recovery through public-safe evidence branches when configured;
+- audited `run-evidence/<run_id>` Git publication of small text evidence only;
+- compile, repository-contract, JE-static, full CPU-safe test, and exact-head CI context artifacts.
+
+These mechanisms do not change R04/R05 science, CTC-v2, seeds, objectives, selection rules, protected
+surfaces, or the historical teacher identity.
+
+### Important execution boundary
+
+No real G1/G2 calibration or R04/R05 scientific run is represented by this repository state.
+Restricted bytes and a qualified Kaggle GPU environment must be supplied and verified in the next
+execution stage. Calibration IDs and lane definitions in the repository are orchestration definitions,
+not evidence that a Kaggle job has run.

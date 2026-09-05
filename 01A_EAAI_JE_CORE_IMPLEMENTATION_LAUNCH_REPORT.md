@@ -197,3 +197,30 @@ Restricted/large artifacts remain outside public Git and are represented by dura
 The minimum repository-side JE core and G0 controls have been implemented, but G1 model/data identity execution and G2 GPU calibration cannot be completed from the currently connected environment.
 
 **TECHNICAL BLOCKER — PRINCIPAL R04/R05 RUNS NOT LAUNCHED: exact restricted V1/model artifacts and a qualified Kaggle CUDA execution surface are unavailable to this session.**
+
+
+---
+
+## 11. Stage 01A-H hardening — additive post-G0 history
+
+The Stage-01A facts above are historical and are not erased. After the initial G0 implementation and
+its successful pre-hardening CI, an adversarial execution/recovery pass identified reliability gaps
+that mattered before spending the three-account Kaggle budget.
+
+The subsequent hardening implementation is bound to:
+
+- **pre-hardening branch head:** `7c2c4c54fb00eb465629588ac3152d3b4bc0bbcb`;
+- **final hardening implementation commit:** `1a23d18f64bfb0b42b447cb9940bae2b57253ffd`;
+- **scientific authority:** unchanged `EAAI-JE-SDL-v2.1-QA`;
+- **execution authority:** unchanged `EAAI-JE-REA-v2.2-LEAN`.
+
+Key corrections include persistent validation-selection state, crash-safe checkpoint generations,
+source/lane/software/factory identity binding, exact mid-epoch resume, stale persistent-worker epoch
+prevention, teacher-state/RNG isolation, session rollover, durable recovery, real calibration
+telemetry, cross-lane G2 synchronization, safe evidence publication, and one canonical lane runner.
+
+The historical pre-hardening CI run remains evidence only for the earlier implementation. It is **not**
+used as the Stage-01A-H gate. Stage 01A-H requires a fresh GitHub Actions run on the exact final PR head.
+
+No real G1 model verification, GPU calibration, R04/R05 training, V1-test access, or protected external
+inference was performed during hardening. No scientific run ID was claimed as launched.
