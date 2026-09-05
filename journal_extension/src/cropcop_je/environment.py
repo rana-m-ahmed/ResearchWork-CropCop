@@ -14,6 +14,12 @@ SAFE_KAGGLE_ENV_KEYS = (
     "KAGGLE_DOCKER_IMAGE",
     "KAGGLE_CONTAINER_NAME",
 )
+SAFE_EXECUTION_ENV_KEYS = (
+    "CROPCOP_ENVELOPE_ID",
+    "CROPCOP_PHYSICAL_GPU_SLOT",
+    "CROPCOP_DUAL_ENVELOPE",
+    "CROPCOP_NUM_WORKERS_PER_CHILD",
+)
 
 LOCKED_CORE = {
     "python": "3.12.13",
@@ -64,6 +70,7 @@ def capture_environment() -> dict[str, Any]:
             "huggingface-hub": _version("huggingface-hub"),
         },
         "kaggle": {k: os.environ[k] for k in SAFE_KAGGLE_ENV_KEYS if k in os.environ},
+        "execution": {k: os.environ[k] for k in SAFE_EXECUTION_ENV_KEYS if k in os.environ},
         "nvidia_smi": _nvidia_smi(),
     }
     try:
