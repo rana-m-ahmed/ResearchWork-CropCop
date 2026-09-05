@@ -354,3 +354,11 @@ The publication transaction is hardened without changing Smoke A/B science or ch
 A new real Git regression test creates a bare remote and source repository with system/global Git
 configuration disabled, then calls `publish_to_github_branch()` twice for the same run ID. It requires
 two evidence commits, correct final content, and the deterministic evidence author identity.
+
+
+Exact-head Actions run #42 / ID `33969078980` on
+`f735ecfc9954dc70a803837291cad8475a6a6ed0` passed exact checkout, Python compilation, the strict
+repository validator and JE static validator. The two new runtime publication tests then failed before
+invoking their intended assertions because `test_je_smoke_sr.py` omitted
+`from unittest import mock`. The publication implementation was not changed in response; only the
+test-harness import was corrected. Run #42 remains historical failed CI.
