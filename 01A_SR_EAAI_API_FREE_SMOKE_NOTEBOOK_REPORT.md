@@ -362,3 +362,25 @@ repository validator and JE static validator. The two new runtime publication te
 invoking their intended assertions because `test_je_smoke_sr.py` omitted
 `from unittest import mock`. The publication implementation was not changed in response; only the
 test-harness import was corrected. Run #42 remains historical failed CI.
+
+
+### Public-evidence publication execution source re-freeze
+
+The hardened publication implementation is frozen at `67370145c9104edd52330b788c3b41b28f5cab87`.
+
+Exact-head Actions run #43 / ID `33969139920` verified:
+
+- expected SHA = actual SHA = `67370145c9104edd52330b788c3b41b28f5cab87`;
+- Python compile PASS;
+- strict repository validator PASS;
+- JE static validator PASS;
+- complete suite 127/127 PASS;
+- clean-host publication identity test PASS;
+- repeat publication to the same evidence branch PASS;
+- token-redacted Git diagnostic test PASS;
+- validation artifact ID `9970377707`;
+- validation artifact digest
+  `sha256:d11096c986209599d327bd33500605b283080b084c9ef9f0caacebc2e9ca3343`.
+
+The Smoke A/B state machine, synthetic workload, dependency lock, G1/G2 boundaries and scientific
+configuration remain unchanged.

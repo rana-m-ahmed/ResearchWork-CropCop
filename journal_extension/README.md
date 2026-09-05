@@ -208,3 +208,11 @@ The clean execution source is now frozen and exact-head verified at
 The later notebook-wrapper commit may safely hard-bind `AUTHORIZED_SOURCE_SHA` to this already
 verified clean execution source without creating a commit-SHA self-reference. Real Smoke A/B now
 executes repository code from exactly `939455c2cc8787bb295e073d706c32768820bfab`.
+
+
+### Evidence-publication execution source
+
+After the first real Smoke-A run reached public evidence publication, clean Kaggle exposed that the
+temporary evidence worktree had no guaranteed Git author/committer identity. The publication layer was
+hardened and exact-head verified at `67370145c9104edd52330b788c3b41b28f5cab87` (Actions run #43, 127/127 tests PASS). The canonical
+notebook wrapper now binds to this source for the next Smoke-A retry.

@@ -1,6 +1,6 @@
 {
-  "authorized_source_sha": "939455c2cc8787bb295e073d706c32768820bfab",
-  "note": "Frozen clean Stage-01A-SR execution source verified by exact-head Actions run #40 (124/124 PASS), including canonical EOL and fresh exact-head checkout cleanliness. Do not change for this qualification.",
+  "authorized_source_sha": "67370145c9104edd52330b788c3b41b28f5cab87",
+  "note": "Frozen Stage-01A-SR execution source verified by exact-head Actions run #43 (127/127 PASS), including auth, clean checkout, and repeat public-evidence publication on a clean Git host. Do not change for this qualification.",
   "lane": "K1",
   "repository_url": "https://github.com/rana-m-ahmed/ResearchWork-CropCop.git",
   "repo_workdir": "/kaggle/working/cropcop-je",

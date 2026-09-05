@@ -159,7 +159,7 @@ def validate_static(repo_root: Path) -> dict:
             if lines[:len(expected_prefix)] != expected_prefix:
                 errors.append("canonical Kaggle notebook Python import prefix is unexpected")
             expected_source_binding = (
-                'AUTHORIZED_SOURCE_SHA = "939455c2cc8787bb295e073d706c32768820bfab"'
+                'AUTHORIZED_SOURCE_SHA = "67370145c9104edd52330b788c3b41b28f5cab87"'
             )
             if expected_source_binding not in lines:
                 errors.append("canonical Kaggle notebook frozen execution-source binding mismatch")

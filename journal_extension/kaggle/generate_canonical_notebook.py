@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-AUTHORIZED_SOURCE_SHA = "939455c2cc8787bb295e073d706c32768820bfab"
+AUTHORIZED_SOURCE_SHA = "67370145c9104edd52330b788c3b41b28f5cab87"
 
 MARKDOWN = """# CropCop EAAI — Canonical Clean Kaggle Session
 
@@ -21,7 +21,7 @@ from urllib.request import Request, urlopen
 # CROPCOP EAAI — KAGGLE OPERATOR CONFIGURATION
 # ============================================================
 # Frozen Stage-01A-SR execution source. Do not change for this qualification.
-AUTHORIZED_SOURCE_SHA = "939455c2cc8787bb295e073d706c32768820bfab"
+AUTHORIZED_SOURCE_SHA = "67370145c9104edd52330b788c3b41b28f5cab87"
 LANE = os.environ.get("CROPCOP_LANE", "K1")
 EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "smoke-write")
 # Stage 01A-SR qualification phases: smoke-write | smoke-restore
