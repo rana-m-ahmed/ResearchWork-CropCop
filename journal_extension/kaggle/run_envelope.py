@@ -513,12 +513,13 @@ def main() -> int:
     if input_root:
         prior_bundle = locate_prior_bundle(input_root)
         prior_state = prior_bundle.state
+        prior_expected_g2 = g2_sha if g2_sha is not None else prior_bundle.state.get("g2_barrier_sha256")
         cont_errors = validate_prior_envelope_bundle(
             prior_bundle,
             envelope_id=envelope_id,
             source_sha=source_sha,
             g1_seal_sha256=g1["g1_seal_sha256"],
-            g2_barrier_sha256=g2_sha,
+            g2_barrier_sha256=prior_expected_g2,
             expected_run_ids=run_ids,
         )
         if cont_errors:
@@ -870,7 +871,14 @@ def main() -> int:
         g2_path = envelope_root / "G2_CALIBRATION_BARRIER.json"
         atomic_write_json(g2_path, final_g2)
         if envelope_status == "PASS":
-            final_g2_branch = _publish("G2-CALIBRATION-BARRIER", source_sha, [g2_path])
+            g2_publication = _try_publish("G2-CALIBRATION-BARRIER", source_sha, [g2_path])
+            final_g2_branch = g2_publication.get("publication_branch")
+            if g2_publication.get("publication_status") != "PASS":
+                envelope_status = "FAIL_TECHNICAL"
+
+        manifest["g2_barrier_sha256"] = final_g2.get("barrier_sha256")
+        manifest = finalize_manifest(manifest)
+        atomic_write_json(manifest_path, manifest)
 
     start_values = list(starts.values())
     end_values = list(ends.values())
