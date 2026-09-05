@@ -175,7 +175,7 @@ def _run_id_env_key(experiment_id: str) -> str:
     return "CROPCOP_RUN_ID_" + "".join(ch if ch.isalnum() else "_" for ch in experiment_id).upper()
 
 
-def _validated_child_preflight(child: dict, paths: dict[str, Path], *, slot: int) -> dict:
+def _validated_child_preflight(child: dict, paths: dict[str, Path], *, slot: int, envelope_id: str) -> dict:
     path = paths["terminal"] / "CHILD_PREFLIGHT.json"
     if not path.is_file():
         raise EnvelopeError(f"child isolation evidence missing: {child['child_id']}")
@@ -183,9 +183,8 @@ def _validated_child_preflight(child: dict, paths: dict[str, Path], *, slot: int
     errors = []
     if row.get("status") != "PASS":
         errors.append("status is not PASS")
-    if row.get("envelope_id") != os.environ.get("CROPCOP_ENVELOPE_ID", "") and row.get("envelope_id") != child.get("_envelope_id"):
-        # Child receives the canonical envelope ID from child_environment; caller additionally checks below.
-        pass
+    if row.get("envelope_id") != envelope_id:
+        errors.append("envelope ID mismatch")
     if row.get("logical_lane") != child["lane"]:
         errors.append("logical lane mismatch")
     if row.get("requested_physical_gpu_slot") != slot:
@@ -559,7 +558,7 @@ def main() -> int:
             paths = _child_paths(envelope_root, child_id)
             if rc == 0:
                 try:
-                    preflight = _validated_child_preflight(child, paths, slot=obj.slot)
+                    preflight = _validated_child_preflight(child, paths, slot=obj.slot, envelope_id=envelope_id)
                     result = _result_for_child(
                         child,
                         paths=paths,
