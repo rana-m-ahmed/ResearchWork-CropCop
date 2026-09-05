@@ -94,6 +94,10 @@ jobs:
           if offenders:
               raise SystemExit("live-looking GitHub credential pattern in tracked tree: " + repr(offenders))
           PY
+      - name: Validate active QA1 operator documentation
+        run: python journal_extension/scripts/validate_operator_docs.py --repo-root . --json-report operator-docs-report.json
+      - name: Run QA1 Wave-A contract tests
+        run: python -m unittest discover -s tests -p 'test_je_qa1_wave_a.py' -v
       - name: Run MGPU dual-envelope contract tests
         run: python -m unittest discover -s tests -p 'test_je_mgpu_envelope.py' -v
       - name: Run complete CPU-safe test suite
@@ -132,5 +136,6 @@ jobs:
             validation-report.json
             je-validation-report.json
             science-diff-report.json
+            operator-docs-report.json
             unittest-report.txt
             ci-verification.json
