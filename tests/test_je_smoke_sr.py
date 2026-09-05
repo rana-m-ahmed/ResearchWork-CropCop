@@ -363,7 +363,7 @@ class SmokeSRTests(unittest.TestCase):
         self.assertEqual(lines[2], "from pathlib import Path")
         self.assertEqual(lines[3], "from urllib.error import HTTPError, URLError")
         self.assertIn(
-            'AUTHORIZED_SOURCE_SHA = "be9b6965d760ff6e8674623b658f66572cd57093"',
+            'AUTHORIZED_SOURCE_SHA = "fe88e426b4698977d65efe9702f1d48cf5ff96a3"',
             lines,
         )
         # Escaped newlines are legitimate inside the askpass Python string literal.
@@ -400,6 +400,20 @@ class SmokeSRTests(unittest.TestCase):
         self.assertIn("run-evidence/auth-probe-", self.code)
         self.assertIn("no ref created", self.code)
         self.assertLess(self.code.index('"--dry-run"'), self.code.index("smoke_infrastructure.py"))
+
+    def test_40a_wrapper_rejects_interactive_before_secrets_network_clone_or_install(self):
+        gate = self.code.index("CROPCOP QUALIFICATION NOT STARTED")
+        self.assertLess(gate, self.code.index("from kaggle_secrets import UserSecretsClient"))
+        self.assertLess(gate, self.code.index("GitHub API auth preflight"))
+        self.assertLess(gate, self.code.index('"clone"'))
+        self.assertLess(gate, self.code.index('"pip"'))
+        self.assertIn("Save Version -> Save & Run All", self.code)
+        self.assertIn('if _kaggle_run_type != "Batch":', self.code)
+
+    def test_40b_wrapper_batch_gate_runs_before_mutable_smoke_output(self):
+        gate = self.code.index('if _kaggle_run_type != "Batch":')
+        self.assertLess(gate, self.code.index("smoke_infrastructure.py"))
+        self.assertIn("No source clone, dependency install, smoke checkpoint, or qualification evidence", self.code)
 
     def test_41_auth_errors_are_token_redacted(self):
         self.assertIn('.replace(_token, "<redacted>")', self.code)
