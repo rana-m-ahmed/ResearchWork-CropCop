@@ -1,0 +1,163 @@
+{
+  "schema_version": "cropcop-eaai-track-launch-matrix-v3.1",
+  "generated_at": "2026-09-05T12:43:00+05:00",
+  "repository": "rana-m-ahmed/ResearchWork-CropCop",
+  "repository_main_head": "32190dd86293caa82170df3feea505e3c7443b4b",
+  "dataset_gate_baseline_commit": "32190dd86293caa82170df3feea505e3c7443b4b",
+  "authorities": {
+    "dataset_gate": {
+      "file": "00_EAAI_DATASET_EVIDENCE_QA_GATE.md",
+      "git_blob_sha1": "2baf77f76695e932021689d444b6e543f1ff81ac"
+    },
+    "scientific": {
+      "file": "03R_EAAI_SCIENTIFIC_DESIGN_LOCK_v2.md",
+      "version": "EAAI-JE-SDL-v2.1-QA",
+      "sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74"
+    },
+    "execution": {
+      "file": "04_EAAI_REPOSITORY_EXECUTION_BLUEPRINT_v2.md",
+      "version": "EAAI-JE-REA-v2.2-LEAN",
+      "sha256": "a1bc1f8bb2d7a133a46c3f59f83dd2ba8ca3bf0fa8d77ae323553276931bc079"
+    }
+  },
+  "global_launch_state": "GO",
+  "tracks": [
+    {
+      "track_id": "A",
+      "name": "Model science",
+      "scientific_go": true,
+      "dependencies": [
+        "03R v2.1-QA remains LOCKED",
+        "dataset gate remains authoritative",
+        "DS-V1-TRAIN and DS-V1-VAL can be bound by exact manifests",
+        "minimum JE core passes its own scientific-boundary checks",
+        "exact pretrained/student/teacher identities are verified when required"
+      ],
+      "missing_engineering_prerequisites": [
+        "journal_extension/ namespace is absent on current main",
+        "JE experiment registry/configs are absent",
+        "protected-surface guard and lightweight run log are absent",
+        "CTC-v2 trainer/checkpoint-resume implementation is absent",
+        "paired student-initialization creation/hash enforcement is absent",
+        "V1 train/validation manifest bindings are not yet instantiated in JE",
+        "exact MobileNetV4 pretrained bytes have not yet been downloaded and SHA-256-bound",
+        "direct/teacher calibration and checkpoint->resume qualification have not yet been run",
+        "exact historical teacher checkpoint bytes must be verified before R05/R12 teacher-dependent work"
+      ],
+      "forbidden_surfaces": [
+        "DS-V1-TEST-CONSUMED during development",
+        "external audit bytes or sealed external cohorts",
+        "device result surfaces for model selection",
+        "any non-preauthorized model/seed/objective branch"
+      ],
+      "authorized_experiment_ids": [
+        "R04-MNV4-DIRECT-S1",
+        "R04-MNV4-DIRECT-S2",
+        "R04-MNV4-DIRECT-S3",
+        "R05-MNV4-TEACHER-S1",
+        "R05-MNV4-TEACHER-S2",
+        "R05-MNV4-TEACHER-S3",
+        "R12-MNV4-LOGITS-S1",
+        "R12-MNV4-FEATURE-S1",
+        "R06-EFFB0-CONTEXT-S1",
+        "R07-CNXTT-CONTEXT-S1"
+      ],
+      "downstream_protected_gate": "R08-V1-CONTINUITY-001 only after the predeclared ten-state eligible set has terminal evidence and the one-shot authorization object is sealed."
+    },
+    {
+      "track_id": "B",
+      "name": "External validity",
+      "scientific_go": true,
+      "dependencies": [
+        "03R external design remains LOCKED",
+        "candidate source/version/license access",
+        "complete-enough DS-HIST-COMPARE for EXT-I or bounded downgrade to EXT-S",
+        "prediction-blind mapping/family/overlap/support audit",
+        "candidate-specific seal before protected inference",
+        "exact historical PTE verified before R02/R11 final inference"
+      ],
+      "missing_engineering_prerequisites": [
+        "external audit/seal code is absent",
+        "candidate datasets have not yet been version-verified/download-manifested in JE",
+        "mapping and source-label semantic checks have not yet been executed",
+        "historical-comparison surface has not yet been bound for JE",
+        "no candidate seal exists"
+      ],
+      "forbidden_surfaces": [
+        "all CropCop classifier/PTE candidate predictions before candidate seal",
+        "V1 test",
+        "result-driven replacement cohort selection",
+        "PlantCity or any historical contributor treated as automatically independent"
+      ],
+      "authorized_experiment_ids": [
+        "R01-EXT-AUDIT-POTATO",
+        "R10-EXT-AUDIT-AGRIVISION",
+        "R02-EXT-POTATO-FINAL",
+        "R11-EXT-AGRIVISION-FINAL"
+      ],
+      "downstream_protected_gate": "Each R02/R11 protected inference opens independently only after that candidate is terminally audited/sealed and the exact historical PTE is verified; optional historical reference comparator must be presealed."
+    },
+    {
+      "track_id": "C",
+      "name": "Runtime/device",
+      "scientific_go": true,
+      "dependencies": [
+        "exact historical PTE bytes and SHA-256 verification",
+        "host smoke-load without protected data",
+        "physical Android device identity",
+        "frozen DS-DEVICE-RAW-256 and DS-DEVICE-TENSOR-256 manifests",
+        "Android ExecuTorch/XNNPACK harness and dry-run"
+      ],
+      "missing_engineering_prerequisites": [
+        "historical PTE bytes are not present in public Git and must be supplied from the restricted artifact store",
+        "PTE SHA/byte-size has not yet been recomputed in this execution wave",
+        "actual handset/build/runtime/thread identity has not yet been recorded",
+        "device manifests and harness do not yet exist in JE"
+      ],
+      "forbidden_surfaces": [
+        "new JE PTQ/FP16/runtime branch",
+        "V1 test",
+        "unsealed external data",
+        "energy-per-inference claim without a prospective re-lock and defensible instrumentation"
+      ],
+      "authorized_experiment_ids": [
+        "R03-DEVICE-V1-PTE",
+        "R09-DEVICE-PROFILE"
+      ],
+      "downstream_protected_gate": "Device claims remain configuration-specific and enter the Stage-04 evidence freeze only after exact-artifact fidelity and measurement evidence is durable."
+    },
+    {
+      "track_id": "D",
+      "name": "Evidence stewardship",
+      "scientific_go": true,
+      "dependencies": [
+        "lightweight run/evidence registry",
+        "globally unique run IDs",
+        "durable small evidence integration",
+        "repository validator/tests after each execution wave"
+      ],
+      "missing_engineering_prerequisites": [
+        "JE run log/registries are absent",
+        "track launch matrix is being created by Stage 00",
+        "JE validator extensions have not yet been implemented"
+      ],
+      "forbidden_surfaces": [
+        "raw restricted data/checkpoints/PTE binaries in public Git",
+        "blind pushes from parallel Kaggle jobs to main",
+        "shared mutable output directories",
+        "invented/reconstructed-from-memory run evidence"
+      ],
+      "authorized_experiment_ids": [
+        "R00-CONTRACT",
+        "R14-LONGTAIL-CONFUSION",
+        "R17-PUBLIC-REPLICATION-AUDIT"
+      ],
+      "downstream_protected_gate": "Stage 04 evidence freeze is the next global gate before manuscript drafting; Track D must not become a serial pre-results gate."
+    }
+  ],
+  "explicitly_not_authorized": [
+    "R13-NEW-JE-RUNTIME",
+    "R15-CONTRIB-SOURCE-STRESS",
+    "R16-PROTECTED-FIELD-FALLBACK"
+  ]
+}
