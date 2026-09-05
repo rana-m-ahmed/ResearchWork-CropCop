@@ -11,6 +11,7 @@
 - **Prior audited Stage-01A-H head:** `ac39ebd1ba1ad87de6d17ddfa027cd03a5bb7d59`
 - **Stage-01A-P initial implementation commit:** `78089ec8e87f33c05b521b03d25cbaed923058f6`
 - **Initial publication candidate:** `5897b530c4d588d98bfd916867f15624b3408b90` — exact-head Actions run #28 correctly failed at Python compilation and was not accepted
+- **First corrected candidate:** `d775a4d3d70fc9ee585b3579fffff85daf7f7c79` — run #29 passed compile + both validators, discovered 81 tests, then rejected two test-harness defects (notebook-source list join and wall-clock boundary expectation)
 - **Final corrected documentation/PR head:** not self-embedded; exact final branch SHA is attested by PR #8 and its exact-head CI after publication
 - **Scientific authority:** `EAAI-JE-SDL-v2.1-QA`
 - **Scientific authority SHA-256:** `aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74`
@@ -222,6 +223,10 @@ The initial implementation was committed at `78089ec8e87f33c05b521b03d25cbaed923
 The first documentation candidate `5897b530c4d588d98bfd916867f15624b3408b90` was rejected by exact-head
 Actions run #28 because a durable-sync timing edit left an `elif` after an intervening assignment.
 That syntax defect was corrected before any validator, Kaggle execution or scientific run could occur.
+Exact-head run #29 then passed compilation, the strict repository validator and JE static validator and
+discovered 81 tests. It rejected two Stage-01A-P test-harness defects: the notebook test joined nested
+source lists incorrectly, and a synthetic wall-clock assertion used a time that was not yet inside the
+finalization threshold. Both harness defects were corrected without changing execution science.
 
 This report is part of the corrected publication series, so the final PR head necessarily differs from
 the initial implementation commit.

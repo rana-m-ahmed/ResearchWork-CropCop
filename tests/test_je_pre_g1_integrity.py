@@ -321,7 +321,7 @@ class PreG1IntegrityTests(unittest.TestCase):
 
     def test_second_principal_does_not_receive_fresh_twelve_hours(self):
         env = {START_ENV: "0", HARD_LIMIT_ENV: "43200", FINALIZATION_MARGIN_ENV: "3600"}
-        with mock.patch.dict(os.environ, env, clear=False), mock.patch("cropcop_je.session.time.monotonic", return_value=39000):
+        with mock.patch.dict(os.environ, env, clear=False), mock.patch("cropcop_je.session.time.monotonic", return_value=39400):
             budget = SessionBudget.from_environment(require_global_clock=True)
             self.assertFalse(budget.can_start_phase(1000, estimated_checkpoint_seconds=100, estimated_sync_seconds=200))
             self.assertTrue(budget.should_finalize(estimated_checkpoint_seconds=100, estimated_sync_seconds=200))
@@ -379,7 +379,7 @@ class PreG1IntegrityTests(unittest.TestCase):
 
     def test_canonical_notebook_starts_clock_before_clone_and_supports_explicit_phases(self):
         nb = json.loads((ROOT / "journal_extension/kaggle/canonical_lane.ipynb").read_text())
-        code = "".join(c["source"] for c in nb["cells"] if c["cell_type"] == "code")
+        code = "".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code")
         self.assertLess(code.index("CROPCOP_NOTEBOOK_STARTED_MONOTONIC"), code.index("git','clone"))
         for phase in ("smoke", "g1", "calibration", "principal"):
             self.assertIn(phase, code)
