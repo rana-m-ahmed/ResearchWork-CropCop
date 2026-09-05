@@ -755,10 +755,11 @@ def main() -> int:
         any_terminal = False
         for child_id, obj in list(running.items()):
             if obj.timeout_seconds and now - obj.started_monotonic > obj.timeout_seconds and obj.process.poll() is None:
+                termination_started = time.monotonic()
                 mode = terminate_process_group(obj)
                 finalization_outcomes[child_id] = {
                     "termination_mode": mode,
-                    "termination_duration_seconds": 30.0,
+                    "termination_duration_seconds": max(0.0, time.monotonic() - termination_started),
                     "returncode": obj.process.poll(),
                     "reason": "CHILD_RUNTIME_TIMEOUT",
                 }
@@ -833,10 +834,11 @@ def main() -> int:
             time.sleep(0.5)
 
     for obj in list(running.values()):
+        termination_started = time.monotonic()
         mode = terminate_process_group(obj)
         finalization_outcomes[obj.child_id] = {
             "termination_mode": mode,
-            "termination_duration_seconds": 30.0,
+            "termination_duration_seconds": max(0.0, time.monotonic() - termination_started),
             "returncode": obj.process.poll(),
             "reason": "POST_LOOP_EMERGENCY_CLEANUP",
         }
