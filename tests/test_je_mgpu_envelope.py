@@ -25,6 +25,7 @@ from cropcop_je.envelope import (
     validate_t4x2_inventory,
 )
 from cropcop_je.publication import PublicationError, audit_public_files
+from cropcop_je.persistence import validate_durable_access_plan
 from cropcop_je.science_diff import validate_science_diff
 from cropcop_je.smoke_handoff import (
     SmokeHandoffError,
@@ -474,6 +475,47 @@ class MGPUContinuationAndEvidenceTests(unittest.TestCase):
                     self.assertNotIn("MGPU-P1", p.name)
                     self.assertNotIn("MGPU-P2", p.name)
                     self.assertNotIn("MGPU-P3", p.name)
+
+
+    def test_61_filesystem_durable_preflight_exercises_write_read_delete(self):
+        with tempfile.TemporaryDirectory() as td:
+            resolved = {"run-a": str(Path(td) / "run-a"), "run-b": str(Path(td) / "run-b")}
+            report = validate_durable_access_plan("filesystem", resolved, env={})
+            self.assertEqual(report["status"], "PASS", report["errors"])
+            self.assertEqual(report["resolved_locator_count"], 2)
+
+    def test_62_kaggle_durable_owner_mismatch_fails_before_cli(self):
+        resolved = {"run-a": "different-owner/run-a"}
+        report = validate_durable_access_plan(
+            "kaggle-dataset",
+            resolved,
+            env={"KAGGLE_USERNAME": "expected-owner", "KAGGLE_KEY": "fixture"},
+        )
+        self.assertEqual(report["status"], "FAIL")
+        self.assertTrue(any("owner mismatch" in e for e in report["errors"]))
+
+    def test_63_gpu_telemetry_records_compute_process_mapping_contract(self):
+        source = (ROOT / "journal_extension/src/cropcop_je/envelope.py").read_text()
+        self.assertIn("--query-compute-apps=pid,gpu_uuid,process_name,used_memory", source)
+        self.assertIn('"compute_processes"', source)
+
+    def test_64_dual_child_writes_observed_preflight_evidence(self):
+        source = (ROOT / "journal_extension/kaggle/run_lane.py").read_text()
+        self.assertIn('"observed_visible_cuda_count": torch.cuda.device_count()', source)
+        self.assertIn('"observed_visible_gpu_name": torch.cuda.get_device_name(0)', source)
+        self.assertIn('"git_credentials_present": bool(', source)
+        self.assertIn('"CHILD_PREFLIGHT.json"', source)
+
+    def test_65_parent_validates_child_preflight_before_result_collection(self):
+        source = (ROOT / "journal_extension/kaggle/run_envelope.py").read_text()
+        terminal = source[source.index("if rc == 0:"):source.index("else:", source.index("if rc == 0:"))]
+        self.assertLess(terminal.index("_validated_child_preflight"), terminal.index("_result_for_child"))
+
+    def test_66_publication_failure_does_not_relabel_child_science_directly(self):
+        source = (ROOT / "journal_extension/kaggle/run_envelope.py").read_text()
+        self.assertIn("Preserve child scientific/calibration terminal state", source)
+        self.assertIn('result.get("publication_status") == "FAIL"', source)
+
 
 
 if __name__ == "__main__":
