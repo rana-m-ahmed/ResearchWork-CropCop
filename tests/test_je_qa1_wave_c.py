@@ -107,7 +107,7 @@ class QA1WaveCTests(unittest.TestCase):
         source = (ROOT / "journal_extension/src/cropcop_je/persistence.py").read_text()
         self.assertIn("write_generation_mutated_by_preflight", source)
         self.assertIn("first real calibration/scientific sync", source)
-        self.assertNotIn("throwaway dataset version", source.lower().replace("creating a ", ""))
+        self.assertIn("dataset owner identity", source)
 
 
 if __name__ == "__main__":
