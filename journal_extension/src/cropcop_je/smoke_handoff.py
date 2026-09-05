@@ -22,6 +22,109 @@ class SmokeHandoffError(RuntimeError):
     pass
 
 
+QUALIFYING_KAGGLE_RUN_TYPES = {"Batch"}
+TERMINAL_SMOKE_B_SEQUENCE = (
+    "READ_A", "VERIFY_A", "RESTORE_A", "RECOVER_A",
+    "LOAD_A", "RESUME", "CHECKPOINT_B",
+)
+
+
+def observed_kaggle_run_type(evidence: dict[str, Any] | None = None) -> str:
+    evidence = evidence or {}
+    explicit = str(evidence.get("kaggle_run_type", "")).strip()
+    if explicit:
+        return explicit
+    nested = evidence.get("environment", {}).get("kaggle", {})
+    nested_value = str(nested.get("KAGGLE_KERNEL_RUN_TYPE", "")).strip()
+    if nested_value:
+        return nested_value
+    return str(os.environ.get("KAGGLE_KERNEL_RUN_TYPE", "")).strip()
+
+
+def require_qualifying_kaggle_batch(*, context: str, run_type: str | None = None) -> str:
+    observed = (run_type if run_type is not None else os.environ.get("KAGGLE_KERNEL_RUN_TYPE", "")).strip()
+    if observed not in QUALIFYING_KAGGLE_RUN_TYPES:
+        label = observed or "<missing>"
+        raise SmokeHandoffError(
+            f"{context} requires clean Kaggle Saved-Version/Batch execution; "
+            f"observed KAGGLE_KERNEL_RUN_TYPE={label}. Interactive execution is DIAGNOSTIC_NOT_QUALIFYING."
+        )
+    return observed
+
+
+def validate_terminal_smoke_b_evidence(
+    evidence: dict[str, Any],
+    *,
+    expected_source_sha: str,
+    expected_dependency_lock_sha256: str,
+    require_batch: bool = True,
+) -> list[str]:
+    errors: list[str] = []
+    if evidence.get("schema_version") != "2.0":
+        errors.append("unsupported Smoke-B evidence schema")
+    if evidence.get("status") != "PASS":
+        errors.append("Smoke-B status is not PASS")
+    if evidence.get("mode") != "RESTORE":
+        errors.append("Smoke-B mode is not RESTORE")
+    if evidence.get("scientific") is not False:
+        errors.append("Smoke-B is not explicitly non-scientific")
+    if evidence.get("synthetic_unprotected_data_only") is not True:
+        errors.append("Smoke-B is not synthetic/unprotected-only")
+    if evidence.get("source_git_sha") != expected_source_sha:
+        errors.append("Smoke-B source Git SHA mismatch")
+    if evidence.get("dependency_lock_sha256") != expected_dependency_lock_sha256:
+        errors.append("Smoke-B dependency-lock SHA mismatch")
+
+    run_type = observed_kaggle_run_type(evidence)
+    if require_batch and run_type not in QUALIFYING_KAGGLE_RUN_TYPES:
+        errors.append(
+            "Smoke-B terminal qualification requires clean Kaggle Saved-Version/Batch execution "
+            f"(observed {run_type or '<missing>'})"
+        )
+
+    for field in ("restore_success", "recover_success", "resume_success"):
+        if evidence.get(field) is not True:
+            errors.append(f"Smoke-B {field} is not true")
+
+    if tuple(evidence.get("sequence") or ()) != TERMINAL_SMOKE_B_SEQUENCE:
+        errors.append("Smoke-B restore/recover/resume sequence mismatch")
+
+    expected_checkpoint = str(evidence.get("smoke_a_expected_checkpoint_sha256", ""))
+    restored_checkpoint = str(evidence.get("smoke_a_observed_restored_checkpoint_sha256", ""))
+    if len(expected_checkpoint) != 64 or len(restored_checkpoint) != 64:
+        errors.append("Smoke-B Smoke-A checkpoint SHA reference missing/invalid")
+    elif expected_checkpoint != restored_checkpoint:
+        errors.append("Smoke-B restored checkpoint SHA differs from expected Smoke-A checkpoint SHA")
+
+    try:
+        restored_step = int(evidence.get("restored_optimizer_step", -1))
+        resumed_step = int(evidence.get("resumed_optimizer_step", -1))
+        if restored_step < 0 or resumed_step <= restored_step:
+            errors.append("Smoke-B optimizer step did not advance beyond restored step")
+    except (TypeError, ValueError):
+        errors.append("Smoke-B optimizer step fields are invalid")
+
+    if evidence.get("attached_smoke_a_input_unchanged") is not True:
+        errors.append("Smoke-B attached Smoke-A input was not proven unchanged")
+
+    for field in ("g1_executed", "g2_executed", "r04_r05_executed"):
+        if evidence.get(field) is not False:
+            errors.append(f"Smoke-B forbidden execution flag is not false: {field}")
+    if evidence.get("restricted_cropcop_data_accessed") is not False:
+        errors.append("Smoke-B accessed or did not explicitly exclude restricted CropCop data")
+
+    if evidence.get("git_publication_status") != "PASS":
+        errors.append("Smoke-B public-safe evidence publication is not PASS")
+    if not str(evidence.get("public_safe_evidence_branch", "")).startswith("run-evidence/SMOKE-B-"):
+        errors.append("Smoke-B public-safe evidence branch reference missing/invalid")
+
+    for field in ("smoke_a_manifest_sha256", "smoke_a_evidence_sha256"):
+        if len(str(evidence.get(field, ""))) != 64:
+            errors.append(f"Smoke-B {field} missing/invalid")
+
+    return errors
+
+
 def _hash_without(payload: dict[str, Any], field: str) -> str:
     clean = dict(payload)
     clean.pop(field, None)
