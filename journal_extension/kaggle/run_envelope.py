@@ -41,10 +41,14 @@ from cropcop_je.envelope import (
     validate_t4x2_inventory,
 )
 from cropcop_je.g2 import build_g2_barrier, validate_calibration_summary, validate_g2_barrier_object
+from cropcop_je.hashing import sha256_json
 from cropcop_je.publication import publish_to_github_branch
 from cropcop_je.science_diff import validate_science_diff
 from cropcop_je.session import SessionBudget
-from cropcop_je.smoke_handoff import validate_terminal_smoke_b_evidence
+from cropcop_je.smoke_handoff import (
+    validate_terminal_dual_gpu_smoke_evidence,
+    validate_terminal_smoke_b_evidence,
+)
 from cropcop_je.source_state import verify_clean_source
 
 DEPENDENCY_LOCK = ROOT / "journal_extension/locks/execution_dependency_lock.json"
@@ -96,6 +100,22 @@ def _smoke_preflight(source_sha: str, dependency: dict) -> dict:
     )
     if errors:
         raise EnvelopeError("canonical terminal Smoke-B preflight failed: " + "; ".join(errors))
+    return evidence
+
+
+def _dual_smoke_preflight(source_sha: str, dependency: dict, smoke: dict) -> dict:
+    evidence = load_json(req("CROPCOP_DUAL_GPU_SMOKE_EVIDENCE"))
+    errors = validate_terminal_dual_gpu_smoke_evidence(
+        evidence,
+        expected_source_sha=source_sha,
+        expected_dependency_lock_sha256=dependency["dependency_lock_sha256"],
+        expected_amendment_id=AMENDMENT_ID,
+        expected_amendment_sha256=AMENDMENT_SHA256,
+        expected_smoke_b_evidence_sha256=sha256_json(smoke),
+        require_batch=True,
+    )
+    if errors:
+        raise EnvelopeError("canonical terminal dual-GPU-smoke preflight failed: " + "; ".join(errors))
     return evidence
 
 
@@ -298,6 +318,7 @@ def main() -> int:
 
     dependency = load_json(DEPENDENCY_LOCK)
     smoke = _smoke_preflight(source_sha, dependency)
+    dual_smoke = _dual_smoke_preflight(source_sha, dependency, smoke)
     _g1_path, g1 = _g1_identity(source_sha, dependency)
 
     central_g2 = Path(req("CROPCOP_G2_SUMMARIES_DIR")).resolve()
@@ -393,6 +414,7 @@ def main() -> int:
             "protected_surfaces_unchanged": science["protected_surfaces_unchanged"],
             "g1_seal_sha256": g1["g1_seal_sha256"],
             "g2_barrier_sha256": g2_sha,
+            "dual_gpu_smoke_evidence_sha256": sha256_json(dual_smoke),
             "children": [
                 {
                     "child_id": row["child_id"],
@@ -695,6 +717,7 @@ def main() -> int:
         "protected_surfaces_unchanged": science["protected_surfaces_unchanged"],
         "g1_seal_sha256": g1["g1_seal_sha256"],
         "g2_barrier_sha256": (final_g2 or g2_barrier or {}).get("barrier_sha256"),
+        "dual_gpu_smoke_evidence_sha256": sha256_json(dual_smoke),
         "g2_publication_branch": final_g2_branch,
         "host_global_stop_reason": global_stop["reason"],
         "created_at_utc": utc_now(),
