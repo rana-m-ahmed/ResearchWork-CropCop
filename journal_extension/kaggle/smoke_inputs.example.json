@@ -1,6 +1,6 @@
 {
-  "authorized_source_sha": "ba5dd4661b97d072593af4646b76552686953a2d",
-  "source_authority": "Read journal_extension/kaggle/generate_canonical_notebook.py; Wave C replaces this with the final QA1 source.",
+  "authorized_source_sha": "be9b6965d760ff6e8674623b658f66572cd57093",
+  "source_authority": "Frozen Stage-01A-MGPU-QA1 execution source; verify the same literal in journal_extension/kaggle/generate_canonical_notebook.py.",
   "phase_vocabulary": [
     "smoke-write",
     "smoke-restore",
