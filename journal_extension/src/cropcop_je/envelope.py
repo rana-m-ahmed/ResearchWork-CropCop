@@ -46,6 +46,17 @@ class EnvelopeError(RuntimeError):
     pass
 
 
+@dataclass(frozen=True)
+class PriorEnvelopeBundle:
+    root: Path
+    manifest_path: Path
+    evidence_path: Path
+    state_path: Path
+    manifest: dict[str, Any]
+    evidence: dict[str, Any]
+    state: dict[str, Any]
+
+
 def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
@@ -320,14 +331,33 @@ def validate_disjoint_mutable_roots(children: list[dict[str, Any]]) -> list[str]
     return errors
 
 
-def locate_prior_state(input_root: str | Path) -> tuple[Path, dict[str, Any]]:
-    root = Path(input_root)
+def locate_prior_bundle(input_root: str | Path) -> PriorEnvelopeBundle:
+    root = Path(input_root).resolve()
     if not root.is_dir():
         raise EnvelopeError(f"CROPCOP_ENVELOPE_INPUT_ROOT is not a directory: {root}")
-    matches = sorted(root.rglob("ENVELOPE_STATE.json"))
-    if len(matches) != 1:
-        raise EnvelopeError(f"continuation input must contain exactly one ENVELOPE_STATE.json; found {len(matches)}")
-    return matches[0], load_json(matches[0])
+    names = ("ENVELOPE_MANIFEST.json", "ENVELOPE_EVIDENCE.json", "ENVELOPE_STATE.json")
+    found: dict[str, list[Path]] = {
+        name: sorted(path.resolve() for path in root.rglob(name) if path.is_file())
+        for name in names
+    }
+    for name, matches in found.items():
+        if len(matches) != 1:
+            raise EnvelopeError(
+                f"continuation input must contain exactly one {name}; found {len(matches)}"
+            )
+    parents = {found[name][0].parent for name in names}
+    if len(parents) != 1:
+        raise EnvelopeError("continuation manifest/evidence/state must come from the same envelope directory")
+    envelope_root = next(iter(parents))
+    return PriorEnvelopeBundle(
+        root=envelope_root,
+        manifest_path=found["ENVELOPE_MANIFEST.json"][0],
+        evidence_path=found["ENVELOPE_EVIDENCE.json"][0],
+        state_path=found["ENVELOPE_STATE.json"][0],
+        manifest=load_json(found["ENVELOPE_MANIFEST.json"][0]),
+        evidence=load_json(found["ENVELOPE_EVIDENCE.json"][0]),
+        state=load_json(found["ENVELOPE_STATE.json"][0]),
+    )
 
 
 def validate_continuation_state(
@@ -362,13 +392,119 @@ def validate_continuation_state(
     return errors
 
 
+def validate_prior_envelope_bundle(
+    bundle: PriorEnvelopeBundle,
+    *,
+    envelope_id: str,
+    source_sha: str,
+    g1_seal_sha256: str | None,
+    g2_barrier_sha256: str | None,
+    expected_run_ids: dict[str, str],
+) -> list[str]:
+    errors = validate_manifest(bundle.manifest)
+    common = {
+        "envelope_id": envelope_id,
+        "amendment_id": AMENDMENT_ID,
+        "amendment_sha256": AMENDMENT_SHA256,
+        "source_git_sha": source_sha,
+        "g1_seal_sha256": g1_seal_sha256,
+        "g2_barrier_sha256": g2_barrier_sha256,
+    }
+    for label, obj in (
+        ("manifest", bundle.manifest),
+        ("evidence", bundle.evidence),
+        ("state", bundle.state),
+    ):
+        for field, expected in common.items():
+            if obj.get(field) != expected:
+                errors.append(f"prior {label} {field} mismatch")
+    if bundle.evidence.get("manifest_sha256") != bundle.manifest.get("manifest_sha256"):
+        errors.append("prior evidence does not bind prior manifest SHA")
+    errors.extend(
+        validate_continuation_state(
+            bundle.state,
+            envelope_id=envelope_id,
+            source_sha=source_sha,
+            g1_seal_sha256=g1_seal_sha256,
+            g2_barrier_sha256=g2_barrier_sha256,
+            expected_run_ids=expected_run_ids,
+        )
+    )
+
+    manifest_runs = {
+        str(row.get("child_id")): str(row.get("run_id"))
+        for row in bundle.manifest.get("children", [])
+    }
+    if manifest_runs != expected_run_ids:
+        errors.append("prior manifest child run-ID mapping mismatch")
+    results = bundle.evidence.get("child_results")
+    if not isinstance(results, dict):
+        errors.append("prior evidence child_results missing/invalid")
+        results = {}
+    state_rows = {
+        str(row.get("child_id")): row
+        for row in bundle.state.get("children", [])
+    }
+    if set(state_rows) != set(expected_run_ids):
+        errors.append("prior state child set mismatch")
+
+    for child_id, run_id in expected_run_ids.items():
+        state_row = state_rows.get(child_id, {})
+        result = results.get(child_id)
+        if not isinstance(result, dict):
+            errors.append(f"prior evidence result missing for {child_id}")
+            continue
+        execution_status = state_row.get("execution_status", state_row.get("status"))
+        if result.get("status") != execution_status:
+            errors.append(f"prior child execution status mismatch for {child_id}")
+        publication_status = state_row.get("publication_status")
+        if result.get("publication_status") != publication_status:
+            errors.append(f"prior child publication status mismatch for {child_id}")
+        complete = bool(state_row.get("evidence_chain_complete"))
+        expected_complete = (
+            execution_status == "PASS"
+            and publication_status == "PASS"
+            and result.get("publication_status") == "PASS"
+        )
+        if complete != expected_complete:
+            errors.append(f"prior child evidence-completeness mismatch for {child_id}")
+
+        if execution_status == "PASS":
+            rel_text = str(result.get("result_relative_path", ""))
+            rel = Path(rel_text)
+            if not rel_text or rel.is_absolute() or ".." in rel.parts:
+                errors.append(f"prior child terminal result path invalid for {child_id}")
+                continue
+            artifact = (bundle.root / rel).resolve()
+            if bundle.root not in artifact.parents:
+                errors.append(f"prior child terminal result escapes envelope root for {child_id}")
+            elif not artifact.is_file():
+                errors.append(f"prior child terminal result missing for {child_id}: {rel_text}")
+
+    return errors
+
+
 def continuation_skip_set(state: dict[str, Any] | None) -> set[str]:
     if not state:
         return set()
     return {
         str(row.get("child_id"))
         for row in state.get("children", [])
-        if row.get("status") == "PASS"
+        if row.get("execution_status", row.get("status")) == "PASS"
+        and row.get("publication_status") == "PASS"
+        and row.get("evidence_chain_complete") is True
+    }
+
+
+def continuation_publication_repair_set(state: dict[str, Any] | None) -> set[str]:
+    if not state:
+        return set()
+    return {
+        str(row.get("child_id"))
+        for row in state.get("children", [])
+        if row.get("execution_status", row.get("status")) == "PASS"
+        and row.get("publication_status") == "FAIL"
+        and row.get("evidence_chain_complete") is False
     }
 
 
@@ -442,6 +578,7 @@ def launch_process(
 
 
 def terminate_process_group(child: RunningChild, *, grace_seconds: float = 30.0) -> str:
+    """Emergency/hung-child termination. Planned finalization uses the larger concurrent helper."""
     if child.process.poll() is not None:
         return "already_terminal"
     try:
@@ -456,8 +593,76 @@ def terminate_process_group(child: RunningChild, *, grace_seconds: float = 30.0)
             os.killpg(child.process.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
-        return "sigkill_after_grace"
-    return "sigterm"
+        return "sigkill_after_emergency_grace"
+    return "sigterm_emergency"
+
+
+def planned_finalization_grace_seconds(
+    budget: SessionBudget,
+    *,
+    estimated_checkpoint_seconds: float = 120.0,
+    estimated_sync_seconds: float = 180.0,
+) -> float:
+    desired = max(
+        300.0,
+        2.0 * (max(0.0, estimated_checkpoint_seconds) + max(0.0, estimated_sync_seconds)) + 60.0,
+    )
+    margin_cap = max(60.0, 0.8 * budget.finalization_margin_seconds)
+    hard_cap = max(1.0, budget.remaining_hard_seconds - 30.0)
+    return max(1.0, min(desired, margin_cap, hard_cap))
+
+
+def gracefully_finalize_process_groups(
+    children: list[RunningChild],
+    *,
+    grace_seconds: float,
+    poll_seconds: float = 0.2,
+) -> dict[str, dict[str, Any]]:
+    """SIGTERM all children together, allow bounded checkpoint/sync finalization, then kill only hung groups."""
+    started = time.monotonic()
+    outcomes: dict[str, dict[str, Any]] = {}
+    active: list[RunningChild] = []
+    for child in children:
+        if child.process.poll() is not None:
+            outcomes[child.child_id] = {
+                "termination_mode": "already_terminal",
+                "termination_duration_seconds": 0.0,
+                "returncode": child.process.poll(),
+            }
+            continue
+        try:
+            os.killpg(child.process.pid, signal.SIGTERM)
+            active.append(child)
+        except ProcessLookupError:
+            outcomes[child.child_id] = {
+                "termination_mode": "already_terminal",
+                "termination_duration_seconds": max(0.0, time.monotonic() - started),
+                "returncode": child.process.poll(),
+            }
+
+    deadline = started + max(0.0, grace_seconds)
+    while active and time.monotonic() < deadline:
+        active = [child for child in active if child.process.poll() is None]
+        if active:
+            time.sleep(max(0.01, poll_seconds))
+
+    for child in children:
+        if child.child_id in outcomes:
+            continue
+        if child.process.poll() is None:
+            try:
+                os.killpg(child.process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            mode = "sigkill_after_finalization_grace"
+        else:
+            mode = "graceful_sigterm"
+        outcomes[child.child_id] = {
+            "termination_mode": mode,
+            "termination_duration_seconds": max(0.0, time.monotonic() - started),
+            "returncode": child.process.poll(),
+        }
+    return outcomes
 
 
 def close_child_log(child: RunningChild) -> None:
