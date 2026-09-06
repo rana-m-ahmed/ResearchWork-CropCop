@@ -20,7 +20,7 @@ Before final-source Smoke qualification, run the separate non-qualifying CPU rea
 
 - `CropCop-Model-RFDV`;
 - the frozen Final-V1 source;
-- the pre-created private G1 Kaggle Dataset target.
+- the intended private G1 Kaggle Dataset slug/ownership policy. Target creation may be deferred to the actual G1 run only when the wrapper is explicitly configured with `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=1`.
 
 The readiness entrypoint is:
 
@@ -86,10 +86,20 @@ Attach both exact qualification outputs and set:
 ```text
 CROPCOP_SMOKE_B_INPUT_ROOT=/kaggle/input/<exact-smoke-b-output>
 CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT=/kaggle/input/<exact-dual-gpu-smoke-output>
-CROPCOP_RFDV_ROOT=/kaggle/input/<cropcop-model-rfdv>
-CROPCOP_FINAL_V1_ROOT=/kaggle/input/<frozen-final-v1-root>
-CROPCOP_G1_PRIVATE_DATASET_SLUG=<kaggle-owner>/<pre-created-private-g1-dataset>
+CROPCOP_RFDV_ROOT=/kaggle/input/datasets/ranamuhammadahmed6/cropcop-model-rfdv
+CROPCOP_FINAL_V1_ROOT=/kaggle/input/datasets/ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1
+CROPCOP_G1_PRIVATE_DATASET_SLUG=ranamuhammadahmed6/cropcop-g1-sealed
+CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=1
 ```
+
+`CROPCOP_FINAL_V1_ROOT` means the directory that directly contains `audit/final_manifest.csv` and `audit/class_to_idx.json`. The wrapper accepts only that exact root or one deterministic normalization from an explicitly supplied outer mount to its immediate `CropCop_Final_v1` child. It never recursively searches `/kaggle/input`.
+
+Private-target policy is explicit and fail-closed:
+
+- `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0`: the private target must already exist.
+- `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=1`: the frozen G1 code may create the minimal private target if it is missing, then re-preflight ownership/status before later publishing the sealed G1 package as a dataset version and round-trip verifying it.
+
+Readiness may defer target creation; an actual G1 run must choose exactly `0` or `1`. There is no silent create default.
 
 Required secrets:
 

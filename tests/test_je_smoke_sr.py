@@ -1,4 +1,6 @@
+import ast
 import hashlib
+import importlib.util
 import inspect
 import json
 import os
@@ -122,6 +124,18 @@ class SmokeSRTests(unittest.TestCase):
         start = self.smoke_source.index("def smoke_restore")
         end = self.smoke_source.index("\ndef main()", start)
         return self.smoke_source[start:end]
+
+    def _wrapper_function(self, name):
+        tree = ast.parse(self.code)
+        node = next(
+            item for item in tree.body
+            if isinstance(item, ast.FunctionDef) and item.name == name
+        )
+        module = ast.Module(body=[node], type_ignores=[])
+        ast.fix_missing_locations(module)
+        namespace = {"Path": Path}
+        exec(compile(module, "canonical_lane.ipynb", "exec"), namespace)
+        return namespace[name]
 
     def test_01_smoke_write_has_no_kaggle_api_credential_requirement(self):
         write = self.smoke_source[self.smoke_source.index("def smoke_write"):self.smoke_source.index("def smoke_restore")]
@@ -607,6 +621,125 @@ class SmokeSRTests(unittest.TestCase):
         self.assertNotIn(secret, str(ctx.exception))
         self.assertIn("<redacted>", str(ctx.exception))
 
+    def test_47_g1_final_v1_exact_root_accepted(self):
+        resolver = self._wrapper_function("_resolve_g1_final_v1_root")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "CropCop_Final_v1"
+            audit = root / "audit"
+            audit.mkdir(parents=True)
+            (audit / "final_manifest.csv").write_text("manifest\n")
+            (audit / "class_to_idx.json").write_text("{}\n")
+            self.assertEqual(resolver(str(root)), str(root.resolve()))
+
+    def test_48_g1_final_v1_outer_root_resolves_direct_child_only(self):
+        resolver = self._wrapper_function("_resolve_g1_final_v1_root")
+        with tempfile.TemporaryDirectory() as td:
+            outer = Path(td)
+            root = outer / "CropCop_Final_v1"
+            audit = root / "audit"
+            audit.mkdir(parents=True)
+            (audit / "final_manifest.csv").write_text("manifest\n")
+            (audit / "class_to_idx.json").write_text("{}\n")
+            self.assertEqual(resolver(str(outer)), str(root.resolve()))
+
+    def test_49_g1_final_v1_missing_manifest_fails(self):
+        resolver = self._wrapper_function("_resolve_g1_final_v1_root")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "CropCop_Final_v1"
+            audit = root / "audit"
+            audit.mkdir(parents=True)
+            (audit / "class_to_idx.json").write_text("{}\n")
+            with self.assertRaises(RuntimeError):
+                resolver(str(root))
+
+    def test_50_g1_final_v1_missing_class_map_fails(self):
+        resolver = self._wrapper_function("_resolve_g1_final_v1_root")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "CropCop_Final_v1"
+            audit = root / "audit"
+            audit.mkdir(parents=True)
+            (audit / "final_manifest.csv").write_text("manifest\n")
+            with self.assertRaises(RuntimeError):
+                resolver(str(root))
+
+    def test_51_g1_final_v1_does_not_recursively_discover_deeper_match(self):
+        resolver = self._wrapper_function("_resolve_g1_final_v1_root")
+        with tempfile.TemporaryDirectory() as td:
+            outer = Path(td)
+            audit = outer / "deeper" / "CropCop_Final_v1" / "audit"
+            audit.mkdir(parents=True)
+            (audit / "final_manifest.csv").write_text("manifest\n")
+            (audit / "class_to_idx.json").write_text("{}\n")
+            with self.assertRaises(RuntimeError):
+                resolver(str(outer))
+
+    def test_52_g1_final_v1_ambiguity_fails(self):
+        resolver = self._wrapper_function("_resolve_g1_final_v1_root")
+        with tempfile.TemporaryDirectory() as td:
+            outer = Path(td)
+            for root in (outer, outer / "CropCop_Final_v1"):
+                audit = root / "audit"
+                audit.mkdir(parents=True, exist_ok=True)
+                (audit / "final_manifest.csv").write_text("manifest\n")
+                (audit / "class_to_idx.json").write_text("{}\n")
+            with self.assertRaises(RuntimeError):
+                resolver(str(outer))
+
+    def test_53_g1_rfdv_requires_exact_teacher_checkpoint(self):
+        validator = self._wrapper_function("_validate_g1_rfdv_root")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            with self.assertRaises(RuntimeError):
+                validator(str(root))
+            checkpoint = (
+                root / "cropcop_runs" / "stage1_dino_tiny_ce_256"
+                / "checkpoints" / "best_macro_f1.pt"
+            )
+            checkpoint.parent.mkdir(parents=True)
+            checkpoint.write_bytes(b"fixture")
+            self.assertEqual(validator(str(root)), str(root.resolve()))
+
+    def test_54_g1_private_target_creation_policy_is_explicit_binary(self):
+        validator = self._wrapper_function("_validate_g1_create_policy")
+        self.assertEqual(validator("0"), "0")
+        self.assertEqual(validator("1"), "1")
+        for invalid in ("", "true", "yes", "<SET_0_OR_1_FOR_G1>", "2"):
+            with self.assertRaises(RuntimeError):
+                validator(invalid)
+
+    def test_55_g1_missing_creation_policy_fails_closed(self):
+        self.assertIn(
+            '"CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET",\n    "<SET_0_OR_1_FOR_G1>"',
+            self.code,
+        )
+        g1_block = self.code[
+            self.code.index('if EXECUTION_PHASE == "g1":'):
+            self.code.index('elif EXECUTION_PHASE in {"calibration-dual", "principal-dual"}:')
+        ]
+        self.assertIn("_validate_g1_create_policy", g1_block)
+        self.assertIn('os.environ["CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET"]', g1_block)
+
+    def test_56_g1_root_resolution_is_narrow_and_non_recursive(self):
+        resolver = inspect.getsource(self._wrapper_function("_resolve_g1_final_v1_root"))
+        self.assertNotIn("rglob", resolver)
+        self.assertNotIn("glob(", resolver)
+        self.assertIn('root / "CropCop_Final_v1"', resolver)
+        self.assertIn('"audit" / "final_manifest.csv"', resolver)
+        self.assertIn('"audit" / "class_to_idx.json"', resolver)
+
+    def test_57_generator_build_matches_checked_in_notebook(self):
+        path = ROOT / "journal_extension/kaggle/generate_canonical_notebook.py"
+        spec = importlib.util.spec_from_file_location("cropcop_notebook_generator", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual(module.build_notebook(), self.notebook)
+
+    def test_58_g1_wrapper_remediation_preserves_frozen_source_binding(self):
+        generator = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text()
+        expected = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
+        self.assertIn(f'MGPU_EXECUTION_SOURCE_SHA = "{expected}"', generator)
+        self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', generator)
+        self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', self.code)
 
 
 if __name__ == "__main__":

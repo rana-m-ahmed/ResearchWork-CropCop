@@ -76,6 +76,10 @@ G1_PRIVATE_DATASET_SLUG = os.environ.get(
     "CROPCOP_G1_PRIVATE_DATASET_SLUG",
     "<SET_OWNER/PRIVATE_G1_DATASET>",
 )
+G1_ALLOW_CREATE_PRIVATE_DATASET = os.environ.get(
+    "CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET",
+    "<SET_0_OR_1_FOR_G1>",
+).strip()
 G1_INPUT_ROOT = os.environ.get(
     "CROPCOP_G1_INPUT_ROOT",
     "<SET_AFTER_ATTACHING_SEALED_G1_DATASET>",
@@ -144,6 +148,61 @@ def _locate_exact_attached_evidence(root_value: str, filename: str, label: str) 
     return str(matches[0])
 
 
+def _resolve_g1_final_v1_root(root_value: str) -> str:
+    if not root_value or root_value.startswith("<"):
+        raise RuntimeError("Set CROPCOP_FINAL_V1_ROOT explicitly for CPU G1")
+    root = Path(root_value).resolve()
+    candidates = [root, (root / "CropCop_Final_v1").resolve()]
+    valid = []
+    for candidate in candidates:
+        manifest = candidate / "audit" / "final_manifest.csv"
+        class_map = candidate / "audit" / "class_to_idx.json"
+        if manifest.is_file() and class_map.is_file():
+            valid.append(candidate)
+    checked = " | ".join(str(candidate) for candidate in candidates)
+    print(f"G1 Final-V1 candidates checked: {checked}")
+    if not valid:
+        raise RuntimeError(
+            "CROPCOP_FINAL_V1_ROOT has no valid canonical layout; "
+            f"checked exactly: {checked}"
+        )
+    if len(valid) != 1:
+        raise RuntimeError(
+            "CROPCOP_FINAL_V1_ROOT is ambiguous; more than one allowed candidate is valid: "
+            + " | ".join(str(candidate) for candidate in valid)
+        )
+    return str(valid[0])
+
+
+def _validate_g1_rfdv_root(root_value: str) -> str:
+    if not root_value or root_value.startswith("<"):
+        raise RuntimeError("Set CROPCOP_RFDV_ROOT explicitly for CPU G1")
+    root = Path(root_value).resolve()
+    checkpoint = (
+        root
+        / "cropcop_runs"
+        / "stage1_dino_tiny_ce_256"
+        / "checkpoints"
+        / "best_macro_f1.pt"
+    )
+    if not checkpoint.is_file():
+        raise RuntimeError(
+            "CROPCOP_RFDV_ROOT is missing the exact historical teacher checkpoint: "
+            f"{checkpoint}"
+        )
+    print(f"G1 RFDV exact checkpoint preflight: PASS ({checkpoint})")
+    return str(root)
+
+
+def _validate_g1_create_policy(value: str) -> str:
+    policy = str(value).strip()
+    if policy not in {"0", "1"}:
+        raise RuntimeError(
+            "CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET must be explicitly set to exactly 0 or 1 for G1"
+        )
+    return policy
+
+
 if EXECUTION_PHASE == "dual-gpu-smoke":
     os.environ["CROPCOP_INFRA_SMOKE_EVIDENCE"] = _locate_exact_attached_evidence(
         SMOKE_B_INPUT_ROOT,
@@ -163,14 +222,19 @@ elif EXECUTION_PHASE in {"g1", "calibration-dual", "principal-dual"}:
     )
 
 if EXECUTION_PHASE == "g1":
-    for _name, _value in (
-        ("CROPCOP_RFDV_ROOT", RFDV_ROOT),
-        ("CROPCOP_FINAL_V1_ROOT", FINAL_V1_ROOT),
-        ("CROPCOP_G1_PRIVATE_DATASET_SLUG", G1_PRIVATE_DATASET_SLUG),
-    ):
-        if not _value or _value.startswith("<"):
-            raise RuntimeError(f"Set {_name} explicitly for CPU G1")
-        os.environ[_name] = _value
+    if not G1_PRIVATE_DATASET_SLUG or G1_PRIVATE_DATASET_SLUG.startswith("<"):
+        raise RuntimeError("Set CROPCOP_G1_PRIVATE_DATASET_SLUG explicitly for CPU G1")
+    _resolved_rfdv_root = _validate_g1_rfdv_root(RFDV_ROOT)
+    _resolved_final_v1_root = _resolve_g1_final_v1_root(FINAL_V1_ROOT)
+    _g1_create_policy = _validate_g1_create_policy(G1_ALLOW_CREATE_PRIVATE_DATASET)
+    os.environ["CROPCOP_RFDV_ROOT"] = _resolved_rfdv_root
+    os.environ["CROPCOP_FINAL_V1_ROOT"] = _resolved_final_v1_root
+    os.environ["CROPCOP_G1_PRIVATE_DATASET_SLUG"] = G1_PRIVATE_DATASET_SLUG
+    os.environ["CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET"] = _g1_create_policy
+    print(
+        "G1 private-target policy: "
+        + ("explicit create-if-missing" if _g1_create_policy == "1" else "must already exist")
+    )
 elif EXECUTION_PHASE in {"calibration-dual", "principal-dual"}:
     if not G1_INPUT_ROOT or G1_INPUT_ROOT.startswith("<"):
         raise RuntimeError(
