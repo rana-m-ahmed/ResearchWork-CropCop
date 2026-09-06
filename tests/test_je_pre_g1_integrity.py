@@ -26,6 +26,7 @@ from cropcop_je.session import (
     FINALIZATION_MARGIN_ENV, HARD_LIMIT_ENV, START_ENV, SessionBudget,
 )
 from cropcop_je.source_state import SourceStateError, verify_clean_source
+from cropcop_je.tensor_identity import TENSOR_IDENTITY_ALGORITHM
 
 
 PRETRAINED = "1" * 64
@@ -76,6 +77,7 @@ def valid_seal(source="a" * 40):
                 "source_locator": "timm/mobilenetv4_conv_medium.e500_r256_in1k",
                 "timm_pretrained_cfg_sha256": "9" * 64,
                 "provenance_sha256": PROV,
+                "tensor_identity_algorithm": TENSOR_IDENTITY_ALGORITHM,
                 "tensor_identity_sha256": TENSOR_ID,
                 "candidate_serialization_format": "safetensors_state_dict",
             },
