@@ -9,7 +9,8 @@ from pathlib import Path
 
 import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
-from cropcop_je.data import CropCopManifestDataset, ManifestColumns, load_manifest_rows
+from cropcop_je.data import CropCopManifestDataset
+from cropcop_je.frozen_v1_manifest import load_frozen_v1_rows
 from cropcop_je.environment import capture_environment, software_stack_identity, validate_locked_core
 from cropcop_je.g1 import (
     validate_dependency_environment, validate_dependency_lock_object,
@@ -98,21 +99,32 @@ def prepare(args, *, mode: str):
 
     manifest_sha = require_sha256(args.manifest, config["manifest_sha256"], "V1 manifest")
     class_map_sha = require_sha256(args.class_map, config["class_map_sha256"], "120-way class map")
-    cols = ManifestColumns(args.row_id_column, args.path_column, args.split_column, args.class_index_column)
-    train_rows = load_manifest_rows(
+    train_rows = load_frozen_v1_rows(
         args.manifest,
-        expected_sha256=config["manifest_sha256"],
+        args.class_map,
+        expected_manifest_sha256=config["manifest_sha256"],
+        expected_class_map_sha256=config["class_map_sha256"],
         surface="DS-V1-TRAIN",
-        columns=cols,
+        row_id_column=args.row_id_column,
+        path_column=args.path_column,
+        split_column=args.split_column,
+        label_column=args.label_column,
+        class_index_column=args.class_index_column,
         train_split_value=args.train_split_value,
         val_split_value=args.val_split_value,
         expected_count=TRAIN_COUNT,
     )
-    val_rows = load_manifest_rows(
+    val_rows = load_frozen_v1_rows(
         args.manifest,
-        expected_sha256=config["manifest_sha256"],
+        args.class_map,
+        expected_manifest_sha256=config["manifest_sha256"],
+        expected_class_map_sha256=config["class_map_sha256"],
         surface="DS-V1-VAL",
-        columns=cols,
+        row_id_column=args.row_id_column,
+        path_column=args.path_column,
+        split_column=args.split_column,
+        label_column=args.label_column,
+        class_index_column=args.class_index_column,
         train_split_value=args.train_split_value,
         val_split_value=args.val_split_value,
         expected_count=VAL_COUNT,
@@ -543,7 +555,8 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--row-id-column", required=True)
     ap.add_argument("--path-column", required=True)
     ap.add_argument("--split-column", required=True)
-    ap.add_argument("--class-index-column", required=True)
+    ap.add_argument("--label-column", required=True)
+    ap.add_argument("--class-index-column", default="")
     ap.add_argument("--train-split-value", default="train")
     ap.add_argument("--val-split-value", default="val")
     ap.add_argument("--num-workers", type=int, default=4)
