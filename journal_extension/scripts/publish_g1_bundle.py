@@ -8,8 +8,7 @@ from pathlib import Path
 import _bootstrap  # noqa: F401
 from cropcop_je.g1_publication import (
     G1PublicationError,
-    create_private_target_if_missing,
-    preflight_private_target,
+    ensure_private_target,
     publish_and_roundtrip,
 )
 
@@ -23,18 +22,14 @@ def main() -> int:
     args = ap.parse_args()
 
     try:
-        try:
-            preflight_private_target(args.dataset_slug, env=os.environ)
-        except G1PublicationError:
-            if os.environ.get("CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET", "").strip() != "1":
-                raise
-            create_private_target_if_missing(args.dataset_slug, env=os.environ)
-            preflight_private_target(args.dataset_slug, env=os.environ)
-
+        ensure_private_target(args.dataset_slug, env=os.environ)
+        receipt_path = Path(args.receipt).resolve()
         receipt = publish_and_roundtrip(
             args.bundle_dir,
             args.dataset_slug,
-            args.receipt,
+            receipt_path,
+            attempt_path=receipt_path.with_name("G1_PUBLICATION_ATTEMPT.json"),
+            mode=args.mode,
             env=os.environ,
         )
     except Exception as exc:
@@ -53,7 +48,8 @@ def main() -> int:
         "g1_seal_sha256": receipt["g1_seal_sha256"],
         "package_sha256": receipt["package_sha256"],
         "roundtrip_verified": receipt["roundtrip_verified"],
-        "current_version_number": receipt["current_version_number"],
+        "published_version_number": receipt["published_version_number"],
+        "published_version_ref": receipt["published_version_ref"],
     }, sort_keys=True))
     return 0
 
