@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 from .g1 import validate_dependency_lock_object
-from .hashing import sha256_json
+from .hashing import sha256_file, sha256_json
 from .envelope import AMENDMENT_ID, AMENDMENT_SHA256, validate_envelope_config
 from .science_diff import validate_science_diff
 from .runlog import IDENTITY_FIELDS, validate_run_record
@@ -98,6 +98,34 @@ def validate_static(repo_root: Path) -> dict:
             errors.append(f"S{i} pair-init evidence mismatch")
         if d["pair_id"] != t["pair_id"]:
             errors.append(f"S{i} pair_id mismatch")
+
+    lineage_root = je / "evidence/historical/teacher_stage1"
+    lineage_path = lineage_root / "teacher_lineage_manifest.json"
+    try:
+        lineage = _load(lineage_path)
+        sources = lineage.get("historical_evidence_sources", [])
+        if not isinstance(sources, list) or not sources:
+            errors.append("historical teacher lineage has no evidence sources")
+        else:
+            resolved_root = lineage_root.resolve()
+            for row in sources:
+                rel = str(row.get("path", ""))
+                candidate = (resolved_root / rel).resolve()
+                if resolved_root not in candidate.parents:
+                    errors.append(f"historical teacher evidence path escapes root: {rel}")
+                    continue
+                if not candidate.is_file():
+                    errors.append(f"historical teacher evidence source missing: {rel}")
+                    continue
+                expected = str(row.get("sha256", ""))
+                actual = sha256_file(candidate)
+                if not expected or actual != expected:
+                    errors.append(
+                        f"historical teacher evidence SHA mismatch: {rel}; "
+                        f"expected={expected or '<missing>'}; actual={actual}"
+                    )
+    except Exception as exc:
+        errors.append(f"historical teacher lineage validation failed: {exc}")
 
     dep_lock = _load(je / "locks/execution_dependency_lock.json")
     errors.extend(f"dependency lock: {x}" for x in validate_dependency_lock_object(dep_lock))
