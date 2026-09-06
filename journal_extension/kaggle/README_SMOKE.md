@@ -20,7 +20,7 @@ Before final-source Smoke qualification, run the separate non-qualifying CPU rea
 
 - `CropCop-Model-RFDV`;
 - the frozen Final-V1 source;
-- the intended private G1 Kaggle Dataset slug/ownership policy. Target creation may be deferred to the actual G1 run only when the wrapper is explicitly configured with `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=1`.
+- the intended private G1 Kaggle Dataset slug/ownership policy. Target creation may be deferred to the actual G1 run only when the wrapper is explicitly configured with `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0`.
 
 The readiness entrypoint is:
 
@@ -108,6 +108,8 @@ CROPCOP_G1_PRIVATE_DATASET_SLUG=ranamuhammadahmed6/cropcop-g1-sealed
 CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=1
 ```
 
+Readiness has already established that `ranamuhammadahmed6/cropcop-g1-sealed` exists, is private, is owned by the authenticated account, and is ready. For the fresh v2.2 G1 qualification use `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0`; do not recreate or delete that target.
+
 `CROPCOP_FINAL_V1_ROOT` means the directory that directly contains `audit/final_manifest.csv` and `audit/class_to_idx.json`. The wrapper accepts only that exact root or one deterministic normalization from an explicitly supplied outer mount to its immediate `CropCop_Final_v1` child. It never recursively searches `/kaggle/input`.
 
 Private-target policy is explicit and fail-closed:
@@ -118,8 +120,6 @@ Private-target policy is explicit and fail-closed:
 Readiness may defer target creation; an actual G1 run must choose exactly `0` or `1`. There is no silent create default.
 
 When creation is explicitly allowed, the wrapper treats Kaggle dataset creation as asynchronous. It reuses an existing target, creates the minimal private target only when absence is established, and waits until authoritative private metadata is readable, the exact slug appears in the authenticated account's `mine` listing, and dataset status is ready/completed before invoking frozen G1.
-
-The frozen Stage-01A-G1P-v2.2 source contains one documented legacy schema-name mismatch in `FROZEN_V1_IDENTITY.json`: the sealer writes `protected_test_accessed_during_g1=false` while the mounted-G1 barrier checks `v1_test_accessed is False`. The canonical wrapper applies a read-only compatibility rule outside the Git checkout for G1 and downstream G1 revalidation. It suppresses only the exact false-positive barrier message when the canonical field is absent and the frozen field is explicitly `false`. It does not modify the G1 seal, identity evidence bytes, source checkout, scientific artifacts, or any other barrier error.
 
 Required secrets:
 
