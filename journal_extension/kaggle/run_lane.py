@@ -34,7 +34,7 @@ COLUMN_ENV = {
     "row_id_column": "CROPCOP_ROW_ID_COLUMN",
     "path_column": "CROPCOP_PATH_COLUMN",
     "split_column": "CROPCOP_SPLIT_COLUMN",
-    "class_index_column": "CROPCOP_CLASS_INDEX_COLUMN",
+    "label_column": "CROPCOP_LABEL_COLUMN",
 }
 G2_IDS = ("CAL-MNV4-DIRECT", "CAL-MNV4-TEACHER", "CAL-CNXTT")
 
