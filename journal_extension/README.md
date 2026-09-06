@@ -12,10 +12,12 @@ are verified before use; V1 test and sealed external surfaces are not resolvable
 
 
 <!-- QA1_OPERATOR_BEGIN -->
-## Current Stage-01A-MGPU-QA1 operator path
+## Current Stage-01A-G1P-v2 operator path
 
-**Current post-Smoke-A-debug execution source:** `fe88e426b4698977d65efe9702f1d48cf5ff96a3`  
-This source is frozen by the post-Smoke-A-debug exact-head source CI. The generator is authoritative for the active source SHA.
+**Frozen execution source:** `b89144d8826b6c61c3be7a91cac08681b1b4a99c`  
+**Dependency lock:** `6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37`
+
+Repository closure is followed first by the separate, non-qualifying CPU `G1_INPUT_READINESS.json` job. After independent readiness PASS, final-source qualification proceeds:
 
 ```text
 smoke-write
@@ -28,7 +30,7 @@ smoke-write
 → principal-dual
 ```
 
-Canonical operator phases are exactly:
+Canonical operator phases remain exactly:
 
 - `smoke-write`
 - `smoke-restore`
@@ -37,15 +39,15 @@ Canonical operator phases are exactly:
 - `calibration-dual`
 - `principal-dual`
 
-`smoke-write` and `smoke-restore` require only `CROPCOP_GITHUB_TOKEN`. Smoke B consumes the exact attached Smoke-A output through `CROPCOP_SMOKE_A_INPUT_ROOT`.
+Smoke A/B require only `CROPCOP_GITHUB_TOKEN`. The dual smoke is T4×2 and synthetic.
 
-`dual-gpu-smoke` consumes the exact attached Smoke-B output through `CROPCOP_SMOKE_B_INPUT_ROOT`. G1 and later dual phases require both the exact Smoke-B evidence and exact dual-GPU-smoke evidence through `CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT`.
+CPU G1 consumes exact `CROPCOP_RFDV_ROOT`, `CROPCOP_FINAL_V1_ROOT`, `CROPCOP_G1_PRIVATE_DATASET_SLUG`, terminal Smoke-B, and terminal dual-smoke evidence. The exact teacher path, teacher factory/lineage and official MNV4 preparation are source-controlled/resolved by the frozen implementation.
 
-G1 / calibration-dual / principal-dual preserve production durable-store and restricted-artifact requirements, including `KAGGLE_USERNAME` and `KAGGLE_KEY`.
+G2/principal use one sealed private input root, `CROPCOP_G1_INPUT_ROOT`, rather than reattaching RFDV or reacquiring MNV4/teacher bytes. The parent verifies and safe-extracts the deterministic G1 package and runs the complete G1 barrier before GPU child launch.
 
-Interactive editor runs are diagnostic only and are rejected before setup; use Save Version → Save & Run All for qualification. No G1 may start before terminal Batch dual-GPU-smoke evidence passes the canonical validator.
+G1 / calibration-dual / principal-dual preserve Kaggle credentials and production durability requirements. Interactive editor runs are diagnostic only.
 
-See `journal_extension/kaggle/README_SMOKE.md` for the active human handoff. Older Stage 01A-H/P/SR sections below are historical implementation chronology and are not current operator instructions.
+See `journal_extension/kaggle/README_SMOKE.md` for the active human handoff. Older Stage 01A-H/P/SR/MGPU sections below are historical implementation chronology.
 <!-- QA1_OPERATOR_END -->
 
 ## Restricted inputs
