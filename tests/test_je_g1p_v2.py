@@ -353,5 +353,40 @@ class G1PMoreTransportAndOrderingTests(unittest.TestCase):
         self.assertLess(validate, principal)
 
 
+
+class G1PLineageHashHotfixTests(unittest.TestCase):
+    def test_21_teacher_lineage_manifest_hashes_every_historical_source(self):
+        root = (
+            ROOT
+            / "journal_extension"
+            / "evidence"
+            / "historical"
+            / "teacher_stage1"
+        ).resolve()
+        lineage = json.loads(
+            (root / "teacher_lineage_manifest.json").read_text(encoding="utf-8")
+        )
+        sources = lineage.get("historical_evidence_sources", [])
+        self.assertTrue(sources, "historical lineage must enumerate evidence sources")
+        for row in sources:
+            rel = str(row.get("path", ""))
+            path = (root / rel).resolve()
+            self.assertIn(root, path.parents, f"historical evidence path escapes root: {rel}")
+            self.assertTrue(path.is_file(), f"historical evidence source missing: {rel}")
+            self.assertEqual(
+                sha256_file(path),
+                row.get("sha256"),
+                f"historical evidence SHA mismatch: {rel}",
+            )
+
+    def test_22_class_order_verifier_hashes_lineage_before_model_loading(self):
+        source = (
+            ROOT / "journal_extension/scripts/verify_teacher_class_order.py"
+        ).read_text(encoding="utf-8")
+        hash_gate = source.index("require_sha256(p, expected")
+        model_load = source.index("teacher, factory_identity = load_exact_teacher(")
+        self.assertLess(hash_gate, model_load)
+
+
 if __name__ == "__main__":
     unittest.main()
