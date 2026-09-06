@@ -148,6 +148,10 @@ def validate_static(repo_root: Path) -> dict:
                 '"P2"',
                 '"P3"',
                 "SMOKE_A_INPUT_ROOT",
+                "CROPCOP_RFDV_ROOT",
+                "CROPCOP_FINAL_V1_ROOT",
+                "CROPCOP_G1_PRIVATE_DATASET_SLUG",
+                "CROPCOP_G1_INPUT_ROOT",
             ):
                 if token not in code:
                     errors.append(f"canonical Kaggle bootstrap missing: {token}")
@@ -180,7 +184,7 @@ def validate_static(repo_root: Path) -> dict:
             if lines[:len(expected_prefix)] != expected_prefix:
                 errors.append("canonical Kaggle notebook Python import prefix is unexpected")
             expected_source_binding = (
-                'AUTHORIZED_SOURCE_SHA = "fe88e426b4698977d65efe9702f1d48cf5ff96a3"'
+                'AUTHORIZED_SOURCE_SHA = "b89144d8826b6c61c3be7a91cac08681b1b4a99c"'
             )
             if expected_source_binding not in lines:
                 errors.append("canonical Kaggle notebook frozen execution-source binding mismatch")
