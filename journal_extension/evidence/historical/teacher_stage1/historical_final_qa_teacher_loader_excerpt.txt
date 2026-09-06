@@ -1,0 +1,71 @@
+# Exact public-safe excerpts from certified CropCop final QA engine.
+# Full QA engine SHA-256: 9b82b14303a6abb90ac64914b04f44a6d63ee56b12bc4c5a58957356a2ba8786
+# Excerpts preserve original source text below; separators are evidence annotations.
+
+def load_manifest(data_root):
+    data_root=Path(data_root);audit=data_root/'audit';mp=audit/'final_manifest.csv';cp=audit/'class_to_idx.json'
+    if sha256_file(mp)!=EXPECTED_MANIFEST_FILE_SHA256: raise RuntimeError('manifest byte SHA mismatch')
+    if sha256_file(cp)!=EXPECTED_CLASS_MAP_FILE_SHA256: raise RuntimeError('class-map byte SHA mismatch')
+    df=pd.read_csv(mp,low_memory=False)
+    if len(df)!=EXPECTED_TOTAL or df['label'].nunique()!=EXPECTED_CLASSES: raise RuntimeError('dataset count/class mismatch')
+    if {str(k):int(v) for k,v in df['split'].value_counts().to_dict().items()}!=EXPECTED_COUNTS: raise RuntimeError('dataset split mismatch')
+    if semantic_manifest_fingerprint(df)!=EXPECTED_FINAL_MANIFEST_FINGERPRINT: raise RuntimeError('semantic manifest fingerprint mismatch')
+    class_to_idx={str(k):int(v) for k,v in json.loads(cp.read_text()).items()}
+    if set(class_to_idx.values())!=set(range(EXPECTED_CLASSES)): raise RuntimeError('class IDs must be exactly 0..119')
+    df['_row_id']=np.arange(len(df),dtype=np.int32);df['_target']=df['label'].map(class_to_idx).astype(np.int16)
+    base=data_root/'dataset';df['_path']=[str(base/PurePosixPath(str(p))) for p in df['portable_relpath']]
+    return df,class_to_idx
+
+
+# --- HISTORICAL EXCERPT BOUNDARY ---
+
+class DINOv3Classifier(nn.Module):
+    def __init__(self,backbone,num_classes=120,dropout=.1):
+        super().__init__();self.backbone=backbone;hidden=int(backbone.config.hidden_sizes[-1]);self.dropout=nn.Dropout(dropout);self.head=nn.Linear(hidden,num_classes)
+    def forward(self,x):return self.head(self.dropout(self.backbone(pixel_values=x).pooler_output))
+    def extract_features(self,x):return self.backbone(pixel_values=x).pooler_output
+
+def validate_checkpoint_structure(ckpt,checkpoint_path,expected_sha=None):
+    if expected_sha and sha256_file(checkpoint_path)!=expected_sha: raise RuntimeError('checkpoint SHA differs from frozen plan')
+    req=['model','config','preprocess','training_engine_abi','manifest_file_sha256','class_map_sha256','dataset_manifest_fingerprint','best_metric','best_epoch']
+    miss=[k for k in req if k not in ckpt]
+    if miss: raise RuntimeError(f'checkpoint missing keys: {miss}')
+    if ckpt['training_engine_abi']!=SCIENTIFIC_ABI: raise RuntimeError('checkpoint scientific ABI mismatch')
+    if ckpt['manifest_file_sha256']!=EXPECTED_MANIFEST_FILE_SHA256: raise RuntimeError('checkpoint manifest lineage mismatch')
+    if ckpt['class_map_sha256']!=EXPECTED_CLASS_MAP_FILE_SHA256: raise RuntimeError('checkpoint class map lineage mismatch')
+    if ckpt['dataset_manifest_fingerprint']!=EXPECTED_FINAL_MANIFEST_FINGERPRINT: raise RuntimeError('checkpoint semantic lineage mismatch')
+    cfg=ckpt['config']
+    if cfg.get('experiment_id')!='stage1_dino_tiny_ce_256' or cfg.get('model_key')!='dino_tiny' or int(cfg.get('resolution',-1))!=256: raise RuntimeError(f'unexpected checkpoint experiment/config: {cfg}')
+    if any(str(k).startswith('module.') for k in ckpt['model']): raise RuntimeError('checkpoint contains module.* DataParallel prefix')
+    for group_name,state in [('model',ckpt['model']),('ema.shadow',(ckpt.get('ema') or {}).get('shadow',{}))]:
+        if not state: raise RuntimeError(f'missing {group_name} state')
+        bad=[]
+        for k,v in state.items():
+            if torch.is_tensor(v) and torch.is_floating_point(v) and not torch.isfinite(v).all():bad.append(k)
+        if bad: raise RuntimeError(f'non-finite tensors in {group_name}: {bad[:8]}')
+
+def construct_model_and_load(ckpt,device,weights_mode='ema'):
+    raw=ckpt['model'];build_error=None
+    # Preferred fully-offline path: exact tiny configuration is the Transformers default.
+    try:
+        from transformers import DINOv3ConvNextConfig,DINOv3ConvNextModel
+        backbone=DINOv3ConvNextModel(DINOv3ConvNextConfig());model=DINOv3Classifier(backbone,120,.10)
+        model.load_state_dict(raw,strict=True)
+        builder='offline_DINOv3ConvNextConfig_default'
+    except Exception as e:
+        build_error=repr(e)
+        # Fallback uses only the gated config metadata, never pretrained weights.
+        from transformers import AutoConfig,AutoModel
+        token=os.environ.get('HF_TOKEN') or os.environ.get('HUGGING_FACE_HUB_TOKEN');kw={'token':token} if token else {}
+        cfg=AutoConfig.from_pretrained(MODEL_ID,**kw);backbone=AutoModel.from_config(cfg);model=DINOv3Classifier(backbone,120,.10);model.load_state_dict(raw,strict=True);builder='AutoConfig_fallback'
+    if weights_mode=='ema':
+        shadow=(ckpt.get('ema') or {}).get('shadow') or {}
+        sd=model.state_dict();float_keys={k for k,v in sd.items() if torch.is_floating_point(v)}
+        if set(shadow)!=float_keys:
+            miss=sorted(float_keys-set(shadow));extra=sorted(set(shadow)-float_keys)
+            raise RuntimeError(f'EMA coverage mismatch missing={miss[:8]} extra={extra[:8]}')
+        with torch.no_grad():
+            for k,v in shadow.items():sd[k].copy_(v)
+    elif weights_mode!='raw':raise ValueError(weights_mode)
+    model.eval().to(device)
+    return model,{'builder':builder,'offline_builder_error':build_error}
