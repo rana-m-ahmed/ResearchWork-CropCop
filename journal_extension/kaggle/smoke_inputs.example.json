@@ -1,6 +1,6 @@
 {
-  "authorized_source_sha": "fe88e426b4698977d65efe9702f1d48cf5ff96a3",
-  "source_authority": "Post-Smoke-A-debug frozen execution source; verify the same literal in journal_extension/kaggle/generate_canonical_notebook.py.",
+  "authorized_source_sha": "b89144d8826b6c61c3be7a91cac08681b1b4a99c",
+  "source_authority": "Frozen Stage-01A-G1P-v2 execution source; wrapper commits are not execution sources.",
   "phase_vocabulary": [
     "smoke-write",
     "smoke-restore",
@@ -23,5 +23,9 @@
   "smoke_b_export_root": "/kaggle/working/cropcop-smoke-b-export",
   "smoke_a_input_root": "<SET_ONLY_FOR_SMOKE_RESTORE>",
   "smoke_b_input_root": "<SET_FOR_DUAL_SMOKE_AND_LATER>",
-  "dual_gpu_smoke_input_root": "<SET_FOR_G1_AND_LATER>"
+  "dual_gpu_smoke_input_root": "<SET_FOR_G1_AND_LATER>",
+  "rfdv_root": "<SET_FOR_G1_TO_CROPCOP_MODEL_RFDV_ROOT>",
+  "final_v1_root": "<SET_FOR_G1_TO_FROZEN_FINAL_V1_ROOT>",
+  "g1_private_dataset_slug": "<SET_FOR_G1_OWNER/PRIVATE_DATASET>",
+  "g1_input_root": "<SET_FOR_CALIBRATION_DUAL_AND_PRINCIPAL_DUAL>"
 }
