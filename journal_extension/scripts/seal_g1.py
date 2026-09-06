@@ -245,7 +245,7 @@ def main() -> int:
         "manifest_sha256": MANIFEST_SHA256,
         "class_map_sha256": CLASS_MAP_SHA256,
         "semantic_manifest_fingerprint": SEMANTIC_MANIFEST_FINGERPRINT,
-        "protected_test_accessed_during_g1": False,
+        "v1_test_accessed": False,
     }
 
     atomic_write_json(evidence_dir / "MNV4_PRETRAINED_PROVENANCE.json", internal_provenance)
@@ -278,6 +278,7 @@ def main() -> int:
                 "source_kind": provenance["source_kind"],
                 "source_locator": provenance["source_locator"],
                 "timm_pretrained_cfg_sha256": provenance["timm_pretrained_cfg_sha256"],
+                "tensor_identity_algorithm": provenance["tensor_identity_algorithm"],
                 "tensor_identity_sha256": provenance["tensor_identity_sha256"],
                 "candidate_serialization_format": provenance["candidate_serialization_format"],
                 "provenance_sha256": sha256_json(internal_provenance),
