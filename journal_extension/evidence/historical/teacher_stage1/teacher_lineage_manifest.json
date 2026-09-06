@@ -27,12 +27,12 @@
     {
       "kind": "historical_v7_trainer_source_excerpt",
       "path": "historical_v7_teacher_semantics_excerpt.txt",
-      "sha256": "56cd4a81a6bc6e07157dc50ddda26d1b0f350b50633796428766280dfa6f2367"
+      "sha256": "011c4cbfd6075d410113a283caf241d748dee84b8efdb542dac9cdb6d463ae91"
     },
     {
       "kind": "certified_final_qa_loader_source_excerpt",
       "path": "historical_final_qa_teacher_loader_excerpt.txt",
-      "sha256": "45bb0e4636bd7bae8d5df9bc624e5c5a4cb1f28a10c314a8116fa13a150807d9"
+      "sha256": "28d5346bdcdd082a09a12d0342fe6cd72951aeb324582eb7a2e29b4232b3eeaa"
     }
   ]
 }
