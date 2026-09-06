@@ -13,6 +13,7 @@ from .hashing import sha256_file, sha256_json
 PACKAGE_NAME = "G1_PACKAGE.tar"
 MANIFEST_NAME = "G1_PACKAGE_MANIFEST.json"
 READINESS_PACKAGE_NAME = "G1_READINESS_TRANSPORT.tar"
+EXPANDED_PACKAGE_DIR = "G1_PACKAGE"
 
 
 class G1PackageError(RuntimeError):
@@ -227,6 +228,90 @@ def readiness_transport_dry_run(
     }
 
 
+def _validated_expanded_files(root: Path, manifest: dict) -> list[tuple[str, Path]]:
+    expanded = root / EXPANDED_PACKAGE_DIR
+    if not expanded.is_dir() or expanded.is_symlink():
+        raise G1PackageError(
+            f"expanded G1 transport must contain a real {EXPANDED_PACKAGE_DIR}/ directory"
+        )
+    observed_files = _tree_files(expanded)
+    observed = {name: path for name, path in observed_files}
+    expected_rows = manifest.get("members") or []
+    expected = {str(row["path"]): row for row in expected_rows}
+    if set(observed) != set(expected):
+        raise G1PackageError(
+            "expanded G1 member set differs from manifest; "
+            f"missing={sorted(set(expected) - set(observed))}, "
+            f"unexpected={sorted(set(observed) - set(expected))}"
+        )
+    ordered: list[tuple[str, Path]] = []
+    for row in expected_rows:
+        name = str(row["path"])
+        path = observed[name]
+        if path.stat().st_size != int(row["bytes"]):
+            raise G1PackageError(
+                f"expanded G1 member byte count mismatch: {name}"
+            )
+        if sha256_file(path) != row["sha256"]:
+            raise G1PackageError(
+                f"expanded G1 member SHA mismatch: {name}"
+            )
+        ordered.append((name, path))
+    return ordered
+
+
+def reconstruct_expanded_g1_package(
+    input_root: str | Path,
+    output_dir: str | Path,
+) -> G1Package:
+    root = Path(input_root).resolve()
+    output = Path(output_dir).resolve()
+    manifest_path = root / MANIFEST_NAME
+    if not root.is_dir() or not manifest_path.is_file():
+        raise G1PackageError(
+            f"expanded G1 input must contain root-level {MANIFEST_NAME}"
+        )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    errors = validate_package_manifest(manifest)
+    if errors:
+        raise G1PackageError(
+            "expanded G1 package manifest invalid: " + "; ".join(errors)
+        )
+    files = _validated_expanded_files(root, manifest)
+
+    if output.exists() and any(output.iterdir()):
+        raise G1PackageError(
+            f"expanded G1 reconstruction target must be empty: {output}"
+        )
+    output.mkdir(parents=True, exist_ok=True)
+    package_path = output / PACKAGE_NAME
+    copied_manifest = output / MANIFEST_NAME
+    if package_path.exists() or copied_manifest.exists():
+        raise G1PackageError(
+            "refuse to overwrite reconstructed G1 package transport"
+        )
+
+    rows = _write_deterministic_tar(files, package_path)
+    if rows != manifest["members"]:
+        raise G1PackageError(
+            "expanded G1 reconstruction member metadata differs from manifest"
+        )
+    if sha256_file(package_path) != manifest["package_sha256"]:
+        raise G1PackageError(
+            "expanded G1 deterministic reconstruction SHA differs from manifest"
+        )
+    if package_path.stat().st_size != int(manifest["package_bytes"]):
+        raise G1PackageError(
+            "expanded G1 deterministic reconstruction byte count differs from manifest"
+        )
+    copied_manifest.write_bytes(manifest_path.read_bytes())
+    return G1Package(
+        package_path=package_path,
+        manifest_path=copied_manifest,
+        manifest=manifest,
+    )
+
+
 def locate_g1_package(input_root: str | Path) -> G1Package:
     root = Path(input_root).resolve()
     if not root.is_dir():
@@ -300,7 +385,20 @@ def mount_g1_input(
     input_root: str | Path,
     working_root: str | Path,
 ) -> tuple[Path, G1Package]:
-    package = locate_g1_package(input_root)
+    root = Path(input_root).resolve()
     bundle = Path(working_root).resolve()
+    raw_package = root / PACKAGE_NAME
+    expanded_dir = root / EXPANDED_PACKAGE_DIR
+    if raw_package.is_file() and expanded_dir.exists():
+        raise G1PackageError(
+            "ambiguous G1 input contains both raw tar and expanded package directory"
+        )
+    if raw_package.is_file():
+        package = locate_g1_package(root)
+    elif expanded_dir.is_dir():
+        transport_root = bundle.parent / f"{bundle.name}-transport"
+        package = reconstruct_expanded_g1_package(root, transport_root)
+    else:
+        package = locate_g1_package(root)
     safe_extract_g1_package(package, bundle)
     return bundle, package
