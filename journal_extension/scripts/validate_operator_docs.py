@@ -24,7 +24,7 @@ CHAIN = """smoke-write
 → g1
 → calibration-dual
 → principal-dual"""
-SUPERSEDED_ACTIVE_SOURCES = {"67370145c9104edd52330b788c3b41b28f5cab87", "fe88e426b4698977d65efe9702f1d48cf5ff96a3"}
+SUPERSEDED_ACTIVE_SOURCES = {"67370145c9104edd52330b788c3b41b28f5cab87", "fe88e426b4698977d65efe9702f1d48cf5ff96a3", "b89144d8826b6c61c3be7a91cac08681b1b4a99c"}
 
 
 def _active_section(text: str) -> str:
