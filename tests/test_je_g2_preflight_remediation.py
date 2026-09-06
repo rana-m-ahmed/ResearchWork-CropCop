@@ -173,8 +173,12 @@ class FrozenV1ManifestRemediationTests(unittest.TestCase):
         evidence = source.index('evidence["envelope_publication_branch"] = envelope_branch', publish)
         block = source[guard:publish]
         self.assertIn('raise EnvelopeError("attached prior envelope control files changed during continuation")', block)
-        publish_line = source[publish:].splitlines()[0]
-        self.assertTrue(publish_line.startswith("    envelope_branch = "))
+        line_start = source.rfind("\n", 0, publish) + 1
+        publish_line = source[line_start:source.find("\n", publish)]
+        self.assertEqual(
+            publish_line,
+            "    envelope_branch = _publish(envelope_id, source_sha, [manifest_path, evidence_path, state_path])",
+        )
         self.assertLess(publish, evidence)
 
 
