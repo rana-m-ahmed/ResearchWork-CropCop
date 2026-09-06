@@ -39,6 +39,8 @@ SMOKE = "8" * 64
 DUAL_SMOKE = "d" * 64
 CANONICAL = "e" * 64
 TENSOR_ID = "f" * 64
+V1_IDENTITY = "a" * 64
+ADAPTER_PARITY = "b" * 64
 
 
 def valid_seal(source="a" * 40):
@@ -58,7 +60,11 @@ def valid_seal(source="a" * 40):
         "schema_version": "2.0",
         "authority": {"id": AUTHORITY_ID, "sha256": AUTHORITY_SHA256},
         "source_git_sha": source,
-        "dataset": {"manifest_sha256": MANIFEST_SHA256, "class_map_sha256": CLASS_MAP_SHA256},
+        "dataset": {
+            "manifest_sha256": MANIFEST_SHA256,
+            "class_map_sha256": CLASS_MAP_SHA256,
+            "identity_evidence_sha256": V1_IDENTITY,
+        },
         "student": {
             "model_name": MNV4_MODEL_NAME,
             "timm_version": TIMM_VERSION,
@@ -86,6 +92,7 @@ def valid_seal(source="a" * 40):
             "class_order_evidence_sha256": ORDER,
             "canonical_state": "EMA",
             "canonical_state_evidence_sha256": CANONICAL,
+            "adapter_parity_evidence_sha256": ADAPTER_PARITY,
             "artifact_basename": "DINO_TEACHER.pt",
         },
         "dependency_lock_sha256": DEP,
