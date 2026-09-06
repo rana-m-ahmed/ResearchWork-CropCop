@@ -6,7 +6,8 @@ from pathlib import Path
 
 import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
-from cropcop_je.data import CropCopManifestDataset, ManifestColumns, load_manifest_rows
+from cropcop_je.data import CropCopManifestDataset
+from cropcop_je.frozen_v1_manifest import load_frozen_v1_rows
 from cropcop_je.environment import capture_environment, software_stack_identity, validate_locked_core
 from cropcop_je.g1 import (
     CLASS_MAP_SHA256, MANIFEST_SHA256, validate_dependency_environment,
@@ -48,7 +49,8 @@ def main() -> int:
     ap.add_argument("--row-id-column", required=True)
     ap.add_argument("--path-column", required=True)
     ap.add_argument("--split-column", required=True)
-    ap.add_argument("--class-index-column", required=True)
+    ap.add_argument("--label-column", required=True)
+    ap.add_argument("--class-index-column", default="")
     ap.add_argument("--train-split-value", default="train")
     ap.add_argument("--val-split-value", default="val")
     ap.add_argument("--num-workers", type=int, default=4)
@@ -78,14 +80,35 @@ def main() -> int:
     cnxtt_pretrained_sha = sha256_file(args.pretrained)
     ctc_path = repo / "journal_extension/configs/common/ctc_v2.json"
     ctc = json.loads(ctc_path.read_text(encoding="utf-8"))
-    cols = ManifestColumns(args.row_id_column, args.path_column, args.split_column, args.class_index_column)
-    train_rows = load_manifest_rows(
-        args.manifest, expected_sha256=MANIFEST_SHA256, surface="DS-V1-TRAIN", columns=cols,
-        train_split_value=args.train_split_value, val_split_value=args.val_split_value, expected_count=76376
+    train_rows = load_frozen_v1_rows(
+        args.manifest,
+        args.class_map,
+        expected_manifest_sha256=MANIFEST_SHA256,
+        expected_class_map_sha256=CLASS_MAP_SHA256,
+        surface="DS-V1-TRAIN",
+        row_id_column=args.row_id_column,
+        path_column=args.path_column,
+        split_column=args.split_column,
+        label_column=args.label_column,
+        class_index_column=args.class_index_column,
+        train_split_value=args.train_split_value,
+        val_split_value=args.val_split_value,
+        expected_count=76376,
     )
-    val_rows = load_manifest_rows(
-        args.manifest, expected_sha256=MANIFEST_SHA256, surface="DS-V1-VAL", columns=cols,
-        train_split_value=args.train_split_value, val_split_value=args.val_split_value, expected_count=16368
+    val_rows = load_frozen_v1_rows(
+        args.manifest,
+        args.class_map,
+        expected_manifest_sha256=MANIFEST_SHA256,
+        expected_class_map_sha256=CLASS_MAP_SHA256,
+        surface="DS-V1-VAL",
+        row_id_column=args.row_id_column,
+        path_column=args.path_column,
+        split_column=args.split_column,
+        label_column=args.label_column,
+        class_index_column=args.class_index_column,
+        train_split_value=args.train_split_value,
+        val_split_value=args.val_split_value,
+        expected_count=16368,
     )
     train_ds = CropCopManifestDataset(train_rows, args.image_root, training_seed=SEED, train=True)
     val_ds = CropCopManifestDataset(val_rows, args.image_root, training_seed=SEED, train=False)
