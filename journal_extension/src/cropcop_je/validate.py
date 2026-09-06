@@ -30,6 +30,7 @@ LOCKED_REQUIREMENTS = {
     "safetensors==0.8.0",
     "kaggle==2.2.4",
     "huggingface-hub==1.30.0",
+    "transformers==5.0.0",
 }
 
 
