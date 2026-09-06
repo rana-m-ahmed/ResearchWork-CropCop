@@ -111,9 +111,14 @@ def _publish_terminal_evidence(source_sha: str, path: Path) -> str:
     )
 
 
-def _publication_only_repair(source_sha: str, output_root: Path) -> int:
+def _publication_only_repair(
+    source_sha: str,
+    output_root: Path,
+    smoke_path: str,
+    dual_path: str,
+    dependency: dict,
+) -> int:
     _set_final_v1_paths_from_root()
-    smoke_path, dual_path, dependency = _smoke_preflight(source_sha)
     bundle = Path(os.environ.get("CROPCOP_G1_BUNDLE_DIR", str(DEFAULT_G1_BUNDLE_DIR))).resolve()
     os.environ["CROPCOP_G1_BUNDLE_DIR"] = str(bundle)
     os.environ["CROPCOP_INFRA_SMOKE_EVIDENCE"] = smoke_path
@@ -163,13 +168,22 @@ def main() -> int:
     source_sha = req("CROPCOP_SOURCE_GIT_COMMIT")
     if len(source_sha) != 40:
         raise RuntimeError("CROPCOP_SOURCE_GIT_COMMIT must be an immutable 40-hex source SHA")
+    # Fail closed on source-bound qualification evidence before creating any
+    # mutable G1 output or preparation directory.
+    smoke_path, dual_path, dependency = _smoke_preflight(source_sha)
+
     output_root = Path(req("CROPCOP_OUTPUT_ROOT")).resolve()
     output_root.mkdir(parents=True, exist_ok=True)
 
     if os.environ.get("CROPCOP_G1_PUBLICATION_REPAIR", "").strip() == "1":
-        return _publication_only_repair(source_sha, output_root)
+        return _publication_only_repair(
+            source_sha,
+            output_root,
+            smoke_path,
+            dual_path,
+            dependency,
+        )
 
-    smoke_path, dual_path, dependency = _smoke_preflight(source_sha)
     inputs = resolve_creation_inputs(ROOT, os.environ)
     os.environ["CROPCOP_MANIFEST"] = str(inputs.manifest)
     os.environ["CROPCOP_CLASS_MAP"] = str(inputs.class_map)
