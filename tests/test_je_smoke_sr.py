@@ -133,7 +133,7 @@ class SmokeSRTests(unittest.TestCase):
         )
         module = ast.Module(body=[node], type_ignores=[])
         ast.fix_missing_locations(module)
-        namespace = {"Path": Path}
+        namespace = {"Path": Path, "json": json}
         exec(compile(module, "canonical_lane.ipynb", "exec"), namespace)
         return namespace[name]
 
@@ -739,6 +739,91 @@ class SmokeSRTests(unittest.TestCase):
     def test_58_g1_wrapper_remediation_preserves_frozen_source_binding(self):
         generator = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text()
         expected = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
+        self.assertIn(f'MGPU_EXECUTION_SOURCE_SHA = "{expected}"', generator)
+        self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', generator)
+        self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', self.code)
+
+
+    def test_59_execution_phase_is_explicit_and_has_no_smoke_default(self):
+        self.assertIn('EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "").strip()', self.code)
+        self.assertNotIn('EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "smoke-write")', self.code)
+        self.assertIn("Set CROPCOP_EXECUTION_PHASE explicitly", self.code)
+
+    def test_60_principal_envelope_is_explicit_and_has_no_p1_default(self):
+        self.assertIn('PRINCIPAL_ENVELOPE = os.environ.get("CROPCOP_PRINCIPAL_ENVELOPE", "").strip().upper()', self.code)
+        self.assertNotIn('os.environ.get("CROPCOP_PRINCIPAL_ENVELOPE", "P1")', self.code)
+        self.assertIn("Set CROPCOP_PRINCIPAL_ENVELOPE explicitly", self.code)
+
+    def test_61_phase_hardware_gate_is_pre_secret_and_pre_network(self):
+        gate = self.code.index("_PHASE_GPU_NAMES = _validate_phase_hardware(EXECUTION_PHASE)")
+        self.assertLess(gate, self.code.index("from kaggle_secrets import UserSecretsClient"))
+        self.assertLess(gate, self.code.index("GitHub API auth preflight"))
+        self.assertLess(gate, self.code.index('"clone"'))
+        self.assertLess(gate, self.code.index('"pip"'))
+
+    def test_62_g1_target_settles_after_bootstrap_before_frozen_g1(self):
+        marker = self.code.index("G1 external target orchestration happens only after")
+        self.assertGreater(marker, self.code.index("bootstrap_clean_session.py"))
+        self.assertLess(marker, self.code.rindex("run_g1.py"))
+
+    def test_63_g1_target_settle_requires_metadata_mine_and_ready(self):
+        start = self.code.index("def _g1_target_state_ready")
+        end = self.code.index("\ndef _g1_target_state_summary", start)
+        ready = self.code[start:end]
+        self.assertIn("_validate_g1_private_metadata", ready)
+        self.assertIn("slug.casefold() not in refs", ready)
+        self.assertIn("_G1_TARGET_READY_STATUSES", ready)
+
+    def test_64_g1_wrapper_create_is_private_only_and_never_public(self):
+        start = self.code.index("def _create_g1_private_target")
+        end = self.code.index("\ndef _ensure_g1_private_target_settled", start)
+        create = self.code[start:end]
+        self.assertIn('"isPrivate": True', create)
+        self.assertIn('"datasets", "create"', create)
+        self.assertNotIn("--public", create)
+
+    def test_65_g1_wrapper_metadata_validation_is_fail_closed(self):
+        validator = self._wrapper_function("_validate_g1_private_metadata")
+        validator({"id": "owner/private-dataset", "isPrivate": True}, "owner/private-dataset")
+        with self.assertRaises(RuntimeError):
+            validator({"id": "owner/private-dataset", "isPrivate": False}, "owner/private-dataset")
+        with self.assertRaises(RuntimeError):
+            validator({"id": "owner/other", "isPrivate": True}, "owner/private-dataset")
+
+    def test_66_kaggle_status_decoder_accepts_json_and_plain_status(self):
+        decoder = self._wrapper_function("_decode_kaggle_status")
+        self.assertEqual(decoder('{"status":"ready"}')["status"], "ready")
+        self.assertEqual(decoder("pending")["status"], "pending")
+        self.assertEqual(decoder({"status": "completed"})["status"], "completed")
+
+    def test_67_g1_target_creation_policy_guards_create_call(self):
+        start = self.code.index("def _ensure_g1_private_target_settled")
+        end = self.code.index('\n\nif EXECUTION_PHASE == "dual-gpu-smoke"', start)
+        ensure = self.code[start:end]
+        self.assertLess(ensure.index('if policy != "1":'), ensure.index("_create_g1_private_target(slug)"))
+        self.assertIn("refusing to create a G1 target", ensure)
+
+    def test_68_g1_create_nonzero_gets_bounded_settle_grace(self):
+        start = self.code.index("def _ensure_g1_private_target_settled")
+        end = self.code.index('\n\nif EXECUTION_PHASE == "dual-gpu-smoke"', start)
+        ensure = self.code[start:end]
+        self.assertIn("create.returncode != 0", ensure)
+        self.assertIn("timeout_seconds=60.0", ensure)
+
+    def test_69_g1_target_settle_record_is_public_safe_operator_evidence(self):
+        self.assertIn('"g1_private_target_preflight.json"', self.code)
+        self.assertIn("_redact_operator_secrets", self.code)
+        self.assertNotIn('print(os.environ["KAGGLE_KEY"])', self.code)
+
+    def test_70_operator_docs_require_explicit_phase_and_document_async_settle(self):
+        guide = (ROOT / "journal_extension/kaggle/README_SMOKE.md").read_text()
+        for phase in ("smoke-write","smoke-restore","dual-gpu-smoke","g1","calibration-dual","principal-dual"):
+            self.assertIn(f"CROPCOP_EXECUTION_PHASE={phase}", guide)
+        self.assertIn("Kaggle dataset creation as asynchronous", guide)
+
+    def test_71_async_target_remediation_preserves_frozen_source_binding(self):
+        expected = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
+        generator = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text()
         self.assertIn(f'MGPU_EXECUTION_SOURCE_SHA = "{expected}"', generator)
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', generator)
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', self.code)

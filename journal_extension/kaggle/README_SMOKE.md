@@ -51,6 +51,12 @@ No G1 is authorized before independently audited final-source Smoke A/B and term
 
 Use clean Kaggle **Save Version → Save & Run All / Batch** execution. Do not press Run/Run All in the editor for qualification.
 
+Set explicitly:
+
+```text
+CROPCOP_EXECUTION_PHASE=smoke-write
+```
+
 Only secret required:
 
 - `CROPCOP_GITHUB_TOKEN`
@@ -62,6 +68,7 @@ Do not provide Kaggle API credentials or CropCop scientific data/model artifacts
 Use a **fresh Saved Version**, attach the exact successful Smoke-A Notebook Output, and set:
 
 ```text
+CROPCOP_EXECUTION_PHASE=smoke-restore
 CROPCOP_SMOKE_A_INPUT_ROOT=/kaggle/input/<exact-smoke-a-output>
 ```
 
@@ -72,6 +79,7 @@ The wrapper searches only below that explicit root.
 After independent Smoke A/B audit, attach the exact successful Smoke-B Notebook Output and set:
 
 ```text
+CROPCOP_EXECUTION_PHASE=dual-gpu-smoke
 CROPCOP_SMOKE_B_INPUT_ROOT=/kaggle/input/<exact-smoke-b-output>
 ```
 
@@ -84,6 +92,7 @@ Only after independent final-source dual-smoke audit. G1 is CPU-defined and does
 Attach both exact qualification outputs and set:
 
 ```text
+CROPCOP_EXECUTION_PHASE=g1
 CROPCOP_SMOKE_B_INPUT_ROOT=/kaggle/input/<exact-smoke-b-output>
 CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT=/kaggle/input/<exact-dual-gpu-smoke-output>
 CROPCOP_RFDV_ROOT=/kaggle/input/datasets/ranamuhammadahmed6/cropcop-model-rfdv
@@ -101,6 +110,8 @@ Private-target policy is explicit and fail-closed:
 
 Readiness may defer target creation; an actual G1 run must choose exactly `0` or `1`. There is no silent create default.
 
+When creation is explicitly allowed, the wrapper treats Kaggle dataset creation as asynchronous. It reuses an existing target, creates the minimal private target only when absence is established, and waits until authoritative private metadata is readable, the exact slug appears in the authenticated account's `mine` listing, and dataset status is ready/completed before invoking frozen G1.
+
 Required secrets:
 
 - `CROPCOP_GITHUB_TOKEN`;
@@ -114,6 +125,7 @@ The frozen source automatically resolves the exact historical teacher path, froz
 Run on Kaggle T4×2. Attach the sealed private G1 Dataset and set:
 
 ```text
+CROPCOP_EXECUTION_PHASE=calibration-dual
 CROPCOP_G1_INPUT_ROOT=/kaggle/input/<sealed-g1-dataset>
 ```
 
@@ -125,7 +137,14 @@ Terminal Smoke-B + dual-smoke evidence, production V1 training/validation inputs
 
 Run on Kaggle T4×2 with the same sealed `CROPCOP_G1_INPUT_ROOT` contract and completed G2 evidence.
 
-Set `CROPCOP_PRINCIPAL_ENVELOPE` to exactly `P1`, `P2`, or `P3`. The repository envelope configs own the fixed pair mapping.
+Set explicitly:
+
+```text
+CROPCOP_EXECUTION_PHASE=principal-dual
+CROPCOP_PRINCIPAL_ENVELOPE=P1  # or P2 / P3
+```
+
+The principal envelope has no implicit default. The repository envelope configs own the fixed pair mapping.
 
 ## Batch qualification
 

@@ -30,8 +30,8 @@ from urllib.request import Request, urlopen
 # Frozen Stage-01A-G1P-v2.1 execution source. Wrapper commits are not execution sources.
 AUTHORIZED_SOURCE_SHA = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
 LANE = os.environ.get("CROPCOP_LANE", "K1")
-EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "smoke-write")
-PRINCIPAL_ENVELOPE = os.environ.get("CROPCOP_PRINCIPAL_ENVELOPE", "P1").strip().upper()
+EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "").strip()
+PRINCIPAL_ENVELOPE = os.environ.get("CROPCOP_PRINCIPAL_ENVELOPE", "").strip().upper()
 # Exact operator phases: smoke-write | smoke-restore | dual-gpu-smoke | g1 | calibration-dual | principal-dual
 REPOSITORY_URL = os.environ.get(
     "CROPCOP_REPOSITORY_URL",
@@ -103,7 +103,7 @@ assert platform.python_version() == "3.12.13", (
 assert len(AUTHORIZED_SOURCE_SHA) == 40
 assert all(c in "0123456789abcdef" for c in AUTHORIZED_SOURCE_SHA.lower())
 assert LANE in {"K1", "K2", "K3"}
-assert EXECUTION_PHASE in {
+_ALLOWED_EXECUTION_PHASES = {
     "smoke-write",
     "smoke-restore",
     "dual-gpu-smoke",
@@ -111,12 +111,58 @@ assert EXECUTION_PHASE in {
     "calibration-dual",
     "principal-dual",
 }
+if EXECUTION_PHASE not in _ALLOWED_EXECUTION_PHASES:
+    raise RuntimeError(
+        "Set CROPCOP_EXECUTION_PHASE explicitly to exactly one of: "
+        + ", ".join(sorted(_ALLOWED_EXECUTION_PHASES))
+    )
 if EXECUTION_PHASE == "principal-dual":
     if PRINCIPAL_ENVELOPE not in {"P1", "P2", "P3"}:
         raise RuntimeError(
-            "CROPCOP_PRINCIPAL_ENVELOPE must be exactly P1, P2, or P3 for principal-dual"
+            "Set CROPCOP_PRINCIPAL_ENVELOPE explicitly to exactly P1, P2, or P3 for principal-dual"
         )
     os.environ["CROPCOP_ENVELOPE_ID"] = PRINCIPAL_ENVELOPE
+
+
+def _visible_nvidia_gpu_names() -> list[str]:
+    nvidia_smi = shutil.which("nvidia-smi")
+    if not nvidia_smi:
+        return []
+    probe = subprocess.run(
+        [nvidia_smi, "--query-gpu=name", "--format=csv,noheader"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    if probe.returncode != 0:
+        return []
+    return [line.strip() for line in probe.stdout.splitlines() if line.strip()]
+
+
+def _validate_phase_hardware(phase: str) -> list[str]:
+    names = _visible_nvidia_gpu_names()
+    if phase in {"smoke-write", "smoke-restore"} and not names:
+        raise RuntimeError(
+            f"{phase} requires a CUDA-capable Kaggle GPU; observed no NVIDIA GPU. "
+            "Choose the required GPU accelerator before Save Version -> Save & Run All."
+        )
+    if phase in {"dual-gpu-smoke", "calibration-dual", "principal-dual"}:
+        if len(names) != 2 or any(name not in {"Tesla T4", "NVIDIA T4"} for name in names):
+            raise RuntimeError(
+                f"{phase} requires exactly Kaggle T4 x2; observed GPU inventory: {names or ['<none>']}"
+            )
+    if phase == "g1":
+        print(
+            "G1 hardware preflight: PASS "
+            f"(CPU-defined; visible_nvidia_gpu_count={len(names)}; GPUs are not required)"
+        )
+    else:
+        print(f"{phase} hardware preflight: PASS (visible_nvidia_gpus={names})")
+    return names
+
+
+_PHASE_GPU_NAMES = _validate_phase_hardware(EXECUTION_PHASE)
 
 # Qualification runs must be Kaggle Saved-Version/Batch jobs.
 # Fail before secrets, network access, clone, package installation, or any smoke output.
@@ -201,6 +247,216 @@ def _validate_g1_create_policy(value: str) -> str:
             "CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET must be explicitly set to exactly 0 or 1 for G1"
         )
     return policy
+
+
+_G1_TARGET_READY_STATUSES = {"ready", "complete", "completed"}
+_G1_TARGET_FAILED_STATUSES = {"error", "failed", "failure"}
+
+
+def _decode_kaggle_status(raw) -> dict:
+    if isinstance(raw, dict):
+        return dict(raw)
+    text = str(raw or "").strip()
+    if not text:
+        return {}
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return {"status": text}
+    return payload if isinstance(payload, dict) else {"status": str(payload)}
+
+
+def _g1_target_metadata(api, slug: str) -> dict:
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(api.dataset_metadata(slug, td))
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    return payload.get("info") or payload
+
+
+def _g1_target_mine_refs(api, dataset_slug: str) -> set[str]:
+    response = api.dataset_list_with_response(
+        mine=True,
+        search=dataset_slug,
+        page_size=100,
+    )
+    datasets = getattr(response, "datasets", None) or []
+    return {
+        str(getattr(row, "ref", "") or "")
+        for row in datasets
+        if getattr(row, "ref", None)
+    }
+
+
+def _validate_g1_private_metadata(metadata: dict, slug: str) -> None:
+    if metadata.get("isPrivate") is not True:
+        raise RuntimeError(
+            "G1 target exists but Kaggle metadata does not authoritatively report it private"
+        )
+    meta_id = str(metadata.get("id") or metadata.get("ref") or "")
+    if meta_id and meta_id.casefold() != slug.casefold():
+        raise RuntimeError(
+            f"G1 target metadata identity mismatch: {meta_id!r} != {slug!r}"
+        )
+
+
+def _g1_target_probe(api, slug: str) -> dict:
+    _, dataset_slug = slug.split("/", 1)
+    state = {
+        "metadata": None,
+        "metadata_error": None,
+        "mine_refs": set(),
+        "mine_error": None,
+        "status": None,
+        "status_error": None,
+    }
+    try:
+        state["metadata"] = _g1_target_metadata(api, slug)
+        _validate_g1_private_metadata(state["metadata"], slug)
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        state["metadata_error"] = f"{type(exc).__name__}: {exc}"
+    try:
+        state["mine_refs"] = _g1_target_mine_refs(api, dataset_slug)
+    except Exception as exc:
+        state["mine_error"] = f"{type(exc).__name__}: {exc}"
+    try:
+        state["status"] = _decode_kaggle_status(api.dataset_status(slug, format="json"))
+    except Exception as exc:
+        state["status_error"] = f"{type(exc).__name__}: {exc}"
+    return state
+
+
+def _g1_target_state_ready(state: dict, slug: str) -> bool:
+    metadata = state.get("metadata")
+    if metadata is None:
+        return False
+    _validate_g1_private_metadata(metadata, slug)
+    refs = {str(ref).casefold() for ref in state.get("mine_refs", set())}
+    if slug.casefold() not in refs:
+        return False
+    status = str((state.get("status") or {}).get("status", "")).strip().lower()
+    if status in _G1_TARGET_FAILED_STATUSES:
+        raise RuntimeError(f"Kaggle G1 private-target processing failed with status={status!r}")
+    return status in _G1_TARGET_READY_STATUSES
+
+
+def _g1_target_state_summary(state: dict, slug: str) -> dict:
+    refs = {str(ref).casefold() for ref in state.get("mine_refs", set())}
+    status_obj = state.get("status") or {}
+    return {
+        "metadata_visible": state.get("metadata") is not None,
+        "metadata_error": state.get("metadata_error"),
+        "mine_membership": slug.casefold() in refs,
+        "mine_error": state.get("mine_error"),
+        "dataset_status": status_obj.get("status"),
+        "current_version_number": status_obj.get("current_version_number"),
+        "status_error": state.get("status_error"),
+    }
+
+
+def _wait_for_g1_private_target(api, slug: str, *, timeout_seconds: float = 600.0) -> dict:
+    deadline = time.monotonic() + timeout_seconds
+    attempt = 0
+    last_state = None
+    while time.monotonic() < deadline:
+        attempt += 1
+        last_state = _g1_target_probe(api, slug)
+        if _g1_target_state_ready(last_state, slug):
+            summary = _g1_target_state_summary(last_state, slug)
+            summary["attempts"] = attempt
+            return summary
+        if attempt == 1 or attempt % 6 == 0:
+            print(
+                "G1 private-target settle probe: "
+                + json.dumps(_g1_target_state_summary(last_state, slug), sort_keys=True)
+            )
+        time.sleep(5)
+    raise RuntimeError(
+        "G1 private target did not become metadata-visible, mine-listed, and ready "
+        f"within {timeout_seconds:.0f}s; last="
+        + json.dumps(_g1_target_state_summary(last_state or {}, slug), sort_keys=True)
+    )
+
+
+def _redact_operator_secrets(text: str) -> str:
+    safe = str(text or "")
+    for name in ("KAGGLE_KEY", "CROPCOP_GITHUB_TOKEN", "GITHUB_TOKEN"):
+        secret = str(os.environ.get(name, "") or "")
+        if secret:
+            safe = safe.replace(secret, "<redacted>")
+    return safe
+
+
+def _create_g1_private_target(slug: str) -> subprocess.CompletedProcess:
+    _, dataset_slug = slug.split("/", 1)
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        (root / "README.txt").write_text(
+            "Private CropCop G1 transport target. Real sealed package versions are uploaded separately.\n",
+            encoding="utf-8",
+        )
+        (root / "dataset-metadata.json").write_text(
+            json.dumps(
+                {
+                    "title": dataset_slug,
+                    "id": slug,
+                    "licenses": [{"name": "other"}],
+                    "isPrivate": True,
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return subprocess.run(
+            ["kaggle", "datasets", "create", "-p", str(root), "-q", "-r", "skip"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=1800,
+        )
+
+
+def _ensure_g1_private_target_settled(slug: str, policy: str, *, settle_timeout_seconds: float = 600.0) -> dict:
+    username = str(os.environ.get("KAGGLE_USERNAME", "")).strip()
+    if not username:
+        raise RuntimeError("KAGGLE_USERNAME is required before G1 private-target preflight")
+    owner, _ = slug.split("/", 1)
+    if owner.casefold() != username.casefold():
+        raise RuntimeError(
+            f"G1 private-target owner mismatch: slug owner {owner!r} != KAGGLE_USERNAME {username!r}"
+        )
+    from kaggle.api.kaggle_api_extended import KaggleApi
+    api = KaggleApi()
+    api.authenticate()
+    initial = _g1_target_probe(api, slug)
+    if _g1_target_state_ready(initial, slug):
+        result = _g1_target_state_summary(initial, slug)
+        result.update({"schema_version":"1.0","status":"PASS","dataset_slug":slug,"authenticated_username":username,"created_this_run":False,"creation_command_nonzero_but_target_settled":False})
+        return result
+    refs = {str(ref).casefold() for ref in initial.get("mine_refs", set())}
+    existence_signal = initial.get("metadata") is not None or initial.get("status") is not None or slug.casefold() in refs
+    if existence_signal:
+        settled = _wait_for_g1_private_target(api, slug, timeout_seconds=settle_timeout_seconds)
+        settled.update({"schema_version":"1.0","status":"PASS","dataset_slug":slug,"authenticated_username":username,"created_this_run":False,"creation_command_nonzero_but_target_settled":False})
+        return settled
+    if initial.get("mine_error"):
+        raise RuntimeError("Kaggle authenticated 'mine' listing is unavailable; refusing to create a G1 target because ownership cannot be proven. " + str(initial["mine_error"]))
+    if policy != "1":
+        raise RuntimeError("G1 private target is absent/inaccessible and CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0")
+    create = _create_g1_private_target(slug)
+    if create.returncode != 0:
+        try:
+            settled = _wait_for_g1_private_target(api, slug, timeout_seconds=60.0)
+        except RuntimeError as settle_exc:
+            detail = _redact_operator_secrets((create.stderr or "").strip() or (create.stdout or "").strip())
+            raise RuntimeError(f"Kaggle private-target create command failed and the target did not settle. rc={create.returncode}; detail={detail[-1600:] or '<no diagnostic>'}") from settle_exc
+        settled.update({"schema_version":"1.0","status":"PASS","dataset_slug":slug,"authenticated_username":username,"created_this_run":False,"creation_command_nonzero_but_target_settled":True})
+        return settled
+    settled = _wait_for_g1_private_target(api, slug, timeout_seconds=settle_timeout_seconds)
+    settled.update({"schema_version":"1.0","status":"PASS","dataset_slug":slug,"authenticated_username":username,"created_this_run":True,"creation_command_nonzero_but_target_settled":False})
+    return settled
 
 
 if EXECUTION_PHASE == "dual-gpu-smoke":
@@ -471,6 +727,25 @@ subprocess.run(
     cwd=repo_workdir,
     check=True,
 )
+
+# G1 external target orchestration happens only after clean-source/dependency/bootstrap
+# validation and before the frozen G1 entrypoint independently revalidates the target.
+if EXECUTION_PHASE == "g1":
+    _g1_target_preflight = _ensure_g1_private_target_settled(
+        G1_PRIVATE_DATASET_SLUG,
+        G1_ALLOW_CREATE_PRIVATE_DATASET,
+    )
+    _g1_target_record = bootstrap_out.parent / "g1_private_target_preflight.json"
+    _g1_target_record.write_text(
+        json.dumps(_g1_target_preflight, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        "G1 private target wrapper preflight: PASS "
+        f"(slug={G1_PRIVATE_DATASET_SLUG}, "
+        f"created_this_run={_g1_target_preflight['created_this_run']}, "
+        f"status={_g1_target_preflight.get('dataset_status')})"
+    )
 
 if EXECUTION_PHASE in {"smoke-write", "smoke-restore"}:
     cmd = [
