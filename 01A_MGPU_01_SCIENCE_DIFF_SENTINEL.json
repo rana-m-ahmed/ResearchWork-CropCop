@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "artifact": "01A_MGPU_01_SCIENCE_DIFF_SENTINEL.json",
-  "snapshot_created_at": "2026-09-06T23:55:00+05:00",
-  "snapshot_source_git_sha": "016fb4994a6b3c73f38435c5e96b73ea8b56be97",
+  "snapshot_created_at": "2026-09-07T00:10:00+05:00",
+  "snapshot_source_git_sha": "1d6ce71c62411132e0b32643fd4f9bcc2169abc1",
   "authority": {
     "stage03r_id": "EAAI-JE-SDL-v2.1-QA",
     "stage03r_sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74",
@@ -110,6 +110,19 @@
       "split_column": "split",
       "label_column": "label",
       "target_derivation": "locked class_to_idx.json",
+      "scientific_semantics_changed": false
+    },
+    "g2_preflight_remediation": {
+      "status": "CI_GREEN_PRE_FREEZE",
+      "validated_head": "1d6ce71c62411132e0b32643fd4f9bcc2169abc1",
+      "ci_run_number": 257,
+      "cpu_safe_tests": 337,
+      "deterministic_blockers_closed": [
+        "frozen_v1_target_derivation",
+        "terminal_envelope_publication_reachability",
+        "cnxtt_control_identity_binding",
+        "private_durable_store_preflight"
+      ],
       "scientific_semantics_changed": false
     }
   }
