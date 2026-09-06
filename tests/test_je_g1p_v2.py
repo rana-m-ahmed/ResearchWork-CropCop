@@ -64,7 +64,7 @@ class G1PDependencyAndReadinessTests(unittest.TestCase):
             "verify_teacher_class_order.py",
             "prepare_mnv4_pretrained.py",
             "capture_mnv4_pretrained_provenance.py",
-            "preflight_private_target",
+            "readiness_private_target_probe",
             "readiness_transport_dry_run",
         ):
             self.assertIn(token, source)
