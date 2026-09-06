@@ -740,6 +740,118 @@ class ExpandedTransportRegressionTests(unittest.TestCase):
                 )
 
 
+    def test_31_mount_rejects_ambiguous_raw_and_expanded_transport(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            package, expanded = self._fixture(root)
+            (expanded / "G1_PACKAGE.tar").write_bytes(
+                package.package_path.read_bytes()
+            )
+            with self.assertRaises(G1PackageError):
+                mount_g1_input(expanded, root / "mounted")
+
+    def test_32_publication_rejects_expanded_inventory_missing_member(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            package, expanded = self._fixture(root)
+            inventory = [
+                {
+                    "name": MANIFEST_NAME,
+                    "bytes": (expanded / MANIFEST_NAME).stat().st_size,
+                }
+            ]
+            rows = package.manifest["members"][:-1]
+            for row in rows:
+                inventory.append(
+                    {
+                        "name": f"{EXPANDED_PACKAGE_DIR}/{row['path']}",
+                        "bytes": int(row["bytes"]),
+                    }
+                )
+
+            class Api:
+                def dataset_download_file(
+                    self, version_ref, name, path, force=True, quiet=True
+                ):
+                    source = expanded.joinpath(*name.split("/"))
+                    target = Path(path) / Path(name).name
+                    target.write_bytes(source.read_bytes())
+
+            with self.assertRaises(G1RemoteMismatch):
+                _download_expanded_transport(
+                    Api(),
+                    "owner/dataset/3",
+                    inventory,
+                    root / "downloaded",
+                )
+
+    def test_33_publication_rejects_expanded_inventory_duplicate_member(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            package, expanded = self._fixture(root)
+            inventory = [
+                {
+                    "name": MANIFEST_NAME,
+                    "bytes": (expanded / MANIFEST_NAME).stat().st_size,
+                }
+            ]
+            for row in package.manifest["members"]:
+                inventory.append(
+                    {
+                        "name": f"{EXPANDED_PACKAGE_DIR}/{row['path']}",
+                        "bytes": int(row["bytes"]),
+                    }
+                )
+            inventory.append(dict(inventory[-1]))
+
+            class Api:
+                def dataset_download_file(
+                    self, version_ref, name, path, force=True, quiet=True
+                ):
+                    source = expanded.joinpath(*name.split("/"))
+                    target = Path(path) / Path(name).name
+                    target.write_bytes(source.read_bytes())
+
+            with self.assertRaises(G1RemoteMismatch):
+                _download_expanded_transport(
+                    Api(),
+                    "owner/dataset/3",
+                    inventory,
+                    root / "downloaded",
+                )
+
+    def test_34_expanded_manifest_tamper_fails_self_hash(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            _package, expanded = self._fixture(root)
+            manifest_path = expanded / MANIFEST_NAME
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["source_git_sha"] = "d" * 40
+            manifest_path.write_text(
+                json.dumps(manifest, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            with self.assertRaises(G1PackageError):
+                reconstruct_expanded_g1_package(
+                    expanded, root / "reconstructed"
+                )
+
+    def test_35_raw_tar_mount_remains_supported(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            package, _expanded = self._fixture(root)
+            bundle, recovered = mount_g1_input(
+                package.package_path.parent, root / "mounted"
+            )
+            self.assertTrue(
+                (bundle / "G1_MODEL_IDENTITY_SEAL.json").is_file()
+            )
+            self.assertEqual(
+                recovered.manifest["package_sha256"],
+                package.manifest["package_sha256"],
+            )
+
+
 class SourceArchitectureTests(unittest.TestCase):
     def test_21_publication_is_version_bound_not_bare_download(self):
         source = (
