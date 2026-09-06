@@ -1,10 +1,10 @@
-# Stage 01A-G1P-v2 — Active Kaggle Operator Guide
+# Stage 01A-G1P-v2.1 — Active Kaggle Operator Guide
 
 This is the **active** operator handoff. Historical Stage-01A-SR/MGPU-QA1 reports remain evidence chronology, not current execution instructions.
 
-Final generator-authorized Stage-01A-G1P-v2 execution source:
+Final generator-authorized Stage-01A-G1P-v2.1 execution source:
 
-`b89144d8826b6c61c3be7a91cac08681b1b4a99c`
+`3c71331494b3e031bbbbc3f08d27cd2605c31097`
 
 Dependency lock:
 
