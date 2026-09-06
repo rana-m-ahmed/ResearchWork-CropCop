@@ -43,6 +43,8 @@ from cropcop_je.envelope import (
     validate_manifest,
     validate_t4x2_inventory,
 )
+from cropcop_je.g1_barrier import from_environment as g1_barrier_from_environment, validate_g1_barrier
+from cropcop_je.g1_package import mount_g1_input
 from cropcop_je.g2 import build_g2_barrier, validate_calibration_summary, validate_g2_barrier_object
 from cropcop_je.hashing import sha256_file, sha256_json
 from cropcop_je.publication import publish_to_github_branch
@@ -123,16 +125,42 @@ def _dual_smoke_preflight(source_sha: str, dependency: dict, smoke: dict) -> dic
     return evidence
 
 
-def _g1_identity(source_sha: str, dependency: dict) -> tuple[Path, dict]:
-    seal_path = Path(req("CROPCOP_G1_BUNDLE_DIR")) / "G1_MODEL_IDENTITY_SEAL.json"
+def _mount_and_validate_g1(source_sha: str, dependency: dict) -> tuple[Path, dict, dict]:
+    input_root = req("CROPCOP_G1_INPUT_ROOT")
+    mount_root = Path(
+        os.environ.get("CROPCOP_G1_MOUNT_DIR", "/kaggle/working/cropcop-g1-mounted")
+    ).resolve()
+    if mount_root == ROOT or ROOT in mount_root.parents:
+        raise EnvelopeError("G1 mount root must be outside the Git checkout")
+    try:
+        bundle, package = mount_g1_input(input_root, mount_root)
+    except Exception as exc:
+        raise EnvelopeError(f"sealed G1 package recovery failed: {type(exc).__name__}: {exc}") from exc
+
+    os.environ["CROPCOP_G1_BUNDLE_DIR"] = str(bundle)
+    seal_path = bundle / "G1_MODEL_IDENTITY_SEAL.json"
     seal = load_json(seal_path)
-    if seal.get("source_git_sha") != source_sha:
-        raise EnvelopeError("mounted G1 seal source differs from envelope execution source")
-    if seal.get("dependency_lock_sha256") != dependency["dependency_lock_sha256"]:
-        raise EnvelopeError("mounted G1 seal dependency lock differs from envelope")
-    if len(str(seal.get("g1_seal_sha256", ""))) != 64:
-        raise EnvelopeError("mounted G1 seal identity missing/invalid")
-    return seal_path, seal
+
+    package_manifest = package.manifest
+    if package_manifest.get("source_git_sha") != source_sha:
+        raise EnvelopeError("G1 package source differs from envelope execution source")
+    if package_manifest.get("dependency_lock_sha256") != dependency["dependency_lock_sha256"]:
+        raise EnvelopeError("G1 package dependency lock differs from envelope")
+    if package_manifest.get("g1_seal_sha256") != seal.get("g1_seal_sha256"):
+        raise EnvelopeError("G1 package manifest binds a different G1 seal")
+
+    inputs = g1_barrier_from_environment(
+        ROOT,
+        authorized_source_sha=source_sha,
+        env=os.environ,
+    )
+    report = validate_g1_barrier(inputs)
+    if report.get("status") != "PASS":
+        raise EnvelopeError(
+            "parent full G1 validation failed before GPU child launch: "
+            + "; ".join(report.get("errors", []))
+        )
+    return seal_path, seal, package_manifest
 
 
 def _central_g2_barrier(shared: Path, *, source_sha: str, g1_sha: str) -> dict:
@@ -445,7 +473,7 @@ def main() -> int:
     dependency = load_json(DEPENDENCY_LOCK)
     smoke = _smoke_preflight(source_sha, dependency)
     dual_smoke = _dual_smoke_preflight(source_sha, dependency, smoke)
-    _g1_path, g1 = _g1_identity(source_sha, dependency)
+    _g1_path, g1, g1_package = _mount_and_validate_g1(source_sha, dependency)
 
     central_g2 = Path(req("CROPCOP_G2_SUMMARIES_DIR")).resolve()
     parent_output = Path(req("CROPCOP_OUTPUT_ROOT")).resolve()
@@ -569,6 +597,8 @@ def main() -> int:
             "science_diff_status": science["status"],
             "protected_surfaces_unchanged": science["protected_surfaces_unchanged"],
             "g1_seal_sha256": g1["g1_seal_sha256"],
+            "g1_package_sha256": g1_package.get("package_sha256"),
+            "g1_package_manifest_sha256": g1_package.get("manifest_sha256"),
             "g2_barrier_sha256": g2_sha,
             "dual_gpu_smoke_evidence_sha256": sha256_json(dual_smoke),
             "children": [
