@@ -6,6 +6,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+from types import SimpleNamespace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,7 @@ SRC = ROOT / "journal_extension" / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from cropcop_je.g1 import g1_seal_hash, validate_g1_seal_object
 from cropcop_je.g1_package import (
     G1Package,
     G1PackageError,
@@ -21,6 +23,7 @@ from cropcop_je.g1_package import (
     readiness_transport_dry_run,
     safe_extract_g1_package,
 )
+from cropcop_je.g1_publication import G1PublicationError, preflight_private_target, wait_until_ready
 from cropcop_je.hashing import sha256_file
 
 
@@ -183,6 +186,171 @@ class G1PDownstreamAndRepairTests(unittest.TestCase):
         self.assertIn("torch.random.fork_rng(devices=[])", models)
         self.assertIn("torch.manual_seed(int(seed))", models)
         self.assertIn('"accelerator_required": False', g1)
+
+
+
+class G1PSealAndTeacherTests(unittest.TestCase):
+    def _valid_seal(self):
+        pairs = {}
+        specs = {
+            "S1": ("MNV4-PAIR-S1", 21270083, ["R04-MNV4-DIRECT-S1", "R05-MNV4-TEACHER-S1"]),
+            "S2": ("MNV4-PAIR-S2", 606135704, ["R04-MNV4-DIRECT-S2", "R05-MNV4-TEACHER-S2"]),
+            "S3": ("MNV4-PAIR-S3", 1153870846, ["R04-MNV4-DIRECT-S3", "R05-MNV4-TEACHER-S3"]),
+        }
+        for i, (key, (pair_id, seed, consumers)) in enumerate(specs.items(), 1):
+            pairs[key] = {
+                "pair_id": pair_id,
+                "seed": seed,
+                "authorized_consumers": consumers,
+                "pretrained_sha256": "1" * 64,
+                "sha256": str(i) * 64,
+                "bytes": 100 + i,
+            }
+        seal = {
+            "schema_version": "2.0",
+            "authority": {
+                "id": "EAAI-JE-SDL-v2.1-QA",
+                "sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74",
+            },
+            "source_git_sha": "a" * 40,
+            "dataset": {
+                "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+                "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+                "identity_evidence_sha256": "2" * 64,
+            },
+            "student": {
+                "model_name": "mobilenetv4_conv_medium.e500_r256_in1k",
+                "timm_version": "1.0.26",
+                "pretrained": {
+                    "sha256": "1" * 64,
+                    "bytes": 123,
+                    "source_kind": "timm_pretrained_cfg_hf_hub",
+                    "source_locator": "fixture/model",
+                    "provenance_sha256": "3" * 64,
+                    "tensor_identity_sha256": "4" * 64,
+                    "candidate_serialization_format": "safetensors_state_dict",
+                },
+            },
+            "pair_initializations": pairs,
+            "teacher": {
+                "checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+                "checkpoint_bytes": 456,
+                "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+                "canonical_state": "EMA",
+                "byte_evidence_sha256": "5" * 64,
+                "factory_bundle_sha256": "6" * 64,
+                "factory_manifest_sha256": "7" * 64,
+                "class_order_evidence_sha256": "8" * 64,
+                "canonical_state_evidence_sha256": "9" * 64,
+                "adapter_parity_evidence_sha256": "c" * 64,
+                "factory_entrypoint": "historical_dino_tiny:build_teacher",
+            },
+            "dependency_lock_sha256": "d" * 64,
+            "infra_smoke_evidence_sha256": "e" * 64,
+            "dual_gpu_smoke_evidence_sha256": "f" * 64,
+        }
+        seal["g1_seal_sha256"] = g1_seal_hash(seal)
+        return seal
+
+    def test_12_v2_seal_requires_dual_smoke_digest(self):
+        seal = self._valid_seal()
+        seal.pop("dual_gpu_smoke_evidence_sha256")
+        seal["g1_seal_sha256"] = g1_seal_hash(seal)
+        errors = validate_g1_seal_object(seal)
+        self.assertTrue(any("dual-GPU-smoke" in e for e in errors), errors)
+
+    def test_13_teacher_factory_is_offline_and_has_no_pretrained_fallback(self):
+        source = (ROOT / "journal_extension/teacher_factory/historical_dino_tiny.py").read_text()
+        self.assertIn("DINOv3ConvNextConfig()", source)
+        self.assertIn("DINOv3ConvNextModel(config)", source)
+        self.assertNotIn("from_pretrained(", source)
+        self.assertIn("load_state_dict(raw_state, strict=True)", source)
+        self.assertIn("ema_exact_complete_coverage", source)
+
+
+class G1PPrivateTargetTests(unittest.TestCase):
+    class FakeApi:
+        def __init__(self, root: Path, *, private=True, status="ready", fail_metadata=False):
+            self.root = root
+            self.private = private
+            self.status = status
+            self.fail_metadata = fail_metadata
+
+        def dataset_metadata(self, slug, path):
+            if self.fail_metadata:
+                raise RuntimeError("missing")
+            target = Path(path) / "dataset-metadata.json"
+            target.write_text(json.dumps({"id": slug, "isPrivate": self.private}))
+            return str(target)
+
+        def dataset_list_with_response(self, **kwargs):
+            return SimpleNamespace(datasets=[SimpleNamespace(ref="owner/private-dataset")])
+
+        def dataset_status(self, slug, format="json"):
+            return json.dumps({"status": self.status, "current_version_number": 1})
+
+    def test_14_private_target_owner_mismatch_fails_before_api(self):
+        with self.assertRaises(G1PublicationError):
+            preflight_private_target(
+                "other/private-dataset",
+                env={"KAGGLE_USERNAME": "owner", "KAGGLE_KEY": "fixture"},
+                api_factory=lambda: (_ for _ in ()).throw(AssertionError("API should not be called")),
+            )
+
+    def test_15_public_target_is_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            api = self.FakeApi(Path(td), private=False)
+            with self.assertRaises(G1PublicationError):
+                preflight_private_target(
+                    "owner/private-dataset",
+                    env={"KAGGLE_USERNAME": "owner", "KAGGLE_KEY": "fixture"},
+                    api_factory=lambda: api,
+                )
+
+    def test_16_missing_target_fails_without_explicit_create(self):
+        with tempfile.TemporaryDirectory() as td:
+            api = self.FakeApi(Path(td), fail_metadata=True)
+            with self.assertRaises(G1PublicationError):
+                preflight_private_target(
+                    "owner/private-dataset",
+                    env={"KAGGLE_USERNAME": "owner", "KAGGLE_KEY": "fixture"},
+                    api_factory=lambda: api,
+                )
+
+    def test_17_failed_dataset_processing_blocks_terminal_ready(self):
+        with tempfile.TemporaryDirectory() as td:
+            api = self.FakeApi(Path(td), status="failed")
+            with self.assertRaises(G1PublicationError):
+                wait_until_ready(api, "owner/private-dataset", timeout_seconds=0.1)
+
+    def test_18_private_create_code_defaults_private_and_never_public(self):
+        source = (ROOT / "journal_extension/src/cropcop_je/g1_publication.py").read_text()
+        start = source.index("def create_private_target_if_missing")
+        end = source.index("\ndef wait_until_ready", start)
+        create = source[start:end]
+        self.assertIn('"isPrivate": True', create)
+        self.assertNotIn("--public", create)
+
+
+class G1PMoreTransportAndOrderingTests(unittest.TestCase):
+    def test_19_package_corruption_is_detected_before_mount(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            bundle = G1PTransportTests._fixture_bundle(root)
+            package = create_g1_package(bundle, root / "transport")
+            data = bytearray(package.package_path.read_bytes())
+            data[len(data) // 2] ^= 0x01
+            package.package_path.write_bytes(bytes(data))
+            with self.assertRaises(G1PackageError):
+                mount_g1_input(root / "transport", root / "mounted")
+
+    def test_20_child_revalidates_g1_before_any_calibration_or_principal(self):
+        source = (ROOT / "journal_extension/kaggle/run_lane.py").read_text()
+        validate = source.index("g1_seal = validate_g1(")
+        calibration = source.index("if args.phase == \"calibration\":")
+        principal = source.index("item = select_principal(lane)")
+        self.assertLess(validate, calibration)
+        self.assertLess(validate, principal)
 
 
 if __name__ == "__main__":
