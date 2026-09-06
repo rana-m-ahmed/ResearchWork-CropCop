@@ -363,9 +363,16 @@ class SmokeSRTests(unittest.TestCase):
         self.assertEqual(lines[2], "from pathlib import Path")
         self.assertEqual(lines[3], "from urllib.error import HTTPError, URLError")
         self.assertIn(
-            'AUTHORIZED_SOURCE_SHA = "fe88e426b4698977d65efe9702f1d48cf5ff96a3"',
+            'AUTHORIZED_SOURCE_SHA = "b89144d8826b6c61c3be7a91cac08681b1b4a99c"',
             lines,
         )
+        for token in (
+            "CROPCOP_RFDV_ROOT",
+            "CROPCOP_FINAL_V1_ROOT",
+            "CROPCOP_G1_PRIVATE_DATASET_SLUG",
+            "CROPCOP_G1_INPUT_ROOT",
+        ):
+            self.assertIn(token, source)
         # Escaped newlines are legitimate inside the askpass Python string literal.
         self.assertIn('"#!/usr/bin/env python3\\n"', source)
 
