@@ -459,119 +459,6 @@ def _ensure_g1_private_target_settled(slug: str, policy: str, *, settle_timeout_
     return settled
 
 
-_G1_LEGACY_TEST_ACCESS_ERROR = "frozen-V1 identity unexpectedly records V1-test access"
-
-
-def _legacy_g1_identity_explicitly_records_no_test_access(evidence_dir: str | Path) -> bool:
-    path = Path(evidence_dir).resolve() / "FROZEN_V1_IDENTITY.json"
-    if not path.is_file():
-        return False
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return False
-    return (
-        "v1_test_accessed" not in payload
-        and payload.get("protected_test_accessed_during_g1") is False
-    )
-
-
-_G1_COMPAT_SITECUSTOMIZE = r"""
-from __future__ import annotations
-import json
-import os
-import sys
-from pathlib import Path
-
-_marker = "frozen-V1 identity unexpectedly records V1-test access"
-_root_value = str(os.environ.get("CROPCOP_COMPAT_REPO_ROOT", "")).strip()
-if _root_value:
-    _root = Path(_root_value).resolve()
-    _src = _root / "journal_extension" / "src"
-    if str(_src) not in sys.path:
-        sys.path.insert(0, str(_src))
-    import cropcop_je.g1_barrier as _g1_barrier
-
-    _original_validate_mounted_g1 = _g1_barrier.validate_mounted_g1
-
-    def _compat_validate_mounted_g1(*args, **kwargs):
-        errors = list(_original_validate_mounted_g1(*args, **kwargs))
-        if _marker not in errors:
-            return errors
-        evidence_dir = kwargs.get("evidence_dir")
-        if evidence_dir is None:
-            return errors
-        identity_path = Path(evidence_dir).resolve() / "FROZEN_V1_IDENTITY.json"
-        try:
-            identity = json.loads(identity_path.read_text(encoding="utf-8"))
-        except Exception:
-            return errors
-        legacy_explicit_no_test_access = (
-            "v1_test_accessed" not in identity
-            and identity.get("protected_test_accessed_during_g1") is False
-        )
-        if not legacy_explicit_no_test_access:
-            return errors
-        errors.remove(_marker)
-        print(
-            "CROPCOP G1 legacy identity schema compatibility: PASS "
-            "(protected_test_accessed_during_g1=false accepted as the frozen "
-            "no-test-access field; seal/evidence bytes unchanged)"
-        )
-        return errors
-
-    _compat_validate_mounted_g1._cropcop_g1_legacy_identity_compat = True
-    _g1_barrier.validate_mounted_g1 = _compat_validate_mounted_g1
-"""
-
-
-def _activate_g1_legacy_identity_compat(repo_root: Path) -> Path:
-    compat_root = (Path(OUTPUT_ROOT).resolve() / "wrapper-compat").resolve()
-    if compat_root == repo_root or repo_root in compat_root.parents:
-        raise RuntimeError("G1 compatibility root must remain outside the Git checkout")
-    if compat_root.exists():
-        shutil.rmtree(compat_root)
-    compat_root.mkdir(parents=True, exist_ok=False)
-    sitecustomize = compat_root / "sitecustomize.py"
-    sitecustomize.write_text(_G1_COMPAT_SITECUSTOMIZE, encoding="utf-8")
-
-    os.environ["CROPCOP_COMPAT_REPO_ROOT"] = str(repo_root)
-    existing_pythonpath = str(os.environ.get("PYTHONPATH", "")).strip()
-    os.environ["PYTHONPATH"] = (
-        str(compat_root)
-        if not existing_pythonpath
-        else str(compat_root) + os.pathsep + existing_pythonpath
-    )
-
-    probe = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            (
-                "import cropcop_je.g1_barrier as g;"
-                "assert getattr(g.validate_mounted_g1,"
-                "'_cropcop_g1_legacy_identity_compat',False);"
-                "print('G1 legacy identity compatibility startup probe: PASS')"
-            ),
-        ],
-        cwd=repo_root,
-        env=dict(os.environ),
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=60,
-    )
-    if probe.returncode != 0:
-        detail = _redact_operator_secrets(
-            (probe.stderr or "").strip() or (probe.stdout or "").strip()
-        )
-        raise RuntimeError(
-            "G1 legacy identity compatibility startup probe failed: "
-            + (detail[-1600:] or "<no diagnostic>")
-        )
-    print((probe.stdout or "").strip())
-    return compat_root
-
 
 if EXECUTION_PHASE == "dual-gpu-smoke":
     os.environ["CROPCOP_INFRA_SMOKE_EVIDENCE"] = _locate_exact_attached_evidence(
@@ -860,9 +747,6 @@ if EXECUTION_PHASE == "g1":
         f"created_this_run={_g1_target_preflight['created_this_run']}, "
         f"status={_g1_target_preflight.get('dataset_status')})"
     )
-
-if EXECUTION_PHASE in {"g1", "calibration-dual", "principal-dual"}:
-    _activate_g1_legacy_identity_compat(repo_workdir)
 
 if EXECUTION_PHASE in {"smoke-write", "smoke-restore"}:
     cmd = [
