@@ -964,7 +964,7 @@ def main() -> int:
     if prior_bundle is not None and prior_control_before != _prior_control_fingerprint(prior_bundle):
         raise EnvelopeError("attached prior envelope control files changed during continuation")
 
-        envelope_branch = _publish(envelope_id, source_sha, [manifest_path, evidence_path, state_path])
+    envelope_branch = _publish(envelope_id, source_sha, [manifest_path, evidence_path, state_path])
     evidence["envelope_publication_branch"] = envelope_branch
     atomic_write_json(evidence_path, evidence)
     envelope_branch2 = _publish(envelope_id, source_sha, [manifest_path, evidence_path, state_path])
