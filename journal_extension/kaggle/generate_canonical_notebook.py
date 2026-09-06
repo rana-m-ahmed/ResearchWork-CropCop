@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-MGPU_EXECUTION_SOURCE_SHA = "fe88e426b4698977d65efe9702f1d48cf5ff96a3"
-AUTHORIZED_SOURCE_SHA = "fe88e426b4698977d65efe9702f1d48cf5ff96a3"
+MGPU_EXECUTION_SOURCE_SHA = "b89144d8826b6c61c3be7a91cac08681b1b4a99c"
+AUTHORIZED_SOURCE_SHA = "b89144d8826b6c61c3be7a91cac08681b1b4a99c"
 
 MARKDOWN = """# CropCop EAAI — Canonical Stage-01A-MGPU Kaggle Wrapper
 
-Thin orchestration only, hard-bound to the frozen Stage-01A-MGPU-QA1 execution source.
+Thin orchestration only, hard-bound to the frozen Stage-01A-G1P-v2 execution source.
 
 Operator phases: `smoke-write`, `smoke-restore`, `dual-gpu-smoke`, `g1`, `calibration-dual`, `principal-dual`.
 
@@ -27,8 +27,8 @@ from urllib.request import Request, urlopen
 # ============================================================
 # CROPCOP EAAI — KAGGLE OPERATOR CONFIGURATION
 # ============================================================
-# Frozen Stage-01A-MGPU execution source. Wrapper commits are not execution sources.
-AUTHORIZED_SOURCE_SHA = "fe88e426b4698977d65efe9702f1d48cf5ff96a3"
+# Frozen Stage-01A-G1P-v2 execution source. Wrapper commits are not execution sources.
+AUTHORIZED_SOURCE_SHA = "b89144d8826b6c61c3be7a91cac08681b1b4a99c"
 LANE = os.environ.get("CROPCOP_LANE", "K1")
 EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "smoke-write")
 PRINCIPAL_ENVELOPE = os.environ.get("CROPCOP_PRINCIPAL_ENVELOPE", "P1").strip().upper()
@@ -62,6 +62,23 @@ SMOKE_B_INPUT_ROOT = os.environ.get(
 DUAL_GPU_SMOKE_INPUT_ROOT = os.environ.get(
     "CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT",
     "<SET_AFTER_ATTACHING_DUAL_GPU_SMOKE_OUTPUT>",
+)
+
+RFDV_ROOT = os.environ.get(
+    "CROPCOP_RFDV_ROOT",
+    "<SET_G1_RFDV_INPUT_ROOT>",
+)
+FINAL_V1_ROOT = os.environ.get(
+    "CROPCOP_FINAL_V1_ROOT",
+    "<SET_FROZEN_FINAL_V1_ROOT>",
+)
+G1_PRIVATE_DATASET_SLUG = os.environ.get(
+    "CROPCOP_G1_PRIVATE_DATASET_SLUG",
+    "<SET_OWNER/PRIVATE_G1_DATASET>",
+)
+G1_INPUT_ROOT = os.environ.get(
+    "CROPCOP_G1_INPUT_ROOT",
+    "<SET_AFTER_ATTACHING_SEALED_G1_DATASET>",
 )
 
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -105,8 +122,8 @@ if _kaggle_run_type != "Batch":
         "CROPCOP QUALIFICATION NOT STARTED: this notebook is running in the Kaggle editor "
         f"with KAGGLE_KERNEL_RUN_TYPE={_kaggle_run_type or '<missing>'}. "
         "Do not qualify by pressing Run/Run All in the editor. "
-        "Use Save Version -> Save & Run All, and select the required GPU accelerator "
-        "in the Save Version advanced options. Interactive execution is diagnostic only. "
+        "Use Save Version -> Save & Run All. Select no accelerator for CPU G1, and the "
+        "required T4x2 accelerator for dual-GPU phases. Interactive execution is diagnostic only. "
         "No source clone, dependency install, smoke checkpoint, or qualification evidence "
         "has been accepted from this session."
     )
@@ -144,6 +161,25 @@ elif EXECUTION_PHASE in {"g1", "calibration-dual", "principal-dual"}:
         "DUAL_GPU_SMOKE_EVIDENCE.json",
         "CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT",
     )
+
+if EXECUTION_PHASE == "g1":
+    for _name, _value in (
+        ("CROPCOP_RFDV_ROOT", RFDV_ROOT),
+        ("CROPCOP_FINAL_V1_ROOT", FINAL_V1_ROOT),
+        ("CROPCOP_G1_PRIVATE_DATASET_SLUG", G1_PRIVATE_DATASET_SLUG),
+    ):
+        if not _value or _value.startswith("<"):
+            raise RuntimeError(f"Set {_name} explicitly for CPU G1")
+        os.environ[_name] = _value
+elif EXECUTION_PHASE in {"calibration-dual", "principal-dual"}:
+    if not G1_INPUT_ROOT or G1_INPUT_ROOT.startswith("<"):
+        raise RuntimeError(
+            "Set CROPCOP_G1_INPUT_ROOT to the exact attached sealed G1 Kaggle Dataset root"
+        )
+    _g1_input = Path(G1_INPUT_ROOT).resolve()
+    if not _g1_input.is_dir():
+        raise RuntimeError(f"CROPCOP_G1_INPUT_ROOT is not a directory: {_g1_input}")
+    os.environ["CROPCOP_G1_INPUT_ROOT"] = str(_g1_input)
 
 
 repo_workdir = Path(REPO_WORKDIR).resolve()
