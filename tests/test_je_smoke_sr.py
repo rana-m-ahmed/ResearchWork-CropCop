@@ -875,6 +875,8 @@ class SmokeSRTests(unittest.TestCase):
     def test_78_operator_docs_are_synchronized_for_fresh_v22_g1(self):
         guide = (ROOT / "journal_extension/kaggle/README_SMOKE.md").read_text()
         self.assertIn("CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0", guide)
+        g1_block = guide.split("### `g1`", 1)[1].split("### `calibration-dual`", 1)[0]
+        self.assertNotIn("CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=1", g1_block)
         self.assertIn("exists, is private, is owned by the authenticated account, and is ready", guide)
         self.assertNotIn("legacy schema-name mismatch", guide)
         self.assertNotIn("protected_test_accessed_during_g1=false accepted", guide)
