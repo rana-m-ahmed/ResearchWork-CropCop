@@ -377,7 +377,7 @@ class SmokeSRTests(unittest.TestCase):
         self.assertEqual(lines[2], "from pathlib import Path")
         self.assertEqual(lines[3], "from urllib.error import HTTPError, URLError")
         self.assertIn(
-            'AUTHORIZED_SOURCE_SHA = "3c71331494b3e031bbbbc3f08d27cd2605c31097"',
+            'AUTHORIZED_SOURCE_SHA = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"',
             lines,
         )
         for token in (
@@ -738,7 +738,7 @@ class SmokeSRTests(unittest.TestCase):
 
     def test_58_g1_wrapper_remediation_preserves_frozen_source_binding(self):
         generator = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text()
-        expected = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
+        expected = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"
         self.assertIn(f'MGPU_EXECUTION_SOURCE_SHA = "{expected}"', generator)
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', generator)
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', self.code)
@@ -822,7 +822,7 @@ class SmokeSRTests(unittest.TestCase):
         self.assertIn("Kaggle dataset creation as asynchronous", guide)
 
     def test_71_async_target_remediation_preserves_frozen_source_binding(self):
-        expected = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
+        expected = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"
         generator = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text()
         self.assertIn(f'MGPU_EXECUTION_SOURCE_SHA = "{expected}"', generator)
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', generator)
@@ -885,7 +885,7 @@ class SmokeSRTests(unittest.TestCase):
         end = self.code.index("def _activate_g1_legacy_identity_compat", start)
         compat = self.code[start:end]
         self.assertNotIn("write_text(", compat)
-        expected = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
+        expected = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', self.code)
 
     def test_78_operator_docs_explain_legacy_identity_compatibility(self):

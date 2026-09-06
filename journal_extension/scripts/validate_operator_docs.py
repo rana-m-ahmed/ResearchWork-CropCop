@@ -22,9 +22,10 @@ CHAIN = """smoke-write
 → dual-gpu-smoke
 → independent audit
 → g1
+→ independent terminal G1 audit
 → calibration-dual
 → principal-dual"""
-SUPERSEDED_ACTIVE_SOURCES = {"67370145c9104edd52330b788c3b41b28f5cab87", "fe88e426b4698977d65efe9702f1d48cf5ff96a3", "b89144d8826b6c61c3be7a91cac08681b1b4a99c"}
+SUPERSEDED_ACTIVE_SOURCES = {"67370145c9104edd52330b788c3b41b28f5cab87", "fe88e426b4698977d65efe9702f1d48cf5ff96a3", "b89144d8826b6c61c3be7a91cac08681b1b4a99c", "3c71331494b3e031bbbbc3f08d27cd2605c31097"}
 
 
 def _active_section(text: str) -> str:

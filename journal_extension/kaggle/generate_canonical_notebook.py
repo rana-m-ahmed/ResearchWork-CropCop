@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-MGPU_EXECUTION_SOURCE_SHA = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
-AUTHORIZED_SOURCE_SHA = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
+MGPU_EXECUTION_SOURCE_SHA = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"
+AUTHORIZED_SOURCE_SHA = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"
 
 MARKDOWN = """# CropCop EAAI — Canonical Stage-01A-MGPU Kaggle Wrapper
 
-Thin orchestration only, hard-bound to the frozen Stage-01A-G1P-v2.1 execution source.
+Thin orchestration only, hard-bound to the frozen Stage-01A-G1P-v2.2 execution source.
 
 Operator phases: `smoke-write`, `smoke-restore`, `dual-gpu-smoke`, `g1`, `calibration-dual`, `principal-dual`.
 
@@ -27,8 +27,8 @@ from urllib.request import Request, urlopen
 # ============================================================
 # CROPCOP EAAI — KAGGLE OPERATOR CONFIGURATION
 # ============================================================
-# Frozen Stage-01A-G1P-v2.1 execution source. Wrapper commits are not execution sources.
-AUTHORIZED_SOURCE_SHA = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
+# Frozen Stage-01A-G1P-v2.2 execution source. Wrapper commits are not execution sources.
+AUTHORIZED_SOURCE_SHA = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"
 LANE = os.environ.get("CROPCOP_LANE", "K1")
 EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "").strip()
 PRINCIPAL_ENVELOPE = os.environ.get("CROPCOP_PRINCIPAL_ENVELOPE", "").strip().upper()

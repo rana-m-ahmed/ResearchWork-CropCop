@@ -1,10 +1,10 @@
-# Stage 01A-G1P-v2.1 — Active Kaggle Operator Guide
+# Stage 01A-G1P-v2.2 — Active Kaggle Operator Guide
 
 This is the **active** operator handoff. Historical Stage-01A-SR/MGPU-QA1 reports remain evidence chronology, not current execution instructions.
 
-Final generator-authorized Stage-01A-G1P-v2.1 execution source:
+Final generator-authorized Stage-01A-G1P-v2.2 execution source:
 
-`3c71331494b3e031bbbbc3f08d27cd2605c31097`
+`5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3`
 
 Dependency lock:
 
@@ -39,11 +39,18 @@ smoke-write
 → dual-gpu-smoke
 → independent audit
 → g1
+→ independent terminal G1 audit
 → calibration-dual
 → principal-dual
 ```
 
 No G1 is authorized before independently audited final-source Smoke A/B and terminal dual-GPU-smoke evidence.
+
+Calibration-dual remains blocked until the fresh v2.2 CPU G1 has terminal PASS evidence and that terminal evidence has been independently audited.
+
+All qualification evidence bound to the superseded v2.1 execution source is historical only and cannot satisfy v2.2 qualification.
+
+For the existing private target `ranamuhammadahmed6/cropcop-g1-sealed`, if Kaggle authoritatively reports the dataset present, private, and owned by the authenticated account, use `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0`. Do not recreate or delete it merely because an older-source publication attempt failed.
 
 ## Phase requirements
 
@@ -112,7 +119,7 @@ Readiness may defer target creation; an actual G1 run must choose exactly `0` or
 
 When creation is explicitly allowed, the wrapper treats Kaggle dataset creation as asynchronous. It reuses an existing target, creates the minimal private target only when absence is established, and waits until authoritative private metadata is readable, the exact slug appears in the authenticated account's `mine` listing, and dataset status is ready/completed before invoking frozen G1.
 
-The frozen Stage-01A-G1P-v2.1 source contains one documented legacy schema-name mismatch in `FROZEN_V1_IDENTITY.json`: the sealer writes `protected_test_accessed_during_g1=false` while the mounted-G1 barrier checks `v1_test_accessed is False`. The canonical wrapper applies a read-only compatibility rule outside the Git checkout for G1 and downstream G1 revalidation. It suppresses only the exact false-positive barrier message when the canonical field is absent and the frozen field is explicitly `false`. It does not modify the G1 seal, identity evidence bytes, source checkout, scientific artifacts, or any other barrier error.
+The frozen Stage-01A-G1P-v2.2 source contains one documented legacy schema-name mismatch in `FROZEN_V1_IDENTITY.json`: the sealer writes `protected_test_accessed_during_g1=false` while the mounted-G1 barrier checks `v1_test_accessed is False`. The canonical wrapper applies a read-only compatibility rule outside the Git checkout for G1 and downstream G1 revalidation. It suppresses only the exact false-positive barrier message when the canonical field is absent and the frozen field is explicitly `false`. It does not modify the G1 seal, identity evidence bytes, source checkout, scientific artifacts, or any other barrier error.
 
 Required secrets:
 

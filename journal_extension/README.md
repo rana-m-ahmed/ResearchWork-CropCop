@@ -12,9 +12,9 @@ are verified before use; V1 test and sealed external surfaces are not resolvable
 
 
 <!-- QA1_OPERATOR_BEGIN -->
-## Current Stage-01A-G1P-v2.1 operator path
+## Current Stage-01A-G1P-v2.2 operator path
 
-**Frozen execution source:** `3c71331494b3e031bbbbc3f08d27cd2605c31097`  
+**Frozen execution source:** `5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3`  
 **Dependency lock:** `6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37`
 
 Repository closure is followed first by the separate, non-qualifying CPU `G1_INPUT_READINESS.json` job. After independent readiness PASS, final-source qualification proceeds:
@@ -26,6 +26,7 @@ smoke-write
 → dual-gpu-smoke
 → independent audit
 → g1
+→ independent terminal G1 audit
 → calibration-dual
 → principal-dual
 ```
@@ -42,6 +43,10 @@ Canonical operator phases remain exactly:
 Smoke A/B require only `CROPCOP_GITHUB_TOKEN`. The dual smoke is T4×2 and synthetic.
 
 CPU G1 consumes exact `CROPCOP_RFDV_ROOT`, `CROPCOP_FINAL_V1_ROOT`, `CROPCOP_G1_PRIVATE_DATASET_SLUG`, terminal Smoke-B, and terminal dual-smoke evidence. The exact teacher path, teacher factory/lineage and official MNV4 preparation are source-controlled/resolved by the frozen implementation.
+
+The superseded v2.1 source and its source-bound readiness/Smoke/dual-smoke/G1 evidence are historical only. Fresh v2.2 qualification starts again from readiness. Calibration-dual is blocked until independent audit of fresh terminal v2.2 G1 evidence.
+
+If `ranamuhammadahmed6/cropcop-g1-sealed` is authoritatively present/private/owned at fresh G1 time, reuse it with `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0`; do not recreate it unnecessarily.
 
 G2/principal use one sealed private input root, `CROPCOP_G1_INPUT_ROOT`, rather than reattaching RFDV or reacquiring MNV4/teacher bytes. The parent verifies and safe-extracts the deterministic G1 package and runs the complete G1 barrier before GPU child launch.
 
