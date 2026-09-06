@@ -166,6 +166,7 @@ class QA1WaveATests(unittest.TestCase):
         spec.loader.exec_module(module)
         env = {
             "KAGGLE_KERNEL_RUN_TYPE": "Batch",
+            "CROPCOP_EXECUTION_PHASE": "g1",
             "CROPCOP_SOURCE_GIT_COMMIT": SOURCE,
             "CROPCOP_INFRA_SMOKE_EVIDENCE": "/tmp/smoke-b.json",
         }
