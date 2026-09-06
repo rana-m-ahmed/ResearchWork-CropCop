@@ -236,6 +236,8 @@ def validate_durable_access_plan(
                         f"Kaggle durable locator owner mismatch for {run_id}: "
                         f"locator owner={owner!r}, authenticated user={username!r}"
                     )
+                    checks[run_id] = row
+                    continue
                 if not dataset:
                     errors.append(f"invalid Kaggle durable locator for {run_id}: {locator}")
                     checks[run_id] = row
