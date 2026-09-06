@@ -24,7 +24,7 @@ CHAIN = """smoke-write
 → g1
 → calibration-dual
 → principal-dual"""
-SUPERSEDED_ACTIVE_SOURCE = "67370145c9104edd52330b788c3b41b28f5cab87"
+SUPERSEDED_ACTIVE_SOURCES = {"67370145c9104edd52330b788c3b41b28f5cab87", "fe88e426b4698977d65efe9702f1d48cf5ff96a3"}
 
 
 def _active_section(text: str) -> str:
@@ -70,8 +70,9 @@ def validate(repo_root: str | Path) -> dict:
         ("smoke_inputs.example.json", json.dumps(example, sort_keys=True)),
         ("journal_extension/README.md active section", active),
     ):
-        if SUPERSEDED_ACTIVE_SOURCE in text:
-            errors.append(f"{label} names superseded active execution source")
+        for superseded in SUPERSEDED_ACTIVE_SOURCES:
+            if superseded in text:
+                errors.append(f"{label} names superseded active execution source")
 
     for token in (
         "CROPCOP_SMOKE_B_INPUT_ROOT",
@@ -80,6 +81,10 @@ def validate(repo_root: str | Path) -> dict:
         "DUAL_GPU_SMOKE_EVIDENCE.json",
         'EXECUTION_PHASE == "dual-gpu-smoke"',
         'EXECUTION_PHASE in {"g1", "calibration-dual", "principal-dual"}',
+        "CROPCOP_RFDV_ROOT",
+        "CROPCOP_FINAL_V1_ROOT",
+        "CROPCOP_G1_PRIVATE_DATASET_SLUG",
+        "CROPCOP_G1_INPUT_ROOT",
     ):
         if token not in generator:
             errors.append(f"generator missing operator-handoff token: {token}")
