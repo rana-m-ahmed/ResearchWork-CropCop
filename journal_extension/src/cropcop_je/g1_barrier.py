@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Mapping
 
 from .atomic_io import atomic_write_json
-from .g1 import validate_mounted_g1
+from .g1 import validate_mounted_g1, validate_v1_test_access_identity
 from .source_state import verify_clean_source
 
 
@@ -96,6 +96,11 @@ def validate_g1_barrier(inputs: G1BarrierInputs) -> dict:
         seal.get("teacher", {}).get("artifact_basename", "")
     )
     evidence = bundle / "evidence"
+    v1_access_mode = "missing"
+    frozen_v1_path = evidence / "FROZEN_V1_IDENTITY.json"
+    if frozen_v1_path.is_file():
+        frozen_v1 = json.loads(frozen_v1_path.read_text(encoding="utf-8"))
+        _v1_errors, v1_access_mode = validate_v1_test_access_identity(frozen_v1)
     errors.extend(
         validate_mounted_g1(
             seal,
@@ -124,6 +129,7 @@ def validate_g1_barrier(inputs: G1BarrierInputs) -> dict:
         "source_git_sha": seal.get("source_git_sha"),
         "dependency_lock_sha256": seal.get("dependency_lock_sha256"),
         "source_state": source,
+        "v1_test_access_schema_mode": v1_access_mode,
         "errors": errors,
     }
 
