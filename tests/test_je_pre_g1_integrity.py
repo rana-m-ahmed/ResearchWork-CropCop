@@ -139,6 +139,8 @@ def calibration(cid, seal, *, g1=None, pretrained=PRETRAINED, dep=DEP, stack=STA
     if cid == "CAL-MNV4-TEACHER":
         row["teacher_checkpoint_sha256"] = TEACHER_SHA256
         row["teacher_factory_bundle_sha256"] = factory
+    if cid == "CAL-CNXTT":
+        row["cnxtt_pretrained_sha256"] = "983f1562" + "0" * 56
     return row
 
 
