@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "teacher_lineage_id": "V1-HIST-DINO-CNXTT-STAGE1-EMA",
+  "teacher_checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+  "teacher_model_id": "facebook/dinov3-convnext-tiny-pretrain-lvd1689m",
+  "experiment_id": "stage1_dino_tiny_ce_256",
+  "model_key": "dino_tiny",
+  "resolution": 256,
+  "canonical_state": "EMA",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "semantic_manifest_fingerprint": "7c368e6e3d8be3bb3a9a3a5f961075d4faa125bcac2e98a3b55e1a1c61f1c523",
+  "historical_index_semantics": "class_map_index",
+  "classifier_weight_key": "head.weight",
+  "classifier_shape": [
+    120,
+    768
+  ],
+  "feature_dimension": 768,
+  "not_inferred_from_shape_only": true,
+  "output_order_transform": "none",
+  "historical_source_full_hashes": {
+    "v7_trainer_sha256": "a1910fb38f3f7114b8ec607b5ed0408ddaf6abda39b8c29e8819e79b2259b83c",
+    "final_qa_engine_sha256": "9b82b14303a6abb90ac64914b04f44a6d63ee56b12bc4c5a58957356a2ba8786"
+  },
+  "historical_evidence_sources": [
+    {
+      "kind": "historical_v7_trainer_source_excerpt",
+      "path": "historical_v7_teacher_semantics_excerpt.txt",
+      "sha256": "56cd4a81a6bc6e07157dc50ddda26d1b0f350b50633796428766280dfa6f2367"
+    },
+    {
+      "kind": "certified_final_qa_loader_source_excerpt",
+      "path": "historical_final_qa_teacher_loader_excerpt.txt",
+      "sha256": "45bb0e4636bd7bae8d5df9bc624e5c5a4cb1f28a10c314a8116fa13a150807d9"
+    }
+  ]
+}
