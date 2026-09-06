@@ -5,6 +5,8 @@ import json
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +19,7 @@ from cropcop_je.frozen_v1_manifest import (
     load_frozen_v1_rows,
     validate_frozen_v1_column_contract,
 )
+from cropcop_je.persistence import validate_durable_access_plan
 
 
 def _sha(path: Path) -> str:
@@ -123,7 +126,42 @@ class FrozenV1ManifestRemediationTests(unittest.TestCase):
         self.assertIn("load_frozen_v1_rows(", source)
         self.assertIn('ap.add_argument("--label-column", required=True)', source)
 
-    def test_09_first_run_envelope_publication_assignment_is_reachable(self):
+    def test_09_private_durable_target_is_required(self):
+        resolved = {"CAL": "owner/cropcop-je-cal"}
+        env = {"KAGGLE_USERNAME": "owner", "KAGGLE_KEY": "fixture"}
+        with patch(
+            "cropcop_je.g1_publication.preflight_private_target",
+            side_effect=RuntimeError("target is not private"),
+        ), patch(
+            "cropcop_je.persistence.subprocess.run",
+            return_value=SimpleNamespace(returncode=0, stdout="", stderr=""),
+        ):
+            report = validate_durable_access_plan("kaggle-dataset", resolved, env=env)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertTrue(
+            any("private-target preflight failed" in e for e in report["errors"])
+        )
+
+    def test_10_private_durable_target_and_cli_read_pass(self):
+        resolved = {"CAL": "owner/cropcop-je-cal"}
+        env = {"KAGGLE_USERNAME": "owner", "KAGGLE_KEY": "fixture"}
+        with patch(
+            "cropcop_je.g1_publication.preflight_private_target",
+            return_value={
+                "status": "PASS",
+                "authoritative_is_private": True,
+                "current_version_number": 1,
+            },
+        ), patch(
+            "cropcop_je.persistence.subprocess.run",
+            return_value=SimpleNamespace(returncode=0, stdout="", stderr=""),
+        ):
+            report = validate_durable_access_plan("kaggle-dataset", resolved, env=env)
+        self.assertEqual(report["status"], "PASS", report["errors"])
+        self.assertTrue(report["checks"]["CAL"]["authoritative_is_private"])
+        self.assertTrue(report["checks"]["CAL"]["authenticated_read"])
+
+    def test_11_first_run_envelope_publication_assignment_is_reachable(self):
         source = (ROOT / "journal_extension/kaggle/run_envelope.py").read_text(encoding="utf-8")
         guard = source.index(
             'if prior_bundle is not None and prior_control_before != _prior_control_fingerprint(prior_bundle):'
