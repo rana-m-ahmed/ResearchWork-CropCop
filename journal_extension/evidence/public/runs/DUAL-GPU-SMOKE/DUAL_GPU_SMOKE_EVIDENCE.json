@@ -33,6 +33,7 @@
   "errors": [],
   "g1_executed": false,
   "g2_executed": false,
+  "git_publication_status": "PASS",
   "kaggle_run_type": "Batch",
   "no_git_child_publication": true,
   "no_output_collision": true,
@@ -53,6 +54,7 @@
       "uuid": "GPU-bc582738-281e-34b3-5d31-875316f20a63"
     }
   ],
+  "public_safe_evidence_branch": "run-evidence/DUAL-GPU-SMOKE",
   "qualification_id": "MGPU-DUAL-SMOKE-T4X2-V1",
   "r04_r05_executed": false,
   "restricted_cropcop_data_accessed": false,
