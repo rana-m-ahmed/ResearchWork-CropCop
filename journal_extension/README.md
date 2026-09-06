@@ -12,9 +12,9 @@ are verified before use; V1 test and sealed external surfaces are not resolvable
 
 
 <!-- QA1_OPERATOR_BEGIN -->
-## Current Stage-01A-G1P-v2 operator path
+## Current Stage-01A-G1P-v2.1 operator path
 
-**Frozen execution source:** `b89144d8826b6c61c3be7a91cac08681b1b4a99c`  
+**Frozen execution source:** `3c71331494b3e031bbbbc3f08d27cd2605c31097`  
 **Dependency lock:** `6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37`
 
 Repository closure is followed first by the separate, non-qualifying CPU `G1_INPUT_READINESS.json` job. After independent readiness PASS, final-source qualification proceeds:
