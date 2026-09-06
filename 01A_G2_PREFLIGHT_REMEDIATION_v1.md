@@ -1,6 +1,6 @@
 # Stage-01A G2 Preflight Remediation v1
 
-**Status:** DRAFT-PENDING-CI  
+**Status:** LOCKED — PRE-FREEZE CI PASS  
 **Date:** 2026-09-06  
 **Prior frozen execution source:** `3a90234f66ee09ed25141d5c45c7ed38971d69e5`  
 **Scientific authority:** `EAAI-JE-SDL-v2.1-QA`  
@@ -141,3 +141,19 @@ This replay is required by the integrity architecture, not because the prior pas
 ## Runtime-change moratorium after re-freeze
 
 After the repaired source is frozen, no further source change is authorized unless a new execution produces a concrete earliest-causal defect attributable to the frozen source. Warnings, style changes, speculative hardening, and convenience changes are insufficient grounds for another source SHA.
+
+
+## Pre-freeze validation closure
+
+The consolidated repaired runtime state at `1d6ce71c62411132e0b32643fd4f9bcc2169abc1` passed workflow **Validate public evidence #257**:
+
+- repository/static contract: PASS;
+- science-diff + amendment: PASS;
+- canonical notebook compile/parity: PASS;
+- QA1 Waves A/B/C: PASS;
+- MGPU envelope contract: PASS;
+- complete CPU-safe suite: **337/337 PASS**;
+- exact Kaggle 2.2.4 API contract: PASS;
+- offline DINOv3/Transformers compatibility: PASS.
+
+The next commit containing this closure is documentation/governance only and may be selected as the immutable repaired execution source. No further runtime change is authorized before replay qualification.
