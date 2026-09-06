@@ -138,7 +138,7 @@ CROPCOP_EXECUTION_PHASE=calibration-dual
 CROPCOP_G1_INPUT_ROOT=/kaggle/input/<sealed-g1-dataset>
 ```
 
-The parent requires exact `G1_PACKAGE.tar` + `G1_PACKAGE_MANIFEST.json`, verifies and safe-extracts them, then executes the complete G1 barrier before GPU child launch. Do not attach RFDV downstream after G1.
+The parent accepts either the raw exact `G1_PACKAGE.tar` + `G1_PACKAGE_MANIFEST.json` transport or Kaggle's archive-expanded `G1_PACKAGE/` + root manifest representation. Expanded transport is accepted only after the member set, per-member byte counts/SHA-256 values, and deterministic reconstructed tar SHA/size exactly match the signed manifest; it then executes the complete G1 barrier before GPU child launch. Do not attach RFDV downstream after G1.
 
 Terminal Smoke-B + dual-smoke evidence, production V1 training/validation inputs, calibration inputs, and durable-store configuration remain required by the frozen execution source.
 
