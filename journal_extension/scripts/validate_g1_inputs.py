@@ -22,7 +22,7 @@ from cropcop_je.g1 import (
 )
 from cropcop_je.g1_inputs import input_identity_summary, resolve_creation_inputs
 from cropcop_je.g1_package import readiness_transport_dry_run
-from cropcop_je.g1_publication import preflight_private_target
+from cropcop_je.g1_publication import readiness_private_target_probe
 from cropcop_je.hashing import sha256_file
 from cropcop_je.source_state import verify_clean_source
 
@@ -75,7 +75,7 @@ def main() -> int:
         )
 
     inputs = resolve_creation_inputs(ROOT, os.environ)
-    private_target = preflight_private_target(
+    private_target = readiness_private_target_probe(
         inputs.private_dataset_slug,
         env=os.environ,
     )
