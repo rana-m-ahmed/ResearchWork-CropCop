@@ -1,0 +1,105 @@
+{
+  "checkpoint_bytes": 3749,
+  "checkpoint_identity": {
+    "authority_id": "NON_SCIENTIFIC_INFRASTRUCTURE",
+    "experiment_id": "INFRA-SMOKE",
+    "lane_id": "K1",
+    "qualification_id": "INFRA-SMOKE-3c71331494b3-f21b5d070015",
+    "scientific": false,
+    "source_git_commit": "3c71331494b3e031bbbbc3f08d27cd2605c31097",
+    "synthetic_only": true
+  },
+  "checkpoint_identity_sha256": "aa23be0b0aa613fa06b787aeac9fdb518c5b693a7e11424f070c832cacf8c364",
+  "checkpoint_local_verification": "PASS",
+  "checkpoint_save_seconds": 0.015409320999992815,
+  "checkpoint_sha256": "bd00d6105fefe9475da2727eb8868a3c2bf9accb311e582222fa51e51ca69ecf",
+  "created_at_utc": "2026-09-06T07:25:48.222443+00:00",
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "environment": {
+    "cuda_available": true,
+    "cuda_device_count": 2,
+    "cuda_runtime": "13.0",
+    "cudnn": 92000,
+    "execution": {},
+    "kaggle": {
+      "KAGGLE_CONTAINER_NAME": "kaggle_73HbRiYHeFPU7ZNlzwqcnNXYPAu9uRh7RdK7dR1VY-347650831-webtier",
+      "KAGGLE_DOCKER_IMAGE": "gcr.io/kaggle-gpu-images/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
+      "KAGGLE_KERNEL_RUN_TYPE": "Batch"
+    },
+    "nvidia_smi": {
+      "available": true,
+      "gpus": [
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-67ae99fa-f122-9507-116f-9a77ec907f5e"
+        },
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-3045d38a-2a9c-e032-f773-a23fa6cfbf73"
+        }
+      ]
+    },
+    "packages": {
+      "Pillow": "12.3.0",
+      "huggingface-hub": "1.30.0",
+      "kaggle": "2.2.4",
+      "numpy": "2.5.2",
+      "safetensors": "0.8.0",
+      "timm": "1.0.26",
+      "torch": "2.12.1",
+      "torchvision": "0.27.1"
+    },
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+    "python": "3.12.13",
+    "python_executable": "python3",
+    "torch_cuda_devices": [
+      {
+        "capability": [
+          7,
+          5
+        ],
+        "index": 0,
+        "name": "Tesla T4",
+        "total_memory": 15636037632
+      },
+      {
+        "capability": [
+          7,
+          5
+        ],
+        "index": 1,
+        "name": "Tesla T4",
+        "total_memory": 15636037632
+      }
+    ]
+  },
+  "environment_identity_sha256": "407b3bc7be03726175323f0269a8d4cd0e31d7fe8be45ce23e7bd8716acba6a9",
+  "export_integrity": "PENDING",
+  "g1_executed": false,
+  "g2_executed": false,
+  "git_publication_status": "PENDING",
+  "kaggle_run_type": "Batch",
+  "lane": "K1",
+  "mode": "WRITE",
+  "notebook_session": {
+    "elapsed_seconds": 149.65899070199998,
+    "finalization_margin_seconds": 3600.0,
+    "hard_limit_seconds": 43200.0,
+    "remaining_hard_seconds": 43050.341004325,
+    "remaining_safe_seconds": 39450.341006041,
+    "started_monotonic": 829.202696155
+  },
+  "optimizer_step": 3,
+  "qualification_id": "INFRA-SMOKE-3c71331494b3-f21b5d070015",
+  "r04_r05_executed": false,
+  "recovery_candidate": "latest",
+  "restricted_cropcop_data_accessed": false,
+  "schema_version": "2.0",
+  "scientific": false,
+  "source_git_sha": "3c71331494b3e031bbbbc3f08d27cd2605c31097",
+  "source_tree_sha": "abd836508fb2e7fdc39478c4d242d52322a2dd50",
+  "status": "PASS",
+  "synthetic_unprotected_data_only": true
+}
