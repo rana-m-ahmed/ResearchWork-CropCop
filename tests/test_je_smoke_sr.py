@@ -838,62 +838,46 @@ class SmokeSRTests(unittest.TestCase):
         self.assertIn("legacy_alias_false", g1_source)
         self.assertIn("frozen-V1 identity unexpectedly records V1-test access", g1_source)
 
-    def test_73_legacy_g1_identity_compat_accepts_only_explicit_false_alias(self):
-        checker = self._wrapper_function("_legacy_g1_identity_explicitly_records_no_test_access")
-        with tempfile.TemporaryDirectory() as td:
-            evidence = Path(td)
-            identity = evidence / "FROZEN_V1_IDENTITY.json"
-            identity.write_text(json.dumps({"protected_test_accessed_during_g1": False}))
-            self.assertTrue(checker(evidence))
-            identity.write_text(json.dumps({"protected_test_accessed_during_g1": True}))
-            self.assertFalse(checker(evidence))
-            identity.write_text(json.dumps({"protected_test_accessed_during_g1": False, "v1_test_accessed": False}))
-            self.assertFalse(checker(evidence))
-            identity.write_text(json.dumps({"protected_test_accessed_during_g1": False, "v1_test_accessed": True}))
-            self.assertFalse(checker(evidence))
+    def test_73_v22_wrapper_has_no_legacy_g1_identity_compatibility_path(self):
+        self.assertNotIn("_legacy_g1_identity_explicitly_records_no_test_access", self.code)
+        self.assertNotIn("_G1_COMPAT_SITECUSTOMIZE", self.code)
+        self.assertNotIn("_activate_g1_legacy_identity_compat", self.code)
+        self.assertNotIn("protected_test_accessed_during_g1=false accepted", self.code)
 
-    def test_74_sitecustomize_compat_is_exact_error_only_and_read_only(self):
-        start = self.code.index('_G1_COMPAT_SITECUSTOMIZE = r"""')
-        end = self.code.index("def _activate_g1_legacy_identity_compat", start)
-        compat = self.code[start:end]
-        self.assertIn('frozen-V1 identity unexpectedly records V1-test access', compat)
-        self.assertIn('"v1_test_accessed" not in identity', compat)
-        self.assertIn('identity.get("protected_test_accessed_during_g1") is False', compat)
-        self.assertIn("errors.remove(_marker)", compat)
-        self.assertNotIn("errors.clear()", compat)
-        self.assertNotIn("G1_MODEL_IDENTITY_SEAL.json", compat)
-        self.assertNotIn("identity_evidence_sha256", compat)
-        self.assertNotIn("g1_seal_sha256", compat)
+    def test_74_v22_wrapper_has_no_sitecustomize_or_pythonpath_injection(self):
+        self.assertNotIn("sitecustomize.py", self.code)
+        self.assertNotIn("CROPCOP_COMPAT_REPO_ROOT", self.code)
+        self.assertNotIn('Path(OUTPUT_ROOT).resolve() / "wrapper-compat"', self.code)
+        self.assertNotIn("_cropcop_g1_legacy_identity_compat", self.code)
 
-    def test_75_g1_compat_activation_is_outside_checkout_and_probed(self):
-        start = self.code.index("def _activate_g1_legacy_identity_compat")
-        end = self.code.index('\n\nif EXECUTION_PHASE == "dual-gpu-smoke"', start)
-        activate = self.code[start:end]
-        self.assertIn('Path(OUTPUT_ROOT).resolve() / "wrapper-compat"', activate)
-        self.assertIn("G1 compatibility root must remain outside the Git checkout", activate)
-        self.assertIn("_cropcop_g1_legacy_identity_compat", activate)
-        self.assertIn("startup probe: PASS", activate)
+    def test_75_v22_g1_uses_canonical_frozen_identity_without_wrapper_interception(self):
+        seal_source = (ROOT / "journal_extension/scripts/seal_g1.py").read_text()
+        self.assertIn('"v1_test_accessed": False', seal_source)
+        self.assertNotIn('"protected_test_accessed_during_g1": False', seal_source)
+        self.assertIn('elif EXECUTION_PHASE == "g1":', self.code)
+        self.assertIn('run_g1.py', self.code)
+        self.assertNotIn("_activate_g1_legacy_identity_compat(repo_workdir)", self.code)
 
-    def test_76_g1_compat_covers_g1_calibration_and_principal(self):
-        self.assertIn('if EXECUTION_PHASE in {"g1", "calibration-dual", "principal-dual"}:', self.code)
-        activation = self.code.index("_activate_g1_legacy_identity_compat(repo_workdir)")
-        self.assertLess(activation, self.code.rindex("run_g1.py"))
-        self.assertLess(activation, self.code.rindex("run_envelope.py"))
+    def test_76_v22_downstream_phases_have_no_legacy_compat_activation(self):
+        self.assertIn('elif EXECUTION_PHASE in {"calibration-dual", "principal-dual"}:', self.code)
+        self.assertIn("run_envelope.py", self.code)
+        self.assertNotIn("_activate_g1_legacy_identity_compat", self.code)
+        self.assertNotIn("_G1_COMPAT_SITECUSTOMIZE", self.code)
 
-    def test_77_g1_compat_does_not_mutate_frozen_source_or_seal(self):
-        start = self.code.index('_G1_COMPAT_SITECUSTOMIZE = r"""')
-        end = self.code.index("def _activate_g1_legacy_identity_compat", start)
-        compat = self.code[start:end]
-        self.assertNotIn("write_text(", compat)
+    def test_77_pre_g1_cleanup_preserves_frozen_source_binding(self):
         expected = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"
+        generator = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text()
+        self.assertIn(f'MGPU_EXECUTION_SOURCE_SHA = "{expected}"', generator)
+        self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', generator)
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', self.code)
+        self.assertNotIn("_G1_COMPAT_SITECUSTOMIZE", generator)
 
-    def test_78_operator_docs_explain_legacy_identity_compatibility(self):
+    def test_78_operator_docs_are_synchronized_for_fresh_v22_g1(self):
         guide = (ROOT / "journal_extension/kaggle/README_SMOKE.md").read_text()
-        self.assertIn("legacy schema-name mismatch", guide)
-        self.assertIn("protected_test_accessed_during_g1=false", guide)
-        self.assertIn("v1_test_accessed is False", guide)
-        self.assertIn("does not modify the G1 seal", guide)
+        self.assertIn("CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0", guide)
+        self.assertIn("exists, is private, is owned by the authenticated account, and is ready", guide)
+        self.assertNotIn("legacy schema-name mismatch", guide)
+        self.assertNotIn("protected_test_accessed_during_g1=false accepted", guide)
 
 
 if __name__ == "__main__":
