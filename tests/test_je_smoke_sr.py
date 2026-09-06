@@ -377,7 +377,7 @@ class SmokeSRTests(unittest.TestCase):
         self.assertEqual(lines[2], "from pathlib import Path")
         self.assertEqual(lines[3], "from urllib.error import HTTPError, URLError")
         self.assertIn(
-            'AUTHORIZED_SOURCE_SHA = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"',
+            'AUTHORIZED_SOURCE_SHA = "3a90234f66ee09ed25141d5c45c7ed38971d69e5"',
             lines,
         )
         for token in (
@@ -738,7 +738,7 @@ class SmokeSRTests(unittest.TestCase):
 
     def test_58_g1_wrapper_remediation_preserves_frozen_source_binding(self):
         generator = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text()
-        expected = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"
+        expected = "3a90234f66ee09ed25141d5c45c7ed38971d69e5"
         self.assertIn(f'MGPU_EXECUTION_SOURCE_SHA = "{expected}"', generator)
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', generator)
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', self.code)
@@ -822,7 +822,7 @@ class SmokeSRTests(unittest.TestCase):
         self.assertIn("Kaggle dataset creation as asynchronous", guide)
 
     def test_71_async_target_remediation_preserves_frozen_source_binding(self):
-        expected = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"
+        expected = "3a90234f66ee09ed25141d5c45c7ed38971d69e5"
         generator = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text()
         self.assertIn(f'MGPU_EXECUTION_SOURCE_SHA = "{expected}"', generator)
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', generator)
@@ -865,7 +865,7 @@ class SmokeSRTests(unittest.TestCase):
         self.assertNotIn("_G1_COMPAT_SITECUSTOMIZE", self.code)
 
     def test_77_pre_g1_cleanup_preserves_frozen_source_binding(self):
-        expected = "5d70f85c2f1cd5b447040ede1eaeb4ad5331bca3"
+        expected = "3a90234f66ee09ed25141d5c45c7ed38971d69e5"
         generator = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text()
         self.assertIn(f'MGPU_EXECUTION_SOURCE_SHA = "{expected}"', generator)
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', generator)
