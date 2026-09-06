@@ -14,10 +14,19 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from cropcop_je.g1 import validate_v1_test_access_identity
-from cropcop_je.g1_package import G1Package
+from cropcop_je.g1_package import (
+    EXPANDED_PACKAGE_DIR,
+    G1Package,
+    G1PackageError,
+    MANIFEST_NAME,
+    create_g1_package,
+    mount_g1_input,
+    reconstruct_expanded_g1_package,
+)
 from cropcop_je.g1_publication import (
     G1PublicationError,
     G1RemoteMismatch,
+    _download_expanded_transport,
     _require_transport_inventory,
     _version_ref,
     ensure_private_target,
@@ -575,6 +584,160 @@ class TargetSettlementTests(unittest.TestCase):
                     AssertionError("API called")
                 ),
             )
+
+
+
+class ExpandedTransportRegressionTests(unittest.TestCase):
+    def _fixture(self, root: Path):
+        bundle = root / "bundle"
+        bundle.mkdir()
+        seal = {
+            "source_git_sha": "a" * 40,
+            "dependency_lock_sha256": "b" * 64,
+            "g1_seal_sha256": "c" * 64,
+        }
+        (bundle / "G1_MODEL_IDENTITY_SEAL.json").write_text(
+            json.dumps(seal, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        evidence = bundle / "evidence"
+        evidence.mkdir()
+        (evidence / "fixture.json").write_text(
+            json.dumps({"status": "PASS"}, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        transport = root / "transport"
+        package = create_g1_package(bundle, transport)
+
+        expanded = root / "expanded"
+        expanded.mkdir()
+        expanded_dir = expanded / EXPANDED_PACKAGE_DIR
+        expanded_dir.mkdir()
+        import tarfile
+        with tarfile.open(package.package_path, "r:") as archive:
+            archive.extractall(expanded_dir)
+        (expanded / MANIFEST_NAME).write_bytes(
+            package.manifest_path.read_bytes()
+        )
+        return package, expanded
+
+    def test_26_kaggle_expanded_transport_reconstructs_exact_tar(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            package, expanded = self._fixture(root)
+            reconstructed = reconstruct_expanded_g1_package(
+                expanded, root / "reconstructed"
+            )
+            self.assertEqual(
+                reconstructed.manifest["package_sha256"],
+                package.manifest["package_sha256"],
+            )
+            self.assertEqual(
+                reconstructed.package_path.read_bytes(),
+                package.package_path.read_bytes(),
+            )
+
+    def test_27_kaggle_expanded_transport_tamper_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            _package, expanded = self._fixture(root)
+            target = (
+                expanded
+                / EXPANDED_PACKAGE_DIR
+                / "evidence"
+                / "fixture.json"
+            )
+            target.write_text('{"status":"FAIL"}\n', encoding="utf-8")
+            with self.assertRaises(G1PackageError):
+                reconstruct_expanded_g1_package(
+                    expanded, root / "reconstructed"
+                )
+
+    def test_28_mount_accepts_exact_kaggle_expanded_representation(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            package, expanded = self._fixture(root)
+            bundle, recovered = mount_g1_input(
+                expanded, root / "mounted"
+            )
+            self.assertTrue(
+                (bundle / "G1_MODEL_IDENTITY_SEAL.json").is_file()
+            )
+            self.assertEqual(
+                recovered.manifest["package_sha256"],
+                package.manifest["package_sha256"],
+            )
+
+    def test_29_publication_download_validates_exact_expanded_inventory(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            package, expanded = self._fixture(root)
+            inventory = [
+                {"name": MANIFEST_NAME, "bytes": (expanded / MANIFEST_NAME).stat().st_size}
+            ]
+            for row in package.manifest["members"]:
+                path = expanded / EXPANDED_PACKAGE_DIR / row["path"]
+                inventory.append(
+                    {
+                        "name": f"{EXPANDED_PACKAGE_DIR}/{row['path']}",
+                        "bytes": path.stat().st_size,
+                    }
+                )
+
+            class Api:
+                def dataset_download_file(
+                    self, version_ref, name, path, force=True, quiet=True
+                ):
+                    source = expanded.joinpath(*name.split("/"))
+                    target = Path(path) / Path(name).name
+                    target.write_bytes(source.read_bytes())
+
+            recovered = _download_expanded_transport(
+                Api(),
+                "owner/dataset/3",
+                inventory,
+                root / "downloaded",
+            )
+            self.assertEqual(
+                recovered.manifest["package_sha256"],
+                package.manifest["package_sha256"],
+            )
+            self.assertEqual(
+                recovered.package_path.read_bytes(),
+                package.package_path.read_bytes(),
+            )
+
+    def test_30_publication_rejects_expanded_inventory_extra_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            package, expanded = self._fixture(root)
+            inventory = [
+                {"name": MANIFEST_NAME, "bytes": (expanded / MANIFEST_NAME).stat().st_size},
+                {"name": "unexpected.txt", "bytes": 1},
+            ]
+            for row in package.manifest["members"]:
+                inventory.append(
+                    {
+                        "name": f"{EXPANDED_PACKAGE_DIR}/{row['path']}",
+                        "bytes": int(row["bytes"]),
+                    }
+                )
+
+            class Api:
+                def dataset_download_file(
+                    self, version_ref, name, path, force=True, quiet=True
+                ):
+                    source = expanded.joinpath(*name.split("/"))
+                    target = Path(path) / Path(name).name
+                    target.write_bytes(source.read_bytes())
+
+            with self.assertRaises(G1RemoteMismatch):
+                _download_expanded_transport(
+                    Api(),
+                    "owner/dataset/3",
+                    inventory,
+                    root / "downloaded",
+                )
 
 
 class SourceArchitectureTests(unittest.TestCase):
