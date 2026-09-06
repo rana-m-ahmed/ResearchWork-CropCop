@@ -157,6 +157,8 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check --no-input torch==2.12.1 torchvision==0.27.1 timm==1.0.26 numpy==2.5.2 Pillow==12.3.0 safetensors==0.8.0 kaggle==2.2.4 huggingface-hub==1.30.0 transformers==5.0.0
           python -m pip check
+      - name: Verify exact Kaggle 2.2.4 publication API contract
+        run: python journal_extension/scripts/check_kaggle_2_2_4_contract.py
       - name: Verify offline DINOv3 ConvNeXt candidate compatibility
         env:
           HF_HUB_OFFLINE: "1"
@@ -166,4 +168,6 @@ jobs:
         if: always()
         with:
           name: transformers-candidate-report
-          path: transformers-candidate-report.json
+          path: |
+            transformers-candidate-report.json
+            kaggle-api-contract-report.json
