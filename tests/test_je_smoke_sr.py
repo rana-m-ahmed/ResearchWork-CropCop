@@ -829,11 +829,13 @@ class SmokeSRTests(unittest.TestCase):
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', self.code)
 
 
-    def test_72_frozen_g1_identity_schema_mismatch_is_documented_exactly(self):
+    def test_72_frozen_g1_identity_schema_is_canonicalized_in_source(self):
         seal_source = (ROOT / "journal_extension/scripts/seal_g1.py").read_text()
         g1_source = (ROOT / "journal_extension/src/cropcop_je/g1.py").read_text()
-        self.assertIn('"protected_test_accessed_during_g1": False', seal_source)
-        self.assertIn('frozen_v1.get("v1_test_accessed") is not False', g1_source)
+        self.assertIn('"v1_test_accessed": False', seal_source)
+        self.assertNotIn('"protected_test_accessed_during_g1": False', seal_source)
+        self.assertIn("validate_v1_test_access_identity", g1_source)
+        self.assertIn("legacy_alias_false", g1_source)
         self.assertIn("frozen-V1 identity unexpectedly records V1-test access", g1_source)
 
     def test_73_legacy_g1_identity_compat_accepts_only_explicit_false_alias(self):
