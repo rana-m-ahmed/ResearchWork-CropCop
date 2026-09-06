@@ -51,6 +51,10 @@ def validate_calibration_summary(summary: dict[str, Any]) -> list[str]:
             errors.append("teacher calibration checkpoint SHA mismatch")
         if len(str(summary.get("teacher_factory_bundle_sha256", ""))) != 64:
             errors.append("teacher calibration factory bundle SHA missing/invalid")
+    if cid == "CAL-CNXTT":
+        cnxtt = str(summary.get("cnxtt_pretrained_sha256", ""))
+        if len(cnxtt) != 64 or not cnxtt.startswith("983f1562"):
+            errors.append("ConvNeXt-Tiny calibration pretrained SHA missing/invalid")
     return errors
 
 
@@ -70,6 +74,7 @@ def build_g2_barrier(summaries: list[dict[str, Any]]) -> dict[str, Any]:
     g1s = values("g1_seal_sha256")
     deps = values("dependency_lock_sha256")
     mnv4 = values("mnv4_pretrained_sha256")
+    cnxtt_sha = by_id.get("CAL-CNXTT", {}).get("cnxtt_pretrained_sha256")
     for label, vals in (
         ("source Git SHA", commits),
         ("software stack", stacks),
@@ -125,6 +130,7 @@ def build_g2_barrier(summaries: list[dict[str, Any]]) -> dict[str, Any]:
         "mnv4_pretrained_sha256": next(iter(mnv4)) if len(mnv4) == 1 else None,
         "teacher_checkpoint_sha256": teacher_sha,
         "teacher_factory_bundle_sha256": factory_sha,
+        "cnxtt_pretrained_sha256": cnxtt_sha,
         "errors": errors,
         "forecast": forecast,
         "input_summary_sha256": {cid: sha256_json(by_id[cid]) for cid in REQUIRED_CALIBRATIONS if cid in by_id},
@@ -153,6 +159,9 @@ def validate_g2_barrier_object(barrier: dict[str, Any], *, expected_source_sha: 
         errors.append("G2 teacher checkpoint identity mismatch")
     if len(str(barrier.get("teacher_factory_bundle_sha256", ""))) != 64:
         errors.append("G2 teacher factory bundle identity missing")
+    cnxtt = str(barrier.get("cnxtt_pretrained_sha256", ""))
+    if len(cnxtt) != 64 or not cnxtt.startswith("983f1562"):
+        errors.append("G2 ConvNeXt-Tiny pretrained identity missing/invalid")
     return errors
 
 
