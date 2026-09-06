@@ -1,5 +1,5 @@
 {
-  "authorized_source_sha": "3a90234f66ee09ed25141d5c45c7ed38971d69e5",
+  "authorized_source_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
   "source_authority": "Frozen Stage-01A-G1P-v2.2 execution source; wrapper/test/documentation commits are not execution sources.",
   "phase_vocabulary": [
     "smoke-write",
@@ -27,5 +27,20 @@
   "rfdv_root": "<SET_FOR_G1_TO_CROPCOP_MODEL_RFDV_ROOT>",
   "final_v1_root": "<SET_FOR_G1_TO_FROZEN_FINAL_V1_ROOT>",
   "g1_private_dataset_slug": "<SET_FOR_G1_OWNER/PRIVATE_DATASET>",
-  "g1_input_root": "<SET_FOR_CALIBRATION_DUAL_AND_PRINCIPAL_DUAL>"
+  "g1_input_root": "<SET_FOR_CALIBRATION_DUAL_AND_PRINCIPAL_DUAL>",
+  "frozen_v1_columns": {
+    "row_id": "record_key",
+    "path": "portable_relpath",
+    "split": "split",
+    "label": "label"
+  },
+  "calibration_inputs": {
+    "manifest": "<SET_FINAL_V1>/audit/final_manifest.csv",
+    "class_map": "<SET_FINAL_V1>/audit/class_to_idx.json",
+    "image_root": "<SET_FINAL_V1>/dataset",
+    "cnxtt_pretrained": "<SET_OFFICIAL_CNXTT>/convnext_tiny-983f1562.pth",
+    "g2_summaries_dir": "/kaggle/working/cropcop-g2-summaries",
+    "durable_store_kind": "kaggle-dataset",
+    "durable_locator_template": "ranamuhammadahmed6/cropcop-je-{run_id_lower}"
+  }
 }
