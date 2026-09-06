@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .hashing import require_sha256, sha256_file, sha256_json
+from .tensor_identity import TENSOR_IDENTITY_ALGORITHM
 from .smoke_handoff import validate_terminal_smoke_b_evidence
 
 AUTHORITY_ID = "EAAI-JE-SDL-v2.1-QA"
@@ -95,6 +96,10 @@ def validate_pretrained_provenance(record: dict[str, Any], *, artifact_path: str
         errors.append("MobileNetV4 provenance source kind is not an official timm pretrained_cfg source")
     if not record.get("source_locator"):
         errors.append("MobileNetV4 provenance source locator missing")
+    if record.get("tensor_identity_algorithm") != TENSOR_IDENTITY_ALGORITHM:
+        errors.append("MobileNetV4 candidate tensor-identity algorithm mismatch")
+    if record.get("official_tensor_identity_algorithm") != TENSOR_IDENTITY_ALGORITHM:
+        errors.append("MobileNetV4 official tensor-identity algorithm mismatch")
     for field in (
         "artifact_sha256",
         "timm_pretrained_cfg_sha256",
@@ -301,6 +306,8 @@ def validate_g1_seal_object(seal: dict[str, Any]) -> list[str]:
         errors.append("G1 dual-GPU-smoke evidence SHA invalid")
 
     pretrained = seal.get("student", {}).get("pretrained", {})
+    if pretrained.get("tensor_identity_algorithm") != TENSOR_IDENTITY_ALGORITHM:
+        errors.append("G1 MobileNetV4 tensor-identity algorithm mismatch")
     for field in ("sha256", "provenance_sha256", "tensor_identity_sha256"):
         if len(str(pretrained.get(field, ""))) != 64:
             errors.append(f"G1 MobileNetV4 pretrained {field} invalid")
@@ -352,6 +359,31 @@ def validate_g1_seal_object(seal: dict[str, Any]) -> list[str]:
     if seal.get("g1_seal_sha256") != g1_seal_hash(seal):
         errors.append("G1 seal self-hash mismatch")
     return errors
+
+
+
+def validate_v1_test_access_identity(record: dict[str, Any]) -> tuple[list[str], str]:
+    errors: list[str] = []
+    canonical_present = "v1_test_accessed" in record
+    legacy_present = "protected_test_accessed_during_g1" in record
+    canonical = record.get("v1_test_accessed")
+    legacy = record.get("protected_test_accessed_during_g1")
+
+    if canonical_present:
+        if canonical is not False:
+            errors.append("frozen-V1 identity unexpectedly records V1-test access")
+        if legacy_present and legacy is not canonical:
+            errors.append("frozen-V1 identity canonical/legacy test-access fields contradict")
+        return errors, "canonical" if not legacy_present else "canonical_plus_legacy"
+
+    if legacy_present:
+        if legacy is not False:
+            errors.append("legacy frozen-V1 identity unexpectedly records V1-test access")
+            return errors, "invalid_legacy"
+        return errors, "legacy_alias_false"
+
+    errors.append("frozen-V1 identity lacks explicit V1-test access field")
+    return errors, "missing"
 
 
 def validate_mounted_g1(
@@ -483,8 +515,8 @@ def validate_mounted_g1(
             errors.append("frozen-V1 identity manifest SHA mismatch")
         if frozen_v1.get("class_map_sha256") != CLASS_MAP_SHA256:
             errors.append("frozen-V1 identity class-map SHA mismatch")
-        if frozen_v1.get("v1_test_accessed") is not False:
-            errors.append("frozen-V1 identity unexpectedly records V1-test access")
+        v1_access_errors, _v1_access_mode = validate_v1_test_access_identity(frozen_v1)
+        errors.extend(v1_access_errors)
         if sha256_json(frozen_v1) != seal.get("dataset", {}).get("identity_evidence_sha256"):
             errors.append("frozen-V1 identity evidence differs from G1 seal")
 
