@@ -112,6 +112,8 @@ Readiness may defer target creation; an actual G1 run must choose exactly `0` or
 
 When creation is explicitly allowed, the wrapper treats Kaggle dataset creation as asynchronous. It reuses an existing target, creates the minimal private target only when absence is established, and waits until authoritative private metadata is readable, the exact slug appears in the authenticated account's `mine` listing, and dataset status is ready/completed before invoking frozen G1.
 
+The frozen Stage-01A-G1P-v2.1 source contains one documented legacy schema-name mismatch in `FROZEN_V1_IDENTITY.json`: the sealer writes `protected_test_accessed_during_g1=false` while the mounted-G1 barrier checks `v1_test_accessed is False`. The canonical wrapper applies a read-only compatibility rule outside the Git checkout for G1 and downstream G1 revalidation. It suppresses only the exact false-positive barrier message when the canonical field is absent and the frozen field is explicitly `false`. It does not modify the G1 seal, identity evidence bytes, source checkout, scientific artifacts, or any other barrier error.
+
 Required secrets:
 
 - `CROPCOP_GITHUB_TOKEN`;

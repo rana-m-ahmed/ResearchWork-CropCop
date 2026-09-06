@@ -829,5 +829,70 @@ class SmokeSRTests(unittest.TestCase):
         self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', self.code)
 
 
+    def test_72_frozen_g1_identity_schema_mismatch_is_documented_exactly(self):
+        seal_source = (ROOT / "journal_extension/scripts/seal_g1.py").read_text()
+        g1_source = (ROOT / "journal_extension/src/cropcop_je/g1.py").read_text()
+        self.assertIn('"protected_test_accessed_during_g1": False', seal_source)
+        self.assertIn('frozen_v1.get("v1_test_accessed") is not False', g1_source)
+        self.assertIn("frozen-V1 identity unexpectedly records V1-test access", g1_source)
+
+    def test_73_legacy_g1_identity_compat_accepts_only_explicit_false_alias(self):
+        checker = self._wrapper_function("_legacy_g1_identity_explicitly_records_no_test_access")
+        with tempfile.TemporaryDirectory() as td:
+            evidence = Path(td)
+            identity = evidence / "FROZEN_V1_IDENTITY.json"
+            identity.write_text(json.dumps({"protected_test_accessed_during_g1": False}))
+            self.assertTrue(checker(evidence))
+            identity.write_text(json.dumps({"protected_test_accessed_during_g1": True}))
+            self.assertFalse(checker(evidence))
+            identity.write_text(json.dumps({"protected_test_accessed_during_g1": False, "v1_test_accessed": False}))
+            self.assertFalse(checker(evidence))
+            identity.write_text(json.dumps({"protected_test_accessed_during_g1": False, "v1_test_accessed": True}))
+            self.assertFalse(checker(evidence))
+
+    def test_74_sitecustomize_compat_is_exact_error_only_and_read_only(self):
+        start = self.code.index('_G1_COMPAT_SITECUSTOMIZE = r"""')
+        end = self.code.index("def _activate_g1_legacy_identity_compat", start)
+        compat = self.code[start:end]
+        self.assertIn('frozen-V1 identity unexpectedly records V1-test access', compat)
+        self.assertIn('"v1_test_accessed" not in identity', compat)
+        self.assertIn('identity.get("protected_test_accessed_during_g1") is False', compat)
+        self.assertIn("errors.remove(_marker)", compat)
+        self.assertNotIn("errors.clear()", compat)
+        self.assertNotIn("G1_MODEL_IDENTITY_SEAL.json", compat)
+        self.assertNotIn("identity_evidence_sha256", compat)
+        self.assertNotIn("g1_seal_sha256", compat)
+
+    def test_75_g1_compat_activation_is_outside_checkout_and_probed(self):
+        start = self.code.index("def _activate_g1_legacy_identity_compat")
+        end = self.code.index('\n\nif EXECUTION_PHASE == "dual-gpu-smoke"', start)
+        activate = self.code[start:end]
+        self.assertIn('Path(OUTPUT_ROOT).resolve() / "wrapper-compat"', activate)
+        self.assertIn("G1 compatibility root must remain outside the Git checkout", activate)
+        self.assertIn("_cropcop_g1_legacy_identity_compat", activate)
+        self.assertIn("startup probe: PASS", activate)
+
+    def test_76_g1_compat_covers_g1_calibration_and_principal(self):
+        self.assertIn('if EXECUTION_PHASE in {"g1", "calibration-dual", "principal-dual"}:', self.code)
+        activation = self.code.index("_activate_g1_legacy_identity_compat(repo_workdir)")
+        self.assertLess(activation, self.code.rindex("run_g1.py"))
+        self.assertLess(activation, self.code.rindex("run_envelope.py"))
+
+    def test_77_g1_compat_does_not_mutate_frozen_source_or_seal(self):
+        start = self.code.index('_G1_COMPAT_SITECUSTOMIZE = r"""')
+        end = self.code.index("def _activate_g1_legacy_identity_compat", start)
+        compat = self.code[start:end]
+        self.assertNotIn("write_text(", compat)
+        expected = "3c71331494b3e031bbbbc3f08d27cd2605c31097"
+        self.assertIn(f'AUTHORIZED_SOURCE_SHA = "{expected}"', self.code)
+
+    def test_78_operator_docs_explain_legacy_identity_compatibility(self):
+        guide = (ROOT / "journal_extension/kaggle/README_SMOKE.md").read_text()
+        self.assertIn("legacy schema-name mismatch", guide)
+        self.assertIn("protected_test_accessed_during_g1=false", guide)
+        self.assertIn("v1_test_accessed is False", guide)
+        self.assertIn("does not modify the G1 seal", guide)
+
+
 if __name__ == "__main__":
     unittest.main()
