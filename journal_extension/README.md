@@ -14,7 +14,7 @@ are verified before use; V1 test and sealed external surfaces are not resolvable
 <!-- QA1_OPERATOR_BEGIN -->
 ## Current Stage-01A-G1P-v2.2 operator path
 
-**Frozen execution source:** `3a90234f66ee09ed25141d5c45c7ed38971d69e5`  
+**Frozen execution source:** `f171309fc7e9dc22241ecc137ebbb8e4bcdc5433`  
 **Dependency lock:** `6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37`
 
 Repository closure is followed first by the separate, non-qualifying CPU `G1_INPUT_READINESS.json` job. After independent readiness PASS, final-source qualification proceeds:
@@ -41,6 +41,8 @@ Canonical operator phases remain exactly:
 - `principal-dual`
 
 Smoke A/B require only `CROPCOP_GITHUB_TOKEN`. The dual smoke is T4×2 and synthetic.
+
+For calibration/principal, the certified Final-V1 schema is frozen to `record_key`, `portable_relpath`, `split`, and `label`; numeric targets are derived only from the locked `class_to_idx.json`. Production Kaggle durable recovery targets must be private and owner-bound before launch.
 
 CPU G1 consumes exact `CROPCOP_RFDV_ROOT`, `CROPCOP_FINAL_V1_ROOT`, `CROPCOP_G1_PRIVATE_DATASET_SLUG`, terminal Smoke-B, and terminal dual-smoke evidence. The exact teacher path, teacher factory/lineage and official MNV4 preparation are source-controlled/resolved by the frozen implementation.
 
