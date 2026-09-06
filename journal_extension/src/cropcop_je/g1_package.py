@@ -12,6 +12,7 @@ from .hashing import sha256_file, sha256_json
 
 PACKAGE_NAME = "G1_PACKAGE.tar"
 MANIFEST_NAME = "G1_PACKAGE_MANIFEST.json"
+READINESS_PACKAGE_NAME = "G1_READINESS_TRANSPORT.tar"
 
 
 class G1PackageError(RuntimeError):
@@ -34,23 +35,57 @@ def _safe_rel(name: str) -> PurePosixPath:
     return rel
 
 
-def _bundle_files(bundle_dir: Path) -> list[tuple[str, Path]]:
+def _tree_files(root: Path) -> list[tuple[str, Path]]:
     files: list[tuple[str, Path]] = []
-    for path in sorted(bundle_dir.rglob("*"), key=lambda p: p.relative_to(bundle_dir).as_posix()):
+    for path in sorted(root.rglob("*"), key=lambda p: p.relative_to(root).as_posix()):
         if path.is_symlink():
-            raise G1PackageError(f"symlink forbidden in G1 package: {path}")
+            raise G1PackageError(f"symlink forbidden in G1 package transport: {path}")
         if path.is_dir():
             continue
         if not path.is_file():
             raise G1PackageError(f"unsupported G1 package member type: {path}")
-        rel = path.relative_to(bundle_dir).as_posix()
+        rel = path.relative_to(root).as_posix()
         _safe_rel(rel)
         files.append((rel, path))
     if not files:
-        raise G1PackageError("G1 package source bundle is empty")
+        raise G1PackageError("G1 package transport source tree is empty")
+    return files
+
+
+def _bundle_files(bundle_dir: Path) -> list[tuple[str, Path]]:
+    files = _tree_files(bundle_dir)
     if "G1_MODEL_IDENTITY_SEAL.json" not in {name for name, _ in files}:
         raise G1PackageError("G1 package source lacks G1_MODEL_IDENTITY_SEAL.json")
     return files
+
+
+def _write_deterministic_tar(
+    files: list[tuple[str, Path]],
+    package_path: Path,
+) -> list[dict]:
+    rows = [
+        {
+            "path": rel,
+            "type": "file",
+            "sha256": sha256_file(path),
+            "bytes": path.stat().st_size,
+        }
+        for rel, path in files
+    ]
+    with tarfile.open(package_path, "w", format=tarfile.PAX_FORMAT) as archive:
+        for rel, path in files:
+            data = path.read_bytes()
+            info = tarfile.TarInfo(rel)
+            info.size = len(data)
+            info.mtime = 0
+            info.uid = 0
+            info.gid = 0
+            info.uname = ""
+            info.gname = ""
+            info.mode = 0o644
+            info.type = tarfile.REGTYPE
+            archive.addfile(info, io.BytesIO(data))
+    return rows
 
 
 def _manifest_without_hash(manifest: dict) -> dict:
@@ -111,29 +146,7 @@ def create_g1_package(
         raise G1PackageError("refuse to overwrite existing G1 package transport")
 
     files = _bundle_files(bundle)
-    rows = [
-        {
-            "path": rel,
-            "type": "file",
-            "sha256": sha256_file(path),
-            "bytes": path.stat().st_size,
-        }
-        for rel, path in files
-    ]
-
-    with tarfile.open(package_path, "w", format=tarfile.PAX_FORMAT) as archive:
-        for rel, path in files:
-            data = path.read_bytes()
-            info = tarfile.TarInfo(rel)
-            info.size = len(data)
-            info.mtime = 0
-            info.uid = 0
-            info.gid = 0
-            info.uname = ""
-            info.gname = ""
-            info.mode = 0o644
-            info.type = tarfile.REGTYPE
-            archive.addfile(info, io.BytesIO(data))
+    rows = _write_deterministic_tar(files, package_path)
 
     seal = json.loads((bundle / "G1_MODEL_IDENTITY_SEAL.json").read_text(encoding="utf-8"))
     manifest = {
@@ -150,6 +163,68 @@ def create_g1_package(
     manifest["manifest_sha256"] = sha256_json(_manifest_without_hash(manifest))
     atomic_write_json(manifest_path, manifest)
     return G1Package(package_path=package_path, manifest_path=manifest_path, manifest=manifest)
+
+
+def readiness_transport_dry_run(
+    staging_dir: str | Path,
+    output_dir: str | Path,
+) -> dict:
+    staging = Path(staging_dir).resolve()
+    output = Path(output_dir).resolve()
+    if not staging.is_dir():
+        raise G1PackageError(f"readiness staging directory missing: {staging}")
+    output.mkdir(parents=True, exist_ok=True)
+    package_path = output / READINESS_PACKAGE_NAME
+    extracted = output / "readiness-extracted"
+    if package_path.exists() or (extracted.exists() and any(extracted.iterdir())):
+        raise G1PackageError("readiness transport target must be fresh")
+
+    files = _tree_files(staging)
+    rows = _write_deterministic_tar(files, package_path)
+    expected = {row["path"]: row for row in rows}
+    extracted.mkdir(parents=True, exist_ok=True)
+    observed: set[str] = set()
+
+    with tarfile.open(package_path, "r:") as archive:
+        for member in archive.getmembers():
+            name = member.name
+            _safe_rel(name)
+            if name in observed:
+                raise G1PackageError(f"duplicate readiness tar member: {name}")
+            observed.add(name)
+            if name not in expected:
+                raise G1PackageError(f"unexpected readiness tar member: {name}")
+            if not member.isfile() or member.issym() or member.islnk():
+                raise G1PackageError(f"non-regular readiness tar member forbidden: {name}")
+            row = expected[name]
+            if member.size != int(row["bytes"]):
+                raise G1PackageError(f"readiness tar member byte count mismatch: {name}")
+            source = archive.extractfile(member)
+            if source is None:
+                raise G1PackageError(f"cannot read readiness tar member: {name}")
+            target = extracted.joinpath(*PurePosixPath(name).parts)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(source.read())
+            if sha256_file(target) != row["sha256"]:
+                raise G1PackageError(f"readiness tar member SHA mismatch: {name}")
+
+    if observed != set(expected):
+        raise G1PackageError(
+            f"readiness tar member set mismatch; missing={sorted(set(expected) - observed)}"
+        )
+    return {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "transport": "deterministic_uncompressed_tar",
+        "package_basename": READINESS_PACKAGE_NAME,
+        "package_sha256": sha256_file(package_path),
+        "package_bytes": package_path.stat().st_size,
+        "member_count": len(rows),
+        "members": rows,
+        "safe_extract_verified": True,
+        "production_g1_seal_created": False,
+        "pair_initializations_created": False,
+    }
 
 
 def locate_g1_package(input_root: str | Path) -> G1Package:
