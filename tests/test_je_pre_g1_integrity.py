@@ -36,6 +36,9 @@ ORDER = "5" * 64
 BYTE_EV = "6" * 64
 PROV = "7" * 64
 SMOKE = "8" * 64
+DUAL_SMOKE = "d" * 64
+CANONICAL = "e" * 64
+TENSOR_ID = "f" * 64
 
 
 def valid_seal(source="a" * 40):
@@ -52,7 +55,7 @@ def valid_seal(source="a" * 40):
             "evidence_sha256": chr(96 + i) * 64,
         }
     seal = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "authority": {"id": AUTHORITY_ID, "sha256": AUTHORITY_SHA256},
         "source_git_sha": source,
         "dataset": {"manifest_sha256": MANIFEST_SHA256, "class_map_sha256": CLASS_MAP_SHA256},
@@ -67,6 +70,8 @@ def valid_seal(source="a" * 40):
                 "source_locator": "timm/mobilenetv4_conv_medium.e500_r256_in1k",
                 "timm_pretrained_cfg_sha256": "9" * 64,
                 "provenance_sha256": PROV,
+                "tensor_identity_sha256": TENSOR_ID,
+                "candidate_serialization_format": "safetensors_state_dict",
             },
         },
         "pair_initializations": pairs,
@@ -79,9 +84,13 @@ def valid_seal(source="a" * 40):
             "factory_bundle_sha256": FACTORY,
             "factory_manifest_sha256": "b" * 64,
             "class_order_evidence_sha256": ORDER,
+            "canonical_state": "EMA",
+            "canonical_state_evidence_sha256": CANONICAL,
+            "artifact_basename": "DINO_TEACHER.pt",
         },
         "dependency_lock_sha256": DEP,
         "infra_smoke_evidence_sha256": SMOKE,
+        "dual_gpu_smoke_evidence_sha256": DUAL_SMOKE,
         "sealed_at_utc": "2026-09-05T00:00:00+00:00",
     }
     seal["g1_seal_sha256"] = g1_seal_hash(seal)
