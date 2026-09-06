@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from collections import OrderedDict
 from pathlib import Path
@@ -10,17 +9,8 @@ import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.g1 import MNV4_MODEL_NAME, TIMM_VERSION
 from cropcop_je.hashing import sha256_file, sha256_json
+from cropcop_je.tensor_identity import TENSOR_IDENTITY_ALGORITHM, tensor_identity_sha256
 
-
-def tensor_identity_sha256(state: dict) -> str:
-    h = hashlib.sha256()
-    for key in sorted(state):
-        value = state[key].detach().cpu().contiguous()
-        h.update(key.encode("utf-8") + b"\0")
-        h.update(str(value.dtype).encode("ascii") + b"\0")
-        h.update(json.dumps(list(value.shape), separators=(",", ":")).encode("ascii") + b"\0")
-        h.update(value.numpy().tobytes(order="C"))
-    return h.hexdigest()
 
 
 def _cfg_dict(model) -> dict:
@@ -74,6 +64,7 @@ def main() -> int:
         "upstream_source_kind": source_kind,
         "upstream_source_locator": source_locator,
         "upstream_pretrained_cfg_sha256": sha256_json(cfg),
+        "tensor_identity_algorithm": TENSOR_IDENTITY_ALGORITHM,
         "tensor_identity_sha256": tensor_identity_sha256(state),
         "candidate_path": str(candidate),
         "candidate_basename": candidate.name,
