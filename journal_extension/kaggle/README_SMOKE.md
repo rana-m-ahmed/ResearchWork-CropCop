@@ -4,7 +4,7 @@ This is the **active** operator handoff. Historical Stage-01A-SR/MGPU-QA1 report
 
 Final generator-authorized Stage-01A-G1P-v2.2 execution source:
 
-`3a90234f66ee09ed25141d5c45c7ed38971d69e5`
+`f171309fc7e9dc22241ecc137ebbb8e4bcdc5433`
 
 Dependency lock:
 
@@ -20,7 +20,7 @@ Before final-source Smoke qualification, run the separate non-qualifying CPU rea
 
 - `CropCop-Model-RFDV`;
 - the frozen Final-V1 source;
-- the intended private G1 Kaggle Dataset slug/ownership policy. Target creation may be deferred to the actual G1 run only when the wrapper is explicitly configured with `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0`.
+- the intended private G1 Kaggle Dataset slug/ownership policy. Target creation is never implicit. If the target already exists, use `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0`; only an explicitly authorized first creation uses `1`.
 
 The readiness entrypoint is:
 
@@ -131,16 +131,75 @@ The frozen source automatically resolves the exact historical teacher path, froz
 
 ### `calibration-dual`
 
-Run on Kaggle T4×2. Attach the sealed private G1 Dataset and set:
+Run as a fresh Kaggle **Save Version → Save & Run All / Batch** job on **T4×2** with Internet enabled.
+
+Attach exactly:
+
+- the exact successful final-source Smoke-B Notebook Output;
+- the exact successful final-source dual-GPU-smoke Notebook Output;
+- the sealed private G1 Dataset version produced by the final-source G1;
+- `ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1`;
+- a Kaggle input containing the official TorchVision 0.27.1 `ConvNeXt_Tiny_Weights.IMAGENET1K_V1` file named exactly `convnext_tiny-983f1562.pth`.
+
+Do not attach RFDV downstream after G1.
+
+Set:
 
 ```text
 CROPCOP_EXECUTION_PHASE=calibration-dual
-CROPCOP_G1_INPUT_ROOT=/kaggle/input/<sealed-g1-dataset>
+CROPCOP_LANE=K1
+
+CROPCOP_SMOKE_B_INPUT_ROOT=/kaggle/input/<exact-final-source-smoke-b-output>
+CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT=/kaggle/input/<exact-final-source-dual-output>
+CROPCOP_G1_INPUT_ROOT=/kaggle/input/<sealed-final-source-g1-dataset>
+
+CROPCOP_MANIFEST=/kaggle/input/datasets/ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1/audit/final_manifest.csv
+CROPCOP_CLASS_MAP=/kaggle/input/datasets/ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1/audit/class_to_idx.json
+CROPCOP_IMAGE_ROOT=/kaggle/input/datasets/ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1/dataset
+
+CROPCOP_CNXTT_PRETRAINED=/kaggle/input/<official-cnxtt-input>/convnext_tiny-983f1562.pth
+
+CROPCOP_G2_SUMMARIES_DIR=/kaggle/working/cropcop-g2-summaries
+CROPCOP_DURABLE_STORE_KIND=kaggle-dataset
+CROPCOP_DURABLE_LOCATOR_TEMPLATE=ranamuhammadahmed6/cropcop-je-{run_id_lower}
 ```
 
-The parent accepts either the raw exact `G1_PACKAGE.tar` + `G1_PACKAGE_MANIFEST.json` transport or Kaggle's archive-expanded `G1_PACKAGE/` + root manifest representation. Expanded transport is accepted only after the member set, per-member byte counts/SHA-256 values, and deterministic reconstructed tar SHA/size exactly match the signed manifest; it then executes the complete G1 barrier before GPU child launch. Do not attach RFDV downstream after G1.
+The wrapper now freezes and exports the certified Final-V1 column contract automatically:
 
-Terminal Smoke-B + dual-smoke evidence, production V1 training/validation inputs, calibration inputs, and durable-store configuration remain required by the frozen execution source.
+```text
+record_key
+portable_relpath
+split
+label
+```
+
+Numeric targets are derived only from the hash-locked `class_to_idx.json`; there is no operator class-index column.
+
+Before the first G2 run, these three recovery targets must already exist, be **private**, belong to the authenticated Kaggle account, have a settled/ready version, and be readable:
+
+```text
+ranamuhammadahmed6/cropcop-je-cal-mnv4-direct
+ranamuhammadahmed6/cropcop-je-cal-mnv4-teacher
+ranamuhammadahmed6/cropcop-je-cal-cnxtt
+```
+
+Required secrets:
+
+- `CROPCOP_GITHUB_TOKEN`;
+- `KAGGLE_USERNAME`;
+- `KAGGLE_KEY`.
+
+Do not set `CROPCOP_ENVELOPE_INPUT_ROOT` for a first G2 attempt. That variable is reserved for validated continuation/recovery from a prior envelope.
+
+The parent accepts either the raw exact `G1_PACKAGE.tar` + `G1_PACKAGE_MANIFEST.json` transport or Kaggle's archive-expanded `G1_PACKAGE/` + root manifest representation. Expanded transport is accepted only after exact member, byte-count, SHA-256, deterministic reconstructed tar SHA and tar-size verification. It then executes the complete G1 barrier before GPU child launch.
+
+G2 launches the predeclared scheduling-only calibration envelope:
+
+- slot 0: `CAL-MNV4-DIRECT` (200 optimizer steps);
+- slot 1: `CAL-MNV4-TEACHER` (100 optimizer steps);
+- first freed T4: `CAL-CNXTT` (100 optimizer steps).
+
+The ConvNeXt control is non-scientific scheduling/context calibration and is bound to the official `convnext_tiny-983f1562.pth` identity. G2 does not consume the protected V1 test.
 
 ### `principal-dual`
 
