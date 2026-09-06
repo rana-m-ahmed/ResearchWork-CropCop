@@ -363,7 +363,7 @@ class SmokeSRTests(unittest.TestCase):
         self.assertEqual(lines[2], "from pathlib import Path")
         self.assertEqual(lines[3], "from urllib.error import HTTPError, URLError")
         self.assertIn(
-            'AUTHORIZED_SOURCE_SHA = "b89144d8826b6c61c3be7a91cac08681b1b4a99c"',
+            'AUTHORIZED_SOURCE_SHA = "3c71331494b3e031bbbbc3f08d27cd2605c31097"',
             lines,
         )
         for token in (
