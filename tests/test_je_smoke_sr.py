@@ -720,7 +720,9 @@ class SmokeSRTests(unittest.TestCase):
         self.assertIn('os.environ["CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET"]', g1_block)
 
     def test_56_g1_root_resolution_is_narrow_and_non_recursive(self):
-        resolver = inspect.getsource(self._wrapper_function("_resolve_g1_final_v1_root"))
+        start = self.code.index("def _resolve_g1_final_v1_root")
+        end = self.code.index("\ndef _validate_g1_rfdv_root", start)
+        resolver = self.code[start:end]
         self.assertNotIn("rglob", resolver)
         self.assertNotIn("glob(", resolver)
         self.assertIn('root / "CropCop_Final_v1"', resolver)
