@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-MGPU_EXECUTION_SOURCE_SHA = "3a90234f66ee09ed25141d5c45c7ed38971d69e5"
-AUTHORIZED_SOURCE_SHA = "3a90234f66ee09ed25141d5c45c7ed38971d69e5"
+MGPU_EXECUTION_SOURCE_SHA = "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433"
+AUTHORIZED_SOURCE_SHA = "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433"
 
 MARKDOWN = """# CropCop EAAI — Canonical Stage-01A-MGPU Kaggle Wrapper
 
@@ -28,7 +28,7 @@ from urllib.request import Request, urlopen
 # CROPCOP EAAI — KAGGLE OPERATOR CONFIGURATION
 # ============================================================
 # Frozen Stage-01A-G1P-v2.2 execution source. Wrapper commits are not execution sources.
-AUTHORIZED_SOURCE_SHA = "3a90234f66ee09ed25141d5c45c7ed38971d69e5"
+AUTHORIZED_SOURCE_SHA = "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433"
 LANE = os.environ.get("CROPCOP_LANE", "K1")
 EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "").strip()
 PRINCIPAL_ENVELOPE = os.environ.get("CROPCOP_PRINCIPAL_ENVELOPE", "").strip().upper()
@@ -84,6 +84,21 @@ G1_INPUT_ROOT = os.environ.get(
     "CROPCOP_G1_INPUT_ROOT",
     "<SET_AFTER_ATTACHING_SEALED_G1_DATASET>",
 )
+
+_FROZEN_V1_COLUMN_ENV = {
+    "CROPCOP_ROW_ID_COLUMN": "record_key",
+    "CROPCOP_PATH_COLUMN": "portable_relpath",
+    "CROPCOP_SPLIT_COLUMN": "split",
+    "CROPCOP_LABEL_COLUMN": "label",
+}
+if EXECUTION_PHASE in {"calibration-dual", "principal-dual"}:
+    for _name, _expected in _FROZEN_V1_COLUMN_ENV.items():
+        _observed = str(os.environ.get(_name, _expected)).strip()
+        if _observed != _expected:
+            raise RuntimeError(
+                f"{_name} is frozen to {_expected!r}; observed {_observed!r}"
+            )
+        os.environ[_name] = _expected
 
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 os.environ["CROPCOP_NOTEBOOK_STARTED_MONOTONIC"] = repr(time.monotonic())
