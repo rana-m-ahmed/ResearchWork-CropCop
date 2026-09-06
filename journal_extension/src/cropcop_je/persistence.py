@@ -216,6 +216,8 @@ def validate_durable_access_plan(
         if not username or not key:
             errors.append("Kaggle durable access requires KAGGLE_USERNAME and KAGGLE_KEY")
         else:
+            from .g1_publication import preflight_private_target
+
             cli_env = dict(env)
             cli_env["KAGGLE_CONFIG_DIR"] = cli_env.get("KAGGLE_CONFIG_DIR", str(Path.home() / ".kaggle"))
             for run_id, locator in resolved.items():
@@ -224,7 +226,9 @@ def validate_durable_access_plan(
                     "locator": locator,
                     "owner_matches_authenticated_user": owner.casefold() == username.casefold(),
                     "authenticated_read": False,
-                    "write_authorization_basis": "dataset owner identity",
+                    "authoritative_is_private": False,
+                    "private_metadata_verified": False,
+                    "write_authorization_basis": "private dataset owner identity",
                     "write_generation_mutated_by_preflight": False,
                 }
                 if not row["owner_matches_authenticated_user"]:
@@ -236,6 +240,16 @@ def validate_durable_access_plan(
                     errors.append(f"invalid Kaggle durable locator for {run_id}: {locator}")
                     checks[run_id] = row
                     continue
+                try:
+                    private_state = preflight_private_target(locator, env=env)
+                    row["authoritative_is_private"] = private_state.get("authoritative_is_private") is True
+                    row["private_metadata_verified"] = True
+                    row["current_version_number"] = private_state.get("current_version_number")
+                except Exception as exc:
+                    errors.append(
+                        f"Kaggle durable private-target preflight failed for {run_id}: "
+                        f"{type(exc).__name__}: {exc}"
+                    )
                 try:
                     cp = subprocess.run(
                         ["kaggle", "datasets", "files", "-d", locator],
