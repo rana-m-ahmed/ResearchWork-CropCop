@@ -14,11 +14,13 @@ from .g1 import validate_g1_seal_object
 from .g1_inputs import validate_private_slug
 from .g1_package import (
     G1Package,
+    EXPANDED_PACKAGE_DIR,
     G1PackageError,
     MANIFEST_NAME,
     PACKAGE_NAME,
     create_g1_package,
     locate_g1_package,
+    reconstruct_expanded_g1_package,
     safe_extract_g1_package,
     validate_package_manifest,
 )
@@ -580,29 +582,94 @@ def _require_transport_inventory(
     return rows
 
 
+def _download_exact_remote_file(
+    api, version_ref: str, name: str, output_dir: Path
+) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stage = output_dir / ".download-stage" / name.replace("/", "__")
+    if stage.exists():
+        shutil.rmtree(stage)
+    stage.mkdir(parents=True, exist_ok=False)
+    try:
+        api.dataset_download_file(
+            version_ref,
+            name,
+            path=str(stage),
+            force=True,
+            quiet=True,
+        )
+    except Exception as exc:
+        raise G1PublicationError(
+            f"failed to download {name} from exact version {version_ref}: "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
+    files = [path for path in stage.rglob("*") if path.is_file()]
+    if len(files) != 1:
+        raise G1PublicationError(
+            f"Kaggle exact-file download for {name} from {version_ref} "
+            f"materialized {len(files)} files; expected exactly one"
+        )
+    target = output_dir.joinpath(*name.split("/"))
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        raise G1PublicationError(
+            f"refuse to overwrite exact-version download target: {target}"
+        )
+    shutil.move(str(files[0]), str(target))
+    shutil.rmtree(stage)
+    return target
+
+
 def _download_required_transport(
     api, version_ref: str, output_dir: Path
 ) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
     for name in REQUIRED_REMOTE_FILES:
-        try:
-            api.dataset_download_file(
-                version_ref,
-                name,
-                path=str(output_dir),
-                force=True,
-                quiet=True,
-            )
-        except Exception as exc:
-            raise G1PublicationError(
-                f"failed to download {name} from exact version {version_ref}: "
-                f"{type(exc).__name__}: {exc}"
-            ) from exc
-        if not (output_dir / name).is_file():
-            raise G1PublicationError(
-                "Kaggle exact-file download did not materialize root-level "
-                f"{name} for {version_ref}"
-            )
+        _download_exact_remote_file(api, version_ref, name, output_dir)
+
+
+def _expanded_inventory_names(manifest: dict) -> list[str]:
+    return [
+        f"{EXPANDED_PACKAGE_DIR}/{row['path']}"
+        for row in manifest["members"]
+    ]
+
+
+def _download_expanded_transport(
+    api,
+    version_ref: str,
+    inventory: list[dict],
+    output_dir: Path,
+) -> G1Package:
+    manifest_path = _download_exact_remote_file(
+        api, version_ref, MANIFEST_NAME, output_dir
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    errors = validate_package_manifest(manifest)
+    if errors:
+        raise G1RemoteMismatch(
+            f"exact version {version_ref} expanded manifest invalid: "
+            + "; ".join(errors)
+        )
+    expected_names = [MANIFEST_NAME, *_expanded_inventory_names(manifest)]
+    observed_names = [row["name"] for row in inventory]
+    if sorted(observed_names) != sorted(expected_names):
+        raise G1RemoteMismatch(
+            f"exact version {version_ref} expanded transport inventory differs "
+            f"from manifest; observed={sorted(observed_names)}, "
+            f"expected={sorted(expected_names)}"
+        )
+    for name in expected_names[1:]:
+        _download_exact_remote_file(api, version_ref, name, output_dir)
+    reconstructed = output_dir.parent / f"{output_dir.name}-reconstructed"
+    if reconstructed.exists():
+        shutil.rmtree(reconstructed)
+    try:
+        return reconstruct_expanded_g1_package(output_dir, reconstructed)
+    except G1PackageError as exc:
+        raise G1RemoteMismatch(
+            f"exact version {version_ref} expanded transport reconstruction "
+            f"failed: {exc}"
+        ) from exc
 
 
 def _roundtrip_exact_version(
@@ -614,19 +681,32 @@ def _roundtrip_exact_version(
     work_root: Path,
 ) -> dict:
     version_ref = _version_ref(slug, version)
-    inventory = _require_transport_inventory(
-        _list_version_files(api, version_ref), version_ref
-    )
+    inventory = _list_version_files(api, version_ref)
+    names = [row["name"] for row in inventory]
     downloaded = work_root / f"downloaded-v{version}"
     if downloaded.exists():
         shutil.rmtree(downloaded)
-    _download_required_transport(api, version_ref, downloaded)
-    try:
-        remote = locate_g1_package(downloaded)
-    except G1PackageError as exc:
+
+    if names.count(PACKAGE_NAME) == 1:
+        _require_transport_inventory(inventory, version_ref)
+        _download_required_transport(api, version_ref, downloaded)
+        try:
+            remote = locate_g1_package(downloaded)
+        except G1PackageError as exc:
+            raise G1RemoteMismatch(
+                f"exact version {version_ref} transport is invalid: {exc}"
+            ) from exc
+        remote_transport_mode = "raw_tar"
+    elif names.count(PACKAGE_NAME) == 0 and names.count(MANIFEST_NAME) == 1:
+        remote = _download_expanded_transport(
+            api, version_ref, inventory, downloaded
+        )
+        remote_transport_mode = "kaggle_expanded_tar"
+    else:
         raise G1RemoteMismatch(
-            f"exact version {version_ref} transport is invalid: {exc}"
-        ) from exc
+            f"exact version {version_ref} has ambiguous G1 transport inventory: "
+            f"{names}"
+        )
 
     errors = validate_package_manifest(remote.manifest)
     if errors:
@@ -717,6 +797,7 @@ def _roundtrip_exact_version(
         "published_version_number": int(version),
         "published_version_ref": version_ref,
         "remote_required_file_inventory": inventory,
+        "remote_transport_mode": remote_transport_mode,
         "roundtrip_package_sha256": remote.manifest["package_sha256"],
         "roundtrip_member_count": len(remote.manifest["members"]),
         "roundtrip_verified": True,
@@ -1079,6 +1160,9 @@ def publish_and_roundtrip(
             "remote_required_file_inventory": roundtrip[
                 "remote_required_file_inventory"
             ],
+            "remote_transport_mode": roundtrip.get(
+                "remote_transport_mode", "raw_tar"
+            ),
             "mutation_outcome": mutation_outcome,
             "mutation_return_code": mutation_return_code,
             "reused_existing_exact_version": reused_existing,
