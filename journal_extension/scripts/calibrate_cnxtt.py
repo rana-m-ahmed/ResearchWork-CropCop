@@ -77,7 +77,18 @@ def main() -> int:
 
     require_sha256(args.manifest, MANIFEST_SHA256, "V1 manifest")
     require_sha256(args.class_map, CLASS_MAP_SHA256, "class map")
-    cnxtt_pretrained_sha = sha256_file(args.pretrained)
+    cnxtt_pretrained_path = Path(args.pretrained)
+    if cnxtt_pretrained_path.name != "convnext_tiny-983f1562.pth":
+        raise SystemExit(
+            "CAL-CNXTT requires TorchVision ConvNeXt_Tiny_Weights.IMAGENET1K_V1 "
+            "(convnext_tiny-983f1562.pth)"
+        )
+    cnxtt_pretrained_sha = sha256_file(cnxtt_pretrained_path)
+    if not cnxtt_pretrained_sha.startswith("983f1562"):
+        raise SystemExit(
+            "CAL-CNXTT pretrained SHA-256 does not match the official TorchVision "
+            "IMAGENET1K_V1 hash prefix"
+        )
     ctc_path = repo / "journal_extension/configs/common/ctc_v2.json"
     ctc = json.loads(ctc_path.read_text(encoding="utf-8"))
     train_rows = load_frozen_v1_rows(
