@@ -129,4 +129,4 @@ Interactive runs are diagnostic only. They cannot become terminal qualifying evi
 - do not provide CropCop scientific artifacts for Smoke A/B/dual-smoke;
 - do not substitute a different teacher, class order, EMA policy, or MNV4 state;
 - do not attach RFDV as a downstream G2/principal dependency after G1;
-- do not treat any historical `fe88e426...` qualification as final-source qualification.
+- do not treat any historical pre-G1P qualification as final-source qualification.
