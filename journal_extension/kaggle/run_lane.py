@@ -18,16 +18,17 @@ SCRIPTS = ROOT / "journal_extension" / "scripts"
 KAGGLE = ROOT / "journal_extension" / "kaggle"
 DEPENDENCY_LOCK = ROOT / "journal_extension" / "locks" / "execution_dependency_lock.json"
 
+from cropcop_je.g1_barrier import barrier_cli_args, from_environment as g1_barrier_from_environment
+
 REQUIRED_PATH_ENV = (
     "CROPCOP_MANIFEST",
     "CROPCOP_CLASS_MAP",
     "CROPCOP_IMAGE_ROOT",
-    "CROPCOP_MNV4_PRETRAINED",
     "CROPCOP_G1_BUNDLE_DIR",
     "CROPCOP_OUTPUT_ROOT",
     "CROPCOP_G2_SUMMARIES_DIR",
-    "CROPCOP_TEACHER_CHECKPOINT",
     "CROPCOP_INFRA_SMOKE_EVIDENCE",
+    "CROPCOP_DUAL_GPU_SMOKE_EVIDENCE",
 )
 COLUMN_ENV = {
     "row_id_column": "CROPCOP_ROW_ID_COLUMN",
@@ -214,35 +215,45 @@ def validate_g1(source_sha: str, lane_id: str, output_root: Path) -> Path:
         "--json-report", str(prelaunch_report),
     ])
     report = output_root / "G1_BARRIER.json"
+    inputs = g1_barrier_from_environment(
+        ROOT,
+        authorized_source_sha=source_sha,
+        env=os.environ,
+    )
     run([
-        sys.executable, str(SCRIPTS / "validate_g1_barrier.py"),
-        "--repo-root", str(ROOT),
-        "--authorized-source-sha", source_sha,
-        "--g1-bundle-dir", str(bundle),
-        "--manifest", env_path("CROPCOP_MANIFEST"),
-        "--class-map", env_path("CROPCOP_CLASS_MAP"),
-        "--pretrained", env_path("CROPCOP_MNV4_PRETRAINED"),
-        "--teacher-checkpoint", env_path("CROPCOP_TEACHER_CHECKPOINT"),
-        "--teacher-factory-root", os.environ.get("CROPCOP_TEACHER_FACTORY_ROOT", str(ROOT)),
-        "--infra-smoke-evidence", env_path("CROPCOP_INFRA_SMOKE_EVIDENCE"),
-        "--output", str(report),
+        sys.executable,
+        str(SCRIPTS / "validate_g1_barrier.py"),
+        *barrier_cli_args(inputs, output=report),
     ])
     data = json.loads(report.read_text(encoding="utf-8"))
     if data.get("status") != "PASS":
         raise RuntimeError("G1 barrier did not pass")
-    return bundle / "G1_MODEL_IDENTITY_SEAL.json"
+    return seal_path
 
 
-def g1_paths() -> dict[str, Path]:
+
+def g1_paths() -> dict[str, Path | str]:
     bundle = Path(env_path("CROPCOP_G1_BUNDLE_DIR"))
+    seal_path = bundle / "G1_MODEL_IDENTITY_SEAL.json"
+    seal = json.loads(seal_path.read_text(encoding="utf-8"))
+    private = bundle / "private"
+    evidence = bundle / "evidence"
+    pretrained_name = str(seal["student"]["pretrained"]["basename"])
+    teacher_name = str(seal["teacher"]["artifact_basename"])
     return {
         "bundle": bundle,
-        "seal": bundle / "G1_MODEL_IDENTITY_SEAL.json",
-        "evidence": bundle / "evidence",
-        "private": bundle / "private",
-        "factory_manifest": bundle / "evidence/TEACHER_FACTORY_BUNDLE.json",
-        "class_order": bundle / "evidence/TEACHER_CLASS_ORDER_EVIDENCE.json",
+        "seal": seal_path,
+        "evidence": evidence,
+        "private": private,
+        "pretrained": private / pretrained_name,
+        "teacher": private / teacher_name,
+        "factory_manifest": evidence / "TEACHER_FACTORY_BUNDLE.json",
+        "class_order": evidence / "TEACHER_CLASS_ORDER_EVIDENCE.json",
+        "canonical_state": evidence / "TEACHER_CANONICAL_STATE_EVIDENCE.json",
+        "factory_spec": str(seal["teacher"]["factory_entrypoint"]),
+        "factory_root": ROOT / "journal_extension" / "teacher_factory",
     }
+
 
 
 def calibration(lane: dict, source_sha: str) -> Path:
@@ -274,11 +285,11 @@ def calibration(lane: dict, source_sha: str) -> Path:
         ]
         if lane["calibration"]["condition"] == "teacher":
             cmd += [
-                "--teacher-checkpoint", env_path("CROPCOP_TEACHER_CHECKPOINT"),
+                "--teacher-checkpoint", str(paths["teacher"]),
                 "--teacher-evidence", str(paths["evidence"] / "DINO_TEACHER.json"),
-                "--teacher-factory", env_path("CROPCOP_TEACHER_FACTORY"),
+                "--teacher-factory", str(paths["factory_spec"]),
                 "--teacher-factory-manifest", str(paths["factory_manifest"]),
-                "--teacher-factory-root", os.environ.get("CROPCOP_TEACHER_FACTORY_ROOT", str(ROOT)),
+                "--teacher-factory-root", str(paths["factory_root"]),
                 "--teacher-class-order-evidence", str(paths["class_order"]),
             ]
         cmd += durable_args(cid, lane=lane, source_sha=source_sha)
@@ -364,11 +375,11 @@ def run_principal(lane: dict, source_sha: str, item: dict, g2_barrier: Path) -> 
     ]
     if item["condition"] == "teacher":
         cmd += [
-            "--teacher-checkpoint", env_path("CROPCOP_TEACHER_CHECKPOINT"),
+            "--teacher-checkpoint", str(paths["teacher"]),
             "--teacher-evidence", str(paths["evidence"] / "DINO_TEACHER.json"),
-            "--teacher-factory", env_path("CROPCOP_TEACHER_FACTORY"),
+            "--teacher-factory", str(paths["factory_spec"]),
             "--teacher-factory-manifest", str(paths["factory_manifest"]),
-            "--teacher-factory-root", os.environ.get("CROPCOP_TEACHER_FACTORY_ROOT", str(ROOT)),
+            "--teacher-factory-root", str(paths["factory_root"]),
             "--teacher-class-order-evidence", str(paths["class_order"]),
         ]
     run(cmd)
