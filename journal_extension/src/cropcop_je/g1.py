@@ -80,6 +80,7 @@ def validate_dependency_environment(lock: dict[str, Any]) -> list[str]:
     return errors
 
 
+
 def validate_pretrained_provenance(record: dict[str, Any], *, artifact_path: str | Path | None = None) -> list[str]:
     errors: list[str] = []
     if record.get("model_name") != MNV4_MODEL_NAME:
@@ -94,9 +95,21 @@ def validate_pretrained_provenance(record: dict[str, Any], *, artifact_path: str
         errors.append("MobileNetV4 provenance source kind is not an official timm pretrained_cfg source")
     if not record.get("source_locator"):
         errors.append("MobileNetV4 provenance source locator missing")
-    for field in ("artifact_sha256", "timm_pretrained_cfg_sha256"):
+    for field in (
+        "artifact_sha256",
+        "timm_pretrained_cfg_sha256",
+        "tensor_identity_sha256",
+        "official_tensor_identity_sha256",
+    ):
         if len(str(record.get(field, ""))) != 64:
             errors.append(f"MobileNetV4 provenance {field} invalid")
+    if record.get("tensor_identity_sha256") != record.get("official_tensor_identity_sha256"):
+        errors.append("MobileNetV4 candidate tensor identity differs from official timm tensor identity")
+    if record.get("candidate_serialization_format") not in {
+        "safetensors_state_dict",
+        "torch_state_dict",
+    }:
+        errors.append("MobileNetV4 candidate serialization format is not explicitly supported")
     if int(record.get("artifact_bytes", 0) or 0) <= 0:
         errors.append("MobileNetV4 provenance byte count invalid")
     if artifact_path is not None:
@@ -109,7 +122,6 @@ def validate_pretrained_provenance(record: dict[str, Any], *, artifact_path: str
             if p.stat().st_size != int(record.get("artifact_bytes", -1)):
                 errors.append("MobileNetV4 pretrained byte count differs from provenance")
     return errors
-
 
 def factory_bundle_hash(manifest: dict[str, Any]) -> str:
     canonical = {
@@ -161,6 +173,7 @@ def validate_teacher_factory_bundle(
     return errors
 
 
+
 def validate_teacher_class_order_evidence(
     evidence: dict[str, Any],
     *,
@@ -176,6 +189,12 @@ def validate_teacher_class_order_evidence(
         errors.append("teacher output width is not 120")
     if int(evidence.get("classifier_out_features", -1)) != 120:
         errors.append("historical teacher classifier is not 120-way")
+    if int(evidence.get("classifier_in_features", -1)) != 768:
+        errors.append("historical teacher classifier input width is not 768")
+    if evidence.get("classifier_weight_key") != "head.weight":
+        errors.append("historical teacher classifier key is not head.weight")
+    if list(evidence.get("classifier_weight_shape", [])) != [120, 768]:
+        errors.append("historical teacher classifier shape is not [120,768]")
     if evidence.get("historical_index_semantics") != "class_map_index":
         errors.append("teacher historical index semantics are not class_map_index")
     if evidence.get("factory_output_order_transform") != "none":
@@ -194,13 +213,69 @@ def validate_teacher_class_order_evidence(
     return errors
 
 
+def validate_teacher_canonical_state_evidence(
+    evidence: dict[str, Any],
+    *,
+    factory_bundle_sha256: str | None = None,
+) -> list[str]:
+    errors: list[str] = []
+    if evidence.get("status") != "PASS":
+        errors.append("teacher canonical-state evidence is not PASS")
+    if evidence.get("checkpoint_sha256") != TEACHER_SHA256:
+        errors.append("teacher canonical-state evidence checkpoint SHA mismatch")
+    if int(evidence.get("checkpoint_bytes", 0) or 0) <= 0:
+        errors.append("teacher canonical-state evidence byte count invalid")
+    if evidence.get("canonical_state") != "EMA":
+        errors.append("teacher canonical state is not EMA")
+    if evidence.get("ema_exact_complete_coverage") is not True:
+        errors.append("teacher canonical state lacks exact complete EMA coverage")
+    if evidence.get("canonical_floating_tensors_equal_ema") is not True:
+        errors.append("teacher canonical floating tensors do not exactly equal EMA shadow")
+    if evidence.get("finite_state") is not True:
+        errors.append("teacher canonical state is not finite")
+    if evidence.get("classifier_weight_key") != "head.weight":
+        errors.append("teacher canonical classifier key is not head.weight")
+    if list(evidence.get("classifier_shape", [])) != [120, 768]:
+        errors.append("teacher canonical classifier shape is not [120,768]")
+    if int(evidence.get("feature_dimension", -1)) != 768:
+        errors.append("teacher canonical feature dimension is not 768")
+    if evidence.get("manifest_sha256") != MANIFEST_SHA256:
+        errors.append("teacher canonical evidence manifest SHA mismatch")
+    if evidence.get("class_map_sha256") != CLASS_MAP_SHA256:
+        errors.append("teacher canonical evidence class-map SHA mismatch")
+    if evidence.get("output_order_transform") != "none":
+        errors.append("teacher canonical evidence permits output reordering")
+    if evidence.get("transformers_version") != "5.0.0":
+        errors.append("teacher canonical evidence Transformers version mismatch")
+    if evidence.get("scientific_metric_computed") is not False:
+        errors.append("teacher canonical evidence unexpectedly reports a scientific metric")
+    if evidence.get("protected_data_accessed") is not False:
+        errors.append("teacher canonical evidence unexpectedly accessed protected data")
+    for count_field in (
+        "raw_model_state_key_count",
+        "floating_state_key_count",
+        "ema_shadow_key_count",
+    ):
+        if int(evidence.get(count_field, 0) or 0) <= 0:
+            errors.append(f"teacher canonical evidence {count_field} invalid")
+    if (
+        int(evidence.get("floating_state_key_count", -1))
+        != int(evidence.get("ema_shadow_key_count", -2))
+    ):
+        errors.append("teacher canonical evidence floating/EMA key counts differ")
+    if factory_bundle_sha256 and evidence.get("factory_bundle_sha256") != factory_bundle_sha256:
+        errors.append("teacher canonical evidence binds a different factory bundle")
+    return errors
+
+
 def g1_seal_hash(seal: dict[str, Any]) -> str:
     return hash_without_field(seal, "g1_seal_sha256")
 
 
+
 def validate_g1_seal_object(seal: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    if seal.get("schema_version") != "1.0":
+    if seal.get("schema_version") != "2.0":
         errors.append("unsupported G1 seal schema")
     if seal.get("authority", {}).get("id") != AUTHORITY_ID:
         errors.append("G1 authority ID mismatch")
@@ -220,17 +295,24 @@ def validate_g1_seal_object(seal: dict[str, Any]) -> list[str]:
         errors.append("G1 dependency lock SHA invalid")
     if len(str(seal.get("infra_smoke_evidence_sha256", ""))) != 64:
         errors.append("G1 infrastructure-smoke evidence SHA invalid")
+    if len(str(seal.get("dual_gpu_smoke_evidence_sha256", ""))) != 64:
+        errors.append("G1 dual-GPU-smoke evidence SHA invalid")
+
     pretrained = seal.get("student", {}).get("pretrained", {})
-    if len(str(pretrained.get("sha256", ""))) != 64:
-        errors.append("G1 MobileNetV4 pretrained SHA invalid")
+    for field in ("sha256", "provenance_sha256", "tensor_identity_sha256"):
+        if len(str(pretrained.get(field, ""))) != 64:
+            errors.append(f"G1 MobileNetV4 pretrained {field} invalid")
     if int(pretrained.get("bytes", 0) or 0) <= 0:
         errors.append("G1 MobileNetV4 pretrained byte count invalid")
-    if len(str(pretrained.get("provenance_sha256", ""))) != 64:
-        errors.append("G1 MobileNetV4 provenance evidence SHA invalid")
     if pretrained.get("source_kind") not in {"timm_pretrained_cfg_hf_hub", "timm_pretrained_cfg_url"}:
         errors.append("G1 MobileNetV4 provenance source kind invalid")
     if not pretrained.get("source_locator"):
         errors.append("G1 MobileNetV4 provenance source locator missing")
+    if pretrained.get("candidate_serialization_format") not in {
+        "safetensors_state_dict",
+        "torch_state_dict",
+    }:
+        errors.append("G1 MobileNetV4 serialization format invalid")
 
     pairs = seal.get("pair_initializations", {})
     for key, spec in PAIR_SPECS.items():
@@ -239,10 +321,11 @@ def validate_g1_seal_object(seal: dict[str, Any]) -> list[str]:
             errors.append(f"G1 {key} pair identity mismatch")
         if set(row.get("authorized_consumers", [])) != set(spec["consumers"]):
             errors.append(f"G1 {key} authorized consumer mismatch")
-        if row.get("pretrained_sha256") != seal.get("student", {}).get("pretrained", {}).get("sha256"):
+        if row.get("pretrained_sha256") != pretrained.get("sha256"):
             errors.append(f"G1 {key} does not bind the global pretrained SHA")
         if len(str(row.get("sha256", ""))) != 64 or int(row.get("bytes", 0) or 0) <= 0:
             errors.append(f"G1 {key} pair artifact identity invalid")
+
     teacher = seal.get("teacher", {})
     if teacher.get("checkpoint_sha256") != TEACHER_SHA256:
         errors.append("G1 teacher checkpoint SHA mismatch")
@@ -250,16 +333,19 @@ def validate_g1_seal_object(seal: dict[str, Any]) -> list[str]:
         errors.append("G1 teacher class-map binding mismatch")
     if int(teacher.get("checkpoint_bytes", 0) or 0) <= 0:
         errors.append("G1 teacher checkpoint byte count invalid")
-    if len(str(teacher.get("byte_evidence_sha256", ""))) != 64:
-        errors.append("G1 teacher byte-evidence SHA invalid")
-    if len(str(teacher.get("factory_bundle_sha256", ""))) != 64:
-        errors.append("G1 teacher factory bundle SHA invalid")
-    if len(str(teacher.get("factory_manifest_sha256", ""))) != 64:
-        errors.append("G1 teacher factory manifest SHA invalid")
+    if teacher.get("canonical_state") != "EMA":
+        errors.append("G1 teacher canonical state is not EMA")
+    for field in (
+        "byte_evidence_sha256",
+        "factory_bundle_sha256",
+        "factory_manifest_sha256",
+        "class_order_evidence_sha256",
+        "canonical_state_evidence_sha256",
+    ):
+        if len(str(teacher.get(field, ""))) != 64:
+            errors.append(f"G1 teacher {field} invalid")
     if not teacher.get("factory_entrypoint"):
         errors.append("G1 teacher factory entrypoint missing")
-    if len(str(teacher.get("class_order_evidence_sha256", ""))) != 64:
-        errors.append("G1 teacher class-order evidence SHA invalid")
     if seal.get("g1_seal_sha256") != g1_seal_hash(seal):
         errors.append("G1 seal self-hash mismatch")
     return errors
@@ -279,8 +365,10 @@ def validate_mounted_g1(
     teacher_factory_manifest_path: str | Path,
     teacher_factory_source_root: str | Path,
     teacher_class_order_evidence_path: str | Path,
+    teacher_canonical_state_evidence_path: str | Path,
     dependency_lock_path: str | Path,
     infra_smoke_evidence_path: str | Path,
+    dual_gpu_smoke_evidence_path: str | Path,
     repo_root: str | Path,
 ) -> list[str]:
     errors = validate_g1_seal_object(seal)
@@ -300,6 +388,10 @@ def validate_mounted_g1(
     student = seal.get("student", {}).get("pretrained", {})
     if provenance.get("artifact_sha256") != student.get("sha256"):
         errors.append("mounted MobileNetV4 provenance differs from G1 seal")
+    if provenance.get("tensor_identity_sha256") != student.get("tensor_identity_sha256"):
+        errors.append("mounted MobileNetV4 tensor identity differs from G1 seal")
+    if provenance.get("candidate_serialization_format") != student.get("candidate_serialization_format"):
+        errors.append("mounted MobileNetV4 serialization identity differs from G1 seal")
     if sha256_json(provenance) != student.get("provenance_sha256"):
         errors.append("MobileNetV4 provenance evidence hash differs from G1 seal")
 
@@ -332,7 +424,9 @@ def validate_mounted_g1(
             errors.append(f"PAIR_INIT_{key} evidence object differs from G1 seal")
 
     try:
-        teacher_sha = require_sha256(teacher_checkpoint_path, TEACHER_SHA256, "historical DINO teacher")
+        teacher_sha = require_sha256(
+            teacher_checkpoint_path, TEACHER_SHA256, "historical DINO teacher"
+        )
         if teacher_sha != seal.get("teacher", {}).get("checkpoint_sha256"):
             errors.append("mounted teacher differs from G1 seal")
     except Exception as exc:
@@ -349,11 +443,11 @@ def validate_mounted_g1(
     if sha256_json(factory_manifest) != seal.get("teacher", {}).get("factory_manifest_sha256"):
         errors.append("teacher factory manifest evidence differs from G1 seal")
 
-    teacher_byte_evidence_path = evidence_dir / "DINO_TEACHER.json"
-    if not teacher_byte_evidence_path.exists():
+    teacher_ev_path = evidence_dir / "DINO_TEACHER.json"
+    if not teacher_ev_path.exists():
         errors.append("DINO_TEACHER.json missing from G1 evidence bundle")
     else:
-        teacher_ev = _load(teacher_byte_evidence_path)
+        teacher_ev = _load(teacher_ev_path)
         if teacher_ev.get("sha256") != TEACHER_SHA256:
             errors.append("teacher byte evidence SHA mismatch")
         if teacher_ev.get("class_map_sha256") != CLASS_MAP_SHA256:
@@ -368,6 +462,14 @@ def validate_mounted_g1(
     ))
     if sha256_json(order) != seal.get("teacher", {}).get("class_order_evidence_sha256"):
         errors.append("teacher class-order evidence differs from G1 seal")
+
+    canonical = _load(teacher_canonical_state_evidence_path)
+    errors.extend(validate_teacher_canonical_state_evidence(
+        canonical,
+        factory_bundle_sha256=factory_manifest.get("bundle_sha256"),
+    ))
+    if sha256_json(canonical) != seal.get("teacher", {}).get("canonical_state_evidence_sha256"):
+        errors.append("teacher canonical-state evidence differs from G1 seal")
 
     dep = _load(dependency_lock_path)
     errors.extend(validate_dependency_lock_object(dep))
@@ -385,10 +487,28 @@ def validate_mounted_g1(
             require_batch=True,
         )
     )
-    if sha256_json(smoke) != seal.get("infra_smoke_evidence_sha256"):
+    smoke_sha = sha256_json(smoke)
+    if smoke_sha != seal.get("infra_smoke_evidence_sha256"):
         errors.append("infrastructure-smoke evidence differs from G1 seal")
-    return errors
 
+    dual = _load(dual_gpu_smoke_evidence_path)
+    from .envelope import AMENDMENT_ID, AMENDMENT_SHA256
+    from .smoke_handoff import validate_terminal_dual_gpu_smoke_evidence
+    errors.extend(
+        "mounted dual-GPU-smoke evidence: " + message
+        for message in validate_terminal_dual_gpu_smoke_evidence(
+            dual,
+            expected_source_sha=authorized_source_sha,
+            expected_dependency_lock_sha256=dep.get("dependency_lock_sha256", ""),
+            expected_amendment_id=AMENDMENT_ID,
+            expected_amendment_sha256=AMENDMENT_SHA256,
+            expected_smoke_b_evidence_sha256=smoke_sha,
+            require_batch=True,
+        )
+    )
+    if sha256_json(dual) != seal.get("dual_gpu_smoke_evidence_sha256"):
+        errors.append("dual-GPU-smoke evidence differs from G1 seal")
+    return errors
 
 def assert_g1_creation_target_fresh(bundle_dir: str | Path) -> None:
     bundle = Path(bundle_dir)
