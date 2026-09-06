@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -9,6 +10,17 @@ from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.g1 import MNV4_MODEL_NAME, TIMM_VERSION
 from cropcop_je.hashing import sha256_file, sha256_json
 from cropcop_je.models import _state_dict_from_file
+
+
+def _tensor_identity_sha256(state: dict) -> str:
+    h = hashlib.sha256()
+    for key in sorted(state):
+        value = state[key].detach().cpu().contiguous()
+        h.update(key.encode("utf-8") + b"\\0")
+        h.update(str(value.dtype).encode("ascii") + b"\\0")
+        h.update(json.dumps(list(value.shape), separators=(",", ":")).encode("ascii") + b"\\0")
+        h.update(value.numpy().tobytes(order="C"))
+    return h.hexdigest()
 
 
 def _cfg_dict(model) -> dict:
@@ -74,6 +86,12 @@ def main() -> int:
         "artifact_sha256": sha256_file(candidate_path),
         "artifact_bytes": candidate_path.stat().st_size,
         "artifact_basename": candidate_path.name,
+        "candidate_serialization_format": (
+            "safetensors_state_dict" if candidate_path.suffix == ".safetensors"
+            else "torch_state_dict"
+        ),
+        "tensor_identity_sha256": _tensor_identity_sha256(candidate),
+        "official_tensor_identity_sha256": _tensor_identity_sha256(official_state),
         "verification": "tensor_exact_match_against_timm_pretrained",
         "official_timm_tensor_match": True,
     }
