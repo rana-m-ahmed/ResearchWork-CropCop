@@ -105,7 +105,7 @@ CROPCOP_DUAL_GPU_SMOKE_INPUT_ROOT=/kaggle/input/<exact-dual-gpu-smoke-output>
 CROPCOP_RFDV_ROOT=/kaggle/input/datasets/ranamuhammadahmed6/cropcop-model-rfdv
 CROPCOP_FINAL_V1_ROOT=/kaggle/input/datasets/ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1
 CROPCOP_G1_PRIVATE_DATASET_SLUG=ranamuhammadahmed6/cropcop-g1-sealed
-CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=1
+CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0
 ```
 
 Readiness has already established that `ranamuhammadahmed6/cropcop-g1-sealed` exists, is private, is owned by the authenticated account, and is ready. For the fresh v2.2 G1 qualification use `CROPCOP_G1_ALLOW_CREATE_PRIVATE_DATASET=0`; do not recreate or delete that target.
