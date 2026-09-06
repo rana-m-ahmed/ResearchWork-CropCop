@@ -285,6 +285,8 @@ def validate_g1_seal_object(seal: dict[str, Any]) -> list[str]:
         errors.append("G1 V1 manifest identity mismatch")
     if seal.get("dataset", {}).get("class_map_sha256") != CLASS_MAP_SHA256:
         errors.append("G1 class-map identity mismatch")
+    if len(str(seal.get("dataset", {}).get("identity_evidence_sha256", ""))) != 64:
+        errors.append("G1 frozen-V1 identity evidence SHA invalid")
     if seal.get("student", {}).get("model_name") != MNV4_MODEL_NAME:
         errors.append("G1 MobileNetV4 model identity mismatch")
     if seal.get("student", {}).get("timm_version") != TIMM_VERSION:
@@ -341,6 +343,7 @@ def validate_g1_seal_object(seal: dict[str, Any]) -> list[str]:
         "factory_manifest_sha256",
         "class_order_evidence_sha256",
         "canonical_state_evidence_sha256",
+        "adapter_parity_evidence_sha256",
     ):
         if len(str(teacher.get(field, ""))) != 64:
             errors.append(f"G1 teacher {field} invalid")
@@ -470,6 +473,34 @@ def validate_mounted_g1(
     ))
     if sha256_json(canonical) != seal.get("teacher", {}).get("canonical_state_evidence_sha256"):
         errors.append("teacher canonical-state evidence differs from G1 seal")
+
+    frozen_v1_path = evidence_dir / "FROZEN_V1_IDENTITY.json"
+    if not frozen_v1_path.is_file():
+        errors.append("FROZEN_V1_IDENTITY.json missing from G1 evidence bundle")
+    else:
+        frozen_v1 = _load(frozen_v1_path)
+        if frozen_v1.get("manifest_sha256") != MANIFEST_SHA256:
+            errors.append("frozen-V1 identity manifest SHA mismatch")
+        if frozen_v1.get("class_map_sha256") != CLASS_MAP_SHA256:
+            errors.append("frozen-V1 identity class-map SHA mismatch")
+        if frozen_v1.get("v1_test_accessed") is not False:
+            errors.append("frozen-V1 identity unexpectedly records V1-test access")
+        if sha256_json(frozen_v1) != seal.get("dataset", {}).get("identity_evidence_sha256"):
+            errors.append("frozen-V1 identity evidence differs from G1 seal")
+
+    adapter_path = evidence_dir / "TEACHER_ADAPTER_PARITY_EVIDENCE.json"
+    if not adapter_path.is_file():
+        errors.append("TEACHER_ADAPTER_PARITY_EVIDENCE.json missing from G1 evidence bundle")
+    else:
+        adapter = _load(adapter_path)
+        if adapter.get("status") != "PASS" or adapter.get("direct_vs_adapter_parity") is not True:
+            errors.append("teacher adapter parity evidence is not PASS")
+        if adapter.get("protected_data_accessed") is not False:
+            errors.append("teacher adapter parity evidence accessed protected data")
+        if adapter.get("scientific_metric_computed") is not False:
+            errors.append("teacher adapter parity evidence computed a scientific metric")
+        if sha256_json(adapter) != seal.get("teacher", {}).get("adapter_parity_evidence_sha256"):
+            errors.append("teacher adapter parity evidence differs from G1 seal")
 
     dep = _load(dependency_lock_path)
     errors.extend(validate_dependency_lock_object(dep))
