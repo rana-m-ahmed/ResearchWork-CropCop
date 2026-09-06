@@ -143,3 +143,30 @@ jobs:
             operator-docs-report.json
             unittest-report.txt
             ci-verification.json
+
+  g1p-transformers-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.13"
+      - name: Install exact G1P Transformers candidate matrix
+        run: |
+          python -m pip install --disable-pip-version-check --no-input \\
+            torch==2.12.1 torchvision==0.27.1 timm==1.0.26 \\
+            numpy==2.5.2 Pillow==12.3.0 safetensors==0.8.0 \\
+            kaggle==2.2.4 huggingface-hub==1.30.0 transformers==5.0.0
+          python -m pip check
+      - name: Verify offline DINOv3 ConvNeXt candidate compatibility
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: python journal_extension/scripts/check_transformers_candidate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transformers-candidate-report
+          path: transformers-candidate-report.json
