@@ -14,7 +14,7 @@ are verified before use; V1 test and sealed external surfaces are not resolvable
 <!-- QA1_OPERATOR_BEGIN -->
 ## Current Stage-01A-G1P-v2.2 operator path
 
-**Frozen execution source:** `f171309fc7e9dc22241ecc137ebbb8e4bcdc5433`  
+**Frozen execution source:** `beabe97d046e071edacdfa1c6933eeb4edb3a588`  
 **Dependency lock:** `6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37`
 
 Repository closure is followed first by the separate, non-qualifying CPU `G1_INPUT_READINESS.json` job. After independent readiness PASS, final-source qualification proceeds:
