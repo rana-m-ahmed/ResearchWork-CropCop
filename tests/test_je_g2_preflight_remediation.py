@@ -182,5 +182,19 @@ class FrozenV1ManifestRemediationTests(unittest.TestCase):
         self.assertLess(publish, evidence)
 
 
+class OperatorRecoveryHardeningTests(unittest.TestCase):
+    def test_12_canonical_wrapper_fails_early_when_cnxtt_path_is_missing(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        self.assertIn('CROPCOP_CNXTT_PRETRAINED is required for G2 calibration and P3 principal.', source)
+        self.assertIn('CROPCOP_CNXTT_PRETRAINED must point to convnext_tiny-983f1562.pth', source)
+
+    def test_13_wrapper_repairs_only_terminal_envelope_publication_tail(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        self.assertIn('Envelope terminal publication repair: PASS', source)
+        self.assertIn('_state.get("state") in {"PASS", "CONTINUATION_REQUIRED"}', source)
+        self.assertIn('files=[_evidence_path]', source)
+        self.assertIn('scientific_execution_relaunched=false', source)
+
+
 if __name__ == "__main__":
     unittest.main()
