@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "artifact": "01A_MGPU_01_SCIENCE_DIFF_SENTINEL.json",
   "snapshot_created_at": "2026-09-07T23:30:00+05:00",
-  "snapshot_source_git_sha": "f930e81a8b05e57d7c327b6e37c5b78dfcb752ba",
+  "snapshot_source_git_sha": "616ee6b9adab24aa2891adde2711235de81ba337",
   "authority": {
     "stage03r_id": "EAAI-JE-SDL-v2.1-QA",
     "stage03r_sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74",
@@ -10,7 +10,7 @@
     "stage04_sha256": "a1bc1f8bb2d7a133a46c3f59f83dd2ba8ca3bf0fa8d77ae323553276931bc079"
   },
   "protected_git_blobs": {
-    "journal_extension/src/cropcop_je/train.py": "711345d840c121fda5c9accd55f4ed216ce66534",
+    "journal_extension/src/cropcop_je/train.py": "67d1536720f3066d5600d23a6eee92ad397297b5",
     "journal_extension/src/cropcop_je/data.py": "9871ece382e0345bcab2e832d3116611855c3de7",
     "journal_extension/src/cropcop_je/models.py": "c7db1155de1621e751c4bdbad7e9c4096ab06746",
     "journal_extension/configs/common/ctc_v2.json": "c97b43ed757d487fe55f427b38ad400cff16f358",
@@ -22,7 +22,8 @@
     "journal_extension/configs/r05_teacher/s3.json": "6df147239c652d9c64368208e240b63c9ad5f61f",
     "journal_extension/locks/experiment_registry.json": "ac83f61eba78a24e0a40e387a817a27bcdef2bed",
     "journal_extension/scripts/run_training.py": "4faaad598175cd2bcdf841fe3f8a0e8c878c8d2e",
-    "journal_extension/src/cropcop_je/frozen_v1_manifest.py": "121834f7f573d0818ac914b67e290cc4f20546ed"
+    "journal_extension/src/cropcop_je/frozen_v1_manifest.py": "121834f7f573d0818ac914b67e290cc4f20546ed",
+    "journal_extension/src/cropcop_je/accumulation.py": "727c6fa24bc5b9e3c73e281175ba3303ba27922e"
   },
   "locked_training_semantics": {
     "micro_batch_size": 16,
