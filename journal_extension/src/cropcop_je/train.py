@@ -48,6 +48,11 @@ def _seed(seed: int) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+    # Locked determinism controls for the scientific training path.
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+    torch.use_deterministic_algorithms(True, warn_only=True)
 
 
 def _loader(dataset, *, sampler=None, batch_size: int, num_workers: int, shuffle: bool = False):
@@ -212,6 +217,7 @@ def run_training(
         projection.to(device)
     micro = ctc["training"]["micro_batch_size"]
     accum = ctc["training"]["gradient_accumulation"]
+    validation_batch = int(ctc["training"].get("validation_batch_size", 64))
     epochs = ctc["schedule"]["epochs"]
     batches_per_epoch = math.ceil(len(train_dataset) / micro)
     steps_per_epoch = math.ceil(batches_per_epoch / accum)
@@ -286,18 +292,36 @@ def run_training(
             n = int(y.numel())
             segment_examples += n
             examples_seen_total += n
+            bucket_start_batch = (absolute_bi // accum) * accum
+            bucket_end_batch = min(bucket_start_batch + accum, batches_per_epoch)
+            bucket_start_sample = bucket_start_batch * micro
+            bucket_end_sample = min(bucket_end_batch * micro, len(train_dataset))
+            bucket_samples = bucket_end_sample - bucket_start_sample
+            if bucket_samples <= 0:
+                raise RuntimeError("invalid gradient-accumulation bucket sample count")
+
             with torch.amp.autocast("cuda", dtype=torch.float16):
                 sf, sl = prelogits_and_logits(student, x)
                 ce = F.cross_entropy(sl, y, label_smoothing=ctc["training"]["label_smoothing"])
-                kd = feat = torch.zeros((), device=device)
+                kd = feat = torch.zeros((), device=device, dtype=torch.float32)
                 if teacher is not None:
-                    with torch.no_grad():
-                        tf, tl = prelogits_and_logits(teacher, x)
+                    # The frozen design requires teacher targets/features to be
+                    # computed in FP32 on the exact same augmented tensor.
+                    with torch.no_grad(), torch.amp.autocast("cuda", enabled=False):
+                        tf, tl = prelogits_and_logits(teacher, x.float())
                     if objective.get("kd", 0) > 0:
-                        kd = kd_loss(sl, tl, ctc["teacher"]["temperature"])
+                        kd = kd_loss(sl.float(), tl.float(), ctc["teacher"]["temperature"])
                     if objective.get("feature", 0) > 0:
-                        feat = feature_loss(projection(sf), tf)
-                loss = (objective["ce"] * ce + objective.get("kd", 0) * kd + objective.get("feature", 0) * feat) / accum
+                        feat = feature_loss(projection(sf).float(), tf.float())
+                mean_loss = (
+                    objective["ce"] * ce
+                    + objective.get("kd", 0) * kd
+                    + objective.get("feature", 0) * feat
+                )
+                # Convert the per-microbatch mean into the exact contribution to
+                # the current accumulation bucket. This preserves full-bucket
+                # behavior and correctly normalizes the final partial bucket.
+                loss = mean_loss * (float(n) / float(bucket_samples))
             scaler.scale(loss).backward()
             update_boundary = ((absolute_bi + 1) % accum == 0) or (absolute_bi + 1 == batches_per_epoch)
             if not update_boundary:
@@ -339,7 +363,7 @@ def run_training(
                 if val_dataset is not None:
                     forward_benchmark = benchmark_forward(
                         student,
-                        _loader(val_dataset, batch_size=micro, num_workers=num_workers, shuffle=False),
+                        _loader(val_dataset, batch_size=validation_batch, num_workers=num_workers, shuffle=False),
                         device,
                         max_batches=20,
                     )
@@ -366,7 +390,7 @@ def run_training(
         start_batch = 0
         summary = {"epoch": epoch + 1}
         if validation_enabled:
-            val_loader = _loader(val_dataset, batch_size=micro, num_workers=num_workers, shuffle=False)
+            val_loader = _loader(val_dataset, batch_size=validation_batch, num_workers=num_workers, shuffle=False)
             metrics = evaluate_classifier(student, val_loader, device)
             summary.update(
                 {
@@ -401,7 +425,7 @@ def run_training(
     if validation_enabled and selection.best is None:
         raise RuntimeError("30-epoch run completed without validation-selected checkpoint")
     elapsed = time.perf_counter() - started
-    forward_benchmark = benchmark_forward(student, _loader(val_dataset, batch_size=micro, num_workers=num_workers, shuffle=False), device, max_batches=20) if val_dataset is not None else None
+    forward_benchmark = benchmark_forward(student, _loader(val_dataset, batch_size=validation_batch, num_workers=num_workers, shuffle=False), device, max_batches=20) if val_dataset is not None else None
     return {
         "mode": "scientific_training",
         "planned_rollover": False,
