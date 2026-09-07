@@ -1,12 +1,155 @@
 {
-  "schema_version":"CTC-v2",
-  "input":{"size":[256,256],"mode":"RGB","mean":[0.485,0.456,0.406],"std":[0.229,0.224,0.225]},
-  "evaluation_preprocessing":{"exif_orientation":true,"rgb":true,"square_pad":"per_image_rgb_channel_mean_rounded_integer","resize":"bicubic_256x256","float_range":"0_1","normalization":"ImageNet"},
-  "training_augmentation":{"seed_key":["training_seed","epoch","stable_row_id"],"random_resized_crop":{"p":0.78,"scale":[0.7,1.0],"ratio":[0.75,1.33]},"fallback":"deterministic_eval_pad_resize","horizontal_flip_p":0.5,"affine":{"p":0.4,"degrees":[-12,12],"translate":[0.05,0.05],"scale":[0.9,1.1]},"color_jitter":{"brightness":0.12,"contrast":0.12,"saturation":0.08,"hue":0.01},"jpeg":{"p":0.1,"quality":[65,100]},"gaussian_blur":{"p":0.05,"kernel":5,"sigma":[0.1,2.0]},"gaussian_noise":{"p":0.05,"sigma":[0.0,0.02],"clip":[0.0,1.0]}},
-  "optimizer":{"name":"AdamW","betas":[0.9,0.999],"eps":1e-8,"backbone_lr":0.0002,"new_parameter_lr":0.001,"weight_decay":0.05,"bias_and_norm_weight_decay":0.0},
-  "schedule":{"epochs":30,"warmup_fraction_optimizer_steps":0.05,"post_warmup":"cosine","minimum_lr_fraction":0.02},
-  "training":{"micro_batch_size":16,"gradient_accumulation":4,"effective_batch_size":64,"gradient_clip_norm":1.0,"mixed_precision":"FP16_autocast_GradScaler_when_supported","ema":false,"drop_last":false,"sampling":"uniform_row_shuffle","label_smoothing":0.02},
-  "selection":{"early_stopping":false,"epochs":30,"order":["validation_macro_f1_desc","validation_balanced_accuracy_desc","validation_nll_asc","epoch_asc"]},
-  "teacher":{"temperature":4.0,"same_augmented_tensor":true,"stop_gradient":true,"projection":"bias_free_linear_xavier_uniform","feature_normalization":"L2","feature_loss":"1-cosine_similarity"},
-  "objectives":{"direct":{"ce":1.0,"kd":0.0,"feature":0.0},"teacher":{"ce":0.5,"kd":0.35,"feature":0.15}}
+  "schema_version": "CTC-v2",
+  "input": {
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGB",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "evaluation_preprocessing": {
+    "exif_orientation": true,
+    "rgb": true,
+    "square_pad": "per_image_rgb_channel_mean_rounded_integer",
+    "resize": "bicubic_256x256",
+    "float_range": "0_1",
+    "normalization": "ImageNet"
+  },
+  "training_augmentation": {
+    "seed_key": [
+      "training_seed",
+      "epoch",
+      "stable_row_id"
+    ],
+    "random_resized_crop": {
+      "p": 0.78,
+      "scale": [
+        0.7,
+        1
+      ],
+      "ratio": [
+        0.75,
+        1.33
+      ]
+    },
+    "fallback": "deterministic_eval_pad_resize",
+    "horizontal_flip_p": 0.5,
+    "affine": {
+      "p": 0.4,
+      "degrees": [
+        -12,
+        12
+      ],
+      "translate": [
+        0.05,
+        0.05
+      ],
+      "scale": [
+        0.9,
+        1.1
+      ]
+    },
+    "color_jitter": {
+      "brightness": 0.12,
+      "contrast": 0.12,
+      "saturation": 0.08,
+      "hue": 0.01
+    },
+    "jpeg": {
+      "p": 0.1,
+      "quality": [
+        65,
+        100
+      ]
+    },
+    "gaussian_blur": {
+      "p": 0.05,
+      "kernel": 5,
+      "sigma": [
+        0.1,
+        2
+      ]
+    },
+    "gaussian_noise": {
+      "p": 0.05,
+      "sigma": [
+        0,
+        0.02
+      ],
+      "clip": [
+        0,
+        1
+      ]
+    }
+  },
+  "optimizer": {
+    "name": "AdamW",
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "eps": 1e-8,
+    "backbone_lr": 0.0002,
+    "new_parameter_lr": 0.001,
+    "weight_decay": 0.05,
+    "bias_and_norm_weight_decay": 0
+  },
+  "schedule": {
+    "epochs": 30,
+    "warmup_fraction_optimizer_steps": 0.05,
+    "post_warmup": "cosine",
+    "minimum_lr_fraction": 0.02
+  },
+  "training": {
+    "micro_batch_size": 16,
+    "gradient_accumulation": 4,
+    "effective_batch_size": 64,
+    "gradient_clip_norm": 1,
+    "mixed_precision": "FP16_autocast_GradScaler_when_supported",
+    "ema": false,
+    "drop_last": false,
+    "sampling": "uniform_row_shuffle",
+    "label_smoothing": 0.02,
+    "validation_batch_size": 64
+  },
+  "selection": {
+    "early_stopping": false,
+    "epochs": 30,
+    "order": [
+      "validation_macro_f1_desc",
+      "validation_balanced_accuracy_desc",
+      "validation_nll_asc",
+      "epoch_asc"
+    ]
+  },
+  "teacher": {
+    "temperature": 4,
+    "same_augmented_tensor": true,
+    "stop_gradient": true,
+    "projection": "bias_free_linear_xavier_uniform",
+    "feature_normalization": "L2",
+    "feature_loss": "1-cosine_similarity"
+  },
+  "objectives": {
+    "direct": {
+      "ce": 1,
+      "kd": 0,
+      "feature": 0
+    },
+    "teacher": {
+      "ce": 0.5,
+      "kd": 0.35,
+      "feature": 0.15
+    }
+  }
 }
