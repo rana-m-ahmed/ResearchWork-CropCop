@@ -80,6 +80,7 @@ def validate_science_diff(repo_root: str | Path) -> dict[str, Any]:
         "micro_batch_size": training.get("micro_batch_size"),
         "gradient_accumulation": training.get("gradient_accumulation"),
         "effective_batch_size": training.get("effective_batch_size"),
+        "validation_batch_size": training.get("validation_batch_size"),
         "epochs": schedule.get("epochs"),
         "mixed_precision": training.get("mixed_precision"),
         "gradient_clip_norm": training.get("gradient_clip_norm"),
