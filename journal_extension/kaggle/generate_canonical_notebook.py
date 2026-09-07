@@ -827,6 +827,35 @@ if EXECUTION_PHASE == "calibration-dual" or (
         f"(sha256={_cnxtt_sha}, filename={_cnxtt_path.name})"
     )
 
+# Principal sessions are fresh Kaggle Saved Versions. Rehydrate the exact
+# public-safe G2 summaries from their dedicated evidence branches so principal
+# launch never depends on an ephemeral prior /kaggle/working directory.
+if EXECUTION_PHASE == "principal-dual":
+    _shared_g2 = Path(os.environ["CROPCOP_G2_SUMMARIES_DIR"]).resolve()
+    if repo_workdir == _shared_g2 or repo_workdir in _shared_g2.parents:
+        raise RuntimeError(
+            "CROPCOP_G2_SUMMARIES_DIR must be outside the Git checkout"
+        )
+    _kaggle_dir = repo_workdir / "journal_extension" / "kaggle"
+    if str(_kaggle_dir) not in sys.path:
+        sys.path.insert(0, str(_kaggle_dir))
+    import run_lane as _run_lane
+    _run_lane.collect_g2_summaries_from_evidence_branches(_shared_g2)
+    _required_g2 = ("CAL-MNV4-DIRECT", "CAL-MNV4-TEACHER", "CAL-CNXTT")
+    _missing_g2 = [
+        _cid for _cid in _required_g2
+        if not (_shared_g2 / f"{_cid}.json").is_file()
+    ]
+    if _missing_g2:
+        raise RuntimeError(
+            "Principal G2 handoff is incomplete after evidence-branch hydration: "
+            + ", ".join(_missing_g2)
+        )
+    print(
+        "Principal G2 evidence hydration: PASS "
+        "(CAL-MNV4-DIRECT, CAL-MNV4-TEACHER, CAL-CNXTT)"
+    )
+
 # G1 external target orchestration happens only after clean-source/dependency/bootstrap
 # validation and before the frozen G1 entrypoint independently revalidates the target.
 if EXECUTION_PHASE == "g1":
