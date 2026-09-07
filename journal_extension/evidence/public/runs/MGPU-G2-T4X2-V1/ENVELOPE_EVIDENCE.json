@@ -6,20 +6,21 @@
       "child_visible_cuda_count_required": 1,
       "console_log": "children/G2-CNXTT/console.log",
       "continuation_required": false,
-      "duration_seconds": 9.22924062200002,
-      "ended_monotonic": 678.030311147,
+      "duration_seconds": 9.702473729999952,
+      "ended_monotonic": 615.29564105,
       "error": "EnvelopeError: terminal calibration child did not create summary: CAL-CNXTT.json",
       "evidence_chain_complete": false,
       "git_credentials_present_in_child": false,
-      "physical_gpu_uuid": "GPU-fad5f03f-b44d-2f17-4146-19e5d98f9c59",
-      "physical_slot": 1,
+      "physical_gpu_uuid": "GPU-6eecbd3e-0b66-31f5-121a-3b89ebceabaf",
+      "physical_slot": 0,
       "publication_status": "NOT_ATTEMPTED",
       "returncode": 1,
-      "started_monotonic": 668.801070525,
+      "started_monotonic": 605.59316732,
       "status": "FAIL_TECHNICAL",
       "termination": null
     },
     "G2-DIRECT": {
+      "carried_from_prior_envelope": true,
       "child_preflight": {
         "cuda_visible_devices": "0",
         "envelope_id": "MGPU-G2-T4X2-V1",
@@ -51,6 +52,7 @@
       "termination": null
     },
     "G2-TEACHER": {
+      "carried_from_prior_envelope": true,
       "child_preflight": {
         "cuda_visible_devices": "1",
         "envelope_id": "MGPU-G2-T4X2-V1",
@@ -82,7 +84,7 @@
       "termination": null
     }
   },
-  "created_at_utc": "2026-09-07T17:02:13.620679+00:00",
+  "created_at_utc": "2026-09-07T17:34:56.116510+00:00",
   "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
   "dual_gpu_smoke_evidence_sha256": "61658254cd6216a11ec67755d20a001dc41531643fee04062a165610dfb69c86",
   "durable_access_preflight": {
@@ -100,7 +102,7 @@
       "CAL-MNV4-DIRECT": {
         "authenticated_read": true,
         "authoritative_is_private": true,
-        "current_version_number": 1,
+        "current_version_number": 4,
         "locator": "ranamuhammadahmed6/cropcop-je-cal-mnv4-direct",
         "owner_matches_authenticated_user": true,
         "private_metadata_verified": true,
@@ -110,7 +112,7 @@
       "CAL-MNV4-TEACHER": {
         "authenticated_read": true,
         "authoritative_is_private": true,
-        "current_version_number": 1,
+        "current_version_number": 4,
         "locator": "ranamuhammadahmed6/cropcop-je-cal-mnv4-teacher",
         "owner_matches_authenticated_user": true,
         "private_metadata_verified": true,
@@ -140,21 +142,21 @@
   "g2_publication_branch": null,
   "host_global_stop_reason": null,
   "kaggle_run_type": "Batch",
-  "manifest_sha256": "13bfc1db112dcb3f4fd579b0b5075c338d55e312d7af1953bf7bed3f3b267c8a",
+  "manifest_sha256": "766f6d31f0dbefb05ff40f8d48269d083cff3ce732d3798d79b359a9233ba016",
   "no_git_child_policy": true,
-  "overlap_duration_seconds": 267.68239795599993,
+  "overlap_duration_seconds": 0.0,
   "parent_gpu_inventory": [
     {
       "index": 0,
       "memory_total_mib": 15360,
       "name": "Tesla T4",
-      "uuid": "GPU-5ab3df01-3b85-bb05-f52a-4abad0a1a409"
+      "uuid": "GPU-6eecbd3e-0b66-31f5-121a-3b89ebceabaf"
     },
     {
       "index": 1,
       "memory_total_mib": 15360,
       "name": "Tesla T4",
-      "uuid": "GPU-fad5f03f-b44d-2f17-4146-19e5d98f9c59"
+      "uuid": "GPU-9888aeec-9fc6-f56a-dc27-5c9688c04347"
     }
   ],
   "parent_publication_serialized": true,
