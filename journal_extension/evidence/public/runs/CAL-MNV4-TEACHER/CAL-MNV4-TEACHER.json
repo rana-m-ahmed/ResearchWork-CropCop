@@ -1,0 +1,71 @@
+{
+  "calibration_id": "CAL-MNV4-TEACHER",
+  "calibration_weights_scientific": false,
+  "condition": "teacher",
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "locked_optimizer_steps": 100,
+  "measured": {
+    "accelerator": "Tesla T4",
+    "checkpoint_load_seconds": 0.4071723639999618,
+    "checkpoint_save_seconds": 1.3555776800000103,
+    "cuda_driver_identity": {
+      "available": true,
+      "gpus": [
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-5ab3df01-3b85-bb05-f52a-4abad0a1a409"
+        },
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-fad5f03f-b44d-2f17-4146-19e5d98f9c59"
+        }
+      ]
+    },
+    "dataloader_examples_per_wait_second": 78.83517358106823,
+    "dataloader_wait_seconds": 86.86477988100103,
+    "durable_sync_seconds": 10.955035143000032,
+    "examples_per_second": 56.45294683884127,
+    "examples_segment": 6848,
+    "examples_total": 6848,
+    "latest_checkpoint_sha256": "9c76ec8927febd07f710c0e34fcd670e76fb3929392cc29326d716eef3dd8c2e",
+    "mode": "calibration",
+    "optimizer_step_total": 100,
+    "optimizer_steps_segment": 100,
+    "peak_gpu_memory_bytes": 942838272,
+    "planned_rollover": false,
+    "recovery_events": [],
+    "rollover_reason": null,
+    "sec_per_optimizer_step": 1.2130456217899996,
+    "validation_forward_benchmark": {
+      "batches": 20,
+      "end_to_end_examples_per_second": 173.84349965373102,
+      "examples": 320,
+      "forward_examples_per_second": 586.3707354223441,
+      "forward_seconds": 0.5457298270001729,
+      "loader_wait_seconds": 1.29500624100001
+    },
+    "wall_seconds_segment": 121.30456217899996
+  },
+  "mnv4_pretrained_sha256": "35ca23dc46c0075d9acdcab06d30e5395c4d97e422d8cb5e5e627823aeb7c1fa",
+  "observed_kaggle_constraints": {
+    "configured_finalization_margin_seconds": 3600,
+    "configured_hard_session_seconds": 43200,
+    "quota_visibility": "not_exposed_programmatically_to_runner"
+  },
+  "resume_qualification": {
+    "checkpoint_load_seconds": 0.4071723639999618,
+    "fresh_steps": 10,
+    "resume_success": true,
+    "resumed_steps": 5
+  },
+  "resume_success": true,
+  "schema_version": "2.0",
+  "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
+  "source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "status": "PASS",
+  "teacher_checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+  "teacher_factory_bundle_sha256": "c73fa6e337f8c3ac7e32cd605191f72c59e30d790387e6e10990690230184929"
+}
