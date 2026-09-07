@@ -1,0 +1,168 @@
+{
+  "amendment_id": "EAAI-JE-MGPU-A1",
+  "amendment_sha256": "3f08f2dbe7e83143c7e6f1fcf6732c7d88086295a600a74b323b89b46caed3f6",
+  "child_results": {
+    "G2-CNXTT": {
+      "child_visible_cuda_count_required": 1,
+      "console_log": "children/G2-CNXTT/console.log",
+      "continuation_required": false,
+      "duration_seconds": 9.22924062200002,
+      "ended_monotonic": 678.030311147,
+      "error": "EnvelopeError: terminal calibration child did not create summary: CAL-CNXTT.json",
+      "evidence_chain_complete": false,
+      "git_credentials_present_in_child": false,
+      "physical_gpu_uuid": "GPU-fad5f03f-b44d-2f17-4146-19e5d98f9c59",
+      "physical_slot": 1,
+      "publication_status": "NOT_ATTEMPTED",
+      "returncode": 1,
+      "started_monotonic": 668.801070525,
+      "status": "FAIL_TECHNICAL",
+      "termination": null
+    },
+    "G2-DIRECT": {
+      "child_preflight": {
+        "cuda_visible_devices": "0",
+        "envelope_id": "MGPU-G2-T4X2-V1",
+        "git_credentials_present": false,
+        "logical_lane": "K1",
+        "notebook_started_monotonic": 227.4263028,
+        "observed_visible_cuda_count": 1,
+        "observed_visible_gpu_name": "Tesla T4",
+        "requested_physical_gpu_slot": 0,
+        "schema_version": "1.0",
+        "status": "PASS"
+      },
+      "child_visible_cuda_count_required": 1,
+      "console_log": "children/G2-DIRECT/console.log",
+      "continuation_required": false,
+      "duration_seconds": 334.68469197799993,
+      "ended_monotonic": 733.602338857,
+      "evidence_chain_complete": true,
+      "git_credentials_present_in_child": false,
+      "physical_gpu_uuid": "GPU-5ab3df01-3b85-bb05-f52a-4abad0a1a409",
+      "physical_slot": 0,
+      "process_returncode": 0,
+      "publication_branch": "run-evidence/CAL-MNV4-DIRECT",
+      "publication_error": null,
+      "publication_status": "PASS",
+      "result_relative_path": "children/G2-DIRECT/g2_summaries/CAL-MNV4-DIRECT.json",
+      "started_monotonic": 398.917646879,
+      "status": "PASS",
+      "termination": null
+    },
+    "G2-TEACHER": {
+      "child_preflight": {
+        "cuda_visible_devices": "1",
+        "envelope_id": "MGPU-G2-T4X2-V1",
+        "git_credentials_present": false,
+        "logical_lane": "K2",
+        "notebook_started_monotonic": 227.4263028,
+        "observed_visible_cuda_count": 1,
+        "observed_visible_gpu_name": "Tesla T4",
+        "requested_physical_gpu_slot": 1,
+        "schema_version": "1.0",
+        "status": "PASS"
+      },
+      "child_visible_cuda_count_required": 1,
+      "console_log": "children/G2-TEACHER/console.log",
+      "continuation_required": false,
+      "duration_seconds": 267.68239795599993,
+      "ended_monotonic": 666.608474176,
+      "evidence_chain_complete": true,
+      "git_credentials_present_in_child": false,
+      "physical_gpu_uuid": "GPU-fad5f03f-b44d-2f17-4146-19e5d98f9c59",
+      "physical_slot": 1,
+      "process_returncode": 0,
+      "publication_branch": "run-evidence/CAL-MNV4-TEACHER",
+      "publication_error": null,
+      "publication_status": "PASS",
+      "result_relative_path": "children/G2-TEACHER/g2_summaries/CAL-MNV4-TEACHER.json",
+      "started_monotonic": 398.92607622,
+      "status": "PASS",
+      "termination": null
+    }
+  },
+  "created_at_utc": "2026-09-07T17:02:13.620679+00:00",
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "dual_gpu_smoke_evidence_sha256": "61658254cd6216a11ec67755d20a001dc41531643fee04062a165610dfb69c86",
+  "durable_access_preflight": {
+    "checks": {
+      "CAL-CNXTT": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 1,
+        "locator": "ranamuhammadahmed6/cropcop-je-cal-cnxtt",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      },
+      "CAL-MNV4-DIRECT": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 1,
+        "locator": "ranamuhammadahmed6/cropcop-je-cal-mnv4-direct",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      },
+      "CAL-MNV4-TEACHER": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 1,
+        "locator": "ranamuhammadahmed6/cropcop-je-cal-mnv4-teacher",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      }
+    },
+    "current_envelope_locator_count": 3,
+    "current_envelope_run_ids": [
+      "CAL-MNV4-DIRECT",
+      "CAL-MNV4-TEACHER",
+      "CAL-CNXTT"
+    ],
+    "errors": [],
+    "global_namespace_validation": "PASS",
+    "global_reserved_locator_count": 9,
+    "kind": "kaggle-dataset",
+    "note": "Kaggle write authorization is bound to authenticated dataset ownership; the first real calibration/scientific sync is the non-fabricated write exercise.",
+    "resolved_locator_count": 3,
+    "schema_version": "1.0",
+    "status": "PASS"
+  },
+  "envelope_id": "MGPU-G2-T4X2-V1",
+  "finalization_outcomes": {},
+  "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "g2_barrier_sha256": null,
+  "g2_publication_branch": null,
+  "host_global_stop_reason": null,
+  "kaggle_run_type": "Batch",
+  "manifest_sha256": "13bfc1db112dcb3f4fd579b0b5075c338d55e312d7af1953bf7bed3f3b267c8a",
+  "no_git_child_policy": true,
+  "overlap_duration_seconds": 267.68239795599993,
+  "parent_gpu_inventory": [
+    {
+      "index": 0,
+      "memory_total_mib": 15360,
+      "name": "Tesla T4",
+      "uuid": "GPU-5ab3df01-3b85-bb05-f52a-4abad0a1a409"
+    },
+    {
+      "index": 1,
+      "memory_total_mib": 15360,
+      "name": "Tesla T4",
+      "uuid": "GPU-fad5f03f-b44d-2f17-4146-19e5d98f9c59"
+    }
+  ],
+  "parent_publication_serialized": true,
+  "phase": "calibration-dual",
+  "protected_surfaces_unchanged": true,
+  "schema_version": "1.0",
+  "science_diff_status": "PASS",
+  "scientific_configuration_changed": false,
+  "source_git_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "status": "FAIL_TECHNICAL"
+}

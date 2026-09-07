@@ -1,0 +1,56 @@
+{
+  "amendment_id": "EAAI-JE-MGPU-A1",
+  "amendment_sha256": "3f08f2dbe7e83143c7e6f1fcf6732c7d88086295a600a74b323b89b46caed3f6",
+  "children": [
+    {
+      "child_id": "G2-DIRECT",
+      "continuation_required": false,
+      "ended_at_utc": "2026-09-07T17:02:13.611979+00:00",
+      "evidence_chain_complete": true,
+      "execution_status": "PASS",
+      "experiment_id": "CAL-MNV4-DIRECT",
+      "physical_slot": 0,
+      "publication_status": "PASS",
+      "run_id": "CAL-MNV4-DIRECT",
+      "started_at_utc": "2026-09-07T16:56:37.063681+00:00",
+      "status": "PASS",
+      "termination": null
+    },
+    {
+      "child_id": "G2-TEACHER",
+      "continuation_required": false,
+      "ended_at_utc": "2026-09-07T17:01:06.937138+00:00",
+      "evidence_chain_complete": true,
+      "execution_status": "PASS",
+      "experiment_id": "CAL-MNV4-TEACHER",
+      "physical_slot": 1,
+      "publication_status": "PASS",
+      "run_id": "CAL-MNV4-TEACHER",
+      "started_at_utc": "2026-09-07T16:56:37.072110+00:00",
+      "status": "PASS",
+      "termination": null
+    },
+    {
+      "child_id": "G2-CNXTT",
+      "continuation_required": false,
+      "ended_at_utc": "2026-09-07T17:01:16.176639+00:00",
+      "evidence_chain_complete": false,
+      "execution_status": "FAIL_TECHNICAL",
+      "experiment_id": "CAL-CNXTT",
+      "physical_slot": 1,
+      "publication_status": "NOT_ATTEMPTED",
+      "run_id": "CAL-CNXTT",
+      "started_at_utc": "2026-09-07T17:01:06.947111+00:00",
+      "status": "FAIL_TECHNICAL",
+      "termination": null
+    }
+  ],
+  "envelope_id": "MGPU-G2-T4X2-V1",
+  "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "g2_barrier_sha256": null,
+  "phase": "calibration-dual",
+  "schema_version": "1.0",
+  "source_git_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "state": "FAIL_TECHNICAL",
+  "updated_at_utc": "2026-09-07T17:02:13.627830+00:00"
+}

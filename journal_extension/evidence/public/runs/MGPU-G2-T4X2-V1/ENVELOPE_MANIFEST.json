@@ -1,0 +1,119 @@
+{
+  "amendment_id": "EAAI-JE-MGPU-A1",
+  "amendment_sha256": "3f08f2dbe7e83143c7e6f1fcf6732c7d88086295a600a74b323b89b46caed3f6",
+  "children": [
+    {
+      "child_id": "G2-DIRECT",
+      "durable_locator": "ranamuhammadahmed6/cropcop-je-cal-mnv4-direct",
+      "experiment_id": "CAL-MNV4-DIRECT",
+      "g2_summaries_root": "children/G2-DIRECT/g2_summaries",
+      "logical_lane": "K1",
+      "output_root": "children/G2-DIRECT/output",
+      "requested_physical_slot": 0,
+      "run_id": "CAL-MNV4-DIRECT",
+      "terminal_root": "children/G2-DIRECT/terminal"
+    },
+    {
+      "child_id": "G2-TEACHER",
+      "durable_locator": "ranamuhammadahmed6/cropcop-je-cal-mnv4-teacher",
+      "experiment_id": "CAL-MNV4-TEACHER",
+      "g2_summaries_root": "children/G2-TEACHER/g2_summaries",
+      "logical_lane": "K2",
+      "output_root": "children/G2-TEACHER/output",
+      "requested_physical_slot": 1,
+      "run_id": "CAL-MNV4-TEACHER",
+      "terminal_root": "children/G2-TEACHER/terminal"
+    },
+    {
+      "child_id": "G2-CNXTT",
+      "durable_locator": "ranamuhammadahmed6/cropcop-je-cal-cnxtt",
+      "experiment_id": "CAL-CNXTT",
+      "g2_summaries_root": "children/G2-CNXTT/g2_summaries",
+      "logical_lane": "K3",
+      "output_root": "children/G2-CNXTT/output",
+      "requested_physical_slot": "first_free",
+      "run_id": "CAL-CNXTT",
+      "terminal_root": "children/G2-CNXTT/terminal"
+    }
+  ],
+  "created_at_utc": "2026-09-07T16:56:36.557937+00:00",
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "dual_gpu_smoke_evidence_sha256": "61658254cd6216a11ec67755d20a001dc41531643fee04062a165610dfb69c86",
+  "durable_access_preflight": {
+    "checks": {
+      "CAL-CNXTT": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 1,
+        "locator": "ranamuhammadahmed6/cropcop-je-cal-cnxtt",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      },
+      "CAL-MNV4-DIRECT": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 1,
+        "locator": "ranamuhammadahmed6/cropcop-je-cal-mnv4-direct",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      },
+      "CAL-MNV4-TEACHER": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 1,
+        "locator": "ranamuhammadahmed6/cropcop-je-cal-mnv4-teacher",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      }
+    },
+    "current_envelope_locator_count": 3,
+    "current_envelope_run_ids": [
+      "CAL-MNV4-DIRECT",
+      "CAL-MNV4-TEACHER",
+      "CAL-CNXTT"
+    ],
+    "errors": [],
+    "global_namespace_validation": "PASS",
+    "global_reserved_locator_count": 9,
+    "kind": "kaggle-dataset",
+    "note": "Kaggle write authorization is bound to authenticated dataset ownership; the first real calibration/scientific sync is the non-fabricated write exercise.",
+    "resolved_locator_count": 3,
+    "schema_version": "1.0",
+    "status": "PASS"
+  },
+  "envelope_id": "MGPU-G2-T4X2-V1",
+  "g1_package_manifest_sha256": "051405afd367b8f938b35e8ba87850eae757d900bc95d822776cd7ca802390f6",
+  "g1_package_sha256": "3fab54a7b284bcf91ca630983b683ecbd61246bb091c3cc148ddf7c0d69f2db6",
+  "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "g2_barrier_sha256": null,
+  "kaggle_run_type": "Batch",
+  "manifest_sha256": "13bfc1db112dcb3f4fd579b0b5075c338d55e312d7af1953bf7bed3f3b267c8a",
+  "no_git_child_policy": true,
+  "notebook_started_monotonic": 227.4263028,
+  "parent_gpu_inventory": [
+    {
+      "index": 0,
+      "memory_total_mib": 15360,
+      "name": "Tesla T4",
+      "uuid": "GPU-5ab3df01-3b85-bb05-f52a-4abad0a1a409"
+    },
+    {
+      "index": 1,
+      "memory_total_mib": 15360,
+      "name": "Tesla T4",
+      "uuid": "GPU-fad5f03f-b44d-2f17-4146-19e5d98f9c59"
+    }
+  ],
+  "phase": "calibration-dual",
+  "protected_surfaces_unchanged": true,
+  "schema_version": "1.0",
+  "science_diff_status": "PASS",
+  "source_git_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "workers_per_child": 2
+}
