@@ -1,0 +1,46 @@
+{
+  "barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
+  "cnxtt_pretrained_sha256": "983f1562536e84ff750a1576fb08e54de751dbf2e17c0d8a4a13704341fdcd3d",
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "errors": [],
+  "forecast": {
+    "CAL-MNV4-DIRECT": {
+      "estimated_checkpoint_seconds": 1.041445347999911,
+      "estimated_durable_sync_seconds": 8.628537927000025,
+      "estimated_run_seconds": 41831.59106290662,
+      "estimated_safe_segments_at_11h": 2,
+      "estimated_train_seconds": 39868.54354471679,
+      "estimated_validation_seconds": 1963.0475181898257,
+      "forecast_is_scheduling_only": true,
+      "optimizer_steps_per_30_epoch_run": 35820
+    },
+    "CAL-MNV4-TEACHER": {
+      "estimated_checkpoint_seconds": 1.3555776800000103,
+      "estimated_durable_sync_seconds": 10.955035143000032,
+      "estimated_run_seconds": 46275.90366886407,
+      "estimated_safe_segments_at_11h": 2,
+      "estimated_train_seconds": 43451.29417251779,
+      "estimated_validation_seconds": 2824.6094963462806,
+      "forecast_is_scheduling_only": true,
+      "optimizer_steps_per_30_epoch_run": 35820
+    }
+  },
+  "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "input_summary_sha256": {
+    "CAL-CNXTT": "00d3518b3229ab16786d5d97d19ce0e16c966930740b2bf432ee81bc059a06e0",
+    "CAL-MNV4-DIRECT": "c89293bc4d0390737160b9aa39cd8aa973d5a54da3b7b83d8c21056e1942106d",
+    "CAL-MNV4-TEACHER": "8439e003934d58d0d278145376fc452a7afbb93c599a34146f5e545cd6a65260"
+  },
+  "mnv4_pretrained_sha256": "35ca23dc46c0075d9acdcab06d30e5395c4d97e422d8cb5e5e627823aeb7c1fa",
+  "required_calibrations": [
+    "CAL-MNV4-DIRECT",
+    "CAL-MNV4-TEACHER",
+    "CAL-CNXTT"
+  ],
+  "schema_version": "2.0",
+  "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
+  "source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "status": "PASS",
+  "teacher_checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+  "teacher_factory_bundle_sha256": "c73fa6e337f8c3ac7e32cd605191f72c59e30d790387e6e10990690230184929"
+}
