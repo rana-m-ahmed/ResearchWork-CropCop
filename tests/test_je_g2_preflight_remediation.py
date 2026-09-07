@@ -196,5 +196,37 @@ class OperatorRecoveryHardeningTests(unittest.TestCase):
         self.assertIn('scientific_execution_relaunched=false', source)
 
 
+    def test_14_principal_wrapper_hydrates_exact_locked_g2_summaries(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        self.assertIn('if EXECUTION_PHASE == "principal-dual":', source)
+        self.assertIn('_run_lane.collect_g2_summaries_from_evidence_branches(_shared_g2)', source)
+        self.assertIn('_required_g2 = ("CAL-MNV4-DIRECT", "CAL-MNV4-TEACHER", "CAL-CNXTT")', source)
+        self.assertIn('Principal G2 evidence hydration: PASS', source)
+
+    def test_15_principal_hydration_precedes_frozen_envelope_launch(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        hydrate = source.index('Principal G2 evidence hydration: PASS')
+        launch = source.index(
+            '[sys.executable, str(repo_workdir / "journal_extension/kaggle/run_envelope.py")]'
+        )
+        self.assertLess(hydrate, launch)
+
+    def test_16_principal_envelopes_keep_seed_pairs_and_slots_exact(self):
+        expected = {
+            "P1_S1_PAIR.json": ("K1", "R04-MNV4-DIRECT-S1", "R05-MNV4-TEACHER-S1"),
+            "P2_S2_PAIR.json": ("K2", "R04-MNV4-DIRECT-S2", "R05-MNV4-TEACHER-S2"),
+            "P3_S3_PAIR.json": ("K3", "R04-MNV4-DIRECT-S3", "R05-MNV4-TEACHER-S3"),
+        }
+        root = ROOT / "journal_extension/kaggle/envelopes"
+        for name, (lane, direct, teacher) in expected.items():
+            payload = json.loads((root / name).read_text(encoding="utf-8"))
+            self.assertEqual(payload["phase"], "principal-dual")
+            self.assertEqual(payload["hardware_profile"], "T4X2")
+            self.assertEqual(
+                [(row["lane"], row["experiment_id"], row["slot"]) for row in payload["children"]],
+                [(lane, direct, 0), (lane, teacher, 1)],
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
