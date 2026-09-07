@@ -784,6 +784,49 @@ subprocess.run(
     check=True,
 )
 
+# Wrapper-only exact ConvNeXt transport/model-load qualification. This mirrors the
+# frozen CAL-CNXTT identity checks without changing the execution source.
+if EXECUTION_PHASE == "calibration-dual" or (
+    EXECUTION_PHASE == "principal-dual" and PRINCIPAL_ENVELOPE == "P3"
+):
+    import hashlib
+    _cnxtt_path = Path(os.environ["CROPCOP_CNXTT_PRETRAINED"]).resolve()
+    _cnxtt_sha = hashlib.sha256(_cnxtt_path.read_bytes()).hexdigest()
+    if not _cnxtt_sha.startswith("983f1562"):
+        raise RuntimeError(
+            "ConvNeXt operator preflight SHA mismatch: expected official "
+            f"983f1562 prefix, observed {_cnxtt_sha}"
+        )
+    _cnxtt_probe_code = (
+        "import sys;"
+        "from pathlib import Path;"
+        "repo=Path(sys.argv[1]).resolve();"
+        "sys.path.insert(0,str(repo/'journal_extension'/'src'));"
+        "from cropcop_je.models import create_convnext_tiny_from_pretrained;"
+        "m=create_convnext_tiny_from_pretrained(sys.argv[2],seed=21270083,num_classes=120);"
+        "print('CNXTT_MODEL_LOAD_PASS')"
+    )
+    _cnxtt_probe = subprocess.run(
+        [sys.executable, "-c", _cnxtt_probe_code, str(repo_workdir), str(_cnxtt_path)],
+        cwd=repo_workdir,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    if _cnxtt_probe.returncode != 0:
+        _detail = _redact_operator_secrets(
+            (_cnxtt_probe.stderr or "") + "\n" + (_cnxtt_probe.stdout or "")
+        )
+        raise RuntimeError(
+            "ConvNeXt operator model-load preflight failed before envelope launch: "
+            + _detail[-4000:]
+        )
+    print(
+        "ConvNeXt exact transport/model-load preflight: PASS "
+        f"(sha256={_cnxtt_sha}, filename={_cnxtt_path.name})"
+    )
+
 # G1 external target orchestration happens only after clean-source/dependency/bootstrap
 # validation and before the frozen G1 entrypoint independently revalidates the target.
 if EXECUTION_PHASE == "g1":
@@ -900,6 +943,27 @@ elif EXECUTION_PHASE in {"calibration-dual", "principal-dual"}:
                     f"(branch={_repaired_branch}, scientific_execution_relaunched=false)"
                 )
         if not _repair_ok:
+            # Surface child-local diagnostics into the Saved Version log. Child
+            # processes have Git credentials stripped; redact remaining operator
+            # secrets defensively before printing.
+            _log_root = Path(
+                os.environ.get(
+                    "CROPCOP_ENVELOPE_OUTPUT_ROOT",
+                    str(Path(OUTPUT_ROOT) / "envelopes"),
+                )
+            ).resolve()
+            _logs = sorted(_log_root.rglob("console.log")) if _log_root.exists() else []
+            for _log in _logs:
+                try:
+                    _tail = _log.read_text(encoding="utf-8", errors="replace")[-8000:]
+                except Exception as _log_exc:
+                    _tail = f"<unable to read console log: {type(_log_exc).__name__}: {_log_exc}>"
+                print(
+                    "\n===== ENVELOPE CHILD CONSOLE TAIL: "
+                    + str(_log)
+                    + " =====\n"
+                    + _redact_operator_secrets(_tail)
+                )
             raise subprocess.CalledProcessError(
                 _envelope_cp.returncode,
                 _envelope_cp.args,
