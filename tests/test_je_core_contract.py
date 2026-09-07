@@ -3,7 +3,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"journal_extension"/"src"))
 from cropcop_je.data import ManifestColumns,load_manifest_rows,row_augmentation_seed
-from cropcop_je.train import _accumulation_bucket_sample_count
+from cropcop_je.accumulation import accumulation_bucket_sample_count
 from cropcop_je.runlog import assert_resume_identity,validate_run_record
 from cropcop_je.surfaces import SurfaceAuthorizationError,authorize_training_surface,validate_training_config
 from cropcop_je.validate import validate_static
@@ -35,7 +35,7 @@ class JECoreContractTests(unittest.TestCase):
         a=row_augmentation_seed(21270083,0,"r"); self.assertEqual(a,row_augmentation_seed(21270083,0,"r")); self.assertNotEqual(a,row_augmentation_seed(21270083,1,"r"))
     def test_locked_training_tail_bucket_is_sample_normalized(self):
         self.assertEqual(
-            _accumulation_bucket_sample_count(
+            accumulation_bucket_sample_count(
                 absolute_batch_index=4772,
                 batches_per_epoch=4774,
                 micro_batch_size=16,
@@ -45,7 +45,7 @@ class JECoreContractTests(unittest.TestCase):
             24,
         )
         self.assertEqual(
-            _accumulation_bucket_sample_count(
+            accumulation_bucket_sample_count(
                 absolute_batch_index=4773,
                 batches_per_epoch=4774,
                 micro_batch_size=16,
