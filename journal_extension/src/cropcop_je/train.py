@@ -42,6 +42,24 @@ class EpochPermutationSampler(Sampler[Any]):
         return len(self.order)
 
 
+def _accumulation_bucket_sample_count(
+    *,
+    absolute_batch_index: int,
+    batches_per_epoch: int,
+    micro_batch_size: int,
+    accumulation_steps: int,
+    dataset_size: int,
+) -> int:
+    bucket_start_batch = (int(absolute_batch_index) // int(accumulation_steps)) * int(accumulation_steps)
+    bucket_end_batch = min(bucket_start_batch + int(accumulation_steps), int(batches_per_epoch))
+    bucket_start_sample = bucket_start_batch * int(micro_batch_size)
+    bucket_end_sample = min(bucket_end_batch * int(micro_batch_size), int(dataset_size))
+    count = bucket_end_sample - bucket_start_sample
+    if count <= 0:
+        raise RuntimeError("invalid gradient-accumulation bucket sample count")
+    return count
+
+
 def _seed(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed % (2**32))
@@ -292,13 +310,13 @@ def run_training(
             n = int(y.numel())
             segment_examples += n
             examples_seen_total += n
-            bucket_start_batch = (absolute_bi // accum) * accum
-            bucket_end_batch = min(bucket_start_batch + accum, batches_per_epoch)
-            bucket_start_sample = bucket_start_batch * micro
-            bucket_end_sample = min(bucket_end_batch * micro, len(train_dataset))
-            bucket_samples = bucket_end_sample - bucket_start_sample
-            if bucket_samples <= 0:
-                raise RuntimeError("invalid gradient-accumulation bucket sample count")
+            bucket_samples = _accumulation_bucket_sample_count(
+                absolute_batch_index=absolute_bi,
+                batches_per_epoch=batches_per_epoch,
+                micro_batch_size=micro,
+                accumulation_steps=accum,
+                dataset_size=len(train_dataset),
+            )
 
             with torch.amp.autocast("cuda", dtype=torch.float16):
                 sf, sl = prelogits_and_logits(student, x)
