@@ -12,6 +12,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Sampler
 
+from .accumulation import accumulation_bucket_sample_count
 from .checkpointing import recover_latest, save_torch_checkpoint, verify_selected
 from .data import epoch_order_seed
 from .evaluate import benchmark_forward, evaluate_classifier
@@ -40,24 +41,6 @@ class EpochPermutationSampler(Sampler[Any]):
 
     def __len__(self):
         return len(self.order)
-
-
-def _accumulation_bucket_sample_count(
-    *,
-    absolute_batch_index: int,
-    batches_per_epoch: int,
-    micro_batch_size: int,
-    accumulation_steps: int,
-    dataset_size: int,
-) -> int:
-    bucket_start_batch = (int(absolute_batch_index) // int(accumulation_steps)) * int(accumulation_steps)
-    bucket_end_batch = min(bucket_start_batch + int(accumulation_steps), int(batches_per_epoch))
-    bucket_start_sample = bucket_start_batch * int(micro_batch_size)
-    bucket_end_sample = min(bucket_end_batch * int(micro_batch_size), int(dataset_size))
-    count = bucket_end_sample - bucket_start_sample
-    if count <= 0:
-        raise RuntimeError("invalid gradient-accumulation bucket sample count")
-    return count
 
 
 def _seed(seed: int) -> None:
@@ -310,7 +293,7 @@ def run_training(
             n = int(y.numel())
             segment_examples += n
             examples_seen_total += n
-            bucket_samples = _accumulation_bucket_sample_count(
+            bucket_samples = accumulation_bucket_sample_count(
                 absolute_batch_index=absolute_bi,
                 batches_per_epoch=batches_per_epoch,
                 micro_batch_size=micro,
