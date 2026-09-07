@@ -3,20 +3,34 @@
   "amendment_sha256": "3f08f2dbe7e83143c7e6f1fcf6732c7d88086295a600a74b323b89b46caed3f6",
   "child_results": {
     "G2-CNXTT": {
+      "child_preflight": {
+        "cuda_visible_devices": "0",
+        "envelope_id": "MGPU-G2-T4X2-V1",
+        "git_credentials_present": false,
+        "logical_lane": "K3",
+        "notebook_started_monotonic": 529.304851742,
+        "observed_visible_cuda_count": 1,
+        "observed_visible_gpu_name": "Tesla T4",
+        "requested_physical_gpu_slot": 0,
+        "schema_version": "1.0",
+        "status": "PASS"
+      },
       "child_visible_cuda_count_required": 1,
       "console_log": "children/G2-CNXTT/console.log",
       "continuation_required": false,
-      "duration_seconds": 9.702473729999952,
-      "ended_monotonic": 615.29564105,
-      "error": "EnvelopeError: terminal calibration child did not create summary: CAL-CNXTT.json",
-      "evidence_chain_complete": false,
+      "duration_seconds": 212.34402100399996,
+      "ended_monotonic": 1015.533108826,
+      "evidence_chain_complete": true,
       "git_credentials_present_in_child": false,
-      "physical_gpu_uuid": "GPU-6eecbd3e-0b66-31f5-121a-3b89ebceabaf",
+      "physical_gpu_uuid": "GPU-fd730b36-e076-23e7-d9eb-a21be4b12fac",
       "physical_slot": 0,
-      "publication_status": "NOT_ATTEMPTED",
-      "returncode": 1,
-      "started_monotonic": 605.59316732,
-      "status": "FAIL_TECHNICAL",
+      "process_returncode": 0,
+      "publication_branch": "run-evidence/CAL-CNXTT",
+      "publication_error": null,
+      "publication_status": "PASS",
+      "result_relative_path": "children/G2-CNXTT/g2_summaries/CAL-CNXTT.json",
+      "started_monotonic": 803.189087822,
+      "status": "PASS",
       "termination": null
     },
     "G2-DIRECT": {
@@ -84,7 +98,7 @@
       "termination": null
     }
   },
-  "created_at_utc": "2026-09-07T17:34:56.116510+00:00",
+  "created_at_utc": "2026-09-07T18:03:43.544662+00:00",
   "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
   "dual_gpu_smoke_evidence_sha256": "61658254cd6216a11ec67755d20a001dc41531643fee04062a165610dfb69c86",
   "durable_access_preflight": {
@@ -138,11 +152,11 @@
   "envelope_id": "MGPU-G2-T4X2-V1",
   "finalization_outcomes": {},
   "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
-  "g2_barrier_sha256": null,
-  "g2_publication_branch": null,
+  "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
+  "g2_publication_branch": "run-evidence/G2-CALIBRATION-BARRIER",
   "host_global_stop_reason": null,
   "kaggle_run_type": "Batch",
-  "manifest_sha256": "766f6d31f0dbefb05ff40f8d48269d083cff3ce732d3798d79b359a9233ba016",
+  "manifest_sha256": "74b676a01f7c857fff523d661da084d33c70763b0ad14c62e045065a6274a729",
   "no_git_child_policy": true,
   "overlap_duration_seconds": 0.0,
   "parent_gpu_inventory": [
@@ -150,13 +164,13 @@
       "index": 0,
       "memory_total_mib": 15360,
       "name": "Tesla T4",
-      "uuid": "GPU-6eecbd3e-0b66-31f5-121a-3b89ebceabaf"
+      "uuid": "GPU-fd730b36-e076-23e7-d9eb-a21be4b12fac"
     },
     {
       "index": 1,
       "memory_total_mib": 15360,
       "name": "Tesla T4",
-      "uuid": "GPU-9888aeec-9fc6-f56a-dc27-5c9688c04347"
+      "uuid": "GPU-0bd78fb0-1f94-c360-81dc-50ee0fc5257e"
     }
   ],
   "parent_publication_serialized": true,
@@ -166,5 +180,5 @@
   "science_diff_status": "PASS",
   "scientific_configuration_changed": false,
   "source_git_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
-  "status": "FAIL_TECHNICAL"
+  "status": "PASS"
 }

@@ -36,7 +36,7 @@
       "terminal_root": "children/G2-CNXTT/terminal"
     }
   ],
-  "created_at_utc": "2026-09-07T17:34:45.781288+00:00",
+  "created_at_utc": "2026-09-07T18:00:06.934202+00:00",
   "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
   "dual_gpu_smoke_evidence_sha256": "61658254cd6216a11ec67755d20a001dc41531643fee04062a165610dfb69c86",
   "durable_access_preflight": {
@@ -91,23 +91,23 @@
   "g1_package_manifest_sha256": "051405afd367b8f938b35e8ba87850eae757d900bc95d822776cd7ca802390f6",
   "g1_package_sha256": "3fab54a7b284bcf91ca630983b683ecbd61246bb091c3cc148ddf7c0d69f2db6",
   "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
-  "g2_barrier_sha256": null,
+  "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
   "kaggle_run_type": "Batch",
-  "manifest_sha256": "766f6d31f0dbefb05ff40f8d48269d083cff3ce732d3798d79b359a9233ba016",
+  "manifest_sha256": "74b676a01f7c857fff523d661da084d33c70763b0ad14c62e045065a6274a729",
   "no_git_child_policy": true,
-  "notebook_started_monotonic": 443.294209029,
+  "notebook_started_monotonic": 529.304851742,
   "parent_gpu_inventory": [
     {
       "index": 0,
       "memory_total_mib": 15360,
       "name": "Tesla T4",
-      "uuid": "GPU-6eecbd3e-0b66-31f5-121a-3b89ebceabaf"
+      "uuid": "GPU-fd730b36-e076-23e7-d9eb-a21be4b12fac"
     },
     {
       "index": 1,
       "memory_total_mib": 15360,
       "name": "Tesla T4",
-      "uuid": "GPU-9888aeec-9fc6-f56a-dc27-5c9688c04347"
+      "uuid": "GPU-0bd78fb0-1f94-c360-81dc-50ee0fc5257e"
     }
   ],
   "phase": "calibration-dual",
