@@ -1,5 +1,5 @@
 {
-  "authorized_source_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "authorized_source_sha": "beabe97d046e071edacdfa1c6933eeb4edb3a588",
   "source_authority": "Frozen Stage-01A-G1P-v2.2 execution source; wrapper/test/documentation commits are not execution sources.",
   "phase_vocabulary": [
     "smoke-write",
