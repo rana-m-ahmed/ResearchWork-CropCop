@@ -1,0 +1,64 @@
+{
+  "calibration_id": "CAL-CNXTT",
+  "calibration_weights_scientific": false,
+  "cnxtt_pretrained_sha256": "983f1562536e84ff750a1576fb08e54de751dbf2e17c0d8a4a13704341fdcd3d",
+  "condition": "context_direct",
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "locked_optimizer_steps": 100,
+  "measured": {
+    "accelerator": "Tesla T4",
+    "checkpoint_load_seconds": 1.1940800590000435,
+    "checkpoint_save_seconds": 6.632633318999979,
+    "cuda_driver_identity": {
+      "available": true,
+      "gpus": [
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-fd730b36-e076-23e7-d9eb-a21be4b12fac"
+        },
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-0bd78fb0-1f94-c360-81dc-50ee0fc5257e"
+        }
+      ]
+    },
+    "dataloader_examples_per_wait_second": 57.515069098451626,
+    "dataloader_wait_seconds": 111.2751857960003,
+    "durable_sync_seconds": 0.0,
+    "examples_per_second": 44.248874361015844,
+    "examples_segment": 6400,
+    "examples_total": 6400,
+    "latest_checkpoint_sha256": "8ef500de147e1bdc6528d454600f0fcfef9beec235ca3c05e493cf993202a2c8",
+    "mode": "calibration",
+    "optimizer_step_total": 100,
+    "optimizer_steps_segment": 100,
+    "peak_gpu_memory_bytes": 1861572096,
+    "planned_rollover": false,
+    "recovery_events": [],
+    "rollover_reason": null,
+    "sec_per_optimizer_step": 1.4463644764800005,
+    "validation_forward_benchmark": {
+      "batches": 20,
+      "end_to_end_examples_per_second": 153.07648798752916,
+      "examples": 320,
+      "forward_examples_per_second": 197.167533724773,
+      "forward_seconds": 1.6229852549998895,
+      "loader_wait_seconds": 0.46747294800036343
+    },
+    "wall_seconds_segment": 144.63644764800006
+  },
+  "mnv4_pretrained_sha256": "35ca23dc46c0075d9acdcab06d30e5395c4d97e422d8cb5e5e627823aeb7c1fa",
+  "observed_kaggle_constraints": {
+    "quota_visibility": "not_exposed_programmatically_to_runner"
+  },
+  "resume_success": true,
+  "schema_version": "3.0",
+  "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
+  "source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "status": "PASS",
+  "teacher_checkpoint_sha256": null,
+  "teacher_factory_bundle_sha256": null
+}
