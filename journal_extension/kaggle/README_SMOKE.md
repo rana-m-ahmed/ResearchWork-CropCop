@@ -4,7 +4,7 @@ This is the **active** operator handoff. Historical Stage-01A-SR/MGPU-QA1 report
 
 Final generator-authorized Stage-01A-G1P-v2.2 execution source:
 
-`f171309fc7e9dc22241ecc137ebbb8e4bcdc5433`
+`beabe97d046e071edacdfa1c6933eeb4edb3a588`
 
 Dependency lock:
 
