@@ -85,6 +85,46 @@ G1_INPUT_ROOT = os.environ.get(
     "<SET_AFTER_ATTACHING_SEALED_G1_DATASET>",
 )
 
+# Wrapper-only downstream preflight. This does not alter the frozen scientific source.
+if EXECUTION_PHASE in {"calibration-dual", "principal-dual"}:
+    _required_downstream_env = [
+        "CROPCOP_MANIFEST",
+        "CROPCOP_CLASS_MAP",
+        "CROPCOP_IMAGE_ROOT",
+        "CROPCOP_G2_SUMMARIES_DIR",
+        "CROPCOP_DURABLE_STORE_KIND",
+        "CROPCOP_DURABLE_LOCATOR_TEMPLATE",
+    ]
+    _missing_downstream = [
+        _name for _name in _required_downstream_env
+        if not str(os.environ.get(_name, "")).strip()
+    ]
+    if _missing_downstream:
+        raise RuntimeError(
+            "Missing required downstream environment variables before source clone: "
+            + ", ".join(_missing_downstream)
+        )
+
+    _cnxtt_required = EXECUTION_PHASE == "calibration-dual" or (
+        EXECUTION_PHASE == "principal-dual" and PRINCIPAL_ENVELOPE == "P3"
+    )
+    if _cnxtt_required:
+        _cnxtt_raw = str(os.environ.get("CROPCOP_CNXTT_PRETRAINED", "")).strip()
+        if not _cnxtt_raw:
+            raise RuntimeError(
+                "CROPCOP_CNXTT_PRETRAINED is required for G2 calibration and P3 principal."
+            )
+        _cnxtt_path = Path(_cnxtt_raw).resolve()
+        if not _cnxtt_path.is_file():
+            raise RuntimeError(
+                f"CROPCOP_CNXTT_PRETRAINED is not a file: {_cnxtt_path}"
+            )
+        if _cnxtt_path.name != "convnext_tiny-983f1562.pth":
+            raise RuntimeError(
+                "CROPCOP_CNXTT_PRETRAINED must point to convnext_tiny-983f1562.pth"
+            )
+        print(f"ConvNeXt operator preflight: PASS ({_cnxtt_path})")
+
 _FROZEN_V1_COLUMN_ENV = {
     "CROPCOP_ROW_ID_COLUMN": "record_key",
     "CROPCOP_PATH_COLUMN": "portable_relpath",
@@ -804,11 +844,66 @@ elif EXECUTION_PHASE == "g1":
         check=True,
     )
 elif EXECUTION_PHASE in {"calibration-dual", "principal-dual"}:
-    subprocess.run(
+    # The frozen source performs a serialized second envelope publication after
+    # recording its branch in ENVELOPE_EVIDENCE.json. In the known idempotent
+    # case only ENVELOPE_EVIDENCE.json changes, while the frozen publication
+    # helper expects every allowlisted file to be staged. Keep the scientific
+    # source immutable and repair only that parent-publication tail here.
+    _envelope_cp = subprocess.run(
         [sys.executable, str(repo_workdir / "journal_extension/kaggle/run_envelope.py")],
         cwd=repo_workdir,
-        check=True,
+        check=False,
     )
+    if _envelope_cp.returncode != 0:
+        _envelope_cfg_name = (
+            "G2_DUAL_T4.json"
+            if EXECUTION_PHASE == "calibration-dual"
+            else {"P1": "P1_S1_PAIR.json", "P2": "P2_S2_PAIR.json", "P3": "P3_S3_PAIR.json"}[PRINCIPAL_ENVELOPE]
+        )
+        _envelope_cfg = json.loads(
+            (repo_workdir / "journal_extension/kaggle/envelopes" / _envelope_cfg_name).read_text(
+                encoding="utf-8"
+            )
+        )
+        _envelope_id = _envelope_cfg["envelope_id"]
+        _envelope_root = Path(
+            os.environ.get(
+                "CROPCOP_ENVELOPE_OUTPUT_ROOT",
+                str(Path(OUTPUT_ROOT) / "envelopes" / _envelope_id),
+            )
+        ).resolve()
+        _state_path = _envelope_root / "ENVELOPE_STATE.json"
+        _evidence_path = _envelope_root / "ENVELOPE_EVIDENCE.json"
+        _repair_ok = False
+        if _state_path.is_file() and _evidence_path.is_file():
+            _state = json.loads(_state_path.read_text(encoding="utf-8"))
+            _evidence = json.loads(_evidence_path.read_text(encoding="utf-8"))
+            _branch = str(_evidence.get("envelope_publication_branch") or "").strip()
+            if _state.get("state") in {"PASS", "CONTINUATION_REQUIRED"} and _branch:
+                _src = repo_workdir / "journal_extension" / "src"
+                if str(_src) not in sys.path:
+                    sys.path.insert(0, str(_src))
+                from cropcop_je.publication import publish_to_github_branch
+                _repaired_branch = publish_to_github_branch(
+                    repo_dir=repo_workdir,
+                    source_git_sha=AUTHORIZED_SOURCE_SHA,
+                    run_id=_envelope_id,
+                    files=[_evidence_path],
+                )
+                if _repaired_branch != _branch:
+                    raise RuntimeError(
+                        "wrapper publication repair changed the envelope evidence branch"
+                    )
+                _repair_ok = True
+                print(
+                    "Envelope terminal publication repair: PASS "
+                    f"(branch={_repaired_branch}, scientific_execution_relaunched=false)"
+                )
+        if not _repair_ok:
+            raise subprocess.CalledProcessError(
+                _envelope_cp.returncode,
+                _envelope_cp.args,
+            )
 else:
     raise RuntimeError(f"unsupported canonical execution phase: {EXECUTION_PHASE}")
 '''
