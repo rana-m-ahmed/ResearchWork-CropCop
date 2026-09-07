@@ -1,0 +1,46 @@
+{
+  "authorized_source_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "source_authority": "Frozen Stage-01A-G1P-v2.2 execution source; wrapper/test/documentation commits are not execution sources.",
+  "phase_vocabulary": [
+    "smoke-write",
+    "smoke-restore",
+    "dual-gpu-smoke",
+    "g1",
+    "calibration-dual",
+    "principal-dual"
+  ],
+  "principal_envelopes": [
+    "P1",
+    "P2",
+    "P3"
+  ],
+  "lane": "K1",
+  "repository_url": "https://github.com/rana-m-ahmed/ResearchWork-CropCop.git",
+  "repo_workdir": "/kaggle/working/cropcop-je",
+  "output_root": "/kaggle/working/cropcop-je-output",
+  "synthetic_smoke_root": "/kaggle/working/cropcop-smoke-input",
+  "smoke_a_export_root": "/kaggle/working/cropcop-smoke-a-export",
+  "smoke_b_export_root": "/kaggle/working/cropcop-smoke-b-export",
+  "smoke_a_input_root": "<SET_ONLY_FOR_SMOKE_RESTORE>",
+  "smoke_b_input_root": "<SET_FOR_DUAL_SMOKE_AND_LATER>",
+  "dual_gpu_smoke_input_root": "<SET_FOR_G1_AND_LATER>",
+  "rfdv_root": "<SET_FOR_G1_TO_CROPCOP_MODEL_RFDV_ROOT>",
+  "final_v1_root": "<SET_FOR_G1_TO_FROZEN_FINAL_V1_ROOT>",
+  "g1_private_dataset_slug": "<SET_FOR_G1_OWNER/PRIVATE_DATASET>",
+  "g1_input_root": "<SET_FOR_CALIBRATION_DUAL_AND_PRINCIPAL_DUAL>",
+  "frozen_v1_columns": {
+    "row_id": "record_key",
+    "path": "portable_relpath",
+    "split": "split",
+    "label": "label"
+  },
+  "calibration_inputs": {
+    "manifest": "<SET_FINAL_V1>/audit/final_manifest.csv",
+    "class_map": "<SET_FINAL_V1>/audit/class_to_idx.json",
+    "image_root": "<SET_FINAL_V1>/dataset",
+    "cnxtt_pretrained": "<SET_OFFICIAL_CNXTT>/convnext_tiny-983f1562.pth",
+    "g2_summaries_dir": "/kaggle/working/cropcop-g2-summaries",
+    "durable_store_kind": "kaggle-dataset",
+    "durable_locator_template": "ranamuhammadahmed6/cropcop-je-{run_id_lower}"
+  }
+}

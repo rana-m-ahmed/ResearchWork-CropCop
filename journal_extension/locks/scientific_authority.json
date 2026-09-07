@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "authority_sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74",
+  "stage04_architecture_id": "EAAI-JE-REA-v2.2-LEAN",
+  "stage04_sha256": "a1bc1f8bb2d7a133a46c3f59f83dd2ba8ca3bf0fa8d77ae323553276931bc079",
+  "stage00_gate": "GO — TRACKS EXTRACTED; START 01A/01B/01C NOW",
+  "repository_baseline": "32190dd86293caa82170df3feea505e3c7443b4b",
+  "dataset": {
+    "name": "CropCop_Final_v1",
+    "images": 109107,
+    "classes": 120,
+    "train": 76376,
+    "validation": 16368,
+    "test": 16363,
+    "semantic_fingerprint": "7c368e6e3d8be3bb3a9a3a5f961075d4faa125bcac2e98a3b55e1a1c61f1c523",
+    "build_fingerprint": "2d7c237981b8943d9b08a522db0489849a4bfe7f488dfb6461489dd36dcdc12b",
+    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2"
+  },
+  "student": {
+    "package": "timm",
+    "package_version": "1.0.26",
+    "model_name": "mobilenetv4_conv_medium.e500_r256_in1k",
+    "num_classes": 120,
+    "pretrained_source": "corresponding ImageNet pretrained object exposed by timm==1.0.26",
+    "pretrained_sha256": "VERIFY_AT_G1"
+  },
+  "teacher": {
+    "identity": "historical fully fine-tuned DINOv3 ConvNeXt-Tiny reference",
+    "source_model": "facebook/dinov3-convnext-tiny-pretrain-lvd1689m",
+    "checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+    "num_classes": 120,
+    "replacement_forbidden_without_relock": true
+  },
+  "software": {
+    "python": "3.12.13",
+    "torch": "2.12.1",
+    "torchvision": "0.27.1",
+    "timm": "1.0.26"
+  },
+  "protected_surfaces": [
+    "DS-V1-TEST-CONSUMED",
+    "DS-EXT-*-SEALED"
+  ],
+  "legacy_v1_mutation_forbidden": true,
+  "stage04_execution_amendment_id": "EAAI-JE-MGPU-A1",
+  "stage04_execution_amendment_sha256": "3f08f2dbe7e83143c7e6f1fcf6732c7d88086295a600a74b323b89b46caed3f6"
+}

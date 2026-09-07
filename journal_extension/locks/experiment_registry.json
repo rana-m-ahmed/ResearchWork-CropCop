@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "authority_sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74",
+  "seed_registry": {"training_s1":21270083,"training_s2":606135704,"training_s3":1153870846,"v1_continuity_bootstrap":1609375989,"external_bootstrap":409883112,"device_manifest_ordering":285554145,"external_family_namespace_order":1936263114,"reserved_analysis_resampling":828258175},
+  "experiments": [
+    {"experiment_id":"R04-MNV4-DIRECT-S1","state":"active","priority":"P0","seed":21270083,"pair_id":"MNV4-PAIR-S1","condition":"direct","allowed_surfaces":["DS-V1-TRAIN","DS-V1-VAL"],"forbidden_surfaces":["DS-V1-TEST-CONSUMED","DS-EXT-*-SEALED","DS-HIST-COMPARE"],"config_path":"journal_extension/configs/r04_direct/s1.json","selection_surface":"DS-V1-VAL","protected_use":"V1 continuity only after G5"},
+    {"experiment_id":"R04-MNV4-DIRECT-S2","state":"active","priority":"P0","seed":606135704,"pair_id":"MNV4-PAIR-S2","condition":"direct","allowed_surfaces":["DS-V1-TRAIN","DS-V1-VAL"],"forbidden_surfaces":["DS-V1-TEST-CONSUMED","DS-EXT-*-SEALED","DS-HIST-COMPARE"],"config_path":"journal_extension/configs/r04_direct/s2.json","selection_surface":"DS-V1-VAL","protected_use":"V1 continuity only after G5"},
+    {"experiment_id":"R04-MNV4-DIRECT-S3","state":"active","priority":"P0","seed":1153870846,"pair_id":"MNV4-PAIR-S3","condition":"direct","allowed_surfaces":["DS-V1-TRAIN","DS-V1-VAL"],"forbidden_surfaces":["DS-V1-TEST-CONSUMED","DS-EXT-*-SEALED","DS-HIST-COMPARE"],"config_path":"journal_extension/configs/r04_direct/s3.json","selection_surface":"DS-V1-VAL","protected_use":"V1 continuity only after G5"},
+    {"experiment_id":"R05-MNV4-TEACHER-S1","state":"active","priority":"P0","seed":21270083,"pair_id":"MNV4-PAIR-S1","condition":"teacher","allowed_surfaces":["DS-V1-TRAIN","DS-V1-VAL"],"forbidden_surfaces":["DS-V1-TEST-CONSUMED","DS-EXT-*-SEALED","DS-HIST-COMPARE"],"config_path":"journal_extension/configs/r05_teacher/s1.json","selection_surface":"DS-V1-VAL","protected_use":"V1 continuity only after G5"},
+    {"experiment_id":"R05-MNV4-TEACHER-S2","state":"active","priority":"P0","seed":606135704,"pair_id":"MNV4-PAIR-S2","condition":"teacher","allowed_surfaces":["DS-V1-TRAIN","DS-V1-VAL"],"forbidden_surfaces":["DS-V1-TEST-CONSUMED","DS-EXT-*-SEALED","DS-HIST-COMPARE"],"config_path":"journal_extension/configs/r05_teacher/s2.json","selection_surface":"DS-V1-VAL","protected_use":"V1 continuity only after G5"},
+    {"experiment_id":"R05-MNV4-TEACHER-S3","state":"active","priority":"P0","seed":1153870846,"pair_id":"MNV4-PAIR-S3","condition":"teacher","allowed_surfaces":["DS-V1-TRAIN","DS-V1-VAL"],"forbidden_surfaces":["DS-V1-TEST-CONSUMED","DS-EXT-*-SEALED","DS-HIST-COMPARE"],"config_path":"journal_extension/configs/r05_teacher/s3.json","selection_surface":"DS-V1-VAL","protected_use":"V1 continuity only after G5"}
+  ],
+  "calibrations": {"CAL-MNV4-DIRECT":{"optimizer_steps":200,"surface":"DS-V1-TRAIN","scientific_checkpoint":false},"CAL-MNV4-TEACHER":{"optimizer_steps":100,"surface":"DS-V1-TRAIN","scientific_checkpoint":false},"CAL-CNXTT":{"optimizer_steps":100,"surface":"DS-V1-TRAIN","scientific_checkpoint":false}},
+  "not_authorized": ["R13-NEW-JE-RUNTIME","R15-CONTRIB-SOURCE-STRESS","R16-PROTECTED-FIELD-FALLBACK"]
+}
