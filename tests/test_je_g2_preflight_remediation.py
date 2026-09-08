@@ -199,13 +199,14 @@ class OperatorRecoveryHardeningTests(unittest.TestCase):
     def test_14_principal_wrapper_hydrates_exact_locked_g2_summaries(self):
         source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
         self.assertIn('if EXECUTION_PHASE == "principal-dual":', source)
-        self.assertIn('_run_lane.collect_g2_summaries_from_evidence_branches(_shared_g2)', source)
         self.assertIn('_required_g2 = ("CAL-MNV4-DIRECT", "CAL-MNV4-TEACHER", "CAL-CNXTT")', source)
-        self.assertIn('Principal G2 evidence hydration: PASS', source)
+        self.assertIn('authenticated-github-contents-api', source)
+        self.assertIn('Principal G2 authenticated evidence hydration: PASS', source)
+        self.assertNotIn('_run_lane.collect_g2_summaries_from_evidence_branches(_shared_g2)', source)
 
     def test_15_principal_hydration_precedes_frozen_envelope_launch(self):
         source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
-        hydrate = source.index('Principal G2 evidence hydration: PASS')
+        hydrate = source.index('Principal G2 authenticated evidence hydration: PASS')
         launch = source.index(
             '[sys.executable, str(repo_workdir / "journal_extension/kaggle/run_envelope.py")]'
         )
@@ -226,6 +227,39 @@ class OperatorRecoveryHardeningTests(unittest.TestCase):
                 [(row["lane"], row["experiment_id"], row["slot"]) for row in payload["children"]],
                 [(lane, direct, 0), (lane, teacher, 1)],
             )
+
+
+    def test_17_principal_handoff_pins_qualified_g2_hashes(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        self.assertIn("3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a", source)
+        self.assertIn("c89293bc4d0390737160b9aa39cd8aa973d5a54da3b7b83d8c21056e1942106d", source)
+        self.assertIn("8439e003934d58d0d278145376fc452a7afbb93c599a34146f5e545cd6a65260", source)
+        self.assertIn("00d3518b3229ab16786d5d97d19ce0e16c966930740b2bf432ee81bc059a06e0", source)
+        self.assertIn("_validate_g2_barrier_object(", source)
+        self.assertIn("_validate_calibration_summary(_summary)", source)
+        self.assertIn("_sha256_json(_summary)", source)
+
+    def test_18_principal_handoff_does_not_silence_transport_failure(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        self.assertIn("GitHub evidence fetch failed with HTTP", source)
+        self.assertIn("GitHub evidence fetch network failure", source)
+        self.assertIn("GitHub evidence response identity/encoding mismatch", source)
+        self.assertNotIn("if not _git_fetch_branch(branch):\\n            continue", source)
+
+    def test_19_canonical_notebook_contains_same_hardened_handoff(self):
+        notebook = json.loads(
+            (ROOT / "journal_extension/kaggle/canonical_lane.ipynb").read_text(encoding="utf-8")
+        )
+        code = "\\n".join(
+            "".join(cell.get("source", [])) if isinstance(cell.get("source"), list)
+            else str(cell.get("source", ""))
+            for cell in notebook["cells"]
+            if cell.get("cell_type") == "code"
+        )
+        self.assertIn("authenticated-github-contents-api", code)
+        self.assertIn("Principal G2 authenticated evidence hydration: PASS", code)
+        self.assertIn("3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a", code)
+        self.assertNotIn("_run_lane.collect_g2_summaries_from_evidence_branches(_shared_g2)", code)
 
 
 if __name__ == "__main__":
