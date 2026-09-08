@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "status": "LOCKED",
+  "scientific_source_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "g2_barrier": {
+    "branch": "run-evidence/G2-CALIBRATION-BARRIER",
+    "path": "journal_extension/evidence/public/runs/G2-CALIBRATION-BARRIER/G2_CALIBRATION_BARRIER.json",
+    "barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a"
+  },
+  "summaries": {
+    "CAL-MNV4-DIRECT": {
+      "branch": "run-evidence/CAL-MNV4-DIRECT",
+      "path": "journal_extension/evidence/public/runs/CAL-MNV4-DIRECT/CAL-MNV4-DIRECT.json",
+      "sha256_json": "c89293bc4d0390737160b9aa39cd8aa973d5a54da3b7b83d8c21056e1942106d"
+    },
+    "CAL-MNV4-TEACHER": {
+      "branch": "run-evidence/CAL-MNV4-TEACHER",
+      "path": "journal_extension/evidence/public/runs/CAL-MNV4-TEACHER/CAL-MNV4-TEACHER.json",
+      "sha256_json": "8439e003934d58d0d278145376fc452a7afbb93c599a34146f5e545cd6a65260"
+    },
+    "CAL-CNXTT": {
+      "branch": "run-evidence/CAL-CNXTT",
+      "path": "journal_extension/evidence/public/runs/CAL-CNXTT/CAL-CNXTT.json",
+      "sha256_json": "00d3518b3229ab16786d5d97d19ce0e16c966930740b2bf432ee81bc059a06e0"
+    }
+  },
+  "mutation_boundary": "wrapper/evidence transport only; frozen scientific source unchanged"
+}
