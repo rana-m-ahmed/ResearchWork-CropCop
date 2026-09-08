@@ -17,11 +17,11 @@ For `principal-dual`, set non-secret `CROPCOP_PRINCIPAL_ENVELOPE` to `P1`, `P2`,
 Smoke A/B remain cross-Saved-Version and API-free. `smoke-restore` requires the exact Smoke-A Notebook Output attached read-only.
 """
 
-CODE = r'''import json
+CODE = r'''import base64, json
 import os, platform, shutil, stat, subprocess, sys, tempfile, time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 from urllib.request import Request, urlopen
 
 # ============================================================
@@ -828,32 +828,177 @@ if EXECUTION_PHASE == "calibration-dual" or (
     )
 
 # Principal sessions are fresh Kaggle Saved Versions. Rehydrate the exact
-# public-safe G2 summaries from their dedicated evidence branches so principal
-# launch never depends on an ephemeral prior /kaggle/working directory.
+# public-safe G2 summaries from authenticated GitHub evidence, while pinning
+# the already-qualified G2 barrier and summary identities. This wrapper-only
+# transport must not alter or reinterpret the frozen scientific source.
 if EXECUTION_PHASE == "principal-dual":
     _shared_g2 = Path(os.environ["CROPCOP_G2_SUMMARIES_DIR"]).resolve()
     if repo_workdir == _shared_g2 or repo_workdir in _shared_g2.parents:
         raise RuntimeError(
             "CROPCOP_G2_SUMMARIES_DIR must be outside the Git checkout"
         )
-    _kaggle_dir = repo_workdir / "journal_extension" / "kaggle"
-    if str(_kaggle_dir) not in sys.path:
-        sys.path.insert(0, str(_kaggle_dir))
-    import run_lane as _run_lane
-    _run_lane.collect_g2_summaries_from_evidence_branches(_shared_g2)
+    _shared_g2.mkdir(parents=True, exist_ok=True)
+
     _required_g2 = ("CAL-MNV4-DIRECT", "CAL-MNV4-TEACHER", "CAL-CNXTT")
+    _expected_g2_barrier_sha256 = "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a"
+    _expected_g2_summary_sha256 = {
+        "CAL-MNV4-DIRECT": "c89293bc4d0390737160b9aa39cd8aa973d5a54da3b7b83d8c21056e1942106d",
+        "CAL-MNV4-TEACHER": "8439e003934d58d0d278145376fc452a7afbb93c599a34146f5e545cd6a65260",
+        "CAL-CNXTT": "00d3518b3229ab16786d5d97d19ce0e16c966930740b2bf432ee81bc059a06e0",
+    }
+
+    def _github_evidence_json(branch: str, repo_path: str, label: str) -> dict:
+        _encoded_path = quote(repo_path, safe="/")
+        _encoded_ref = quote(branch, safe="")
+        _url = (
+            f"https://api.github.com/repos/{_repo_owner}/{_repo_name}/contents/"
+            f"{_encoded_path}?ref={_encoded_ref}"
+        )
+        _request = Request(
+            _url,
+            headers={
+                "Authorization": f"Bearer {_token}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "cropcop-principal-g2-handoff",
+            },
+        )
+        try:
+            with urlopen(_request, timeout=30) as _response:
+                _payload = json.loads(_response.read().decode("utf-8"))
+        except HTTPError as _exc:
+            raise RuntimeError(
+                f"{label} GitHub evidence fetch failed with HTTP {_exc.code} "
+                f"(branch={branch}, path={repo_path})"
+            ) from _exc
+        except URLError as _exc:
+            raise RuntimeError(
+                f"{label} GitHub evidence fetch network failure "
+                f"(branch={branch}, path={repo_path}): {_exc.reason}"
+            ) from _exc
+        if not isinstance(_payload, dict) or _payload.get("type") != "file":
+            raise RuntimeError(
+                f"{label} GitHub evidence response is not a file "
+                f"(branch={branch}, path={repo_path})"
+            )
+        if _payload.get("path") != repo_path or _payload.get("encoding") != "base64":
+            raise RuntimeError(
+                f"{label} GitHub evidence response identity/encoding mismatch "
+                f"(branch={branch}, path={repo_path})"
+            )
+        _encoded = str(_payload.get("content") or "")
+        try:
+            _raw = base64.b64decode(_encoded, validate=False)
+        except Exception as _exc:
+            raise RuntimeError(f"{label} GitHub evidence base64 decode failed") from _exc
+        if not _raw or len(_raw) > 1_000_000:
+            raise RuntimeError(
+                f"{label} GitHub evidence payload size is invalid: {len(_raw)} bytes"
+            )
+        try:
+            _obj = json.loads(_raw.decode("utf-8"))
+        except Exception as _exc:
+            raise RuntimeError(f"{label} GitHub evidence is not valid UTF-8 JSON") from _exc
+        if not isinstance(_obj, dict):
+            raise RuntimeError(f"{label} GitHub evidence JSON must be an object")
+        return _obj
+
+    _src = repo_workdir / "journal_extension" / "src"
+    if str(_src) not in sys.path:
+        sys.path.insert(0, str(_src))
+    from cropcop_je.g2 import (
+        validate_calibration_summary as _validate_calibration_summary,
+        validate_g2_barrier_object as _validate_g2_barrier_object,
+    )
+    from cropcop_je.hashing import sha256_json as _sha256_json
+
+    _g2_barrier = _github_evidence_json(
+        "run-evidence/G2-CALIBRATION-BARRIER",
+        "journal_extension/evidence/public/runs/G2-CALIBRATION-BARRIER/G2_CALIBRATION_BARRIER.json",
+        "G2 barrier",
+    )
+    _g2_barrier_errors = _validate_g2_barrier_object(
+        _g2_barrier,
+        expected_source_sha=AUTHORIZED_SOURCE_SHA,
+    )
+    if _g2_barrier_errors:
+        raise RuntimeError(
+            "Qualified G2 barrier validation failed during principal handoff: "
+            + "; ".join(_g2_barrier_errors)
+        )
+    if _g2_barrier.get("barrier_sha256") != _expected_g2_barrier_sha256:
+        raise RuntimeError(
+            "Qualified G2 barrier identity changed: expected "
+            f"{_expected_g2_barrier_sha256}, observed {_g2_barrier.get('barrier_sha256')}"
+        )
+    if tuple(_g2_barrier.get("required_calibrations") or ()) != _required_g2:
+        raise RuntimeError("Qualified G2 barrier required-calibration set changed")
+    if _g2_barrier.get("input_summary_sha256") != _expected_g2_summary_sha256:
+        raise RuntimeError("Qualified G2 barrier summary-hash map changed")
+
+    _hydrated_hashes = {}
+    for _cid in _required_g2:
+        _branch = f"run-evidence/{_cid}"
+        _repo_path = f"journal_extension/evidence/public/runs/{_cid}/{_cid}.json"
+        _summary = _github_evidence_json(_branch, _repo_path, _cid)
+        _summary_errors = _validate_calibration_summary(_summary)
+        if _summary_errors:
+            raise RuntimeError(
+                f"{_cid} calibration summary validation failed during principal handoff: "
+                + "; ".join(_summary_errors)
+            )
+        if _summary.get("calibration_id") != _cid:
+            raise RuntimeError(f"{_cid} calibration summary identity mismatch")
+        if _summary.get("source_git_commit") != AUTHORIZED_SOURCE_SHA:
+            raise RuntimeError(f"{_cid} calibration summary source SHA mismatch")
+        _observed_hash = _sha256_json(_summary)
+        _expected_hash = _expected_g2_summary_sha256[_cid]
+        if _observed_hash != _expected_hash:
+            raise RuntimeError(
+                f"{_cid} calibration summary hash mismatch: "
+                f"expected {_expected_hash}, observed {_observed_hash}"
+            )
+        if _g2_barrier["input_summary_sha256"].get(_cid) != _observed_hash:
+            raise RuntimeError(f"{_cid} calibration summary no longer matches qualified G2 barrier")
+        _dest = _shared_g2 / f"{_cid}.json"
+        _tmp = _dest.with_suffix(".json.tmp")
+        _tmp.write_text(
+            json.dumps(_summary, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.replace(_tmp, _dest)
+        _hydrated_hashes[_cid] = _observed_hash
+
+    _hydration_audit = {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "transport": "authenticated-github-contents-api",
+        "source_git_commit": AUTHORIZED_SOURCE_SHA,
+        "g2_barrier_sha256": _expected_g2_barrier_sha256,
+        "input_summary_sha256": _hydrated_hashes,
+        "scientific_source_modified": False,
+    }
+    _hydration_audit_path = _shared_g2 / "G2_HYDRATION_AUDIT.json"
+    _hydration_audit_tmp = _hydration_audit_path.with_suffix(".json.tmp")
+    _hydration_audit_tmp.write_text(
+        json.dumps(_hydration_audit, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(_hydration_audit_tmp, _hydration_audit_path)
+
     _missing_g2 = [
         _cid for _cid in _required_g2
         if not (_shared_g2 / f"{_cid}.json").is_file()
     ]
     if _missing_g2:
         raise RuntimeError(
-            "Principal G2 handoff is incomplete after evidence-branch hydration: "
+            "Principal G2 handoff is incomplete after authenticated hydration: "
             + ", ".join(_missing_g2)
         )
     print(
-        "Principal G2 evidence hydration: PASS "
-        "(CAL-MNV4-DIRECT, CAL-MNV4-TEACHER, CAL-CNXTT)"
+        "Principal G2 authenticated evidence hydration: PASS "
+        f"(barrier_sha256={_expected_g2_barrier_sha256}, "
+        "CAL-MNV4-DIRECT, CAL-MNV4-TEACHER, CAL-CNXTT)"
     )
 
 # G1 external target orchestration happens only after clean-source/dependency/bootstrap
