@@ -17,12 +17,14 @@ For `principal-dual`, set non-secret `CROPCOP_PRINCIPAL_ENVELOPE` to `P1`, `P2`,
 Smoke A/B remain cross-Saved-Version and API-free. `smoke-restore` requires the exact Smoke-A Notebook Output attached read-only.
 """
 
-CODE = r'''import base64, json
+CODE = r'''import json
 import os, platform, shutil, stat, subprocess, sys, tempfile, time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlparse
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
+import base64
+from urllib.parse import quote
 
 # ============================================================
 # CROPCOP EAAI — KAGGLE OPERATOR CONFIGURATION
