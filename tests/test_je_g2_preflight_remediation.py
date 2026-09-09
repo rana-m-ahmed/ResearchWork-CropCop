@@ -207,10 +207,9 @@ class OperatorRecoveryHardeningTests(unittest.TestCase):
     def test_15_principal_hydration_precedes_frozen_envelope_launch(self):
         source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
         hydrate = source.index('Principal G2 authenticated evidence hydration: PASS')
-        launch = source.index(
-            '[sys.executable, str(repo_workdir / "journal_extension/kaggle/run_envelope.py")]'
-        )
+        launch = source.index('_envelope_cp = _run_frozen_envelope_with_parent_emergency_guard()')
         self.assertLess(hydrate, launch)
+        self.assertIn('repo_workdir / "journal_extension/kaggle/run_envelope.py"', source)
 
     def test_16_principal_envelopes_keep_seed_pairs_and_slots_exact(self):
         expected = {
