@@ -3,49 +3,73 @@
   "amendment_sha256": "3f08f2dbe7e83143c7e6f1fcf6732c7d88086295a600a74b323b89b46caed3f6",
   "child_results": {
     "P2-DIRECT": {
+      "child_preflight": {
+        "cuda_visible_devices": "0",
+        "envelope_id": "MGPU-P2-S2PAIR-V1",
+        "git_credentials_present": false,
+        "logical_lane": "K2",
+        "notebook_started_monotonic": 400.988623256,
+        "observed_visible_cuda_count": 1,
+        "observed_visible_gpu_name": "Tesla T4",
+        "requested_physical_gpu_slot": 0,
+        "schema_version": "1.0",
+        "status": "PASS"
+      },
       "child_visible_cuda_count_required": 1,
       "console_log": "children/P2-DIRECT/console.log",
-      "continuation_required": true,
-      "duration_seconds": 39085.758827180005,
-      "ended_monotonic": 39748.742890897,
-      "error": "EnvelopeError: principal child terminal record invalid: status=FAIL, continuation=False",
-      "evidence_chain_complete": false,
+      "continuation_required": false,
+      "duration_seconds": 6247.037736826,
+      "ended_monotonic": 7032.108360511,
+      "evidence_chain_complete": true,
+      "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+      "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
       "git_credentials_present_in_child": false,
-      "physical_gpu_uuid": "GPU-bd171019-5185-eaff-4190-9d4d44137b09",
+      "physical_gpu_uuid": "GPU-b9ac5cf6-a30a-bae8-1c54-d4bfb3b09c69",
       "physical_slot": 0,
-      "publication_status": "NOT_ATTEMPTED",
-      "returncode": -15,
-      "started_monotonic": 662.984063717,
-      "status": "CONTINUATION_REQUIRED",
-      "termination": {
-        "returncode": -15,
-        "termination_duration_seconds": 0.20213058400258888,
-        "termination_mode": "graceful_sigterm"
-      }
+      "process_returncode": 0,
+      "publication_branch": "run-evidence/JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01",
+      "publication_error": null,
+      "publication_status": "PASS",
+      "result_relative_path": "children/P2-DIRECT/output/K2/principal/JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01/run_record.json",
+      "started_monotonic": 785.070623685,
+      "status": "PASS",
+      "termination": null
     },
     "P2-TEACHER": {
+      "child_preflight": {
+        "cuda_visible_devices": "1",
+        "envelope_id": "MGPU-P2-S2PAIR-V1",
+        "git_credentials_present": false,
+        "logical_lane": "K2",
+        "notebook_started_monotonic": 400.988623256,
+        "observed_visible_cuda_count": 1,
+        "observed_visible_gpu_name": "Tesla T4",
+        "requested_physical_gpu_slot": 1,
+        "schema_version": "1.0",
+        "status": "PASS"
+      },
       "child_visible_cuda_count_required": 1,
       "console_log": "children/P2-TEACHER/console.log",
-      "continuation_required": true,
-      "duration_seconds": 39085.768723296,
-      "ended_monotonic": 39748.760768123,
-      "error": "EnvelopeError: principal child terminal record invalid: status=LAUNCHED, continuation=False",
-      "evidence_chain_complete": false,
+      "continuation_required": false,
+      "duration_seconds": 6251.833494953,
+      "ended_monotonic": 7036.911394727,
+      "evidence_chain_complete": true,
+      "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+      "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
       "git_credentials_present_in_child": false,
-      "physical_gpu_uuid": "GPU-2edba8e9-e0d9-79ec-f174-ec9cd79b1006",
+      "physical_gpu_uuid": "GPU-068b969b-031b-a7ff-63e1-2102d48eba65",
       "physical_slot": 1,
-      "publication_status": "NOT_ATTEMPTED",
-      "returncode": -15,
-      "started_monotonic": 662.992044827,
-      "status": "CONTINUATION_REQUIRED",
-      "termination": {
-        "returncode": -15,
-        "termination_duration_seconds": 0.2021390230001998,
-        "termination_mode": "graceful_sigterm"
-      }
+      "process_returncode": 0,
+      "publication_branch": "run-evidence/JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01",
+      "publication_error": null,
+      "publication_status": "PASS",
+      "result_relative_path": "children/P2-TEACHER/output/K2/principal/JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01/run_record.json",
+      "started_monotonic": 785.077899774,
+      "status": "PASS",
+      "termination": null
     }
   },
-  "created_at_utc": "2026-09-09T04:36:00.213175+00:00",
+  "created_at_utc": "2026-09-09T18:07:08.390863+00:00",
   "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
   "dual_gpu_smoke_evidence_sha256": "61658254cd6216a11ec67755d20a001dc41531643fee04062a165610dfb69c86",
   "durable_access_preflight": {
@@ -53,7 +77,7 @@
       "JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01": {
         "authenticated_read": true,
         "authoritative_is_private": true,
-        "current_version_number": 1,
+        "current_version_number": 2,
         "locator": "sabahatabbas/cropcop-je-je-r04-mnv4-direct-s2-f171309fc7e9-a01",
         "owner_matches_authenticated_user": true,
         "private_metadata_verified": true,
@@ -63,7 +87,7 @@
       "JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01": {
         "authenticated_read": true,
         "authoritative_is_private": true,
-        "current_version_number": 1,
+        "current_version_number": 2,
         "locator": "sabahatabbas/cropcop-je-je-r05-mnv4-teacher-s2-f171309fc7e9-a01",
         "owner_matches_authenticated_user": true,
         "private_metadata_verified": true,
@@ -86,39 +110,27 @@
     "status": "PASS"
   },
   "envelope_id": "MGPU-P2-S2PAIR-V1",
-  "envelope_publication_branch": "run-evidence/MGPU-P2-S2PAIR-V1",
-  "finalization_outcomes": {
-    "P2-DIRECT": {
-      "returncode": -15,
-      "termination_duration_seconds": 0.20213058400258888,
-      "termination_mode": "graceful_sigterm"
-    },
-    "P2-TEACHER": {
-      "returncode": -15,
-      "termination_duration_seconds": 0.2021390230001998,
-      "termination_mode": "graceful_sigterm"
-    }
-  },
+  "finalization_outcomes": {},
   "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
   "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
   "g2_publication_branch": null,
-  "host_global_stop_reason": "COMMON_SAFE_DEADLINE",
+  "host_global_stop_reason": null,
   "kaggle_run_type": "Batch",
-  "manifest_sha256": "3f9cbc7d9b3c47a4164a0a38672ac0a53335ae6e47159e87d105774936391b0d",
+  "manifest_sha256": "7aa7be147ab6e363e0b493bd2a40287a3f5dd1a785b61c4689c9747b597b5b7d",
   "no_git_child_policy": true,
-  "overlap_duration_seconds": 39085.750846070005,
+  "overlap_duration_seconds": 6247.030460737,
   "parent_gpu_inventory": [
     {
       "index": 0,
       "memory_total_mib": 15360,
       "name": "Tesla T4",
-      "uuid": "GPU-bd171019-5185-eaff-4190-9d4d44137b09"
+      "uuid": "GPU-b9ac5cf6-a30a-bae8-1c54-d4bfb3b09c69"
     },
     {
       "index": 1,
       "memory_total_mib": 15360,
       "name": "Tesla T4",
-      "uuid": "GPU-2edba8e9-e0d9-79ec-f174-ec9cd79b1006"
+      "uuid": "GPU-068b969b-031b-a7ff-63e1-2102d48eba65"
     }
   ],
   "parent_publication_serialized": true,
@@ -128,5 +140,5 @@
   "science_diff_status": "PASS",
   "scientific_configuration_changed": false,
   "source_git_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
-  "status": "CONTINUATION_REQUIRED"
+  "status": "PASS"
 }
