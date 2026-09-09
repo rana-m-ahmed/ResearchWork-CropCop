@@ -14,10 +14,10 @@ Operator phases: `smoke-write`, `smoke-restore`, `dual-gpu-smoke`, `g1`, `calibr
 
 For `principal-dual`, set non-secret `CROPCOP_PRINCIPAL_ENVELOPE` to `P1`, `P2`, or `P3`. The notebook delegates the fixed experiment mapping to repository envelope configs.
 
-Smoke A/B remain cross-Saved-Version and API-free. `smoke-restore` requires the exact Smoke-A Notebook Output attached read-only.
-"""
+Smoke A/B remain cross-Saved-Version and API-free. `smoke-restore` requires the exact Smoke-A Notebook Output attached read-only.\n\nFor principal continuation, set `CROPCOP_CONTINUATION_POLICY=required` and set `CROPCOP_ENVELOPE_INPUT_ROOT` to the explicit attached prior Saved-Version output root. The wrapper validates/rescues/pre-stages exact checkpoints before training and refuses a silent fresh restart.\n"""
 
 CODE = r'''import json
+import importlib.util
 import os, platform, shutil, stat, subprocess, sys, tempfile, time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -34,6 +34,7 @@ AUTHORIZED_SOURCE_SHA = "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433"
 LANE = os.environ.get("CROPCOP_LANE", "K1")
 EXECUTION_PHASE = os.environ.get("CROPCOP_EXECUTION_PHASE", "").strip()
 PRINCIPAL_ENVELOPE = os.environ.get("CROPCOP_PRINCIPAL_ENVELOPE", "").strip().upper()
+CONTINUATION_POLICY = os.environ.get("CROPCOP_CONTINUATION_POLICY", "fresh").strip().lower()
 # Exact operator phases: smoke-write | smoke-restore | dual-gpu-smoke | g1 | calibration-dual | principal-dual
 REPOSITORY_URL = os.environ.get(
     "CROPCOP_REPOSITORY_URL",
@@ -177,6 +178,19 @@ if EXECUTION_PHASE == "principal-dual":
     if PRINCIPAL_ENVELOPE not in {"P1", "P2", "P3"}:
         raise RuntimeError(
             "Set CROPCOP_PRINCIPAL_ENVELOPE explicitly to exactly P1, P2, or P3 for principal-dual"
+        )
+    if CONTINUATION_POLICY not in {"fresh", "required"}:
+        raise RuntimeError(
+            "CROPCOP_CONTINUATION_POLICY must be exactly fresh or required for principal-dual"
+        )
+    _explicit_prior_root = str(os.environ.get("CROPCOP_ENVELOPE_INPUT_ROOT", "")).strip()
+    if CONTINUATION_POLICY == "required" and not _explicit_prior_root:
+        raise RuntimeError(
+            "Continuation requires explicit CROPCOP_ENVELOPE_INPUT_ROOT pointing to the attached prior Saved-Version output; global /kaggle/input search is forbidden"
+        )
+    if CONTINUATION_POLICY == "fresh" and _explicit_prior_root:
+        raise RuntimeError(
+            "Fresh principal execution refuses CROPCOP_ENVELOPE_INPUT_ROOT; set CROPCOP_CONTINUATION_POLICY=required for a continuation"
         )
     os.environ["CROPCOP_ENVELOPE_ID"] = PRINCIPAL_ENVELOPE
 
@@ -1003,6 +1017,301 @@ if EXECUTION_PHASE == "principal-dual":
         "CAL-MNV4-DIRECT, CAL-MNV4-TEACHER, CAL-CNXTT)"
     )
 
+
+# Wrapper-only continuation recovery. This never changes model/data/training
+# configuration. It validates the prior envelope, prefers an already-valid
+# private durable checkpoint, rescues the exact periodic checkpoint bytes from
+# the attached prior Saved-Version output only when the durable generation is
+# empty, re-verifies the uploaded generation, and pre-stages the verified
+# recovery bundle so --resume-mode auto cannot silently fall back to epoch 0.
+if EXECUTION_PHASE == "principal-dual" and CONTINUATION_POLICY == "required":
+    from cropcop_je.checkpointing import (
+        export_recovery_bundle as _export_recovery_bundle,
+        recover_latest as _recover_latest,
+    )
+    from cropcop_je.envelope import (
+        locate_prior_bundle as _locate_prior_bundle,
+        resolve_run_id as _resolve_run_id,
+        validate_prior_envelope_bundle as _validate_prior_envelope_bundle,
+    )
+    from cropcop_je.hashing import sha256_file as _sha256_file
+    from cropcop_je.persistence import KagglePrivateDatasetStore as _KagglePrivateDatasetStore
+    from cropcop_je.train import _identity as _checkpoint_identity
+
+    _prior_input_root = Path(os.environ["CROPCOP_ENVELOPE_INPUT_ROOT"]).resolve()
+    if not _prior_input_root.is_dir():
+        raise RuntimeError(
+            f"Continuation input root is not a directory: {_prior_input_root}"
+        )
+
+    _cfg_name = {
+        "P1": "P1_S1_PAIR.json",
+        "P2": "P2_S2_PAIR.json",
+        "P3": "P3_S3_PAIR.json",
+    }[PRINCIPAL_ENVELOPE]
+    _cfg = json.loads(
+        (repo_workdir / "journal_extension/kaggle/envelopes" / _cfg_name).read_text(
+            encoding="utf-8"
+        )
+    )
+    _expected_envelope_id = _cfg["envelope_id"]
+    _expected_run_ids = {
+        _child["child_id"]: _resolve_run_id(_child["experiment_id"], AUTHORIZED_SOURCE_SHA)
+        for _child in _cfg["children"]
+    }
+
+    _prior_bundle = _locate_prior_bundle(_prior_input_root)
+    _expected_g1_sha = str(_g2_barrier.get("g1_seal_sha256") or "")
+    if len(_expected_g1_sha) != 64:
+        raise RuntimeError("Qualified G2 barrier does not expose a valid G1 seal SHA")
+    _prior_errors = _validate_prior_envelope_bundle(
+        _prior_bundle,
+        envelope_id=_expected_envelope_id,
+        source_sha=AUTHORIZED_SOURCE_SHA,
+        g1_seal_sha256=_expected_g1_sha,
+        g2_barrier_sha256=_expected_g2_barrier_sha256,
+        expected_run_ids=_expected_run_ids,
+    )
+    if _prior_errors:
+        raise RuntimeError(
+            "Continuation prior-envelope validation failed before checkpoint recovery: "
+            + "; ".join(_prior_errors)
+        )
+    if _prior_bundle.state.get("state") != "CONTINUATION_REQUIRED":
+        raise RuntimeError(
+            "Continuation policy=required accepts only a prior CONTINUATION_REQUIRED envelope"
+        )
+
+    _prior_manifest_children = {
+        str(_row["child_id"]): _row for _row in _prior_bundle.manifest["children"]
+    }
+
+    def _validate_checkpoint_root(_root: Path, _expected_identity: dict, _label: str) -> dict:
+        if not (_root / "checkpoint_index.json").is_file():
+            raise RuntimeError(f"{_label}: checkpoint_index.json is missing")
+        _path, _payload, _recovery = _recover_latest(
+            _root,
+            expected_identity=_expected_identity,
+        )
+        if _recovery is not None:
+            raise RuntimeError(
+                f"{_label}: checkpoint recovery required fallback instead of the indexed latest checkpoint"
+            )
+        _step = int(_payload.get("optimizer_step", 0))
+        if _step <= 0:
+            raise RuntimeError(f"{_label}: recovered optimizer step is not positive")
+        return {
+            "checkpoint_sha256": _sha256_file(_path),
+            "optimizer_step": _step,
+            "epoch": int(_payload.get("epoch", -1)),
+            "batch_in_epoch": int(_payload.get("batch_in_epoch", -1)),
+        }
+
+    def _restore_verified_durable(
+        _store: _KagglePrivateDatasetStore,
+        _run_id: str,
+        _expected_identity: dict,
+        _label: str,
+    ):
+        _root = Path(tempfile.mkdtemp(prefix="cropcop-continuation-durable-"))
+        try:
+            _restored = _store.restore(_root, run_id=_run_id)
+            if not _restored:
+                shutil.rmtree(_root, ignore_errors=True)
+                return None
+            _meta = _validate_checkpoint_root(_root, _expected_identity, _label)
+            return _root, _meta
+        except Exception:
+            shutil.rmtree(_root, ignore_errors=True)
+            raise
+
+    _recovery_rows = []
+    for _child in _cfg["children"]:
+        _child_id = _child["child_id"]
+        _run_id = _expected_run_ids[_child_id]
+        _manifest_row = _prior_manifest_children.get(_child_id)
+        if not _manifest_row:
+            raise RuntimeError(f"Prior manifest is missing continuation child {_child_id}")
+
+        _expected_locator = os.environ["CROPCOP_DURABLE_LOCATOR_TEMPLATE"].format(
+            run_id=_run_id,
+            run_id_lower=_run_id.lower(),
+        )
+        if _manifest_row.get("durable_locator") != _expected_locator:
+            raise RuntimeError(
+                f"{_child_id}: prior durable locator differs from current exact locator"
+            )
+
+        _prior_run_dir = (
+            _prior_bundle.root
+            / _manifest_row["output_root"]
+            / _manifest_row["logical_lane"]
+            / "principal"
+            / _run_id
+        ).resolve()
+        if _prior_bundle.root not in _prior_run_dir.parents:
+            raise RuntimeError(f"{_child_id}: prior run directory escapes prior envelope root")
+        _prior_record_path = _prior_run_dir / "run_record.json"
+        if not _prior_record_path.is_file():
+            raise RuntimeError(f"{_child_id}: prior run_record.json is missing")
+        _prior_record = json.loads(_prior_record_path.read_text(encoding="utf-8"))
+
+        _critical = {
+            "run_id": _run_id,
+            "experiment_id": _child["experiment_id"],
+            "source_git_commit": AUTHORIZED_SOURCE_SHA,
+            "g1_seal_sha256": _expected_g1_sha,
+            "g2_barrier_sha256": _expected_g2_barrier_sha256,
+        }
+        for _field, _expected in _critical.items():
+            if _prior_record.get(_field) != _expected:
+                raise RuntimeError(
+                    f"{_child_id}: prior run record {_field} mismatch "
+                    f"(expected={_expected!r}, observed={_prior_record.get(_field)!r})"
+                )
+        if _prior_record.get("allowed_surfaces") != ["DS-V1-TRAIN", "DS-V1-VAL"]:
+            raise RuntimeError(f"{_child_id}: prior run record surface contract changed")
+
+        _expected_identity = _checkpoint_identity(_prior_record)
+        _store = _KagglePrivateDatasetStore(_expected_locator)
+        _restored_pair = _restore_verified_durable(
+            _store,
+            _run_id,
+            _expected_identity,
+            f"{_child_id} durable",
+        )
+        _source_kind = "durable_existing"
+        _rescued = False
+
+        if _restored_pair is None:
+            _local_checkpoint_root = _prior_run_dir / "private_checkpoints"
+            _local_meta = _validate_checkpoint_root(
+                _local_checkpoint_root,
+                _expected_identity,
+                f"{_child_id} prior Saved-Version checkpoint",
+            )
+            _rescue_segment = (
+                "RESCUE-"
+                + _child_id
+                + "-"
+                + time.strftime("%Y%m%dT%H%M%S", time.gmtime())
+            )
+            _store.sync(
+                _local_checkpoint_root,
+                run_id=_run_id,
+                segment_id=_rescue_segment,
+            )
+            _last_restore_error = None
+            _restored_pair = None
+            for _attempt in range(30):
+                try:
+                    _restored_pair = _restore_verified_durable(
+                        _store,
+                        _run_id,
+                        _expected_identity,
+                        f"{_child_id} rescued durable",
+                    )
+                    if _restored_pair is not None:
+                        break
+                except Exception as _exc:
+                    _last_restore_error = _exc
+                time.sleep(10)
+            if _restored_pair is None:
+                raise RuntimeError(
+                    f"{_child_id}: rescued durable checkpoint did not become readable/valid "
+                    f"within the bounded verification window; last_error={_last_restore_error}"
+                )
+            if (
+                _restored_pair[1]["checkpoint_sha256"] != _local_meta["checkpoint_sha256"]
+                or _restored_pair[1]["optimizer_step"] != _local_meta["optimizer_step"]
+            ):
+                raise RuntimeError(
+                    f"{_child_id}: durable rescue changed checkpoint identity/progress"
+                )
+            _source_kind = "prior_saved_version_rescue"
+            _rescued = True
+
+        _verified_root, _verified_meta = _restored_pair
+        try:
+            _new_checkpoint_root = (
+                Path(OUTPUT_ROOT)
+                / "envelopes"
+                / _expected_envelope_id
+                / "children"
+                / _child_id
+                / "output"
+                / _manifest_row["logical_lane"]
+                / "principal"
+                / _run_id
+                / "private_checkpoints"
+            ).resolve()
+            if _new_checkpoint_root.exists() and any(_new_checkpoint_root.iterdir()):
+                raise RuntimeError(
+                    f"{_child_id}: fresh continuation checkpoint staging root is not empty"
+                )
+            _export_recovery_bundle(_verified_root, _new_checkpoint_root)
+            _staged_meta = _validate_checkpoint_root(
+                _new_checkpoint_root,
+                _expected_identity,
+                f"{_child_id} staged continuation checkpoint",
+            )
+            if (
+                _staged_meta["checkpoint_sha256"] != _verified_meta["checkpoint_sha256"]
+                or _staged_meta["optimizer_step"] != _verified_meta["optimizer_step"]
+            ):
+                raise RuntimeError(
+                    f"{_child_id}: staged checkpoint differs from verified durable checkpoint"
+                )
+        finally:
+            shutil.rmtree(_verified_root, ignore_errors=True)
+
+        _recovery_rows.append(
+            {
+                "child_id": _child_id,
+                "experiment_id": _child["experiment_id"],
+                "run_id": _run_id,
+                "durable_locator": _expected_locator,
+                "source_kind": _source_kind,
+                "durable_rescue_performed": _rescued,
+                "checkpoint_sha256": _verified_meta["checkpoint_sha256"],
+                "optimizer_step": _verified_meta["optimizer_step"],
+                "epoch": _verified_meta["epoch"],
+                "batch_in_epoch": _verified_meta["batch_in_epoch"],
+            }
+        )
+
+    os.environ["CROPCOP_ENVELOPE_INPUT_ROOT"] = str(_prior_bundle.root)
+    _continuation_audit = {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "policy": "required",
+        "envelope_id": _expected_envelope_id,
+        "source_git_sha": AUTHORIZED_SOURCE_SHA,
+        "g1_seal_sha256": _expected_g1_sha,
+        "g2_barrier_sha256": _expected_g2_barrier_sha256,
+        "prior_envelope_state": _prior_bundle.state.get("state"),
+        "prior_host_global_stop_reason": _prior_bundle.evidence.get("host_global_stop_reason"),
+        "runs": _recovery_rows,
+        "scientific_configuration_changed": False,
+        "scientific_source_modified": False,
+        "fresh_restart_possible_after_preflight": False,
+    }
+    _continuation_audit_path = (
+        Path(OUTPUT_ROOT)
+        / "continuation_recovery"
+        / f"{_expected_envelope_id}_CONTINUATION_RECOVERY.json"
+    )
+    _continuation_audit_path.parent.mkdir(parents=True, exist_ok=True)
+    _continuation_audit_path.write_text(
+        json.dumps(_continuation_audit, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        "Principal continuation checkpoint recovery/prestage: PASS "
+        f"(envelope={_expected_envelope_id}, runs={len(_recovery_rows)}, "
+        "fresh_restart_possible=false)"
+    )
+
 # G1 external target orchestration happens only after clean-source/dependency/bootstrap
 # validation and before the frozen G1 entrypoint independently revalidates the target.
 if EXECUTION_PHASE == "g1":
@@ -1021,6 +1330,66 @@ if EXECUTION_PHASE == "g1":
         f"created_this_run={_g1_target_preflight['created_this_run']}, "
         f"status={_g1_target_preflight.get('dataset_status')})"
     )
+
+def _run_frozen_envelope_with_parent_emergency_guard():
+    _runner_path = repo_workdir / "journal_extension/kaggle/run_envelope.py"
+    if EXECUTION_PHASE != "principal-dual":
+        return subprocess.run(
+            [sys.executable, str(_runner_path)],
+            cwd=repo_workdir,
+            check=False,
+        )
+
+    # Import the exact frozen runner without editing the checkout. Only the
+    # parent watchdog's view of "safe remaining" is changed: the children keep
+    # the frozen SessionBudget and therefore self-roll over at the original
+    # one-hour safety boundary. The parent waits until 300 s before the hard
+    # limit before emergency process-group termination.
+    _spec = importlib.util.spec_from_file_location(
+        "_cropcop_frozen_run_envelope_operator_guard",
+        _runner_path,
+    )
+    if _spec is None or _spec.loader is None:
+        raise RuntimeError("Unable to import frozen run_envelope.py for operator guard")
+    _module = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_module)
+
+    from cropcop_je.session import SessionBudget as _RealSessionBudget
+
+    class _ParentBudgetView:
+        def __init__(self, _budget):
+            self._budget = _budget
+
+        @property
+        def remaining_safe_seconds(self):
+            return self._budget.remaining_hard_seconds
+
+        def __getattr__(self, _name):
+            return getattr(self._budget, _name)
+
+    class _ParentSessionBudgetProxy:
+        @classmethod
+        def from_environment(cls, **_kwargs):
+            return _ParentBudgetView(
+                _RealSessionBudget.from_environment(**_kwargs)
+            )
+
+    _module.SessionBudget = _ParentSessionBudgetProxy
+    print(
+        "Principal parent emergency-deadline guard: PASS "
+        "(child_safe_deadline_unchanged=true, parent_emergency_cutoff=hard_limit_minus_300s)"
+    )
+    _args = [sys.executable, str(_runner_path)]
+    try:
+        _rc = int(_module.main())
+    except SystemExit as _exc:
+        _rc = int(_exc.code or 0)
+    except BaseException:
+        import traceback as _traceback
+        _traceback.print_exc()
+        _rc = 1
+    return subprocess.CompletedProcess(_args, _rc)
+
 
 if EXECUTION_PHASE in {"smoke-write", "smoke-restore"}:
     cmd = [
@@ -1068,11 +1437,7 @@ elif EXECUTION_PHASE in {"calibration-dual", "principal-dual"}:
     # case only ENVELOPE_EVIDENCE.json changes, while the frozen publication
     # helper expects every allowlisted file to be staged. Keep the scientific
     # source immutable and repair only that parent-publication tail here.
-    _envelope_cp = subprocess.run(
-        [sys.executable, str(repo_workdir / "journal_extension/kaggle/run_envelope.py")],
-        cwd=repo_workdir,
-        check=False,
-    )
+    _envelope_cp = _run_frozen_envelope_with_parent_emergency_guard()
     if _envelope_cp.returncode != 0:
         _envelope_cfg_name = (
             "G2_DUAL_T4.json"
