@@ -3,7 +3,22 @@
     "DS-V1-TRAIN",
     "DS-V1-VAL"
   ],
-  "artifact_locators": {},
+  "artifact_locators": {
+    "latest_checkpoint": {
+      "durable_locator": "ranamuhammadahmed6/cropcop-je-je-r05-mnv4-teacher-s3-f171309fc7e9-a01",
+      "public_git": false,
+      "sha256": "0c72fe64ac348984c1130223683ceadb13ca2710c58d0d7e2208cdbefb2ad0d3"
+    },
+    "metrics": {
+      "basename": "metrics.json",
+      "sha256": "9825434d9f1b15c803ac6b46bfb348307db5c19d43cf956da585bc1214dd833b"
+    },
+    "selected_checkpoint": {
+      "durable_locator": "ranamuhammadahmed6/cropcop-je-je-r05-mnv4-teacher-s3-f171309fc7e9-a01",
+      "public_git": false,
+      "sha256": "0df653f67fe6a0f6a3c4d47fd8746ab563ef92d7182e36598602eba24b518d56"
+    }
+  },
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
   "config_sha256": "3a114fafd28fad184fec9df41866686e53b5c97bc6144d68e3eaf4218c0dad34",
@@ -28,7 +43,7 @@
       "CROPCOP_PHYSICAL_GPU_SLOT": "1"
     },
     "kaggle": {
-      "KAGGLE_CONTAINER_NAME": "kaggle_cqIwigKH9dVz6A73tPfkO516x6fdGPTE75pNTOT3FU-348303836-webtier",
+      "KAGGLE_CONTAINER_NAME": "kaggle_IuHJoJVQ9a9rOUZpKxcRzMESzEo2M3LmwTCDMtcxPe0-348567114-webtier",
       "KAGGLE_DOCKER_IMAGE": "gcr.io/kaggle-gpu-images/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
       "KAGGLE_KERNEL_RUN_TYPE": "Batch"
     },
@@ -38,12 +53,12 @@
         {
           "driver_version": "580.159.04",
           "name": "Tesla T4",
-          "uuid": "GPU-724eed4b-d33f-1fe6-dc0c-acc930605729"
+          "uuid": "GPU-3168e46f-ffcc-9c8e-b0db-95519056db42"
         },
         {
           "driver_version": "580.159.04",
           "name": "Tesla T4",
-          "uuid": "GPU-3255858a-c3f6-9140-fbbc-443445412cdf"
+          "uuid": "GPU-b02d7567-640f-c425-e0e8-861afaed615c"
         }
       ]
     },
@@ -73,6 +88,7 @@
     ]
   },
   "experiment_id": "R05-MNV4-TEACHER-S3",
+  "finished_at_utc": "2026-09-09T17:13:13.709325+00:00",
   "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
   "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
   "hardware_identity": {
@@ -83,12 +99,12 @@
         {
           "driver_version": "580.159.04",
           "name": "Tesla T4",
-          "uuid": "GPU-724eed4b-d33f-1fe6-dc0c-acc930605729"
+          "uuid": "GPU-3168e46f-ffcc-9c8e-b0db-95519056db42"
         },
         {
           "driver_version": "580.159.04",
           "name": "Tesla T4",
-          "uuid": "GPU-3255858a-c3f6-9140-fbbc-443445412cdf"
+          "uuid": "GPU-b02d7567-640f-c425-e0e8-861afaed615c"
         }
       ]
     }
@@ -97,21 +113,68 @@
   "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
   "mode": "scientific",
   "notebook_session_clock": {
-    "elapsed_seconds": 267.71765964400004,
+    "elapsed_seconds": 332.8199306700001,
     "finalization_margin_seconds": 3600.0,
     "hard_limit_seconds": 43200.0,
-    "remaining_hard_seconds": 42932.282332748,
-    "remaining_safe_seconds": 39332.282334845,
-    "started_monotonic": 196.327233866
+    "remaining_hard_seconds": 42867.180063603,
+    "remaining_safe_seconds": 39267.180065109,
+    "started_monotonic": 561.711708405
+  },
+  "persistence_status": {
+    "backend": "kaggle_private_dataset",
+    "files": [
+      "checkpoint_index.json",
+      "dataset-metadata.json",
+      "objects/latest.g00000190.cdc92690bdb89d5b.ckpt",
+      "objects/latest.g00000191.0c72fe64ac348984.ckpt",
+      "objects/selected.g00000178.0df653f67fe6a0f6.ckpt"
+    ],
+    "locator": "ranamuhammadahmed6/cropcop-je-je-r05-mnv4-teacher-s3-f171309fc7e9-a01",
+    "status": "PASS"
   },
   "pretrained_sha256": "35ca23dc46c0075d9acdcab06d30e5395c4d97e422d8cb5e5e627823aeb7c1fa",
+  "result_summary": {
+    "checkpoint_load_seconds": 0.47416219700005513,
+    "checkpoint_save_seconds": 39.616295770001216,
+    "dataloader_examples_per_wait_second": 87.79330931508362,
+    "dataloader_wait_seconds": 3479.8095935029514,
+    "durable_sync_seconds": 23.56412454600013,
+    "examples_per_second": 50.75615353992892,
+    "examples_segment": 305504,
+    "examples_total": 2291280,
+    "latest_checkpoint_sha256": "0c72fe64ac348984c1130223683ceadb13ca2710c58d0d7e2208cdbefb2ad0d3",
+    "mode": "scientific_training",
+    "optimizer_step_total": 35803,
+    "optimizer_steps_segment": 4775,
+    "peak_gpu_memory_bytes": 942445056,
+    "sec_per_optimizer_step": 1.2605347494984294,
+    "selected_checkpoint_sha256": "0df653f67fe6a0f6a3c4d47fd8746ab563ef92d7182e36598602eba24b518d56",
+    "selected_epoch": 28,
+    "selected_metrics": {
+      "epoch": 28,
+      "validation_accuracy": 0.9797165200391007,
+      "validation_balanced_accuracy": 0.9518285068004141,
+      "validation_examples_per_second": 88.05099520158268,
+      "validation_macro_f1": 0.9530799257886763,
+      "validation_nll": 0.11627849085754437
+    },
+    "validation_forward_benchmark": {
+      "batches": 20,
+      "end_to_end_examples_per_second": 173.51516029618762,
+      "examples": 320,
+      "forward_examples_per_second": 522.6905223477589,
+      "forward_seconds": 0.6122169550017134,
+      "loader_wait_seconds": 1.2320023020001827
+    },
+    "wall_seconds_segment": 6019.053428855
+  },
   "run_id": "JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01",
   "seed": 1153870846,
-  "segment_id": "JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01-SEG-20260908T174337-6ec22a31",
+  "segment_id": "JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01-SEG-20260909T153226-181a945a",
   "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
   "source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
-  "started_at_utc": "2026-09-08T17:43:39.195234+00:00",
-  "status": "LAUNCHED",
+  "started_at_utc": "2026-09-09T15:32:26.657431+00:00",
+  "status": "PASS",
   "student_init_sha256": "e8283753463dbd3c9743a9a09f0a7933bbfcee158fc82c42edf413d7ec81d121",
   "teacher_factory_bundle_sha256": "c73fa6e337f8c3ac7e32cd605191f72c59e30d790387e6e10990690230184929",
   "teacher_factory_identity": {
@@ -129,5 +192,5 @@
   },
   "teacher_factory_sha256": "0fc8ba2f5e743fae0277474b0435490413710ab11bba76535d1aeac978c715ea",
   "teacher_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
-  "updated_at_utc": "2026-09-08T17:43:39.195317+00:00"
+  "updated_at_utc": "2026-09-09T17:13:13.709373+00:00"
 }
