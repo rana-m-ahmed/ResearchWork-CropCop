@@ -1,0 +1,184 @@
+{
+  "allowed_surfaces": [
+    "DS-V1-TRAIN",
+    "DS-V1-VAL"
+  ],
+  "artifact_locators": {
+    "latest_checkpoint": {
+      "durable_locator": "ranamuhammadahmed6/cropcop-je-je-r04-mnv4-direct-s3-f171309fc7e9-a01",
+      "public_git": false,
+      "sha256": "a892aca6af9d3765b86bcc153811444c617f27a30c02efc8a6813091befc39e4"
+    },
+    "metrics": {
+      "basename": "metrics.json",
+      "sha256": "3e6ed752871edb3d0a1ae70ad04270029db7ebeb119ad2624ffbdbc783dab085"
+    },
+    "selected_checkpoint": {
+      "durable_locator": "ranamuhammadahmed6/cropcop-je-je-r04-mnv4-direct-s3-f171309fc7e9-a01",
+      "public_git": false,
+      "sha256": "fa200d6add9c25856b1bdaa4d05961a0d1e4050e1204ab2a3103474b9c4a8ed2"
+    }
+  },
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "config_sha256": "deef4b626ca76efe89c319d53fd80e16b68f2742449e5a5b9aa4f5e844747adc",
+  "continuation_required": false,
+  "ctc_v2_sha256": "ed2331e63455e35ade00b548217fe987a9504f26a41e6c5d8a794e38741550bb",
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "durable_store": {
+    "kind": "kaggle-dataset",
+    "locator": "ranamuhammadahmed6/cropcop-je-je-r04-mnv4-direct-s3-f171309fc7e9-a01",
+    "required": true
+  },
+  "entrypoint": "run_training.py",
+  "environment": {
+    "cuda_available": true,
+    "cuda_device_count": 1,
+    "cuda_runtime": "13.0",
+    "cudnn": 92000,
+    "execution": {
+      "CROPCOP_DUAL_ENVELOPE": "1",
+      "CROPCOP_ENVELOPE_ID": "MGPU-P3-S3PAIR-V1",
+      "CROPCOP_NUM_WORKERS_PER_CHILD": "2",
+      "CROPCOP_PHYSICAL_GPU_SLOT": "0"
+    },
+    "kaggle": {
+      "KAGGLE_CONTAINER_NAME": "kaggle_IuHJoJVQ9a9rOUZpKxcRzMESzEo2M3LmwTCDMtcxPe0-348567114-webtier",
+      "KAGGLE_DOCKER_IMAGE": "gcr.io/kaggle-gpu-images/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
+      "KAGGLE_KERNEL_RUN_TYPE": "Batch"
+    },
+    "nvidia_smi": {
+      "available": true,
+      "gpus": [
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-3168e46f-ffcc-9c8e-b0db-95519056db42"
+        },
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-b02d7567-640f-c425-e0e8-861afaed615c"
+        }
+      ]
+    },
+    "packages": {
+      "Pillow": "12.3.0",
+      "huggingface-hub": "1.30.0",
+      "kaggle": "2.2.4",
+      "numpy": "2.5.2",
+      "safetensors": "0.8.0",
+      "timm": "1.0.26",
+      "torch": "2.12.1",
+      "torchvision": "0.27.1"
+    },
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+    "python": "3.12.13",
+    "python_executable": "python3",
+    "torch_cuda_devices": [
+      {
+        "capability": [
+          7,
+          5
+        ],
+        "index": 0,
+        "name": "Tesla T4",
+        "total_memory": 15636037632
+      }
+    ]
+  },
+  "experiment_id": "R04-MNV4-DIRECT-S3",
+  "finished_at_utc": "2026-09-09T17:13:12.561900+00:00",
+  "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
+  "hardware_identity": {
+    "accelerator": "Tesla T4",
+    "nvidia_smi": {
+      "available": true,
+      "gpus": [
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-3168e46f-ffcc-9c8e-b0db-95519056db42"
+        },
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-b02d7567-640f-c425-e0e8-861afaed615c"
+        }
+      ]
+    }
+  },
+  "lane_id": "K3",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "mode": "scientific",
+  "notebook_session_clock": {
+    "elapsed_seconds": 318.56175237700006,
+    "finalization_margin_seconds": 3600.0,
+    "hard_limit_seconds": 43200.0,
+    "remaining_hard_seconds": 42881.438241598,
+    "remaining_safe_seconds": 39281.438242933,
+    "started_monotonic": 561.711708405
+  },
+  "persistence_status": {
+    "backend": "kaggle_private_dataset",
+    "files": [
+      "checkpoint_index.json",
+      "dataset-metadata.json",
+      "objects/latest.g00000187.c6ab68437bceda3b.ckpt",
+      "objects/latest.g00000188.a892aca6af9d3765.ckpt",
+      "objects/selected.g00000175.fa200d6add9c2585.ckpt"
+    ],
+    "locator": "ranamuhammadahmed6/cropcop-je-je-r04-mnv4-direct-s3-f171309fc7e9-a01",
+    "status": "PASS"
+  },
+  "pretrained_sha256": "35ca23dc46c0075d9acdcab06d30e5395c4d97e422d8cb5e5e627823aeb7c1fa",
+  "result_summary": {
+    "checkpoint_load_seconds": 0.3501414910000449,
+    "checkpoint_save_seconds": 38.92396099900088,
+    "dataloader_examples_per_wait_second": 80.59927345947524,
+    "dataloader_wait_seconds": 3790.406375729991,
+    "durable_sync_seconds": 22.43565452800067,
+    "examples_per_second": 50.63299876403117,
+    "examples_segment": 305504,
+    "examples_total": 2291280,
+    "latest_checkpoint_sha256": "a892aca6af9d3765b86bcc153811444c617f27a30c02efc8a6813091befc39e4",
+    "mode": "scientific_training",
+    "optimizer_step_total": 35802,
+    "optimizer_steps_segment": 4774,
+    "peak_gpu_memory_bytes": 690093056,
+    "sec_per_optimizer_step": 1.2638654353416423,
+    "selected_checkpoint_sha256": "fa200d6add9c25856b1bdaa4d05961a0d1e4050e1204ab2a3103474b9c4a8ed2",
+    "selected_epoch": 28,
+    "selected_metrics": {
+      "epoch": 28,
+      "validation_accuracy": 0.9827712609970675,
+      "validation_balanced_accuracy": 0.9594970699007028,
+      "validation_examples_per_second": 88.05130511337019,
+      "validation_macro_f1": 0.960415842317921,
+      "validation_nll": 0.11576155749425467
+    },
+    "validation_forward_benchmark": {
+      "batches": 20,
+      "end_to_end_examples_per_second": 169.9595041476141,
+      "examples": 320,
+      "forward_examples_per_second": 563.6798636455933,
+      "forward_seconds": 0.5676981219985464,
+      "loader_wait_seconds": 1.3151033229978566
+    },
+    "wall_seconds_segment": 6033.693588321
+  },
+  "run_id": "JE-R04-MNV4-DIRECT-S3-f171309fc7e9-A01",
+  "seed": 1153870846,
+  "segment_id": "JE-R04-MNV4-DIRECT-S3-f171309fc7e9-A01-SEG-20260909T153212-fad6f667",
+  "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
+  "source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "started_at_utc": "2026-09-09T15:32:12.399251+00:00",
+  "status": "PASS",
+  "student_init_sha256": "e8283753463dbd3c9743a9a09f0a7933bbfcee158fc82c42edf413d7ec81d121",
+  "teacher_factory_bundle_sha256": null,
+  "teacher_factory_identity": null,
+  "teacher_factory_sha256": null,
+  "teacher_sha256": null,
+  "updated_at_utc": "2026-09-09T17:13:12.561942+00:00"
+}
