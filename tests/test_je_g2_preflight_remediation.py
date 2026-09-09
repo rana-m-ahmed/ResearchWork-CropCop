@@ -207,10 +207,9 @@ class OperatorRecoveryHardeningTests(unittest.TestCase):
     def test_15_principal_hydration_precedes_frozen_envelope_launch(self):
         source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
         hydrate = source.index('Principal G2 authenticated evidence hydration: PASS')
-        launch = source.index(
-            '[sys.executable, str(repo_workdir / "journal_extension/kaggle/run_envelope.py")]'
-        )
+        launch = source.index('_envelope_cp = _run_frozen_envelope_with_parent_emergency_guard()')
         self.assertLess(hydrate, launch)
+        self.assertIn('repo_workdir / "journal_extension/kaggle/run_envelope.py"', source)
 
     def test_16_principal_envelopes_keep_seed_pairs_and_slots_exact(self):
         expected = {
@@ -245,6 +244,40 @@ class OperatorRecoveryHardeningTests(unittest.TestCase):
         self.assertIn("GitHub evidence fetch network failure", source)
         self.assertIn("GitHub evidence response identity/encoding mismatch", source)
         self.assertNotIn("if not _git_fetch_branch(branch):\\n            continue", source)
+
+    def test_20_principal_continuation_is_explicit_and_fail_closed(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        self.assertIn('CROPCOP_CONTINUATION_POLICY', source)
+        self.assertIn('Continuation requires explicit CROPCOP_ENVELOPE_INPUT_ROOT', source)
+        self.assertIn('fresh_restart_possible_after_preflight": False', source)
+        self.assertIn('Principal continuation checkpoint recovery/prestage: PASS', source)
+        self.assertNotIn('Path("/kaggle/input").rglob', source)
+
+    def test_21_continuation_recovery_prefers_durable_then_exact_prior_checkpoint(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        durable = source.index('_restore_verified_durable(')
+        rescue = source.index('_store.sync(', durable)
+        prestage = source.index('_export_recovery_bundle(_verified_root, _new_checkpoint_root)', rescue)
+        self.assertLess(durable, rescue)
+        self.assertLess(rescue, prestage)
+        self.assertIn('_recover_latest(', source)
+        self.assertIn('prior run record surface contract changed', source)
+        self.assertIn('durable rescue changed checkpoint identity/progress', source)
+
+    def test_22_parent_guard_preserves_child_safe_deadline_and_delays_only_emergency_cutoff(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        self.assertIn('def _run_frozen_envelope_with_parent_emergency_guard()', source)
+        self.assertIn('return self._budget.remaining_hard_seconds', source)
+        self.assertIn('_module.SessionBudget = _ParentSessionBudgetProxy', source)
+        self.assertIn('child_safe_deadline_unchanged=true', source)
+        self.assertIn('parent_emergency_cutoff=hard_limit_minus_300s', source)
+
+    def test_23_continuation_remediation_does_not_edit_frozen_scientific_runner(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        self.assertIn('scientific_configuration_changed": False', source)
+        self.assertIn('scientific_source_modified": False', source)
+        self.assertIn('AUTHORIZED_SOURCE_SHA = "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433"', source)
+        self.assertIn('importlib.util.spec_from_file_location(', source)
 
     def test_19_canonical_notebook_contains_same_hardened_handoff(self):
         notebook = json.loads(
