@@ -1,0 +1,50 @@
+{
+  "amendment_id": "EAAI-JE-MGPU-A1",
+  "amendment_sha256": "3f08f2dbe7e83143c7e6f1fcf6732c7d88086295a600a74b323b89b46caed3f6",
+  "children": [
+    {
+      "child_id": "P3-DIRECT",
+      "continuation_required": true,
+      "ended_at_utc": "2026-09-09T04:34:12.187415+00:00",
+      "evidence_chain_complete": false,
+      "execution_status": "CONTINUATION_REQUIRED",
+      "experiment_id": "R04-MNV4-DIRECT-S3",
+      "physical_slot": 0,
+      "publication_status": "NOT_ATTEMPTED",
+      "run_id": "JE-R04-MNV4-DIRECT-S3-f171309fc7e9-A01",
+      "started_at_utc": "2026-09-08T17:43:05.887756+00:00",
+      "status": "CONTINUATION_REQUIRED",
+      "termination": {
+        "returncode": -15,
+        "termination_duration_seconds": 0.40307985999970697,
+        "termination_mode": "graceful_sigterm"
+      }
+    },
+    {
+      "child_id": "P3-TEACHER",
+      "continuation_required": true,
+      "ended_at_utc": "2026-09-09T04:34:15.462808+00:00",
+      "evidence_chain_complete": false,
+      "execution_status": "CONTINUATION_REQUIRED",
+      "experiment_id": "R05-MNV4-TEACHER-S3",
+      "physical_slot": 1,
+      "publication_status": "NOT_ATTEMPTED",
+      "run_id": "JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01",
+      "started_at_utc": "2026-09-08T17:43:05.902468+00:00",
+      "status": "CONTINUATION_REQUIRED",
+      "termination": {
+        "returncode": -15,
+        "termination_duration_seconds": 0.4030877999975928,
+        "termination_mode": "graceful_sigterm"
+      }
+    }
+  ],
+  "envelope_id": "MGPU-P3-S3PAIR-V1",
+  "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
+  "phase": "principal-dual",
+  "schema_version": "1.0",
+  "source_git_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "state": "CONTINUATION_REQUIRED",
+  "updated_at_utc": "2026-09-09T04:34:15.477165+00:00"
+}
