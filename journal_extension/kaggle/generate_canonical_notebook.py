@@ -18,11 +18,11 @@ Smoke A/B remain cross-Saved-Version and API-free. `smoke-restore` requires the 
 
 CODE = r'''import json
 import os, platform, shutil, stat, subprocess, sys, tempfile, time
-import importlib.util
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
+import importlib.util
 import base64
 from urllib.parse import quote
 
