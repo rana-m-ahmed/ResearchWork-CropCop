@@ -110,6 +110,7 @@
     "status": "PASS"
   },
   "envelope_id": "MGPU-P1-S1PAIR-V1",
+  "envelope_publication_branch": "run-evidence/MGPU-P1-S1PAIR-V1",
   "finalization_outcomes": {},
   "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
   "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
