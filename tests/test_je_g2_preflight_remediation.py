@@ -257,12 +257,31 @@ class OperatorRecoveryHardeningTests(unittest.TestCase):
         source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
         durable = source.index('_restore_verified_durable(')
         rescue = source.index('_store.sync(', durable)
-        prestage = source.index('_export_recovery_bundle(_verified_root, _new_checkpoint_root)', rescue)
+        prestage = source.index('_materialize_verified_recovery_bundle(', rescue)
         self.assertLess(durable, rescue)
         self.assertLess(rescue, prestage)
         self.assertIn('_recover_latest(', source)
+        self.assertIn('_materialize_verified_recovery_bundle(', source)
+        self.assertIn('_verify_selected(', source)
+        self.assertIn('recovery_candidate', source)
+        self.assertIn('recovery_prior_candidate_errors', source)
         self.assertIn('prior run record surface contract changed', source)
         self.assertIn('durable rescue changed checkpoint identity/progress', source)
+
+    def test_21a_recovery_event_is_verified_not_misclassified_as_failure(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        self.assertIn('RECOVERY_CHECKPOINT_SELECTED', source)
+        self.assertIn('unexpected recovery candidate', source)
+        self.assertNotIn('checkpoint recovery required fallback instead of the indexed latest checkpoint', source)
+        self.assertIn('candidate={_verified_meta[\'recovery_candidate\']}', source)
+
+    def test_21b_recovery_bundle_preserves_selected_checkpoint(self):
+        source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")
+        self.assertIn('_verify_selected(', source)
+        self.assertIn('expected_sha256=_selected_sha', source)
+        self.assertIn('"selected": dict(_selected_ref)', source)
+        self.assertIn('"previous": None', source)
+        self.assertIn('sanitized bundle changed recovery checkpoint identity/progress', source)
 
     def test_22_parent_guard_preserves_child_safe_deadline_and_delays_only_emergency_cutoff(self):
         source = (ROOT / "journal_extension/kaggle/generate_canonical_notebook.py").read_text(encoding="utf-8")

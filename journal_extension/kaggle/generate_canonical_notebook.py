@@ -1026,8 +1026,9 @@ if EXECUTION_PHASE == "principal-dual":
 # recovery bundle so --resume-mode auto cannot silently fall back to epoch 0.
 if EXECUTION_PHASE == "principal-dual" and CONTINUATION_POLICY == "required":
     from cropcop_je.checkpointing import (
-        export_recovery_bundle as _export_recovery_bundle,
+        read_index as _read_checkpoint_index,
         recover_latest as _recover_latest,
+        verify_selected as _verify_selected,
     )
     from cropcop_je.envelope import (
         locate_prior_bundle as _locate_prior_bundle,
@@ -1093,19 +1094,125 @@ if EXECUTION_PHASE == "principal-dual" and CONTINUATION_POLICY == "required":
             _root,
             expected_identity=_expected_identity,
         )
-        if _recovery is not None:
-            raise RuntimeError(
-                f"{_label}: checkpoint recovery required fallback instead of the indexed latest checkpoint"
-            )
+        if not isinstance(_recovery, dict) or _recovery.get("event") != "RECOVERY_CHECKPOINT_SELECTED":
+            raise RuntimeError(f"{_label}: frozen recovery selector did not return a verified recovery event")
+        _candidate = str(_recovery.get("candidate") or "")
+        if _candidate not in {"latest", "selected", "previous"}:
+            raise RuntimeError(f"{_label}: unexpected recovery candidate {_candidate!r}")
+        _ref = _recovery.get("recovered")
+        if not isinstance(_ref, dict):
+            raise RuntimeError(f"{_label}: recovery event lacks the verified checkpoint reference")
+        _digest = _sha256_file(_path)
+        if _digest != _ref.get("sha256"):
+            raise RuntimeError(f"{_label}: recovered path SHA differs from frozen verified reference")
+        if _path.stat().st_size != int(_ref.get("bytes", -1)):
+            raise RuntimeError(f"{_label}: recovered path bytes differ from frozen verified reference")
         _step = int(_payload.get("optimizer_step", 0))
         if _step <= 0:
             raise RuntimeError(f"{_label}: recovered optimizer step is not positive")
+        _relative = _path.resolve().relative_to(_root.resolve()).as_posix()
+        if _relative != _ref.get("relative_path"):
+            raise RuntimeError(f"{_label}: recovered path differs from frozen checkpoint reference")
         return {
-            "checkpoint_sha256": _sha256_file(_path),
+            "checkpoint_sha256": _digest,
+            "checkpoint_bytes": int(_path.stat().st_size),
+            "checkpoint_relative_path": _relative,
+            "checkpoint_generation": int(_ref.get("generation", -1)),
+            "checkpoint_ref": dict(_ref),
+            "recovery_candidate": _candidate,
+            "recovery_prior_candidate_errors": list(_recovery.get("prior_candidate_errors") or []),
             "optimizer_step": _step,
             "epoch": int(_payload.get("epoch", -1)),
             "batch_in_epoch": int(_payload.get("batch_in_epoch", -1)),
+            "selection_state": _payload.get("selection_state"),
         }
+
+    def _materialize_verified_recovery_bundle(
+        _source_root: Path,
+        _meta: dict,
+        _expected_identity: dict,
+        _destination_root: Path,
+        _label: str,
+    ) -> dict:
+        _source_root = _source_root.resolve()
+        _destination_root = _destination_root.resolve()
+        if _destination_root.exists() and any(_destination_root.iterdir()):
+            raise RuntimeError(f"{_label}: recovery bundle destination is not empty")
+        _destination_root.mkdir(parents=True, exist_ok=True)
+
+        _recovery_ref = dict(_meta["checkpoint_ref"])
+        _recovery_src = (_source_root / _recovery_ref["relative_path"]).resolve()
+        if _source_root not in _recovery_src.parents:
+            raise RuntimeError(f"{_label}: recovery checkpoint path escapes source root")
+
+        _refs_to_copy = [_recovery_ref]
+        _selected_ref = None
+        _selection_state = _meta.get("selection_state")
+        _best = _selection_state.get("best") if isinstance(_selection_state, dict) else None
+        if isinstance(_best, dict):
+            _selected_sha = str(_best.get("checkpoint_sha256") or "")
+            if not _selected_sha:
+                raise RuntimeError(
+                    f"{_label}: recovered selection state has a best checkpoint without a bound SHA"
+                )
+            _selected_path, _selected_payload = _verify_selected(
+                _source_root,
+                expected_identity=_expected_identity,
+                expected_sha256=_selected_sha,
+            )
+            _index = _read_checkpoint_index(_source_root)
+            _selected_ref = _index.get("selected")
+            if not isinstance(_selected_ref, dict):
+                raise RuntimeError(f"{_label}: verified selected checkpoint is not indexed")
+            if _sha256_file(_selected_path) != _selected_ref.get("sha256"):
+                raise RuntimeError(f"{_label}: selected checkpoint SHA differs from verified index")
+            if int(_selected_payload.get("optimizer_step", -1)) != int(_selected_ref.get("optimizer_step", -2)):
+                raise RuntimeError(f"{_label}: selected checkpoint optimizer step differs from verified index")
+            if _selected_ref.get("relative_path") != _recovery_ref.get("relative_path"):
+                _refs_to_copy.append(dict(_selected_ref))
+
+        for _ref in _refs_to_copy:
+            _src = (_source_root / _ref["relative_path"]).resolve()
+            if _source_root not in _src.parents:
+                raise RuntimeError(f"{_label}: checkpoint path escapes source root")
+            _dst = (_destination_root / _ref["relative_path"]).resolve()
+            if _destination_root not in _dst.parents:
+                raise RuntimeError(f"{_label}: checkpoint destination escapes recovery root")
+            _dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(_src, _dst)
+            if _sha256_file(_dst) != _ref.get("sha256"):
+                raise RuntimeError(f"{_label}: copied checkpoint SHA verification failed")
+            if _dst.stat().st_size != int(_ref.get("bytes", -1)):
+                raise RuntimeError(f"{_label}: copied checkpoint byte-size verification failed")
+
+        _generation = max(int(_ref.get("generation", 0)) for _ref in _refs_to_copy)
+        _sanitized_index = {
+            "schema_version": "2.0",
+            "generation": _generation,
+            "latest": _recovery_ref,
+            "previous": None,
+            "selected": dict(_selected_ref) if isinstance(_selected_ref, dict) else None,
+        }
+        _index_tmp = _destination_root / "checkpoint_index.json.tmp"
+        _index_tmp.write_text(
+            json.dumps(_sanitized_index, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.replace(_index_tmp, _destination_root / "checkpoint_index.json")
+
+        _sanitized_meta = _validate_checkpoint_root(
+            _destination_root,
+            _expected_identity,
+            f"{_label} sanitized",
+        )
+        if (
+            _sanitized_meta["checkpoint_sha256"] != _meta["checkpoint_sha256"]
+            or _sanitized_meta["optimizer_step"] != _meta["optimizer_step"]
+        ):
+            raise RuntimeError(f"{_label}: sanitized bundle changed recovery checkpoint identity/progress")
+        if _sanitized_meta["recovery_candidate"] != "latest":
+            raise RuntimeError(f"{_label}: sanitized bundle did not normalize verified recovery checkpoint to latest")
+        return _sanitized_meta
 
     def _restore_verified_durable(
         _store: _KagglePrivateDatasetStore,
@@ -1196,11 +1303,24 @@ if EXECUTION_PHASE == "principal-dual" and CONTINUATION_POLICY == "required":
                 + "-"
                 + time.strftime("%Y%m%dT%H%M%S", time.gmtime())
             )
-            _store.sync(
-                _local_checkpoint_root,
-                run_id=_run_id,
-                segment_id=_rescue_segment,
+            _rescue_bundle_root = Path(
+                tempfile.mkdtemp(prefix="cropcop-continuation-rescue-bundle-")
             )
+            try:
+                _materialize_verified_recovery_bundle(
+                    _local_checkpoint_root,
+                    _local_meta,
+                    _expected_identity,
+                    _rescue_bundle_root,
+                    f"{_child_id} prior Saved-Version checkpoint",
+                )
+                _store.sync(
+                    _rescue_bundle_root,
+                    run_id=_run_id,
+                    segment_id=_rescue_segment,
+                )
+            finally:
+                shutil.rmtree(_rescue_bundle_root, ignore_errors=True)
             _last_restore_error = None
             _restored_pair = None
             for _attempt in range(30):
@@ -1249,10 +1369,11 @@ if EXECUTION_PHASE == "principal-dual" and CONTINUATION_POLICY == "required":
                 raise RuntimeError(
                     f"{_child_id}: fresh continuation checkpoint staging root is not empty"
                 )
-            _export_recovery_bundle(_verified_root, _new_checkpoint_root)
-            _staged_meta = _validate_checkpoint_root(
-                _new_checkpoint_root,
+            _staged_meta = _materialize_verified_recovery_bundle(
+                _verified_root,
+                _verified_meta,
                 _expected_identity,
+                _new_checkpoint_root,
                 f"{_child_id} staged continuation checkpoint",
             )
             if (
@@ -1265,6 +1386,12 @@ if EXECUTION_PHASE == "principal-dual" and CONTINUATION_POLICY == "required":
         finally:
             shutil.rmtree(_verified_root, ignore_errors=True)
 
+        print(
+            "Principal continuation verified checkpoint: PASS "
+            f"(child={_child_id}, candidate={_verified_meta['recovery_candidate']}, "
+            f"optimizer_step={_verified_meta['optimizer_step']}, "
+            f"prior_candidate_errors={len(_verified_meta['recovery_prior_candidate_errors'])})"
+        )
         _recovery_rows.append(
             {
                 "child_id": _child_id,
@@ -1277,6 +1404,8 @@ if EXECUTION_PHASE == "principal-dual" and CONTINUATION_POLICY == "required":
                 "optimizer_step": _verified_meta["optimizer_step"],
                 "epoch": _verified_meta["epoch"],
                 "batch_in_epoch": _verified_meta["batch_in_epoch"],
+                "recovery_candidate": _verified_meta["recovery_candidate"],
+                "recovery_prior_candidate_errors": _verified_meta["recovery_prior_candidate_errors"],
             }
         )
 
