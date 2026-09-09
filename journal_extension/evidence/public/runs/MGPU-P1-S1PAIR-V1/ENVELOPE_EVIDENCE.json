@@ -86,6 +86,7 @@
     "status": "PASS"
   },
   "envelope_id": "MGPU-P1-S1PAIR-V1",
+  "envelope_publication_branch": "run-evidence/MGPU-P1-S1PAIR-V1",
   "finalization_outcomes": {
     "P1-DIRECT": {
       "returncode": -15,
