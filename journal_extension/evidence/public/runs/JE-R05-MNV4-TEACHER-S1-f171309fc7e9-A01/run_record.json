@@ -1,0 +1,133 @@
+{
+  "allowed_surfaces": [
+    "DS-V1-TRAIN",
+    "DS-V1-VAL"
+  ],
+  "artifact_locators": {},
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "config_sha256": "22f65234f60d80027ed28db028496b658b85dd85704bf35a877f53302e679045",
+  "continuation_required": false,
+  "ctc_v2_sha256": "ed2331e63455e35ade00b548217fe987a9504f26a41e6c5d8a794e38741550bb",
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "durable_store": {
+    "kind": "kaggle-dataset",
+    "locator": "ranaabdulrehmannn/cropcop-je-je-r05-mnv4-teacher-s1-f171309fc7e9-a01",
+    "required": true
+  },
+  "entrypoint": "run_training.py",
+  "environment": {
+    "cuda_available": true,
+    "cuda_device_count": 1,
+    "cuda_runtime": "13.0",
+    "cudnn": 92000,
+    "execution": {
+      "CROPCOP_DUAL_ENVELOPE": "1",
+      "CROPCOP_ENVELOPE_ID": "MGPU-P1-S1PAIR-V1",
+      "CROPCOP_NUM_WORKERS_PER_CHILD": "2",
+      "CROPCOP_PHYSICAL_GPU_SLOT": "1"
+    },
+    "kaggle": {
+      "KAGGLE_CONTAINER_NAME": "kaggle_XQlBOCtY1EDqoN9p9ab2osJEAmqpr0B0ABh3KZQE0Ho-348300922-webtier",
+      "KAGGLE_DOCKER_IMAGE": "gcr.io/kaggle-gpu-images/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
+      "KAGGLE_KERNEL_RUN_TYPE": "Batch"
+    },
+    "nvidia_smi": {
+      "available": true,
+      "gpus": [
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-152355b3-8b3f-29d4-5226-35030ec6ed41"
+        },
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-f16f8fc8-1257-91f5-09ea-9a1714a0f0b6"
+        }
+      ]
+    },
+    "packages": {
+      "Pillow": "12.3.0",
+      "huggingface-hub": "1.30.0",
+      "kaggle": "2.2.4",
+      "numpy": "2.5.2",
+      "safetensors": "0.8.0",
+      "timm": "1.0.26",
+      "torch": "2.12.1",
+      "torchvision": "0.27.1"
+    },
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+    "python": "3.12.13",
+    "python_executable": "python3",
+    "torch_cuda_devices": [
+      {
+        "capability": [
+          7,
+          5
+        ],
+        "index": 0,
+        "name": "Tesla T4",
+        "total_memory": 15636037632
+      }
+    ]
+  },
+  "experiment_id": "R05-MNV4-TEACHER-S1",
+  "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
+  "hardware_identity": {
+    "accelerator": "Tesla T4",
+    "nvidia_smi": {
+      "available": true,
+      "gpus": [
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-152355b3-8b3f-29d4-5226-35030ec6ed41"
+        },
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-f16f8fc8-1257-91f5-09ea-9a1714a0f0b6"
+        }
+      ]
+    }
+  },
+  "lane_id": "K1",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "mode": "scientific",
+  "notebook_session_clock": {
+    "elapsed_seconds": 203.7146166890002,
+    "finalization_margin_seconds": 3600.0,
+    "hard_limit_seconds": 43200.0,
+    "remaining_hard_seconds": 42996.285373172,
+    "remaining_safe_seconds": 39396.285376466,
+    "started_monotonic": 2571.864106904
+  },
+  "pretrained_sha256": "35ca23dc46c0075d9acdcab06d30e5395c4d97e422d8cb5e5e627823aeb7c1fa",
+  "run_id": "JE-R05-MNV4-TEACHER-S1-f171309fc7e9-A01",
+  "seed": 21270083,
+  "segment_id": "JE-R05-MNV4-TEACHER-S1-f171309fc7e9-A01-SEG-20260908T180848-c0799a77",
+  "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
+  "source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "started_at_utc": "2026-09-08T18:08:50.730020+00:00",
+  "status": "LAUNCHED",
+  "student_init_sha256": "7040e48fe697c539dbbdfa8f57ffd20e9327def82f6485267f224dcf4c34cce1",
+  "teacher_factory_bundle_sha256": "c73fa6e337f8c3ac7e32cd605191f72c59e30d790387e6e10990690230184929",
+  "teacher_factory_identity": {
+    "bundle_sha256": "c73fa6e337f8c3ac7e32cd605191f72c59e30d790387e6e10990690230184929",
+    "factory_spec": "historical_dino_tiny:build_teacher",
+    "files": [
+      {
+        "bytes": 8858,
+        "path": "historical_dino_tiny.py",
+        "sha256": "4ec41477264387cde03f7fab8f7df4b9480223b32f8554af5c6198687a568f02"
+      }
+    ],
+    "manifest_sha256": "d4b17fc125d287e2131cc30b7f6a7de447eada3eb965952ae349ae858f714690",
+    "output_order_transform": "none"
+  },
+  "teacher_factory_sha256": "0fc8ba2f5e743fae0277474b0435490413710ab11bba76535d1aeac978c715ea",
+  "teacher_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+  "updated_at_utc": "2026-09-08T18:08:50.730099+00:00"
+}
