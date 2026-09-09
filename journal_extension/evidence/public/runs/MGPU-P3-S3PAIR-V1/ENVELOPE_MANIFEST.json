@@ -25,7 +25,7 @@
       "terminal_root": "children/P3-TEACHER/terminal"
     }
   ],
-  "created_at_utc": "2026-09-08T17:43:04.960010+00:00",
+  "created_at_utc": "2026-09-09T15:31:55.585278+00:00",
   "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
   "dual_gpu_smoke_evidence_sha256": "61658254cd6216a11ec67755d20a001dc41531643fee04062a165610dfb69c86",
   "durable_access_preflight": {
@@ -33,7 +33,7 @@
       "JE-R04-MNV4-DIRECT-S3-f171309fc7e9-A01": {
         "authenticated_read": true,
         "authoritative_is_private": true,
-        "current_version_number": 1,
+        "current_version_number": 2,
         "locator": "ranamuhammadahmed6/cropcop-je-je-r04-mnv4-direct-s3-f171309fc7e9-a01",
         "owner_matches_authenticated_user": true,
         "private_metadata_verified": true,
@@ -43,7 +43,7 @@
       "JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01": {
         "authenticated_read": true,
         "authoritative_is_private": true,
-        "current_version_number": 1,
+        "current_version_number": 2,
         "locator": "ranamuhammadahmed6/cropcop-je-je-r05-mnv4-teacher-s3-f171309fc7e9-a01",
         "owner_matches_authenticated_user": true,
         "private_metadata_verified": true,
@@ -71,21 +71,21 @@
   "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
   "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
   "kaggle_run_type": "Batch",
-  "manifest_sha256": "043953ea50293b8195ab33e1e3a63053b5d70d50d70253fe01f5372dcdc712ac",
+  "manifest_sha256": "627ef4e3faa0356f6d05d21c5f3bfb7ebb8a9e285b330eb94ea65b5fd8208892",
   "no_git_child_policy": true,
-  "notebook_started_monotonic": 196.327233866,
+  "notebook_started_monotonic": 561.711708405,
   "parent_gpu_inventory": [
     {
       "index": 0,
       "memory_total_mib": 15360,
       "name": "Tesla T4",
-      "uuid": "GPU-724eed4b-d33f-1fe6-dc0c-acc930605729"
+      "uuid": "GPU-3168e46f-ffcc-9c8e-b0db-95519056db42"
     },
     {
       "index": 1,
       "memory_total_mib": 15360,
       "name": "Tesla T4",
-      "uuid": "GPU-3255858a-c3f6-9140-fbbc-443445412cdf"
+      "uuid": "GPU-b02d7567-640f-c425-e0e8-861afaed615c"
     }
   ],
   "phase": "principal-dual",
