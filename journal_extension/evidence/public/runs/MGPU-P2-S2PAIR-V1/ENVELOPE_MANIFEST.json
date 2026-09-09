@@ -1,0 +1,97 @@
+{
+  "amendment_id": "EAAI-JE-MGPU-A1",
+  "amendment_sha256": "3f08f2dbe7e83143c7e6f1fcf6732c7d88086295a600a74b323b89b46caed3f6",
+  "children": [
+    {
+      "child_id": "P2-DIRECT",
+      "durable_locator": "sabahatabbas/cropcop-je-je-r04-mnv4-direct-s2-f171309fc7e9-a01",
+      "experiment_id": "R04-MNV4-DIRECT-S2",
+      "g2_summaries_root": "children/P2-DIRECT/g2_summaries",
+      "logical_lane": "K2",
+      "output_root": "children/P2-DIRECT/output",
+      "requested_physical_slot": 0,
+      "run_id": "JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01",
+      "terminal_root": "children/P2-DIRECT/terminal"
+    },
+    {
+      "child_id": "P2-TEACHER",
+      "durable_locator": "sabahatabbas/cropcop-je-je-r05-mnv4-teacher-s2-f171309fc7e9-a01",
+      "experiment_id": "R05-MNV4-TEACHER-S2",
+      "g2_summaries_root": "children/P2-TEACHER/g2_summaries",
+      "logical_lane": "K2",
+      "output_root": "children/P2-TEACHER/output",
+      "requested_physical_slot": 1,
+      "run_id": "JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01",
+      "terminal_root": "children/P2-TEACHER/terminal"
+    }
+  ],
+  "created_at_utc": "2026-09-08T17:44:29.987812+00:00",
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "dual_gpu_smoke_evidence_sha256": "61658254cd6216a11ec67755d20a001dc41531643fee04062a165610dfb69c86",
+  "durable_access_preflight": {
+    "checks": {
+      "JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 1,
+        "locator": "sabahatabbas/cropcop-je-je-r04-mnv4-direct-s2-f171309fc7e9-a01",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      },
+      "JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 1,
+        "locator": "sabahatabbas/cropcop-je-je-r05-mnv4-teacher-s2-f171309fc7e9-a01",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      }
+    },
+    "current_envelope_locator_count": 2,
+    "current_envelope_run_ids": [
+      "JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01",
+      "JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01"
+    ],
+    "errors": [],
+    "global_namespace_validation": "PASS",
+    "global_reserved_locator_count": 9,
+    "kind": "kaggle-dataset",
+    "note": "Kaggle write authorization is bound to authenticated dataset ownership; the first real calibration/scientific sync is the non-fabricated write exercise.",
+    "resolved_locator_count": 2,
+    "schema_version": "1.0",
+    "status": "PASS"
+  },
+  "envelope_id": "MGPU-P2-S2PAIR-V1",
+  "g1_package_manifest_sha256": "051405afd367b8f938b35e8ba87850eae757d900bc95d822776cd7ca802390f6",
+  "g1_package_sha256": "3fab54a7b284bcf91ca630983b683ecbd61246bb091c3cc148ddf7c0d69f2db6",
+  "g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "g2_barrier_sha256": "3be3ef666b1e9b479e0173cd74909c43023093e320bd0b3f2731f11e97d21a0a",
+  "kaggle_run_type": "Batch",
+  "manifest_sha256": "3f9cbc7d9b3c47a4164a0a38672ac0a53335ae6e47159e87d105774936391b0d",
+  "no_git_child_policy": true,
+  "notebook_started_monotonic": 448.286917415,
+  "parent_gpu_inventory": [
+    {
+      "index": 0,
+      "memory_total_mib": 15360,
+      "name": "Tesla T4",
+      "uuid": "GPU-bd171019-5185-eaff-4190-9d4d44137b09"
+    },
+    {
+      "index": 1,
+      "memory_total_mib": 15360,
+      "name": "Tesla T4",
+      "uuid": "GPU-2edba8e9-e0d9-79ec-f174-ec9cd79b1006"
+    }
+  ],
+  "phase": "principal-dual",
+  "protected_surfaces_unchanged": true,
+  "schema_version": "1.0",
+  "science_diff_status": "PASS",
+  "source_git_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "workers_per_child": 2
+}
