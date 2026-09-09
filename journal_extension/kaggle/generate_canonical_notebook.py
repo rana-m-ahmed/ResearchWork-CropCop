@@ -17,8 +17,8 @@ For `principal-dual`, set non-secret `CROPCOP_PRINCIPAL_ENVELOPE` to `P1`, `P2`,
 Smoke A/B remain cross-Saved-Version and API-free. `smoke-restore` requires the exact Smoke-A Notebook Output attached read-only.\n\nFor principal continuation, set `CROPCOP_CONTINUATION_POLICY=required` and set `CROPCOP_ENVELOPE_INPUT_ROOT` to the explicit attached prior Saved-Version output root. The wrapper validates/rescues/pre-stages exact checkpoints before training and refuses a silent fresh restart.\n"""
 
 CODE = r'''import json
-import importlib.util
 import os, platform, shutil, stat, subprocess, sys, tempfile, time
+import importlib.util
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
