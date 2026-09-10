@@ -1,0 +1,9 @@
+Gate: DO_NOT_LAUNCH_SCIENCE_UNTIL
+1. wrapper exact-head CI PASS;
+2. K3 source-qualified Smoke A PASS;
+3. fresh-session Smoke B PASS;
+4. dual-T4 smoke PASS;
+5. Secondary G1 round-trip PASS;
+6. Secondary G2 terminal PASS.
+
+Principal R04/R05 science remains complete and is not rerun.
