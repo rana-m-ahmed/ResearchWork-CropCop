@@ -1,0 +1,58 @@
+name: Validate secondary Kaggle wrappers
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-secondary-wrappers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact checked-out wrapper head
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile every notebook code cell
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for path in sorted(Path("journal_extension/kaggle").glob("secondary_K*.ipynb")):
+              nb = json.loads(path.read_text(encoding="utf-8"))
+              assert nb.get("nbformat") == 4 and int(nb.get("nbformat_minor", -1)) >= 5
+              for i, cell in enumerate(nb.get("cells", [])):
+                  if cell.get("cell_type") == "code":
+                      source = cell.get("source", [])
+                      text = source if isinstance(source, str) else "".join(source)
+                      compile(text, f"{path.name}:cell-{i}", "exec")
+          PY
+      - name: Run independent wrapper contract tests
+        run: python -m unittest tests.test_je_secondary_wrappers -v
+      - name: Prove scientific source is still untouched
+        run: |
+          python journal_extension/scripts/check_science_diff.py --repo-root . --json-report principal-science-diff-wrapper.json
+          python journal_extension/scripts/check_secondary_science_diff.py --repo-root . --output secondary-science-diff-wrapper.json
+      - name: Reject model/checkpoint/archive/secret additions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re, subprocess
+          paths = subprocess.check_output(["git", "ls-files"], text=True).splitlines()
+          forbidden = re.compile(r"\.(?:pt|pth|ckpt|pte|safetensors|zip|tar|gz|7z|env)$", re.I)
+          bad = [p for p in paths if forbidden.search(p)]
+          if bad:
+              raise SystemExit(f"forbidden tracked artifacts: {bad}")
+          PY
