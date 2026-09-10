@@ -1,0 +1,3 @@
+Scientific execution source SHA: 8904b100d223e4319776199c87ab397db23600ce
+Wrapper branch commits are not scientific execution sources.
+Every controller must clone/check out the SHA above before invoking any qualification or scientific runner.
