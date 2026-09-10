@@ -1,0 +1,5 @@
+CropCop_K1_Mechanism_Controller.ipynb -> repo: journal_extension/kaggle/secondary_K1_mechanism.ipynb
+CropCop_K2_Context_Controller.ipynb -> repo: journal_extension/kaggle/secondary_K2_context.ipynb
+CropCop_K3_Qualification_Controller.ipynb -> repo: journal_extension/kaggle/secondary_K3_qualification.ipynb
+RUNBOOK.md -> repo: journal_extension/kaggle/SECONDARY_RUNBOOK.md
+INPUTS_CHECKLIST.json -> repo: journal_extension/kaggle/SECONDARY_INPUTS_CHECKLIST.json
