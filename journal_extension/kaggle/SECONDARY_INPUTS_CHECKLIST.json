@@ -1,0 +1,83 @@
+{
+  "execution_source_sha": "8904b100d223e4319776199c87ab397db23600ce",
+  "source_branch_fetch_fallback": "je-tracka-secondary-core-20260910",
+  "accounts": {
+    "K1": {
+      "username": "ranaabdulrehmannn",
+      "notebook": "CropCop_K1_Mechanism_Controller.ipynb",
+      "science": "R12 logits + R12 feature"
+    },
+    "K2": {
+      "username": "sabahatabbas",
+      "notebook": "CropCop_K2_Context_Controller.ipynb",
+      "science": "R06 EfficientNet-B0 + R07 ConvNeXt-Tiny"
+    },
+    "K3": {
+      "username": "ranamuhammadahmed6",
+      "notebook": "CropCop_K3_Qualification_Controller.ipynb",
+      "role": "new-source qualification + Secondary G1/G2"
+    }
+  },
+  "secrets": {
+    "smoke_write_restore_dual": [
+      "CROPCOP_GITHUB_TOKEN"
+    ],
+    "secondary_g1_g2": [
+      "CROPCOP_GITHUB_TOKEN",
+      "KAGGLE_USERNAME",
+      "KAGGLE_KEY"
+    ],
+    "secondary_scientific": [
+      "CROPCOP_GITHUB_TOKEN",
+      "KAGGLE_USERNAME",
+      "KAGGLE_KEY"
+    ],
+    "huggingface_token_required": false
+  },
+  "inputs_by_phase": {
+    "K3_smoke_write": [],
+    "K3_smoke_restore": [
+      "K3 Smoke-A Notebook Output"
+    ],
+    "K3_dual_gpu_smoke": [
+      "K3 Smoke-B Notebook Output"
+    ],
+    "K3_secondary_g1": [
+      "Frozen Final-V1 dataset",
+      "ranamuhammadahmed6/cropcop-g1-sealed version 2",
+      "K3 Smoke-B Notebook Output",
+      "K3 Dual-T4-Smoke Notebook Output"
+    ],
+    "K3_secondary_g2": [
+      "Frozen Final-V1 dataset",
+      "ranamuhammadahmed6/cropcop-secondary-g1-8904b100"
+    ],
+    "K1_secondary_science": [
+      "Frozen Final-V1 dataset",
+      "shared ranamuhammadahmed6/cropcop-secondary-g1-8904b100",
+      "K3 Secondary-G2 Notebook Output"
+    ],
+    "K2_secondary_science": [
+      "Frozen Final-V1 dataset",
+      "shared ranamuhammadahmed6/cropcop-secondary-g1-8904b100",
+      "K3 Secondary-G2 Notebook Output"
+    ]
+  },
+  "principal_g1": {
+    "slug": "ranamuhammadahmed6/cropcop-g1-sealed",
+    "version": 2
+  },
+  "secondary_g1_target": "ranamuhammadahmed6/cropcop-secondary-g1-8904b100",
+  "frozen_v1": {
+    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2"
+  },
+  "phase_order": [
+    "K3 smoke-write",
+    "K3 smoke-restore",
+    "K3 dual-gpu-smoke",
+    "K3 secondary-g1",
+    "K3 secondary-g2",
+    "K1 mechanism + K2 context in parallel"
+  ]
+}
