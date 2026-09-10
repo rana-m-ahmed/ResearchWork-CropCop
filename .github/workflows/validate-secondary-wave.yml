@@ -1,0 +1,55 @@
+name: Validate secondary Track-A wave
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-secondary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact checked-out source SHA
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_SOURCE_SHA="$(git rev-parse HEAD)"
+          printf 'expected=%s\nactual=%s\n' "$EXPECTED_SOURCE_SHA" "$ACTUAL_SOURCE_SHA"
+          test "$ACTUAL_SOURCE_SHA" = "$EXPECTED_SOURCE_SHA"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile secondary Python sources
+        run: |
+          python -m compileall -q journal_extension/src/cropcop_je/secondary.py journal_extension/src/cropcop_je/secondary_g2.py journal_extension/scripts journal_extension/kaggle tests/test_je_secondary_wave.py
+      - name: Prove principal science sentinel still passes
+        run: python journal_extension/scripts/check_science_diff.py --repo-root . --json-report principal-science-diff-secondary-pr.json
+      - name: Validate secondary science boundary
+        run: python journal_extension/scripts/check_secondary_science_diff.py --repo-root . --output secondary-science-diff-report.json
+      - name: Run secondary-wave contract tests
+        run: python -m unittest tests.test_je_secondary_wave -v
+      - name: Reject tracked model, checkpoint, archive and secret files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re, subprocess
+          forbidden = re.compile(r"\.(?:pt|pth|ckpt|pte|safetensors|zip|tar|gz|7z|env)$", re.I)
+          offenders = [p for p in subprocess.check_output(["git", "ls-files"], text=True).splitlines() if forbidden.search(p)]
+          if offenders:
+              raise SystemExit("forbidden tracked binary/secret artifacts: " + repr(offenders))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: secondary-validation-report
+          path: |
+            principal-science-diff-secondary-pr.json
+            secondary-science-diff-report.json
