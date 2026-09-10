@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "authority_sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74",
+  "principal_registry_policy": "immutable_principal_registry_remains_authoritative_for_R04_R05",
+  "principal_science_source_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "secondary_execution_policy": "explicit_ids_only_no_wildcards",
+  "experiments": [
+    {
+      "experiment_id": "R12-MNV4-LOGITS-S1",
+      "state": "active",
+      "priority": "P1",
+      "seed": 21270083,
+      "pair_id": "MNV4-PAIR-S1",
+      "condition": "teacher",
+      "scientific_role": "descriptive_mechanism_anchor",
+      "allowed_surfaces": ["DS-V1-TRAIN", "DS-V1-VAL"],
+      "forbidden_surfaces": ["DS-V1-TEST-CONSUMED", "DS-EXT-*-SEALED", "DS-HIST-COMPARE"],
+      "config_path": "journal_extension/configs/r12_logits/s1.json",
+      "selection_surface": "DS-V1-VAL",
+      "protected_use": "V1 continuity only after G5"
+    },
+    {
+      "experiment_id": "R12-MNV4-FEATURE-S1",
+      "state": "active",
+      "priority": "P1",
+      "seed": 21270083,
+      "pair_id": "MNV4-PAIR-S1",
+      "condition": "teacher",
+      "scientific_role": "descriptive_mechanism_anchor",
+      "allowed_surfaces": ["DS-V1-TRAIN", "DS-V1-VAL"],
+      "forbidden_surfaces": ["DS-V1-TEST-CONSUMED", "DS-EXT-*-SEALED", "DS-HIST-COMPARE"],
+      "config_path": "journal_extension/configs/r12_feature/s1.json",
+      "selection_surface": "DS-V1-VAL",
+      "protected_use": "V1 continuity only after G5"
+    },
+    {
+      "experiment_id": "R06-EFFB0-CONTEXT-S1",
+      "state": "active",
+      "priority": "P1",
+      "seed": 21270083,
+      "condition": "direct",
+      "scientific_role": "descriptive_context_baseline",
+      "allowed_surfaces": ["DS-V1-TRAIN", "DS-V1-VAL"],
+      "forbidden_surfaces": ["DS-V1-TEST-CONSUMED", "DS-EXT-*-SEALED", "DS-HIST-COMPARE"],
+      "config_path": "journal_extension/configs/r06_effb0/s1.json",
+      "selection_surface": "DS-V1-VAL",
+      "protected_use": "V1 continuity only after G5"
+    },
+    {
+      "experiment_id": "R07-CNXTT-CONTEXT-S1",
+      "state": "active",
+      "priority": "P1",
+      "seed": 21270083,
+      "condition": "direct",
+      "scientific_role": "descriptive_context_baseline",
+      "allowed_surfaces": ["DS-V1-TRAIN", "DS-V1-VAL"],
+      "forbidden_surfaces": ["DS-V1-TEST-CONSUMED", "DS-EXT-*-SEALED", "DS-HIST-COMPARE"],
+      "config_path": "journal_extension/configs/r07_cnxtt/s1.json",
+      "selection_surface": "DS-V1-VAL",
+      "protected_use": "V1 continuity only after G5"
+    }
+  ],
+  "calibrations": {
+    "CAL-MNV4-DIRECT": {"optimizer_steps": 200, "surface": "DS-V1-TRAIN", "scientific_checkpoint": false, "coverage": ["mobileNetV4 direct execution profile"]},
+    "CAL-MNV4-TEACHER": {"optimizer_steps": 100, "surface": "DS-V1-TRAIN", "scientific_checkpoint": false, "coverage": ["R12-MNV4-LOGITS-S1", "R12-MNV4-FEATURE-S1"]},
+    "CAL-EFFB0": {"optimizer_steps": 100, "surface": "DS-V1-TRAIN", "scientific_checkpoint": false, "coverage": ["R06-EFFB0-CONTEXT-S1"]},
+    "CAL-CNXTT": {"optimizer_steps": 100, "surface": "DS-V1-TRAIN", "scientific_checkpoint": false, "coverage": ["R07-CNXTT-CONTEXT-S1"]}
+  },
+  "not_authorized": ["R13-NEW-JE-RUNTIME", "R15-CONTRIB-SOURCE-STRESS", "R16-PROTECTED-FIELD-FALLBACK"]
+}

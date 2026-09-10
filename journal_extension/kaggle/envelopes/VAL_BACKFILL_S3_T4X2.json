@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "VAL-BACKFILL-S3-T4X2-V1",
+  "phase": "principal-validation-backfill-dual",
+  "hardware_profile": "T4X2",
+  "logical_lane": "K3",
+  "children": [
+    {"child_id": "r04_s3_val", "experiment_id": "R04-MNV4-DIRECT-S3", "slot": 0},
+    {"child_id": "r05_s3_val", "experiment_id": "R05-MNV4-TEACHER-S3", "slot": 1}
+  ]
+}
