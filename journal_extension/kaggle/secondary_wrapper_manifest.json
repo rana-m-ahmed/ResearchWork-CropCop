@@ -1,0 +1,20 @@
+{
+  "execution_source_sha": "8904b100d223e4319776199c87ab397db23600ce",
+  "notebooks": {
+    "journal_extension/kaggle/secondary_K1_mechanism.ipynb": {
+      "bytes": 14664,
+      "sha256": "15e82e58ae7c3bd7e1d786ea2670a648658f8351fd5b3a663bd7817f7d49a170"
+    },
+    "journal_extension/kaggle/secondary_K2_context.ipynb": {
+      "bytes": 14664,
+      "sha256": "85f83e0e83e2d9f37c14bc97867c501824320e61dbabddcb9a5f41e646ed9d0c"
+    },
+    "journal_extension/kaggle/secondary_K3_qualification.ipynb": {
+      "bytes": 18736,
+      "sha256": "a7d8830ef5d225d954fc6f30d26f3584efbb3eb7d7aef10f5c5719ebfbe8b62f"
+    }
+  },
+  "schema_version": "1.0",
+  "scientific_source_changed": false,
+  "wrapper_only": true
+}
