@@ -79,7 +79,11 @@ class SecondaryWaveContractTests(unittest.TestCase):
         self.assertEqual(seen, set(SECONDARY_CONFIG_SPECS))
 
     def test_principal_backfill_envelopes_cover_all_six_once(self):
-        files = ["VAL_BACKFILL_S1_T4X2.json", "VAL_BACKFILL_S2_T4X2.json", "VAL_BACKFILL_S3_T4X2.json"]
+        files = [
+            "VAL_BACKFILL_S1_T4X2.json",
+            "VAL_BACKFILL_S2_T4X2.json",
+            "VAL_BACKFILL_S3_T4X2.json",
+        ]
         observed = []
         for filename in files:
             config = load(ROOT / "journal_extension/kaggle/envelopes" / filename)
@@ -98,7 +102,10 @@ class SecondaryWaveContractTests(unittest.TestCase):
         self.assertNotIn("run_training(", source)
 
     def test_secondary_runtime_has_no_distributed_scientific_path(self):
-        paths = [ROOT / "journal_extension/scripts/run_secondary_training.py", ROOT / "journal_extension/kaggle/run_secondary_envelope.py"]
+        paths = [
+            ROOT / "journal_extension/scripts/run_secondary_training.py",
+            ROOT / "journal_extension/kaggle/run_secondary_envelope.py",
+        ]
         text = "\n".join(p.read_text(encoding="utf-8") for p in paths)
         for token in ("DistributedDataParallel", "nn.DataParallel", "SyncBatchNorm", "FullyShardedDataParallel"):
             self.assertNotIn(token, text)
@@ -118,10 +125,19 @@ class SecondaryWaveContractTests(unittest.TestCase):
         self.assertIn('return "never"', source)
         self.assertIn("fresh restart is forbidden", source)
 
+    def test_secondary_run_id_override_cannot_break_source_binding(self):
+        source = (ROOT / "journal_extension/kaggle/run_secondary_envelope.py").read_text(encoding="utf-8")
+        self.assertIn('expected = f"JE-{experiment_id}-{source_sha[:12]}-A{attempt:02d}"', source)
+        self.assertIn("if explicit and explicit != expected", source)
+        self.assertIn("is not bound to experiment/source/attempt", source)
+        self.assertNotIn("return explicit", source)
+
     def test_secondary_g2_qualifies_all_model_families_and_durable_roundtrip(self):
         g2 = (ROOT / "journal_extension/kaggle/run_secondary_g2_envelope.py").read_text(encoding="utf-8")
         cal = (ROOT / "journal_extension/scripts/calibrate_secondary.py").read_text(encoding="utf-8")
-        self.assertEqual(REQUIRED_SECONDARY_CALIBRATIONS, ("CAL-MNV4-DIRECT", "CAL-MNV4-TEACHER", "CAL-EFFB0", "CAL-CNXTT"))
+        self.assertEqual(REQUIRED_SECONDARY_CALIBRATIONS, (
+            "CAL-MNV4-DIRECT", "CAL-MNV4-TEACHER", "CAL-EFFB0", "CAL-CNXTT"
+        ))
         self.assertIn('"CAL-EFFB0"', g2)
         self.assertIn('"CAL-EFFB0"', cal)
         self.assertIn("store.sync", cal)

@@ -58,15 +58,17 @@ def envelope_path() -> Path:
 
 def run_id(experiment_id: str, source_sha: str) -> str:
     key = "CROPCOP_RUN_ID_" + "".join(ch if ch.isalnum() else "_" for ch in experiment_id).upper()
-    explicit = os.environ.get(key, "").strip()
-    if explicit:
-        if len(explicit) > 160 or not all(ch.isalnum() or ch in "._-" for ch in explicit):
-            raise EnvelopeError(f"invalid explicit run ID in {key}")
-        return explicit
     attempt = int(os.environ.get(key + "_ATTEMPT", "1"))
     if not 1 <= attempt <= 99:
         raise EnvelopeError(f"{key}_ATTEMPT must be 1..99")
-    return f"JE-{experiment_id}-{source_sha[:12]}-A{attempt:02d}"
+    expected = f"JE-{experiment_id}-{source_sha[:12]}-A{attempt:02d}"
+    explicit = os.environ.get(key, "").strip()
+    if explicit and explicit != expected:
+        raise EnvelopeError(
+            f"explicit run ID in {key} is not bound to experiment/source/attempt; "
+            f"expected {expected}"
+        )
+    return expected
 
 
 def common_args(source_sha: str, lane: str, g1: Path, g2: Path, child_out: Path, eid: str, rid: str, durable_kind: str, durable_locator: str, resume_mode: str) -> list[str]:
@@ -104,6 +106,7 @@ def common_args(source_sha: str, lane: str, g1: Path, g2: Path, child_out: Path,
     return args
 
 
+
 def durable_resume_mode(run_id_value: str, locator: str, access: dict) -> str:
     check = access.get("checks", {}).get(run_id_value, {})
     version = int(check.get("current_version_number") or 0)
@@ -123,7 +126,6 @@ def durable_resume_mode(run_id_value: str, locator: str, access: dict) -> str:
         f"ambiguous durable state for {run_id_value}: private target version={version} "
         "but checkpoint_index.json is absent; fresh restart is forbidden"
     )
-
 
 def publish(source_sha: str, rid: str, out: Path) -> dict:
     files = [p for p in (out / "run_record.json", out / "metrics.json", out / "segments.jsonl") if p.is_file()]
