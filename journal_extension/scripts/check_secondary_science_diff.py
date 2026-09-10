@@ -16,6 +16,16 @@ from cropcop_je.secondary import (
 from cropcop_je.secondary_g2 import REQUIRED_SECONDARY_CALIBRATIONS
 
 
+def notebook_source_text(value) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "".join(notebook_source_text(item) for item in value)
+    if value is None:
+        return ""
+    raise TypeError(f"unsupported notebook source value: {type(value).__name__}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-root", default=".")
@@ -70,7 +80,15 @@ def main() -> int:
         errors.append("secondary G2 does not explicitly qualify EfficientNet-B0")
 
     notebook = load_json(root / "journal_extension/kaggle/canonical_lane.ipynb")
-    principal_code = "".join(c.get("source", []) for c in notebook.get("cells", []) if c.get("cell_type") == "code")
+    try:
+        principal_code = "".join(
+            notebook_source_text(c.get("source", ""))
+            for c in notebook.get("cells", [])
+            if c.get("cell_type") == "code"
+        )
+    except TypeError as exc:
+        errors.append(f"canonical notebook source representation invalid: {exc}")
+        principal_code = ""
     if f'AUTHORIZED_SOURCE_SHA = "{PRINCIPAL_SCIENCE_SOURCE_SHA}"' not in principal_code:
         errors.append("principal canonical notebook f171 source binding changed")
 
