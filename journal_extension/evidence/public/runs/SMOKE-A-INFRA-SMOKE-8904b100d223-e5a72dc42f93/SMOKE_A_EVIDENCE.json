@@ -76,7 +76,7 @@
     ]
   },
   "environment_identity_sha256": "842277914e91eb9b15718846fc9953e0acd7efd1608c42075029f1747a00ff83",
-  "export_integrity": "PENDING",
+  "export_integrity": "PASS",
   "g1_executed": false,
   "g2_executed": false,
   "git_publication_status": "PASS",
