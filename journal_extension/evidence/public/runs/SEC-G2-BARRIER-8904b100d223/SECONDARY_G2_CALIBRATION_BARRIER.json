@@ -1,0 +1,88 @@
+{
+  "barrier_kind": "secondary_track_a_g2",
+  "barrier_sha256": "850d1d3cb0545937446a9853f786c5ecb41cb082facba45cba93e32007ed9e09",
+  "checkpoint_contract_probe": {
+    "identity_mismatch_rejected": true,
+    "latest_checkpoint_sha256": "b095b265a19c812f872bacd8235de36d467d2ee7c3adad93186e65af183b3b96",
+    "protected_data_accessed": false,
+    "scientific_result_produced": false,
+    "selected_checkpoint_sha256": "1e71c3775b317637195d4e37c170ded5502243e84adebe06897f725f8ac32d9f",
+    "selected_checkpoint_verified": true,
+    "status": "PASS"
+  },
+  "cnxtt_pretrained_sha256": "983f1562536e84ff750a1576fb08e54de751dbf2e17c0d8a4a13704341fdcd3d",
+  "covered_secondary_experiment_ids": [
+    "R06-EFFB0-CONTEXT-S1",
+    "R07-CNXTT-CONTEXT-S1",
+    "R12-MNV4-FEATURE-S1",
+    "R12-MNV4-LOGITS-S1"
+  ],
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "effb0_pretrained_sha256": "7f5810bc96def8f7552d5b7e68d53c4786f81167d28291b21c0d90e1fca14934",
+  "errors": [],
+  "forecast": {
+    "R06-EFFB0-CONTEXT-S1": {
+      "calibration_id": "CAL-EFFB0",
+      "estimated_run_seconds_raw": 33534.41704386072,
+      "estimated_run_seconds_with_20pct_operational_reserve": 40241.30045263286,
+      "estimated_train_seconds": 31499.22936154865,
+      "estimated_validation_seconds": 2035.1876823120685,
+      "forecast_is_scheduling_only": true,
+      "optimizer_steps_per_30_epoch_run": 35820
+    },
+    "R07-CNXTT-CONTEXT-S1": {
+      "calibration_id": "CAL-CNXTT",
+      "estimated_run_seconds_raw": 29909.281108182302,
+      "estimated_run_seconds_with_20pct_operational_reserve": 35891.13732981876,
+      "estimated_train_seconds": 26766.11225219573,
+      "estimated_validation_seconds": 3143.1688559865715,
+      "forecast_is_scheduling_only": true,
+      "optimizer_steps_per_30_epoch_run": 35820
+    },
+    "R12-MNV4-FEATURE-S1": {
+      "calibration_id": "CAL-MNV4-TEACHER",
+      "estimated_run_seconds_raw": 39105.565357410705,
+      "estimated_run_seconds_with_20pct_operational_reserve": 46926.67842889285,
+      "estimated_train_seconds": 36563.93791953478,
+      "estimated_validation_seconds": 2541.627437875926,
+      "forecast_is_scheduling_only": true,
+      "optimizer_steps_per_30_epoch_run": 35820
+    },
+    "R12-MNV4-LOGITS-S1": {
+      "calibration_id": "CAL-MNV4-TEACHER",
+      "estimated_run_seconds_raw": 39105.565357410705,
+      "estimated_run_seconds_with_20pct_operational_reserve": 46926.67842889285,
+      "estimated_train_seconds": 36563.93791953478,
+      "estimated_validation_seconds": 2541.627437875926,
+      "forecast_is_scheduling_only": true,
+      "optimizer_steps_per_30_epoch_run": 35820
+    }
+  },
+  "g1_seal_sha256": "a723d511e4cb590924942496025962c854baaf3c254c9893187ab845afb30966",
+  "input_summary_sha256": {
+    "CAL-CNXTT": "d75721e271b827e068e7d3a6ae645963ce339fe4f32cdf9922748b20d14b090d",
+    "CAL-EFFB0": "1dd0c94b9ec4f7579d5eebe8e7a983f47664933359ba0b9e8da2eba127ddba5e",
+    "CAL-MNV4-DIRECT": "fd8c773340860dea37c6d5dbcf34194be59e5013c1ab633a3bf06499b5162aa1",
+    "CAL-MNV4-TEACHER": "b533ab06e367c63f6bd0bff3d2064b637fb3165336ea6b5fbde54babf633da0f"
+  },
+  "mnv4_pretrained_sha256": "35ca23dc46c0075d9acdcab06d30e5395c4d97e422d8cb5e5e627823aeb7c1fa",
+  "publication_idempotency": {
+    "branch": "run-evidence/SEC-G2-PUBLISH-PROBE-8904b100d223",
+    "scientific_execution_relaunched": false,
+    "second_publish_same_branch": true,
+    "status": "PASS"
+  },
+  "required_calibrations": [
+    "CAL-MNV4-DIRECT",
+    "CAL-MNV4-TEACHER",
+    "CAL-EFFB0",
+    "CAL-CNXTT"
+  ],
+  "s1_seed": 21270083,
+  "schema_version": "1.0",
+  "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
+  "source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "status": "PASS",
+  "teacher_checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+  "teacher_factory_bundle_sha256": "c73fa6e337f8c3ac7e32cd605191f72c59e30d790387e6e10990690230184929"
+}

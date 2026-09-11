@@ -1,0 +1,116 @@
+{
+  "calibrations": {
+    "CAL-CNXTT": {
+      "errors": [],
+      "returncode": 0,
+      "status": "PASS"
+    },
+    "CAL-EFFB0": {
+      "errors": [],
+      "returncode": 0,
+      "status": "PASS"
+    },
+    "CAL-MNV4-DIRECT": {
+      "errors": [],
+      "returncode": 0,
+      "status": "PASS"
+    },
+    "CAL-MNV4-TEACHER": {
+      "errors": [],
+      "returncode": 0,
+      "status": "PASS"
+    }
+  },
+  "checkpoint_contract_probe": {
+    "identity_mismatch_rejected": true,
+    "latest_checkpoint_sha256": "b095b265a19c812f872bacd8235de36d467d2ee7c3adad93186e65af183b3b96",
+    "protected_data_accessed": false,
+    "scientific_result_produced": false,
+    "selected_checkpoint_sha256": "1e71c3775b317637195d4e37c170ded5502243e84adebe06897f725f8ac32d9f",
+    "selected_checkpoint_verified": true,
+    "status": "PASS"
+  },
+  "durable_access": {
+    "checks": {
+      "SEC-CAL-CNXTT-8904b100d223": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 2,
+        "locator": "ranamuhammadahmed6/sec-sec-cal-cnxtt-8904b100d223",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      },
+      "SEC-CAL-EFFB0-8904b100d223": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 2,
+        "locator": "ranamuhammadahmed6/sec-sec-cal-effb0-8904b100d223",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      },
+      "SEC-CAL-MNV4-DIRECT-8904b100d223": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 2,
+        "locator": "ranamuhammadahmed6/sec-sec-cal-mnv4-direct-8904b100d223",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      },
+      "SEC-CAL-MNV4-TEACHER-8904b100d223": {
+        "authenticated_read": true,
+        "authoritative_is_private": true,
+        "current_version_number": 2,
+        "locator": "ranamuhammadahmed6/sec-sec-cal-mnv4-teacher-8904b100d223",
+        "owner_matches_authenticated_user": true,
+        "private_metadata_verified": true,
+        "write_authorization_basis": "private dataset owner identity",
+        "write_generation_mutated_by_preflight": false
+      }
+    },
+    "errors": [],
+    "kind": "kaggle-dataset",
+    "note": "Kaggle write authorization is bound to authenticated dataset ownership; the first real calibration/scientific sync is the non-fabricated write exercise.",
+    "resolved_locator_count": 4,
+    "schema_version": "1.0",
+    "status": "PASS"
+  },
+  "external_protected_surface_accessed": false,
+  "g2_barrier_sha256": "850d1d3cb0545937446a9853f786c5ecb41cb082facba45cba93e32007ed9e09",
+  "gpu_inventory": [
+    {
+      "index": 0,
+      "memory_total_mib": 15360,
+      "name": "Tesla T4",
+      "uuid": "GPU-ae694495-a637-5184-5e0d-9b7178839eb5"
+    },
+    {
+      "index": 1,
+      "memory_total_mib": 15360,
+      "name": "Tesla T4",
+      "uuid": "GPU-7e4c6a2b-dbf5-46f7-916c-646b4a4c3a8a"
+    }
+  ],
+  "model_construction_coverage": [
+    "R06-EFFB0-CONTEXT-S1",
+    "R07-CNXTT-CONTEXT-S1",
+    "R12-MNV4-FEATURE-S1",
+    "R12-MNV4-LOGITS-S1"
+  ],
+  "publication_idempotency": {
+    "branch": "run-evidence/SEC-G2-PUBLISH-PROBE-8904b100d223",
+    "scientific_execution_relaunched": false,
+    "second_publish_same_branch": true,
+    "status": "PASS"
+  },
+  "schema_version": "2.0",
+  "secondary_g1_seal_sha256": "a723d511e4cb590924942496025962c854baaf3c254c9893187ab845afb30966",
+  "source_git_sha": "8904b100d223e4319776199c87ab397db23600ce",
+  "status": "PASS",
+  "v1_test_accessed": false
+}
