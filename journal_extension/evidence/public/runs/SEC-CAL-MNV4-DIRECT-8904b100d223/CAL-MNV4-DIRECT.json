@@ -1,0 +1,82 @@
+{
+  "allowed_surfaces": [
+    "DS-V1-TRAIN",
+    "DS-V1-VAL"
+  ],
+  "calibration_id": "CAL-MNV4-DIRECT",
+  "calibration_weights_scientific": false,
+  "cnxtt_pretrained_sha256": "983f1562536e84ff750a1576fb08e54de751dbf2e17c0d8a4a13704341fdcd3d",
+  "coverage": [],
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "durability": {
+    "kind": "kaggle-dataset",
+    "locator": "ranamuhammadahmed6/sec-sec-cal-mnv4-direct-8904b100d223",
+    "restore_seconds": 2.3971996679999847,
+    "restored_from_fresh_local_directory": true,
+    "sync_seconds": 25.193604671000003,
+    "sync_status": "PASS"
+  },
+  "durable_roundtrip_success": true,
+  "effb0_pretrained_sha256": "7f5810bc96def8f7552d5b7e68d53c4786f81167d28291b21c0d90e1fca14934",
+  "external_protected_surface_accessed": false,
+  "forecast_is_scheduling_only": true,
+  "g1_seal_sha256": "a723d511e4cb590924942496025962c854baaf3c254c9893187ab845afb30966",
+  "git_credentials_present": false,
+  "locked_optimizer_steps": 200,
+  "measured": {
+    "accelerator": "Tesla T4",
+    "checkpoint_load_seconds": 0.3884532050000189,
+    "checkpoint_save_seconds": 4.956427332999965,
+    "cuda_driver_identity": {
+      "available": true,
+      "gpus": [
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-ae694495-a637-5184-5e0d-9b7178839eb5"
+        },
+        {
+          "driver_version": "580.159.04",
+          "name": "Tesla T4",
+          "uuid": "GPU-7e4c6a2b-dbf5-46f7-916c-646b4a4c3a8a"
+        }
+      ]
+    },
+    "dataloader_examples_per_wait_second": 74.93536229015254,
+    "dataloader_wait_seconds": 177.6464354500007,
+    "durable_restore_seconds": 2.3971996679999847,
+    "durable_sync_seconds": 25.193604671000003,
+    "examples_per_second": 56.3192860862672,
+    "examples_segment": 13312,
+    "examples_total": 13312,
+    "latest_checkpoint_sha256": "926e2b145fe08be5e5e9be242a337de8dd526636e2d68ab808d60dedc074cedc",
+    "mode": "calibration",
+    "optimizer_step_total": 200,
+    "optimizer_steps_segment": 200,
+    "peak_gpu_memory_bytes": 690519040,
+    "planned_rollover": false,
+    "recovery_events": [],
+    "rollover_reason": null,
+    "sec_per_optimizer_step": 1.1818331627649996,
+    "validation_forward_benchmark": {
+      "batches": 20,
+      "end_to_end_examples_per_second": 184.04581897504676,
+      "examples": 320,
+      "forward_examples_per_second": 623.6436238406241,
+      "forward_seconds": 0.5131135599997378,
+      "loader_wait_seconds": 1.225583911000058
+    },
+    "wall_seconds_segment": 236.36663255299993
+  },
+  "mnv4_pretrained_sha256": "35ca23dc46c0075d9acdcab06d30e5395c4d97e422d8cb5e5e627823aeb7c1fa",
+  "resume_success": true,
+  "schema_version": "4.0",
+  "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
+  "source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "status": "PASS",
+  "teacher_checkpoint_sha256": null,
+  "teacher_factory_bundle_sha256": null,
+  "v1_test_accessed": false,
+  "visible_cuda_device_count": 1,
+  "visible_gpu_name": "Tesla T4"
+}
