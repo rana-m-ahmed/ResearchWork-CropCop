@@ -1,0 +1,21 @@
+{
+  "controller_id": "CROPCOP-K3-G1-TRANSPORT-FIX-V6",
+  "execution_source_sha": "8904b100d223e4319776199c87ab397db23600ce",
+  "notebook_sha256": "cea0c49c513e78d59e469f2c91a5a2c1ab589e3243556c2e44bd620cff7b07eb",
+  "notebook_bytes": 43467,
+  "code_cells_compile": "PASS",
+  "source_publish_secondary_g1_not_called": true,
+  "source_run_secondary_g1_not_called": true,
+  "source_seal_secondary_g1_used": true,
+  "deterministic_single_tar_transport": true,
+  "manifest_self_hash": true,
+  "path_traversal_rejection": true,
+  "local_safe_extract_roundtrip": true,
+  "exact_remote_version_inventory": true,
+  "exact_remote_file_downloads": true,
+  "version_advance_barrier": true,
+  "malformed_existing_version_repair": true,
+  "exact_existing_version_reuse": true,
+  "post_download_bundle_revalidation": true,
+  "scientific_source_changed": false
+}
