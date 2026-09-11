@@ -1,0 +1,8 @@
+{
+  "protected_data_accessed": false,
+  "purpose": "publication_idempotency_only",
+  "schema_version": "1.0",
+  "scientific_result_produced": false,
+  "source_git_sha": "8904b100d223e4319776199c87ab397db23600ce",
+  "status": "PASS"
+}
