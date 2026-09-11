@@ -1,0 +1,66 @@
+{
+  "amendment_id": "EAAI-JE-MGPU-A1",
+  "amendment_sha256": "3f08f2dbe7e83143c7e6f1fcf6732c7d88086295a600a74b323b89b46caed3f6",
+  "children": [
+    {
+      "checkpoint_bytes": 3365,
+      "checkpoint_sha256": "9bc5c6d136733cc1947de7508fd54283d6ffde3d48278013f6ff4342da73afe0",
+      "child_id": "DUAL-SMOKE-A",
+      "git_credentials_present_in_child": false,
+      "notebook_started_monotonic": 840.174562766,
+      "optimizer_step": 4,
+      "physical_gpu_uuid": "GPU-4daa80e3-2fdc-6c13-ded8-fdbceabd66d2",
+      "requested_physical_slot": 0,
+      "visible_cuda_device_count": 1,
+      "visible_gpu_name": "Tesla T4"
+    },
+    {
+      "checkpoint_bytes": 3365,
+      "checkpoint_sha256": "57265a9056a3893e772b77aaa0682e28b2632bf969794e3f30942a6c4cd944d7",
+      "child_id": "DUAL-SMOKE-B",
+      "git_credentials_present_in_child": false,
+      "notebook_started_monotonic": 840.174562766,
+      "optimizer_step": 4,
+      "physical_gpu_uuid": "GPU-2429a726-4cde-b1a5-6ace-866323a7c05b",
+      "requested_physical_slot": 1,
+      "visible_cuda_device_count": 1,
+      "visible_gpu_name": "Tesla T4"
+    }
+  ],
+  "common_session_clock": true,
+  "created_at_utc": "2026-09-11T12:16:31.994368+00:00",
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "errors": [],
+  "g1_executed": false,
+  "g2_executed": false,
+  "kaggle_run_type": "Batch",
+  "no_git_child_publication": true,
+  "no_output_collision": true,
+  "notebook_started_monotonic": 840.174562766,
+  "overlap_duration_seconds": 3.707024328999978,
+  "parent_finalized_both": true,
+  "parent_gpu_inventory": [
+    {
+      "index": 0,
+      "memory_total_mib": 15360,
+      "name": "Tesla T4",
+      "uuid": "GPU-4daa80e3-2fdc-6c13-ded8-fdbceabd66d2"
+    },
+    {
+      "index": 1,
+      "memory_total_mib": 15360,
+      "name": "Tesla T4",
+      "uuid": "GPU-2429a726-4cde-b1a5-6ace-866323a7c05b"
+    }
+  ],
+  "qualification_id": "MGPU-DUAL-SMOKE-T4X2-V1",
+  "r04_r05_executed": false,
+  "restricted_cropcop_data_accessed": false,
+  "schema_version": "1.0",
+  "science_diff_status": "PASS",
+  "scientific": false,
+  "smoke_b_evidence_sha256": "b624693ec63ce22e8a8dfccba17235a3bc0f44a4eb4066e73a5a669a4e861699",
+  "source_git_sha": "8904b100d223e4319776199c87ab397db23600ce",
+  "status": "PASS",
+  "synthetic_unprotected_data_only": true
+}
