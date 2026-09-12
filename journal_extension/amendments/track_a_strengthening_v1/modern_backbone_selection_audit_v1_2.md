@@ -9,9 +9,11 @@ Add exactly one modern architecture: `vit_dlittle_patch16_reg1_gap_256.sbb_nadam
 
 ## Why R13 is the best fit
 
-R13 is a pure Vision Transformer implemented in the already frozen `timm==1.0.26` environment. Its upstream model card reports 22.5M parameters, 6.3 GMACs, 256x256 input and ~83.2% ImageNet-1K top-1. It combines register tokens, global average pooling and differential attention, giving the journal study an attention-based architecture that is technically distinct from all three existing direct candidates.
+R13 is a pure Vision Transformer implemented in the already frozen `timm==1.0.26` environment. Its upstream model card reports 22.5M parameters, 6.3 GMACs, 256x256 input and approximately 83.24% ImageNet-1K top-1. It combines register tokens, global average pooling and differential attention, giving the journal study an attention-based architecture that is technically distinct from all three existing direct candidates.
 
 The important methodological advantage is not headline ImageNet accuracy. It is that R13 changes **architecture family** while preserving the same broad transfer-learning regime (ImageNet-1K) and existing software dependency, reducing confounding and implementation drift.
+
+Its upstream pretrained configuration uses mean/std 0.5/0.5 rather than CropCop's common CTC-v2 normalization. R13 therefore enters science only after the frozen analytical patch-embedding normalization-equivalence transform and numerical parity gate in `r13_pretrained_identity_and_normalization_contract_v1_2.json` pass. This preserves one common CTC-v2 data pipeline without quietly handicapping the pretrained ViT.
 
 ## Finalist audit
 
@@ -23,22 +25,23 @@ The important methodological advantage is not headline ImageNet accuracy. It is 
 - no custom CUDA kernel;
 - strong contemporary baseline;
 - practical parameter scale;
+- exact upstream safetensors object can be SHA-bound;
 - cleanest fit to the existing training/checkpoint kernel.
 
 ### CARE-S2 — NOT SELECTED
-CVPR 2025 mobile-friendly linear-attention Transformer, ~19.5M parameters / 1.9 GMACs / 82.1% ImageNet top-1 in the authors' report. Scientifically attractive, but it requires an external implementation/checkpoint stack and separate compatibility qualification. R13 gives comparable modern attention diversity while remaining inside the locked training software.
+CVPR 2025 mobile-friendly linear-attention Transformer, approximately 19.5M parameters / 1.9 GMACs / 82.1% ImageNet top-1 in the authors' report. Scientifically attractive, but it requires an external implementation/checkpoint stack and separate compatibility qualification. R13 gives comparable modern attention diversity while remaining inside the locked training software.
 
 ### MambaVision-T — NOT SELECTED
-CVPR 2025 hybrid Mamba-Transformer, ~31.8M parameters / 4.4 FLOPs / 82.3% ImageNet top-1 in the authors' report. Not selected because the reference implementation depends on Mamba selective-scan/custom-kernel machinery and introduces a materially different runtime/export risk. Upstream licensing also differs from the existing stack. Adding it would increase engineering surface more than scientific value for this study.
+CVPR 2025 hybrid Mamba-Transformer, approximately 31.8M parameters / 4.4 FLOPs(G) / 82.3% ImageNet top-1 in the authors' report. Not selected because the reference implementation depends on Mamba selective-scan/custom-kernel machinery and introduces a materially different runtime/export risk. Upstream source/weight licensing also differs from the existing stack. Adding it would increase engineering surface more than scientific value for this study.
 
 ### TinyNeXt-M — NOT SELECTED
-ICCV 2025 hybrid ViT for TinyML. Excellent efficiency, but its reported ImageNet top-1 (~75.3%) places it primarily in an ultra-light deployment regime already represented by CropCop's mobile-focused candidates. It is less useful as the single modern high-capacity/attention comparator.
+ICCV 2025 hybrid ViT for TinyML. Excellent efficiency, but its reported ImageNet top-1 is substantially below the high-capacity reference role we want from the single modern comparator. It is less useful here because CropCop already contains mobile-focused candidates.
 
 ### SHViT-S4 — NOT SELECTED
 Strong mobile Transformer and available in timm, but the 2024 architecture and lower reported ImageNet top-1 make it less compelling than R13 as the final contemporary reference.
 
 ### RepViT-M1.5 / MambaOut-Tiny — NOT SELECTED
-Both are modern and strong, and both integrate cleanly through timm, but they remain convolution/gated-CNN families. They would add less architectural diversity because the current pool already contains three convolutional families.
+Both are modern and strong, and both integrate cleanly through timm, but they remain convolution/gated-CNN families. They would add less architectural diversity because the current pool already contains three convolution-dominant families.
 
 ### SwinV2-T — NOT SELECTED
 Extremely reproducible through torchvision and native 256, but older and less representative of the most recent attention designs than R13.
