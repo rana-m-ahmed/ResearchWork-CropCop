@@ -1,0 +1,51 @@
+{
+  "absolute_metric_differences": {
+    "validation_accuracy": 0.0,
+    "validation_balanced_accuracy": 0.0,
+    "validation_macro_f1": 0.0,
+    "validation_nll": 0.0
+  },
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "checkpoint_material_public": false,
+  "checkpoint_payload_epoch_cursor": 30,
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "config_sha256": "ae76845cc385988a6b0112dd12b375ddb9548ebe7af921ce004593ac3e2e2649",
+  "evidence_exporter_id": "CROPCOP-SECONDARY-SELECTED-VALIDATION-EXPORT-V5",
+  "experiment_id": "R12-MNV4-LOGITS-S1",
+  "frozen_selected_epoch": 30,
+  "frozen_selected_metrics": {
+    "validation_accuracy": 0.9820992179863147,
+    "validation_balanced_accuracy": 0.9627036057416364,
+    "validation_macro_f1": 0.961887030266841,
+    "validation_nll": 0.11974579047043885
+  },
+  "lane_id": "K1",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "metric_match_tolerance": 1e-06,
+  "model_family": "mnv4",
+  "optimizer_state_advanced": false,
+  "protected_external_surface_accessed": false,
+  "recomputed_selected_metrics": {
+    "validation_accuracy": 0.9820992179863147,
+    "validation_balanced_accuracy": 0.9627036057416364,
+    "validation_macro_f1": 0.961887030266841,
+    "validation_nll": 0.11974579047043885
+  },
+  "restored_selected_checkpoint_sha256": "2377007e4f9ccc35c31ff9583ac6196e183bb03b1aa45ed0b8f58779abbc1827",
+  "run_id": "JE-R12-MNV4-LOGITS-S1-8904b100d223-A01",
+  "schema_version": "2.0",
+  "scientific_execution_relaunched": false,
+  "secondary_source_sha": "8904b100d223e4319776199c87ab397db23600ce",
+  "selected_checkpoint_sha256": "2377007e4f9ccc35c31ff9583ac6196e183bb03b1aa45ed0b8f58779abbc1827",
+  "selected_checkpoint_verified": true,
+  "source_envelope_id": "SEC-MECHANISM-T4X2-V1",
+  "status": "PASS",
+  "training_performed": false,
+  "v1_test_accessed": false,
+  "validation_predictions_basename": "validation_predictions.jsonl",
+  "validation_predictions_bytes": 2756400,
+  "validation_predictions_sha256": "8e25252fa4291ad04cfc30438edceec40c7bc1473dd038e3895122ffd62e8a1d",
+  "validation_row_count": 16368,
+  "validation_surface": "DS-V1-VAL",
+  "validation_unique_row_id_count": 16368
+}
