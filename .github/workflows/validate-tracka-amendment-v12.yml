@@ -1,0 +1,63 @@
+name: Validate Track-A amendment v1.2
+
+on:
+  pull_request:
+    paths:
+      - '03B_2_TRACK_A_STRENGTHENING_AMENDMENT_v1_2_MODERN_VIT_SUPPLEMENT.md'
+      - 'journal_extension/amendments/track_a_strengthening_v1/**'
+      - '.github/workflows/validate-tracka-amendment-v12.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  content-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+      - name: Verify exact checked-out head
+        shell: bash
+        env:
+          EXPECTED: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+      - name: Validate v1.2 content lock and emit SHA-256 attestation
+        run: |
+          python journal_extension/amendments/track_a_strengthening_v1/validate_v1_2_lock.py \
+            --report tracka-amendment-v12-content-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tracka-amendment-v12-content-report
+          path: tracka-amendment-v12-content-report.json
+
+  r13-runtime-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+      - name: Install exact frozen training stack
+        run: |
+          python -m pip install --disable-pip-version-check --no-input -r journal_extension/requirements-training.lock.txt
+          python -m pip check
+      - name: Validate R13 architecture/runtime interface
+        run: |
+          python journal_extension/amendments/track_a_strengthening_v1/validate_v1_2_lock.py \
+            --runtime \
+            --report tracka-amendment-v12-runtime-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tracka-amendment-v12-runtime-report
+          path: tracka-amendment-v12-runtime-report.json
