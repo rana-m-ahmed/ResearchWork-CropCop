@@ -12,7 +12,7 @@
   },
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "base_secondary_source_sha": "8904b100d223e4319776199c87ab397db23600ce",
-  "basis_head_before_prelock_manifest": "7fe2b65d23dadafaad895e13538846f92eb64c81",
+  "basis_head_before_prelock_manifest": "fee69fdf857f8a421e041e2c0e82ef7cf5c5fc94",
   "basis_results_branch": "je-tracka-results-closure-20260912",
   "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
   "deferred_final_lock_actions": [
@@ -33,9 +33,10 @@
     "final_track_a_lock_gate_issued": false,
     "pull_request_should_remain_draft": true,
     "result_integration_additive_only": true,
-    "scientific_source_or_config_changes_authorized": false
+    "scientific_source_or_config_changes_authorized": false,
+    "successful_wave2_execution_tools_tracked": true
   },
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "secondary_interpretation": "DESCRIPTIVE / BOUNDED; NO INFERENTIAL OR GENERAL ARCHITECTURE-SUPERIORITY CLAIM",
   "stage_02": {
     "all_metric_replay_max_abs_diff": 0.0,
@@ -60,5 +61,12 @@
     "wave2_record_git_blob_sha": "39342aaf34195dbd8ef2b04bedd3485bcc78f8ae"
   },
   "status": "PASS",
-  "user_directed_final_lock_deferred": true
+  "user_directed_final_lock_deferred": true,
+  "wave2_execution_tool_reconciliation": {
+    "path": "journal_extension/evidence/public/track_a/WAVE2_EXECUTION_TOOL_RECONCILIATION.json",
+    "git_blob_sha": "c18a14cd3db2b8ddd83307394c104c9d08a3cb17",
+    "protocol_preserved_unchanged": true,
+    "successful_release_package_sha256": "4cc91b1ab50ac1795dfa7ec3f3918700ab7f7a500f0b0f8918a1dbb74eee49e0",
+    "successful_secondary_exporter_sha256": "c62d42eb6e133f24e29fa55c819aa15b4fdfabce4e6d07bf496a3dbf457461e3"
+  }
 }
