@@ -1,0 +1,51 @@
+{
+  "absolute_metric_differences": {
+    "validation_accuracy": 0.0,
+    "validation_balanced_accuracy": 0.0,
+    "validation_macro_f1": 0.0,
+    "validation_nll": 0.0
+  },
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "checkpoint_material_public": false,
+  "checkpoint_payload_epoch_cursor": 26,
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "config_sha256": "38b852e816699979df97f4b9d40d5ec8326a31fa14ecb1548388a15fbe297f40",
+  "evidence_exporter_id": "CROPCOP-SECONDARY-SELECTED-VALIDATION-EXPORT-V5",
+  "experiment_id": "R06-EFFB0-CONTEXT-S1",
+  "frozen_selected_epoch": 26,
+  "frozen_selected_metrics": {
+    "validation_accuracy": 0.9850317693059628,
+    "validation_balanced_accuracy": 0.967518374648756,
+    "validation_macro_f1": 0.966998376596708,
+    "validation_nll": 0.08471792638286771
+  },
+  "lane_id": "K2",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "metric_match_tolerance": 1e-06,
+  "model_family": "effb0",
+  "optimizer_state_advanced": false,
+  "protected_external_surface_accessed": false,
+  "recomputed_selected_metrics": {
+    "validation_accuracy": 0.9850317693059628,
+    "validation_balanced_accuracy": 0.967518374648756,
+    "validation_macro_f1": 0.966998376596708,
+    "validation_nll": 0.08471792638286771
+  },
+  "restored_selected_checkpoint_sha256": "882e1e45e1d18a8ed8168aab266ce5a66a9b57a74e2a8d98acf692207d2210c7",
+  "run_id": "JE-R06-EFFB0-CONTEXT-S1-8904b100d223-A01",
+  "schema_version": "2.0",
+  "scientific_execution_relaunched": false,
+  "secondary_source_sha": "8904b100d223e4319776199c87ab397db23600ce",
+  "selected_checkpoint_sha256": "882e1e45e1d18a8ed8168aab266ce5a66a9b57a74e2a8d98acf692207d2210c7",
+  "selected_checkpoint_verified": true,
+  "source_envelope_id": "SEC-CONTEXT-T4X2-V1",
+  "status": "PASS",
+  "training_performed": false,
+  "v1_test_accessed": false,
+  "validation_predictions_basename": "validation_predictions.jsonl",
+  "validation_predictions_bytes": 2760166,
+  "validation_predictions_sha256": "3e6badaedaf9de2b74a546cf64c55422baced303d5767e2e8559839bb3dbc7ef",
+  "validation_row_count": 16368,
+  "validation_surface": "DS-V1-VAL",
+  "validation_unique_row_id_count": 16368
+}
