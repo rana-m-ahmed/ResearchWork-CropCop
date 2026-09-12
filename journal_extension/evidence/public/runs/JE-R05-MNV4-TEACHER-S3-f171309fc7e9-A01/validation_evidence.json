@@ -1,0 +1,42 @@
+{
+  "absolute_metric_differences": {
+    "validation_accuracy": 0.0,
+    "validation_balanced_accuracy": 0.0,
+    "validation_macro_f1": 0.0,
+    "validation_nll": 0.0
+  },
+  "checkpoint_material_public": false,
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "experiment_id": "R05-MNV4-TEACHER-S3",
+  "frozen_selected_metrics": {
+    "validation_accuracy": 0.9797165200391007,
+    "validation_balanced_accuracy": 0.9518285068004141,
+    "validation_macro_f1": 0.9530799257886763,
+    "validation_nll": 0.11627849085754437
+  },
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "metric_match_tolerance": 1e-06,
+  "optimizer_state_advanced": false,
+  "principal_science_source_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "protected_external_surface_accessed": false,
+  "recomputed_selected_metrics": {
+    "validation_accuracy": 0.9797165200391007,
+    "validation_balanced_accuracy": 0.9518285068004141,
+    "validation_macro_f1": 0.9530799257886763,
+    "validation_nll": 0.11627849085754437
+  },
+  "restored_selected_checkpoint_sha256": "0df653f67fe6a0f6a3c4d47fd8746ab563ef92d7182e36598602eba24b518d56",
+  "run_id": "JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01",
+  "schema_version": "1.0",
+  "scientific_execution_relaunched": false,
+  "selected_checkpoint_epoch": 28,
+  "selected_checkpoint_sha256": "0df653f67fe6a0f6a3c4d47fd8746ab563ef92d7182e36598602eba24b518d56",
+  "selected_checkpoint_verified": true,
+  "status": "PASS",
+  "training_performed": false,
+  "v1_test_accessed": false,
+  "validation_predictions_basename": "validation_predictions.jsonl",
+  "validation_predictions_sha256": "f44172fcf410d896ff95fa937f65a2a498a64d410ae0357c48a77c888286a847",
+  "validation_row_count": 16368,
+  "validation_surface": "DS-V1-VAL"
+}
