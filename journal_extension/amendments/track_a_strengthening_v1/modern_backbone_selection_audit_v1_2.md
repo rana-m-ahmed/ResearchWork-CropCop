@@ -32,7 +32,7 @@ Its upstream pretrained configuration uses mean/std 0.5/0.5 rather than CropCop'
 CVPR 2025 mobile-friendly linear-attention Transformer, approximately 19.5M parameters / 1.9 GMACs / 82.1% ImageNet top-1 in the authors' report. Scientifically attractive, but it requires an external implementation/checkpoint stack and separate compatibility qualification. R13 gives comparable modern attention diversity while remaining inside the locked training software.
 
 ### MambaVision-T — NOT SELECTED
-CVPR 2025 hybrid Mamba-Transformer, approximately 31.8M parameters / 4.4 FLOPs(G) / 82.3% ImageNet top-1 in the authors' report. Not selected because the reference implementation depends on Mamba selective-scan/custom-kernel machinery and introduces a materially different runtime/export risk. Upstream source/weight licensing also differs from the existing stack. Adding it would increase engineering surface more than scientific value for this study.
+CVPR 2025 hybrid Mamba-Transformer, approximately 31.8M parameters / 4.4 GFLOPs / 82.3% ImageNet top-1 in the authors' report. Not selected because the reference implementation depends on Mamba selective-scan/custom-kernel machinery and introduces a materially different runtime/export risk. Upstream source/weight licensing also differs from the existing stack. Adding it would increase engineering surface more than scientific value for this study.
 
 ### TinyNeXt-M — NOT SELECTED
 ICCV 2025 hybrid ViT for TinyML. Excellent efficiency, but its reported ImageNet top-1 is substantially below the high-capacity reference role we want from the single modern comparator. It is less useful here because CropCop already contains mobile-focused candidates.
