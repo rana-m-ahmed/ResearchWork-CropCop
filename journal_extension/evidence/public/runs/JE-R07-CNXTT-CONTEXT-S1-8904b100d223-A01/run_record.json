@@ -3,7 +3,22 @@
     "DS-V1-TRAIN",
     "DS-V1-VAL"
   ],
-  "artifact_locators": {},
+  "artifact_locators": {
+    "latest_checkpoint": {
+      "durable_locator": "sabahatabbas/sec-je-r07-cnxtt-context-s1-8904b100d223-a01",
+      "public_git": false,
+      "sha256": "792cd86f087c706d1e63cb6b16a4523417965c5dcf8ea11efa2e37b355f33507"
+    },
+    "metrics": {
+      "basename": "metrics.json",
+      "sha256": "333ba0f00f13bab5701e5fe180e85da10b96d274e3c19c5627d680a19c07b58a"
+    },
+    "selected_checkpoint": {
+      "durable_locator": "sabahatabbas/sec-je-r07-cnxtt-context-s1-8904b100d223-a01",
+      "public_git": false,
+      "sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974"
+    }
+  },
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
   "config_sha256": "a70cc70b11074fae07e5a6116bbb80e850a8011cce76bc52fc4406758abcb8d5",
@@ -28,7 +43,7 @@
       "CROPCOP_PHYSICAL_GPU_SLOT": "1"
     },
     "kaggle": {
-      "KAGGLE_CONTAINER_NAME": "kaggle_OJA6SrODqYZ0YPY8sb9BvEq8hNsfuluODvcV3eu1Nxw-349115269-webtier",
+      "KAGGLE_CONTAINER_NAME": "kaggle_SmdUFZBVluRKXBsNYy0DMxA1SZzEf126NFrw5jVHl0-349251972-webtier",
       "KAGGLE_DOCKER_IMAGE": "gcr.io/kaggle-gpu-images/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
       "KAGGLE_KERNEL_RUN_TYPE": "Batch"
     },
@@ -38,12 +53,12 @@
         {
           "driver_version": "580.159.04",
           "name": "Tesla T4",
-          "uuid": "GPU-f590d91a-6d6e-370c-fbfd-c49ed9e65be2"
+          "uuid": "GPU-bca1aeb4-c3a1-e948-50cd-f1da304eeb74"
         },
         {
           "driver_version": "580.159.04",
           "name": "Tesla T4",
-          "uuid": "GPU-6c905262-e62f-3a9d-5030-ee7966361465"
+          "uuid": "GPU-b0bf99ea-bd91-5cdb-e7c0-084c8a3d76ba"
         }
       ]
     },
@@ -73,6 +88,7 @@
     ]
   },
   "experiment_id": "R07-CNXTT-CONTEXT-S1",
+  "finished_at_utc": "2026-09-12T13:28:50.121098+00:00",
   "g1_seal_sha256": "a723d511e4cb590924942496025962c854baaf3c254c9893187ab845afb30966",
   "g2_barrier_sha256": "850d1d3cb0545937446a9853f786c5ecb41cb082facba45cba93e32007ed9e09",
   "hardware_identity": {
@@ -83,12 +99,12 @@
         {
           "driver_version": "580.159.04",
           "name": "Tesla T4",
-          "uuid": "GPU-f590d91a-6d6e-370c-fbfd-c49ed9e65be2"
+          "uuid": "GPU-bca1aeb4-c3a1-e948-50cd-f1da304eeb74"
         },
         {
           "driver_version": "580.159.04",
           "name": "Tesla T4",
-          "uuid": "GPU-6c905262-e62f-3a9d-5030-ee7966361465"
+          "uuid": "GPU-b0bf99ea-bd91-5cdb-e7c0-084c8a3d76ba"
         }
       ]
     }
@@ -97,25 +113,71 @@
   "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
   "mode": "scientific",
   "notebook_session_clock": {
-    "elapsed_seconds": 910.880774303,
+    "elapsed_seconds": 1657.474830521,
     "finalization_margin_seconds": 3600.0,
     "hard_limit_seconds": 43200.0,
-    "remaining_hard_seconds": 42289.119219817,
-    "remaining_safe_seconds": 38689.119221456,
-    "started_monotonic": 554.165945036
+    "remaining_hard_seconds": 41542.525163441,
+    "remaining_safe_seconds": 37942.525165231,
+    "started_monotonic": 305.763726892
+  },
+  "persistence_status": {
+    "backend": "kaggle_private_dataset",
+    "files": [
+      "checkpoint_index.json",
+      "objects/latest.g00000188.2a003eb6225c445f.ckpt",
+      "objects/latest.g00000189.792cd86f087c706d.ckpt",
+      "objects/selected.g00000170.dc7fea2e8db91bf1.ckpt"
+    ],
+    "locator": "sabahatabbas/sec-je-r07-cnxtt-context-s1-8904b100d223-a01",
+    "status": "PASS"
   },
   "pretrained_sha256": "983f1562536e84ff750a1576fb08e54de751dbf2e17c0d8a4a13704341fdcd3d",
+  "result_summary": {
+    "checkpoint_load_seconds": 1.1759233529999165,
+    "checkpoint_save_seconds": 108.20531914400226,
+    "dataloader_examples_per_wait_second": 80.2884860334576,
+    "dataloader_wait_seconds": 4756.348249496995,
+    "durable_sync_seconds": 118.59605822100093,
+    "examples_per_second": 48.9238814883048,
+    "examples_segment": 381880,
+    "examples_total": 2291280,
+    "latest_checkpoint_sha256": "792cd86f087c706d1e63cb6b16a4523417965c5dcf8ea11efa2e37b355f33507",
+    "mode": "scientific_training",
+    "optimizer_step_total": 35804,
+    "optimizer_steps_segment": 5968,
+    "peak_gpu_memory_bytes": 1856329216,
+    "sec_per_optimizer_step": 1.3079079931982238,
+    "selected_checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "selected_epoch": 27,
+    "selected_metrics": {
+      "epoch": 27,
+      "validation_accuracy": 0.9853983382209188,
+      "validation_balanced_accuracy": 0.966641504228933,
+      "validation_examples_per_second": 79.77141866555613,
+      "validation_macro_f1": 0.9681638484931451,
+      "validation_nll": 0.09627299043618485
+    },
+    "validation_forward_benchmark": {
+      "batches": 20,
+      "end_to_end_examples_per_second": 152.10280343252919,
+      "examples": 320,
+      "forward_examples_per_second": 186.9915092048167,
+      "forward_seconds": 1.711307648998627,
+      "loader_wait_seconds": 0.3925326010066783
+    },
+    "wall_seconds_segment": 7805.594903407
+  },
   "run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01",
   "secondary_track": true,
   "seed": 21270083,
-  "segment_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01-SEG-20260911T204157-900a3db2",
+  "segment_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01-SEG-20260912T111619-dbc460d7",
   "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
   "source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
-  "started_at_utc": "2026-09-11T20:41:57.492646+00:00",
-  "status": "LAUNCHED",
+  "started_at_utc": "2026-09-12T11:16:35.049847+00:00",
+  "status": "PASS",
   "student_init_sha256": "79a8666b099293abe6c4b7116041234d5759f2cb387ef8526adcc16e3c71acbf",
   "teacher_factory_bundle_sha256": null,
   "teacher_factory_sha256": null,
   "teacher_sha256": null,
-  "updated_at_utc": "2026-09-11T20:41:57.492694+00:00"
+  "updated_at_utc": "2026-09-12T13:28:50.121143+00:00"
 }
