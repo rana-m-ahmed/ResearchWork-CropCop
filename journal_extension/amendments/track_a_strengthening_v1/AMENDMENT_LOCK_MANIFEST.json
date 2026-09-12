@@ -1,0 +1,18 @@
+{
+  "amendment_id": "EAAI-JE-TRACKA-STRENGTHENING-A1",
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "base_prelock_head": "27a25d54b482806f924b6030e55c37bcc9e1f106",
+  "created_utc": "2026-09-12",
+  "files_sha256": {
+    "03B_EAAI_TRACK_A_STRENGTHENING_AMENDMENT_v1.md": "082d1632a1573a08135c07b94453b3532fe5d59e8fa41cb8f7ee55af9078676b",
+    "journal_extension/amendments/track_a_strengthening_v1/CROSS_TRACK_COORDINATION.md": "fafbf8b715ed58ced22768e828fd89319848a613c85d1a84c75711a64dba5754",
+    "journal_extension/amendments/track_a_strengthening_v1/amendment_registry.json": "44054dcbff5503029eeea5654ae9de0187de02c23587cc7780b82271a7516228",
+    "journal_extension/amendments/track_a_strengthening_v1/analysis_protocol.json": "f2d7605c98861fc61d8f46feb7ee17082d50caba65e480ec2442b6200",
+    "journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan.json": "6f5df883b38d89a73feec394cc0ec282b696d17b89f1399b08487317eed3c884",
+    "journal_extension/amendments/track_a_strengthening_v1/robustness_protocol.json": "07627a79dda0faec1587cb7010b008432f7c716daeb5cef4b7e2f76a3c1ed4b5"
+  },
+  "note": "Hash covers amendment content files only. The lock manifest does not self-hash.",
+  "schema_version": "1.0",
+  "scientific_outputs_observed_before_this_lock": false,
+  "status": "LOCKED_PRE_EXECUTION_CONTENT_SET"
+}

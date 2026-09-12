@@ -1,0 +1,99 @@
+{
+  "clean_reference": "exact CTC-v2 evaluation preprocessing",
+  "corruption_application_point": "after EXIF correction + RGB conversion and before CTC square-pad/resize/normalization",
+  "corruptions": [
+    {
+      "implementation": "PIL.ImageEnhance.Brightness",
+      "name": "brightness",
+      "severity": {
+        "1": 0.75,
+        "2": 0.5,
+        "3": 0.25
+      }
+    },
+    {
+      "implementation": "PIL.ImageEnhance.Contrast",
+      "name": "contrast",
+      "severity": {
+        "1": 0.75,
+        "2": 0.5,
+        "3": 0.25
+      }
+    },
+    {
+      "implementation": "PIL.ImageFilter.GaussianBlur(radius)",
+      "name": "gaussian_blur",
+      "severity": {
+        "1": 1.0,
+        "2": 2.0,
+        "3": 3.0
+      }
+    },
+    {
+      "implementation": "numpy PCG64; additive per-channel iid Gaussian on uint8 RGB then round+clip [0,255]",
+      "name": "gaussian_noise_uint8",
+      "rng_seed": "first 64 bits of SHA256(stable_row_id || '|' || corruption_name || '|' || severity)",
+      "severity": {
+        "1": 8.0,
+        "2": 16.0,
+        "3": 32.0
+      }
+    },
+    {
+      "implementation": "Pillow JPEG encode/decode; optimize=False; progressive=False; subsampling=2",
+      "name": "jpeg",
+      "severity": {
+        "1": 70,
+        "2": 40,
+        "3": 20
+      }
+    }
+  ],
+  "derived_metrics": [
+    "macro_f1_delta_pp_from_clean for every corruption/severity",
+    "mean_corruption_degradation_pp = arithmetic mean of 15 clean-minus-corrupt macro-F1 deltas",
+    "worst_case_macro_f1_delta_pp",
+    "severity_monotonicity_violations_count per corruption"
+  ],
+  "forbidden": [
+    "retraining",
+    "test-time adaptation",
+    "threshold tuning",
+    "severity tuning",
+    "corruption selection after outputs",
+    "V1 test access",
+    "external sealed-surface access"
+  ],
+  "interpretation": "descriptive deployment-relevant stress test; synthetic corruptions are not a substitute for field external validation",
+  "metrics": [
+    "accuracy",
+    "balanced_accuracy",
+    "macro_f1",
+    "nll"
+  ],
+  "models": [
+    "R04-MNV4-DIRECT-S1",
+    "R04-MNV4-DIRECT-S2",
+    "R04-MNV4-DIRECT-S3",
+    "R06-EFFB0-CONTEXT-S1",
+    "R06-EFFB0-CONTEXT-S2",
+    "R06-EFFB0-CONTEXT-S3",
+    "R07-CNXTT-CONTEXT-S1",
+    "R07-CNXTT-CONTEXT-S2",
+    "R07-CNXTT-CONTEXT-S3"
+  ],
+  "protocol_id": "TRACKA-A1-ROBUSTNESS-V1",
+  "row_level_output": [
+    "stable_row_id",
+    "target_class_index",
+    "predicted_class_index",
+    "true_class_nll",
+    "top1_confidence",
+    "corruption",
+    "severity"
+  ],
+  "schema_version": "1.0",
+  "status": "PRE_EXECUTION_LOCK",
+  "surface": "DS-V1-VAL",
+  "training_or_adaptation_allowed": false
+}
