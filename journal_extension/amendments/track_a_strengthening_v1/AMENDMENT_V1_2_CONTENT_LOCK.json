@@ -14,6 +14,7 @@
     "journal_extension/amendments/track_a_strengthening_v1/robustness_protocol_v1_2.json": "2d1644cee294b1eec85cc90fbd1eac2adbcccd7f",
     "journal_extension/amendments/track_a_strengthening_v1/xai_gradcampp_protocol_v1_2.json": "505a9cb49ba1ed27e57fc097175d5dc98a97fe01"
   },
+  "integrity_validator": "journal_extension/amendments/track_a_strengthening_v1/validate_v1_2_lock.py",
   "parent_supplement_id": "EAAI-JE-TRACKA-STRENGTHENING-A1.1",
   "r13_upstream_pretrained": {
     "hf_model_add_commit": "10143029df1b2df4c63623de6b740ecccb2b8ea2",
@@ -22,11 +23,12 @@
     "model_safetensors_sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed",
     "required_timm_version": "1.0.26"
   },
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "science_authorized": false,
   "scientific_outputs_observed_before_v1_2_lock": false,
   "sha256_attestation": {
     "required_before_science": true,
+    "source": "exact-head Validate Track-A amendment v1.2 content-lock artifact",
     "status": "PENDING_EXACT_HEAD_CI_ATTESTATION"
   },
   "status": "LOCKED_CONTENT_PENDING_SHA256_ATTESTATION",
