@@ -1,0 +1,34 @@
+{
+  "candidate_pool_closed": true,
+  "content_head_before_manifest": "f8d0a8afd652a77f441f9a493c058f38f1ef4379",
+  "created_utc": "2026-09-13",
+  "files_git_blob_sha": {
+    "03B_2_TRACK_A_STRENGTHENING_AMENDMENT_v1_2_MODERN_VIT_SUPPLEMENT.md": "f119a064045b230a1272e81a14ac7be5368e8249",
+    "journal_extension/amendments/track_a_strengthening_v1/EAAI_STRENGTH_MAPPING_v1_2.md": "bfbda5a1e1214d64eb3934750b5ecb706bd03df1",
+    "journal_extension/amendments/track_a_strengthening_v1/amendment_registry_v1_2.json": "ef1f876cfb57bbc1d89ea0f8a7ff268e86ada742",
+    "journal_extension/amendments/track_a_strengthening_v1/analysis_protocol_v1_2.json": "b987f53dbeb95f46e8cae39145722208d3c9a248",
+    "journal_extension/amendments/track_a_strengthening_v1/model_selection_protocol_v1_2.json": "a040fa57f7d8b39f645878843bcdbcfacc783979",
+    "journal_extension/amendments/track_a_strengthening_v1/modern_backbone_selection_audit_v1_2.md": "6eba40febc44973c09cbbe2eeb6b602222ea1236",
+    "journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2.json": "cf11f4b522e1aad8ce9ba4d7564fff19e92af216",
+    "journal_extension/amendments/track_a_strengthening_v1/r13_pretrained_identity_and_normalization_contract_v1_2.json": "04adbb75673ebf81a3111eae50ea6090c95f1d4d",
+    "journal_extension/amendments/track_a_strengthening_v1/robustness_protocol_v1_2.json": "2d1644cee294b1eec85cc90fbd1eac2adbcccd7f",
+    "journal_extension/amendments/track_a_strengthening_v1/xai_gradcampp_protocol_v1_2.json": "505a9cb49ba1ed27e57fc097175d5dc98a97fe01"
+  },
+  "parent_supplement_id": "EAAI-JE-TRACKA-STRENGTHENING-A1.1",
+  "r13_upstream_pretrained": {
+    "hf_model_add_commit": "10143029df1b2df4c63623de6b740ecccb2b8ea2",
+    "model_id": "vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k",
+    "model_safetensors_bytes": 90095744,
+    "model_safetensors_sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed",
+    "required_timm_version": "1.0.26"
+  },
+  "schema_version": "1.0",
+  "science_authorized": false,
+  "scientific_outputs_observed_before_v1_2_lock": false,
+  "sha256_attestation": {
+    "required_before_science": true,
+    "status": "PENDING_EXACT_HEAD_CI_ATTESTATION"
+  },
+  "status": "LOCKED_CONTENT_PENDING_SHA256_ATTESTATION",
+  "supplement_id": "EAAI-JE-TRACKA-STRENGTHENING-A1.2"
+}
