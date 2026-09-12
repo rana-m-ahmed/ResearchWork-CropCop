@@ -1,0 +1,64 @@
+{
+  "aggregate_track_a_evidence": {
+    "checkpoint_material_public": false,
+    "optimizer_state_advanced_during_replay": false,
+    "protected_external_surface_accessed": false,
+    "scientific_retuning_after_outcomes": false,
+    "scientific_states_terminal": 10,
+    "selected_state_validation_replays_pass": 10,
+    "training_during_replay": false,
+    "v1_test_accessed": false,
+    "validation_rows_per_replay": 16368
+  },
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "base_secondary_source_sha": "8904b100d223e4319776199c87ab397db23600ce",
+  "basis_head_before_prelock_manifest": "7fe2b65d23dadafaad895e13538846f92eb64c81",
+  "basis_results_branch": "je-tracka-results-closure-20260912",
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "deferred_final_lock_actions": [
+    "re-run exact-head repository CI on the integrated pre-lock head",
+    "adversarially compare the results branch against secondary source 8904b100d223e4319776199c87ab397db23600ce",
+    "confirm no scientific source/config/registry mutations entered the results branch",
+    "confirm PR #15 remains draft and unmerged",
+    "only in a separate explicit closure pass, create TRACK_A_CLOSURE_MANIFEST.json and issue the final Track-A lock gate"
+  ],
+  "integration_date": "2026-09-12",
+  "lock_state": "NOT_LOCKED",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "principal_locked_interpretation": "NO PRACTICALLY MEANINGFUL DIFFERENCE UNDER THE FROZEN PROTOCOL",
+  "principal_science_source_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "readiness": "READY_FOR_FINAL_LOCK_REVIEW",
+  "repository_integration_policy": {
+    "final_track_a_closure_manifest_created": false,
+    "final_track_a_lock_gate_issued": false,
+    "pull_request_should_remain_draft": true,
+    "result_integration_additive_only": true,
+    "scientific_source_or_config_changes_authorized": false
+  },
+  "schema_version": "1.0",
+  "secondary_interpretation": "DESCRIPTIVE / BOUNDED; NO INFERENTIAL OR GENERAL ARCHITECTURE-SUPERIORITY CLAIM",
+  "stage_02": {
+    "all_metric_replay_max_abs_diff": 0.0,
+    "artifact": "02_EAAI_PRINCIPAL_MODEL_SCIENCE_RESULTS.md",
+    "artifact_git_blob_sha": "c90b04161cba8ab5e55316df11279249c14c595c",
+    "gate": "GO — PRINCIPAL MODEL-SCIENCE TERMINAL",
+    "scientific_states": 6,
+    "selected_state_validation_replays": 6,
+    "status": "PASS",
+    "wave1_record": "journal_extension/evidence/public/track_a/WAVE1_PRINCIPAL_VALIDATION_CLOSURE.json",
+    "wave1_record_git_blob_sha": "26ff3892bccb9b12961a8960f619a10f2de0825e"
+  },
+  "stage_03A": {
+    "all_metric_replay_max_abs_diff": 0.0,
+    "artifact": "03A_EAAI_BASELINES_ABLATIONS_RESULTS.md",
+    "artifact_git_blob_sha": "b21f724ff1262161225af894683bac268f6e02cc",
+    "gate": "GO — SECONDARY BASELINES / ABLATIONS EVIDENCE COMPLETE",
+    "scientific_states": 4,
+    "selected_state_validation_replays": 4,
+    "status": "PASS",
+    "wave2_record": "journal_extension/evidence/public/track_a/WAVE2_SECONDARY_VALIDATION_CLOSURE.json",
+    "wave2_record_git_blob_sha": "39342aaf34195dbd8ef2b04bedd3485bcc78f8ae"
+  },
+  "status": "PASS",
+  "user_directed_final_lock_deferred": true
+}
