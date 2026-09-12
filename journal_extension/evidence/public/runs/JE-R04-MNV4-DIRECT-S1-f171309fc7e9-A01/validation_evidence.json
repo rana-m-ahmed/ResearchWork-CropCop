@@ -1,0 +1,42 @@
+{
+  "absolute_metric_differences": {
+    "validation_accuracy": 0.0,
+    "validation_balanced_accuracy": 0.0,
+    "validation_macro_f1": 0.0,
+    "validation_nll": 0.0
+  },
+  "checkpoint_material_public": false,
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "experiment_id": "R04-MNV4-DIRECT-S1",
+  "frozen_selected_metrics": {
+    "validation_accuracy": 0.9808162267839687,
+    "validation_balanced_accuracy": 0.9588952570930002,
+    "validation_macro_f1": 0.9611202956392257,
+    "validation_nll": 0.12232559910845212
+  },
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "metric_match_tolerance": 1e-06,
+  "optimizer_state_advanced": false,
+  "principal_science_source_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "protected_external_surface_accessed": false,
+  "recomputed_selected_metrics": {
+    "validation_accuracy": 0.9808162267839687,
+    "validation_balanced_accuracy": 0.9588952570930002,
+    "validation_macro_f1": 0.9611202956392257,
+    "validation_nll": 0.12232559910845212
+  },
+  "restored_selected_checkpoint_sha256": "63a5ba04a278fcc5a0a333bfc38a21ab4718df5530c9b4f99bc81ef13011251c",
+  "run_id": "JE-R04-MNV4-DIRECT-S1-f171309fc7e9-A01",
+  "schema_version": "1.0",
+  "scientific_execution_relaunched": false,
+  "selected_checkpoint_epoch": 28,
+  "selected_checkpoint_sha256": "63a5ba04a278fcc5a0a333bfc38a21ab4718df5530c9b4f99bc81ef13011251c",
+  "selected_checkpoint_verified": true,
+  "status": "PASS",
+  "training_performed": false,
+  "v1_test_accessed": false,
+  "validation_predictions_basename": "validation_predictions.jsonl",
+  "validation_predictions_sha256": "0aaad16b9fd3b3e73846bb3d1955156d5ef6dedecb4bba1f91fae5bfaad796a8",
+  "validation_row_count": 16368,
+  "validation_surface": "DS-V1-VAL"
+}
