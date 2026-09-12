@@ -26,7 +26,7 @@ The paper must not claim that R13 is inherently superior because it is newer. It
 | EAAI/reviewer dimension | v1.2 evidence plan | Expected strength | Residual risk |
 |---|---|---|---|
 | Architecture breadth | 4 direct families x 3 seeds, including a pure modern ViT | **Very strong** | still a bounded benchmark, not an exhaustive model zoo |
-| Contemporary AI relevance | 2025-era differential-attention/register-token ViT reference inside frozen timm stack | **Strong** | novelty belongs to evaluation/system science, not invention of R13 |
+| Contemporary AI relevance | late-2025 differential-attention/register-token ViT reference inside frozen timm stack | **Strong** | novelty belongs to evaluation/system science, not invention of R13 |
 | Benchmark fairness | ImageNet-1K pretraining across the primary candidate pool; common CTC-v2; R13 normalization-equivalence gate | **Very strong if G1A parity passes** | parity contract must pass before R13 science |
 | Reproducibility | exact model ID, timm version, upstream safetensors SHA/bytes, seeded 120-way initialization | **Very strong** | Hugging Face object must be durably sealed before runs |
 | Robustness | 5 corruptions x 3 severities x 12 direct states | **Very strong** | synthetic stress != external field validity |
