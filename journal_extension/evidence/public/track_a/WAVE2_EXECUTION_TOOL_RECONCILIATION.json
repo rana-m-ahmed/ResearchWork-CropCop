@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "status": "PASS",
+  "date": "2026-09-12",
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "scientific_source_sha": "8904b100d223e4319776199c87ab397db23600ce",
+  "protocol_preserved_unchanged": true,
+  "protocol": {
+    "path": "journal_extension/evidence/track_a_validation_evidence_closure_protocol.json",
+    "git_blob_sha": "9a3a459c35c45438fe4a2076b59fa4f0d2685798",
+    "status": "PRE_EVIDENCE_LOCK",
+    "frozen_secondary_exporter_path": "journal_extension/evidence/tools/export_secondary_selected_validation_v1.py",
+    "frozen_secondary_exporter_sha256": "1ac5dba34bd7094e3745f07a7164c1659d70570ee9197d62ae6e6ec1014538c5",
+    "frozen_secondary_exporter_git_blob_sha": "6f4513eb189fd8c778806cf4a6c5b41ed76fc020"
+  },
+  "successful_execution_release": {
+    "release_id": "CROPCOP-TRACKA-WAVE2-VALIDATION-CLOSURE-V5",
+    "package_sha256": "4cc91b1ab50ac1795dfa7ec3f3918700ab7f7a500f0b0f8918a1dbb74eee49e0",
+    "k1_notebook_sha256": "2c2c59fc79e24eb44b97037359148928adfbacc23c7f8cd40506a50f90e15547",
+    "k2_notebook_sha256": "263f14ccce3b8c67db277e3d51972b5f068bcfdde9bf21355fb46d51513b05b6",
+    "release_qa_sha256": "6d7eb1031e8bccd3912255b47c56484433a041576503496cf39c58633fd36685",
+    "runtime_bootstrap_path": "journal_extension/evidence/tools/wave2_v5/_bootstrap.py",
+    "runtime_bootstrap_sha256": "1f8a1dd88af0fc63d9c7e4fcd2fdbc520f03e860b99bbe419ec00828e9c86e67",
+    "secondary_exporter_path": "journal_extension/evidence/tools/wave2_v5/export_secondary_selected_validation_v5.py",
+    "secondary_exporter_sha256": "c62d42eb6e133f24e29fa55c819aa15b4fdfabce4e6d07bf496a3dbf457461e3",
+    "publisher_wrapper_path": "journal_extension/evidence/tools/wave2_v5/publish_validation_evidence_v2.py",
+    "publisher_wrapper_sha256": "e3c0576d197343ed76b960fc17513663ec1300eb9e3cc45a34058dc3df36e829"
+  },
+  "reason_for_execution_hardening": [
+    "the pre-run exporter assumed an importable runtime _bootstrap module but the generated Kaggle execution location did not provision it",
+    "the K2 generated Python embedded JSON null values for no-teacher contract fields",
+    "the hardened exporter required immutable CTC/dependency/G1/G2/software-stack contract fields that an intermediate notebook contract omitted",
+    "the final v5 release added fail-fast exporter/contract compatibility checks so interface errors are detected before expensive setup"
+  ],
+  "change_classification": {
+    "scientific_semantics_changed": false,
+    "selected_checkpoint_rule_changed": false,
+    "validation_surface_changed": false,
+    "validation_row_count_changed": false,
+    "metric_definitions_changed": false,
+    "metric_tolerance_changed": false,
+    "model_weights_changed": false,
+    "seed_changed": false,
+    "training_or_optimizer_authorized": false,
+    "v1_test_authorized": false,
+    "protected_external_surface_authorized": false,
+    "changes": [
+      "runtime bootstrap provisioning",
+      "Python-native no-teacher contract representation",
+      "explicit immutable run-contract binding",
+      "fail-fast exporter/contract schema compatibility",
+      "duplicate stable-row-ID rejection",
+      "atomic prediction/evidence writes",
+      "idempotent complete-publication reuse and partial-publication repair",
+      "post-publication base-evidence byte-immutability verification"
+    ]
+  },
+  "outcome_independence": {
+    "hardening_triggered_by_runtime_or_interface_failures": true,
+    "hardening_triggered_by_observed_validation_metric_values": false,
+    "failed_attempts_authorized_new_scientific_runs": false,
+    "successful_release_reused_original_A01_scientific_runs": true
+  },
+  "successful_replay_invariants": {
+    "validation_surface": "DS-V1-VAL",
+    "validation_rows_per_run": 16368,
+    "metric_match_tolerance": 1e-06,
+    "observed_max_abs_metric_diff": 0.0,
+    "training_performed": false,
+    "optimizer_state_advanced": false,
+    "v1_test_accessed": false,
+    "protected_external_surface_accessed": false,
+    "checkpoint_material_public": false
+  },
+  "publication_heads": {
+    "JE-R12-MNV4-LOGITS-S1-8904b100d223-A01": "9540b5ce80da7d280e575992ae892f54981828a1",
+    "JE-R12-MNV4-FEATURE-S1-8904b100d223-A01": "dea06154ba3e79bed20e88015478588466307d66",
+    "JE-R06-EFFB0-CONTEXT-S1-8904b100d223-A01": "43a916ac4738fa2bb979dbd6f5e82be6b0b5e3ad",
+    "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01": "03f948fb4adf039967056ffb83e648b8bf0d647f"
+  },
+  "overall_track_a_lock_state": "NOT_LOCKED",
+  "final_lock_gate_issued": false
+}
