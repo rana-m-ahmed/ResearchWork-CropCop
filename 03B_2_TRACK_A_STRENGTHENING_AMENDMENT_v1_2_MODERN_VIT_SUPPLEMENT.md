@@ -39,6 +39,7 @@ A new Amendment-G1A provenance object must bind:
 - exact `timm==1.0.26` code identity;
 - exact upstream pretrained weight bytes + SHA-256;
 - exact model identifier above;
+- the frozen normalization-equivalence contract that preserves the upstream patch-embedding function under common CTC-v2 normalization;
 - deterministic 120-class classifier reset for each of S1/S2/S3.
 
 ## Model-selection pool after v1.2
