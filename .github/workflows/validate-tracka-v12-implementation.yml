@@ -9,8 +9,10 @@ on:
       - 'journal_extension/configs/r12_feature/**'
       - 'journal_extension/configs/r13_vit_dlittle/**'
       - 'journal_extension/src/cropcop_je/tracka_v12.py'
+      - 'journal_extension/src/cropcop_je/tracka_v12_g1a.py'
       - 'journal_extension/locks/track_a_comprehensive_execution_authority_v1_2_1.json'
       - 'tests/test_tracka_v12_contract.py'
+      - 'tests/test_tracka_v12_g1a_contract.py'
       - '.github/workflows/validate-tracka-v12-implementation.yml'
   workflow_dispatch:
 
@@ -34,11 +36,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12.13'
-      - name: Compile additive Track-A v1.2 contract
+      - name: Compile additive Track-A v1.2 contracts
         run: |
-          python -m compileall -q journal_extension/src/cropcop_je/tracka_v12.py tests/test_tracka_v12_contract.py
-      - name: Validate all eleven frozen continuation configs and failure injection
-        run: python -m unittest tests.test_tracka_v12_contract -v
+          python -m compileall -q \
+            journal_extension/src/cropcop_je/tracka_v12.py \
+            journal_extension/src/cropcop_je/tracka_v12_g1a.py \
+            tests/test_tracka_v12_contract.py \
+            tests/test_tracka_v12_g1a_contract.py
+      - name: Validate frozen continuation configs and G1A failure injection
+        run: |
+          python -m unittest \
+            tests.test_tracka_v12_contract \
+            tests.test_tracka_v12_g1a_contract \
+            -v
       - name: Prove original principal science semantics remain unchanged
         run: python journal_extension/scripts/check_science_diff.py --repo-root . --json-report principal-science-diff-tracka-v12.json
       - name: Prove completed secondary-wave science boundary remains unchanged
