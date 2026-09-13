@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from dataclasses import asdict
 from pathlib import Path
 
@@ -14,11 +15,16 @@ from cropcop_je.tracka_v12_evidence import (
     DIRECT_STATES,
     build_family_selector_row,
     build_tracka_selection_closure,
+    validate_direct_state_evidence_bundle,
 )
 
 
 def load_json(path: str | Path) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def git_head(repo: Path) -> str:
+    return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
 
 
 def seed_for_state(experiment_id: str) -> str:
@@ -30,9 +36,15 @@ def seed_for_state(experiment_id: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--repo-root", default=".")
     ap.add_argument("--evidence-index", required=True)
     ap.add_argument("--output", required=True)
     args = ap.parse_args()
+
+    repo = Path(args.repo_root).resolve()
+    closure_source_git_commit = git_head(repo)
+    if len(closure_source_git_commit) != 40:
+        raise SystemExit("direct-selection checkout is not bound to a full Git SHA")
 
     index_path = Path(args.evidence_index).resolve()
     index = load_json(index_path)
@@ -67,9 +79,24 @@ def main() -> int:
         robust = load_json(paths["robustness_replay"])
         efficiency = load_json(paths["efficiency"])
         xai = load_json(paths["xai_gate"])
-        for payload, label in ((direct, "direct"), (robust, "robustness"), (efficiency, "efficiency"), (xai, "xai")):
-            if payload.get("experiment_id") != experiment_id:
-                raise SystemExit(f"{label} evidence experiment identity mismatch for {experiment_id}")
+
+        bundle_errors = validate_direct_state_evidence_bundle(
+            experiment_id,
+            direct=direct,
+            robustness=robust,
+            efficiency=efficiency,
+            xai=xai,
+        )
+        if bundle_errors:
+            raise SystemExit(f"direct evidence bundle failed for {experiment_id}: " + "; ".join(bundle_errors))
+
+        actual_efficiency_sha = sha256_file(paths["efficiency"])
+        actual_robustness_sha = sha256_file(paths["robustness_replay"])
+        bound_public = direct.get("public_evidence_sha256", {})
+        if bound_public.get("efficiency.json") != actual_efficiency_sha:
+            raise SystemExit(f"direct gate/efficiency file hash mismatch for {experiment_id}")
+        if bound_public.get("robustness_and_replay.json") != actual_robustness_sha:
+            raise SystemExit(f"direct gate/robustness file hash mismatch for {experiment_id}")
 
         direct_ok = direct.get("status") == "PASS"
         replay_ok = direct.get("replay_gate", {}).get("status") == "PASS"
@@ -85,8 +112,6 @@ def main() -> int:
         }
 
         xai_status = str(xai.get("status", ""))
-        if xai_status not in {"PASS", "WARNING_NONFINITE_MAPS"}:
-            raise SystemExit(f"XAI execution did not complete for {experiment_id}: {xai_status}")
         if xai_status != "PASS":
             xai_warnings.append({
                 "experiment_id": experiment_id,
@@ -102,13 +127,9 @@ def main() -> int:
 
         family = family_for_state[experiment_id]
         seed = seed_for_state(experiment_id)
-        clean = robust.get("clean_summary", {})
-        if int(clean.get("row_count", -1)) != 16368 or len(clean.get("class_f1", [])) != 120:
-            raise SystemExit(f"clean replay/classwise evidence incomplete for {experiment_id}")
+        clean = robust["clean_summary"]
         per_family_seed_summary[family][seed] = clean
-        cells = robust.get("cells", {})
-        if set(cells) != set(ROBUSTNESS_CORRUPTIONS):
-            raise SystemExit(f"robustness corruption inventory mismatch for {experiment_id}")
+        cells = robust["cells"]
         per_family_corruption[family][seed] = {
             corruption: {
                 severity: float(cells[corruption][severity]["validation_macro_f1"])
@@ -122,11 +143,18 @@ def main() -> int:
             "trainable_parameter_count": int(efficiency["trainable_parameter_count"]),
             "input_resolution": int(efficiency["input_resolution"]),
         }
-        xai_targets[family][seed] = str(xai.get("target_module_path", ""))
-        evidence_hashes[experiment_id] = {name: sha256_file(path) for name, path in paths.items()}
+        xai_targets[family][seed] = str(xai["target_module_path"])
+        evidence_hashes[experiment_id] = {
+            "direct_gate": sha256_file(paths["direct_gate"]),
+            "robustness_replay": actual_robustness_sha,
+            "efficiency": actual_efficiency_sha,
+            "xai_gate": sha256_file(paths["xai_gate"]),
+            "selected_checkpoint_sha256": direct["selected_checkpoint_sha256"],
+            "scientific_source_git_commit": direct["source_git_commit"],
+        }
 
     for family in FAMILIES:
-        if set(xai_targets[family].values()) and len(set(xai_targets[family].values())) != 1:
+        if len(set(xai_targets[family].values())) != 1:
             raise SystemExit(f"XAI target path differs across seeds for {family}")
 
     selector_rows = [
@@ -149,6 +177,7 @@ def main() -> int:
     result = {
         **closure,
         "closure_kind": "track_a_direct_model_selection",
+        "closure_source_git_commit": closure_source_git_commit,
         "evidence_index_sha256": sha256_file(index_path),
         "evidence_sha256": evidence_hashes,
         "selector_rows": [asdict(row) for row in selector_rows],
