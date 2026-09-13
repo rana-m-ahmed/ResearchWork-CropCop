@@ -17,8 +17,11 @@ on:
       - 'journal_extension/scripts/qualify_tracka_v12_profile_v122.py'
       - 'journal_extension/scripts/seal_tracka_v12_g2a.py'
       - 'journal_extension/scripts/run_tracka_v12_direct_evidence.py'
+      - 'journal_extension/scripts/run_tracka_v12_auxiliary_evidence.py'
       - 'journal_extension/scripts/run_tracka_v12_xai.py'
       - 'journal_extension/scripts/seal_tracka_v12_selection.py'
+      - 'journal_extension/scripts/seal_tracka_v12_auxiliary_analysis.py'
+      - 'journal_extension/scripts/seal_tracka_v12_comprehensive_closure.py'
       - 'journal_extension/scripts/build_tracka_v12_code_attestation.py'
       - 'journal_extension/scripts/build_tracka_v12_lock_runtime_attestation.py'
       - 'journal_extension/scripts/seal_tracka_v12_science_go.py'
@@ -76,8 +79,11 @@ jobs:
             journal_extension/scripts/qualify_tracka_v12_profile_v122.py \
             journal_extension/scripts/seal_tracka_v12_g2a.py \
             journal_extension/scripts/run_tracka_v12_direct_evidence.py \
+            journal_extension/scripts/run_tracka_v12_auxiliary_evidence.py \
             journal_extension/scripts/run_tracka_v12_xai.py \
             journal_extension/scripts/seal_tracka_v12_selection.py \
+            journal_extension/scripts/seal_tracka_v12_auxiliary_analysis.py \
+            journal_extension/scripts/seal_tracka_v12_comprehensive_closure.py \
             journal_extension/scripts/build_tracka_v12_code_attestation.py \
             journal_extension/scripts/build_tracka_v12_lock_runtime_attestation.py \
             journal_extension/scripts/seal_tracka_v12_science_go.py \
@@ -91,8 +97,9 @@ jobs:
             tests/test_tracka_v12_placement.py \
             tests/test_tracka_v12_orchestration.py \
             tests/test_tracka_v12_evidence.py \
-            tests/test_tracka_v12_science_go.py
-      - name: Validate contracts, failure injection, orchestration, evidence and GO composition
+            tests/test_tracka_v12_science_go.py \
+            tests/test_tracka_v12_comprehensive_closure.py
+      - name: Validate contracts, failure injection, orchestration, evidence and closure composition
         run: |
           python -m unittest \
             tests.test_tracka_v12_contract \
@@ -105,6 +112,7 @@ jobs:
             tests.test_tracka_v12_orchestration \
             tests.test_tracka_v12_evidence \
             tests.test_tracka_v12_science_go \
+            tests.test_tracka_v12_comprehensive_closure \
             -v
       - name: Prove original principal science semantics remain unchanged
         run: python journal_extension/scripts/check_science_diff.py --repo-root . --json-report principal-science-diff-tracka-v12.json
