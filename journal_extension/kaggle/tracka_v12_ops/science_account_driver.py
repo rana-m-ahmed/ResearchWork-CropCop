@@ -20,6 +20,7 @@ from tracka_v12_kaggle_operator_v2 import (
     resolve_frozen_dataset,
     resolve_image_root,
     sanitized_child_env,
+    sha256_file,
     validate_private_locators_with_science,
     verify_locked_stack,
     write_json,
@@ -46,15 +47,30 @@ def unique_control(name: str) -> Path:
 
 
 def continuation_is_technical(summary: dict) -> bool:
+    """Accept rc=2 only for an explicit clean session-budget/rollover continuation."""
+    if summary.get("status") != "ATTENTION_REQUIRED" or summary.get("science_complete") is not False:
+        return False
     if summary.get("worker_errors"):
         return False
-    for slot_rows in (summary.get("slot_results") or {}).values():
+    slot_results = summary.get("slot_results")
+    if not isinstance(slot_results, dict) or not slot_results:
+        return False
+    saw_continuation = False
+    for slot_rows in slot_results.values():
+        if not isinstance(slot_rows, list):
+            return False
         for row in slot_rows:
             if row.get("return_code") not in {0, None}:
                 return False
             if row.get("run_status") == "FAIL" or row.get("slot_quarantined") is True:
                 return False
-    return True
+            if (
+                row.get("session_rollover_required") is True
+                or row.get("status") == "NOT_STARTED_SESSION_BUDGET"
+                or row.get("continuation_required") is True
+            ):
+                saw_continuation = True
+    return saw_continuation
 
 
 def main() -> int:
@@ -66,7 +82,11 @@ def main() -> int:
     assert_python_version()
 
     output_root = Path(f"/kaggle/working/TRACKA_V12_SCIENCE_{account_id}")
-    output_root.mkdir(parents=True, exist_ok=True)
+    if output_root.exists():
+        raise RuntimeError(
+            f"{output_root} already exists. Do not mix scientific attempts in one notebook session. "
+            "For a planned rollover, start a fresh Kaggle session and rerun the same account notebook."
+        )
 
     repo = ensure_science_checkout()
     install_locked_stack(repo)
@@ -133,6 +153,10 @@ def main() -> int:
     map_errors = validate_durable_map(durable_map)
     if map_errors:
         raise RuntimeError("full scientific durable map invalid: " + "; ".join(map_errors))
+    for experiment_id, locator in durable_map.items():
+        dataset_slug = locator.split("/", 1)[1] if "/" in locator else ""
+        if not (3 <= len(dataset_slug) <= 50):
+            raise RuntimeError(f"Kaggle durability slug length invalid for {experiment_id}: {dataset_slug}")
 
     queues = scheduler.get("static_slot_queues") or {}
     slot_ids = [f"{account_id}/GPU0", f"{account_id}/GPU1"]
@@ -164,6 +188,9 @@ def main() -> int:
         assigned_map,
         env=kaggle_env,
     )
+
+    # Create local scientific output only after every immutable input/control/durability preflight passes.
+    output_root.mkdir(parents=True, exist_ok=False)
 
     parent_env = sanitized_child_env()
     parent_env["KAGGLE_USERNAME"] = username
@@ -211,17 +238,22 @@ def main() -> int:
     if cp.returncode == 2 and not continuation_is_technical(summary):
         tail = log_path.read_text(encoding="utf-8", errors="replace")[-8000:]
         raise RuntimeError(
-            "account runner returned ATTENTION_REQUIRED for a non-rollover technical failure; "
+            "account runner returned ATTENTION_REQUIRED without a valid planned rollover; "
             "do not blindly resume.\n" + tail
         )
 
     report = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "stage": "TRACKA_V12_SCIENCE_ACCOUNT",
         "account_id": account_id,
         "science_source_sha": SCIENCE_SHA,
         "science_go_status": go["status"],
         "dependency_lock_sha256": stack["dependency_lock_sha256"],
+        "g1a_seal_sha256": g1a["g1a_seal_sha256"],
+        "g2a_barrier_sha256": g2a["barrier_sha256"],
+        "scheduler_freeze_sha256": scheduler["scheduler_freeze_sha256"],
+        "science_authorization_sha256": go["authorization_sha256"],
+        "durable_map_file_sha256": sha256_file(durable_map_path),
         "runner_return_code": cp.returncode,
         "runner_status": summary.get("status"),
         "science_complete": summary.get("science_complete", False),
