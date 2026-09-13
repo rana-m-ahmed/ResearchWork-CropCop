@@ -9,7 +9,6 @@ from .tracka_v12_g2a import (
     PROFILE_COVERAGE,
     REQUIRED_PROFILES,
     SLOT_ORDER,
-    TrackAV12G2AError,
     validate_calibration_summary,
 )
 
@@ -203,6 +202,17 @@ def profile_for_experiment(experiment_id: str) -> str:
     return matches[0]
 
 
+def _static_lpt_slot_queues(rows: list[tuple[str, str, float]]) -> tuple[dict[str, list[str]], dict[str, float]]:
+    loads = {slot: 0.0 for slot in SLOT_ORDER}
+    queues = {slot: [] for slot in SLOT_ORDER}
+    slot_rank = {slot: index for index, slot in enumerate(SLOT_ORDER)}
+    for experiment_id, _profile, cost in rows:
+        slot = min(SLOT_ORDER, key=lambda candidate: (loads[candidate], slot_rank[candidate]))
+        queues[slot].append(experiment_id)
+        loads[slot] += float(cost)
+    return queues, loads
+
+
 def build_scheduler_freeze_v122(barrier: dict[str, Any]) -> dict[str, Any]:
     errors = validate_g2a_v122_barrier(barrier)
     if errors:
@@ -215,9 +225,11 @@ def build_scheduler_freeze_v122(barrier: dict[str, Any]) -> dict[str, Any]:
         rows.append((experiment_id, profile, cost))
     rows.sort(key=lambda row: (-row[2], row[0]))
     priority = [row[0] for row in rows]
+    queues, loads = _static_lpt_slot_queues(rows)
     initial = [
-        {"slot": slot, "experiment_id": experiment_id}
-        for slot, experiment_id in zip(SLOT_ORDER, priority[: len(SLOT_ORDER)])
+        {"slot": slot, "experiment_id": queues[slot][0]}
+        for slot in SLOT_ORDER
+        if queues[slot]
     ]
     freeze = {
         "schema_version": "1.2.2",
@@ -227,7 +239,7 @@ def build_scheduler_freeze_v122(barrier: dict[str, Any]) -> dict[str, Any]:
         "source_git_commit": barrier["source_git_commit"],
         "g1a_seal_sha256": barrier["g1a_seal_sha256"],
         "g2a_barrier_sha256": barrier["barrier_sha256"],
-        "algorithm": "deterministic_longest_processing_time_first",
+        "algorithm": "deterministic_lpt_list_scheduling_to_six_slots",
         "cost_source": "sealed non-scientific estimated full 30-epoch run seconds only",
         "slot_order": list(SLOT_ORDER),
         "priority": priority,
@@ -235,8 +247,10 @@ def build_scheduler_freeze_v122(barrier: dict[str, Any]) -> dict[str, Any]:
             {"experiment_id": eid, "profile": profile, "estimated_full_run_seconds_upper_bound": cost}
             for eid, profile, cost in rows
         ],
+        "static_slot_queues": queues,
+        "predicted_slot_load_seconds": loads,
         "initial_dispatch": initial,
-        "continuation_dispatch": "next priority item goes to first free qualified slot; simultaneous-free ties use slot_order",
+        "continuation_dispatch": "each physical slot consumes its frozen queue sequentially; no mutable cross-account central queue",
         "checkpoint_identity_is_physical_slot_independent": True,
     }
     freeze["scheduler_freeze_sha256"] = scheduler_hash(freeze)
@@ -262,8 +276,24 @@ def validate_scheduler_freeze_v122(
     priority = freeze.get("priority", [])
     if len(priority) != len(EXPERIMENT_SPECS) or set(priority) != set(EXPERIMENT_SPECS):
         errors.append("v1.2.2 scheduler priority is not an exact permutation of 11 frozen states")
-    if len(freeze.get("initial_dispatch", [])) != 6:
-        errors.append("v1.2.2 scheduler must initially fill exactly six GPU slots")
+    queues = freeze.get("static_slot_queues", {})
+    if set(queues) != set(SLOT_ORDER):
+        errors.append("v1.2.2 scheduler static slot inventory mismatch")
+    else:
+        flattened = [experiment_id for slot in SLOT_ORDER for experiment_id in queues[slot]]
+        if len(flattened) != len(EXPERIMENT_SPECS) or set(flattened) != set(EXPERIMENT_SPECS):
+            errors.append("v1.2.2 static slot queues are not an exact one-time partition of 11 states")
+        initial = freeze.get("initial_dispatch", [])
+        expected_initial = [
+            {"slot": slot, "experiment_id": queues[slot][0]}
+            for slot in SLOT_ORDER
+            if queues[slot]
+        ]
+        if initial != expected_initial or len(initial) != 6:
+            errors.append("v1.2.2 initial dispatch does not match six frozen queue heads")
+    loads = freeze.get("predicted_slot_load_seconds", {})
+    if set(loads) != set(SLOT_ORDER) or any(float(loads.get(slot, 0.0)) <= 0 for slot in SLOT_ORDER):
+        errors.append("v1.2.2 predicted slot-load inventory invalid")
     if freeze.get("checkpoint_identity_is_physical_slot_independent") is not True:
         errors.append("v1.2.2 scheduler does not affirm placement-neutral checkpoint identity")
     if expected_g2a_barrier_sha256 and freeze.get("g2a_barrier_sha256") != expected_g2a_barrier_sha256:
