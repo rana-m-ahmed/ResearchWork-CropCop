@@ -23,6 +23,10 @@ def attest(kind: str, source: str, extra=None):
         "attestation_kind": kind,
         "status": "PASS",
         "source_git_commit": source,
+        "github_actions": True,
+        "workflow_run_id": "34740000000",
+        "workflow_run_attempt": "1",
+        "pull_request_head_sha": source,
         **(extra or {}),
     }
     payload["attestation_sha256"] = sha256_json(payload)
@@ -36,7 +40,11 @@ class TrackAV12ScienceGoTests(unittest.TestCase):
         code = attest(
             "track_a_v12_pre_science_code",
             source,
-            {"static_pre_science_gates": {name: "PASS" for name in static_names}},
+            {
+                "static_pre_science_gates": {name: "PASS" for name in static_names},
+                "science_diff_sha256": {"principal": "e" * 64, "secondary": "f" * 64},
+                "science_diff_reports": {"principal": {"status": "PASS"}, "secondary": {"status": "PASS"}},
+            },
         )
         lock = attest(
             "track_a_v12_exact_head_lock_runtime",
@@ -50,6 +58,8 @@ class TrackAV12ScienceGoTests(unittest.TestCase):
                 "runtime_report_sha256": "b" * 64,
                 "candidate_claim_boundary_sha256": "c" * 64,
                 "xai_operationalization_sha256": "d" * 64,
+                "content_lock_report": {"overall_status": "PASS", "static": {"status": "PASS", "science_authorized": False}},
+                "runtime_report": {"status": "PASS", "science_authorized": False, "qualified_target": "blocks.13.norm1"},
             },
         )
         g1a = {
@@ -77,12 +87,8 @@ class TrackAV12ScienceGoTests(unittest.TestCase):
         hashes = {name: (str(index) * 64)[:64] for index, name in enumerate(("code_attestation", "lock_runtime_attestation", "g1a", "g2a", "scheduler"), start=6)}
         return source, code, lock, g1a, g2a, scheduler, hashes
 
-    @patch.object(go, "validate_scheduler_freeze_v122", return_value=[])
-    @patch.object(go, "validate_g2a_v122_barrier", return_value=[])
-    @patch.object(go, "validate_g1a_seal_object", return_value=[])
-    def test_exact_valid_inventory_composes(self, _g1, _g2, _scheduler):
-        source, code, lock, g1a, g2a, scheduler, hashes = self.fixtures()
-        gates, bindings = go.compose_gate_inputs(
+    def compose(self, source, code, lock, g1a, g2a, scheduler, hashes):
+        return go.compose_gate_inputs(
             source_git_commit=source,
             code_attestation=code,
             lock_runtime_attestation=lock,
@@ -91,9 +97,17 @@ class TrackAV12ScienceGoTests(unittest.TestCase):
             scheduler=scheduler,
             file_hashes=hashes,
         )
+
+    @patch.object(go, "validate_scheduler_freeze_v122", return_value=[])
+    @patch.object(go, "validate_g2a_v122_barrier", return_value=[])
+    @patch.object(go, "validate_g1a_seal_object", return_value=[])
+    def test_exact_valid_inventory_composes(self, _g1, _g2, _scheduler):
+        source, code, lock, g1a, g2a, scheduler, hashes = self.fixtures()
+        gates, bindings = self.compose(source, code, lock, g1a, g2a, scheduler, hashes)
         self.assertEqual(set(gates), set(REQUIRED_PRE_SCIENCE_GATES))
         self.assertEqual(set(bindings), set(REQUIRED_PRE_SCIENCE_GATES))
         self.assertEqual(set(gates.values()), {"PASS"})
+        self.assertEqual({row.get("workflow_run_id") for name, row in bindings.items() if name in go.STATIC_GATES}, {code["workflow_run_id"]})
 
     @patch.object(go, "validate_scheduler_freeze_v122", return_value=[])
     @patch.object(go, "validate_g2a_v122_barrier", return_value=[])
@@ -103,15 +117,39 @@ class TrackAV12ScienceGoTests(unittest.TestCase):
         code["source_git_commit"] = "9" * 40
         code["attestation_sha256"] = sha256_json({k: v for k, v in code.items() if k != "attestation_sha256"})
         with self.assertRaises(ValueError):
-            go.compose_gate_inputs(
-                source_git_commit=source,
-                code_attestation=code,
-                lock_runtime_attestation=lock,
-                g1a=g1a,
-                g2a=g2a,
-                scheduler=scheduler,
-                file_hashes=hashes,
-            )
+            self.compose(source, code, lock, g1a, g2a, scheduler, hashes)
+
+    @patch.object(go, "validate_scheduler_freeze_v122", return_value=[])
+    @patch.object(go, "validate_g2a_v122_barrier", return_value=[])
+    @patch.object(go, "validate_g1a_seal_object", return_value=[])
+    def test_non_ci_shaped_code_attestation_is_rejected(self, _g1, _g2, _scheduler):
+        source, code, lock, g1a, g2a, scheduler, hashes = self.fixtures()
+        code["github_actions"] = False
+        code["workflow_run_id"] = None
+        code["attestation_sha256"] = sha256_json({k: v for k, v in code.items() if k != "attestation_sha256"})
+        with self.assertRaises(ValueError):
+            self.compose(source, code, lock, g1a, g2a, scheduler, hashes)
+
+    @patch.object(go, "validate_scheduler_freeze_v122", return_value=[])
+    @patch.object(go, "validate_g2a_v122_barrier", return_value=[])
+    @patch.object(go, "validate_g1a_seal_object", return_value=[])
+    def test_failed_embedded_science_diff_is_rejected(self, _g1, _g2, _scheduler):
+        source, code, lock, g1a, g2a, scheduler, hashes = self.fixtures()
+        code["science_diff_reports"]["principal"]["status"] = "FAIL"
+        code["attestation_sha256"] = sha256_json({k: v for k, v in code.items() if k != "attestation_sha256"})
+        with self.assertRaises(ValueError):
+            self.compose(source, code, lock, g1a, g2a, scheduler, hashes)
+
+    @patch.object(go, "validate_scheduler_freeze_v122", return_value=[])
+    @patch.object(go, "validate_g2a_v122_barrier", return_value=[])
+    @patch.object(go, "validate_g1a_seal_object", return_value=[])
+    def test_lock_runtime_kind_or_target_drift_is_rejected(self, _g1, _g2, _scheduler):
+        source, code, lock, g1a, g2a, scheduler, hashes = self.fixtures()
+        lock["attestation_kind"] = "wrong"
+        lock["runtime_report"]["qualified_target"] = "wrong.target"
+        lock["attestation_sha256"] = sha256_json({k: v for k, v in lock.items() if k != "attestation_sha256"})
+        with self.assertRaises(ValueError):
+            self.compose(source, code, lock, g1a, g2a, scheduler, hashes)
 
     @patch.object(go, "validate_scheduler_freeze_v122", return_value=[])
     @patch.object(go, "validate_g2a_v122_barrier", return_value=[])
@@ -120,15 +158,7 @@ class TrackAV12ScienceGoTests(unittest.TestCase):
         source, code, lock, g1a, g2a, scheduler, hashes = self.fixtures()
         g2a["dependency_lock_sha256"] = "9" * 64
         with self.assertRaises(ValueError):
-            go.compose_gate_inputs(
-                source_git_commit=source,
-                code_attestation=code,
-                lock_runtime_attestation=lock,
-                g1a=g1a,
-                g2a=g2a,
-                scheduler=scheduler,
-                file_hashes=hashes,
-            )
+            self.compose(source, code, lock, g1a, g2a, scheduler, hashes)
 
     @patch.object(go, "validate_scheduler_freeze_v122", return_value=[])
     @patch.object(go, "validate_g2a_v122_barrier", return_value=[])
@@ -137,15 +167,7 @@ class TrackAV12ScienceGoTests(unittest.TestCase):
         source, code, lock, g1a, g2a, scheduler, hashes = self.fixtures()
         scheduler["g1a_seal_sha256"] = "9" * 64
         with self.assertRaises(ValueError):
-            go.compose_gate_inputs(
-                source_git_commit=source,
-                code_attestation=code,
-                lock_runtime_attestation=lock,
-                g1a=g1a,
-                g2a=g2a,
-                scheduler=scheduler,
-                file_hashes=hashes,
-            )
+            self.compose(source, code, lock, g1a, g2a, scheduler, hashes)
 
 
 if __name__ == "__main__":
