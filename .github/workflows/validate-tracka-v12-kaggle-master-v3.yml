@@ -9,6 +9,7 @@ on:
       - 'tests/test_tracka_v12_kaggle_ops.py'
       - 'tests/test_tracka_v12_kaggle_ops_runtime.py'
       - 'tests/test_tracka_v12_kaggle_master_v3.py'
+      - 'tests/test_tracka_v12_kaggle_publication_v4.py'
       - '.github/workflows/validate-tracka-v12-kaggle-master-v3.yml'
   workflow_dispatch:
 
@@ -52,6 +53,7 @@ jobs:
               'tests/test_tracka_v12_kaggle_ops.py',
               'tests/test_tracka_v12_kaggle_ops_runtime.py',
               'tests/test_tracka_v12_kaggle_master_v3.py',
+              'tests/test_tracka_v12_kaggle_publication_v4.py',
           }
           allowed_prefix = 'journal_extension/kaggle/tracka_v12_ops/'
           rows = []
@@ -141,7 +143,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile journal_extension/kaggle/tracka_v12_ops/*.py
-          python -m py_compile tests/test_tracka_v12_kaggle_ops.py tests/test_tracka_v12_kaggle_ops_runtime.py tests/test_tracka_v12_kaggle_master_v3.py
+          python -m py_compile tests/test_tracka_v12_kaggle_ops.py tests/test_tracka_v12_kaggle_ops_runtime.py tests/test_tracka_v12_kaggle_master_v3.py tests/test_tracka_v12_kaggle_publication_v4.py
           python - <<'PY'
           import sys
           from pathlib import Path
@@ -156,17 +158,21 @@ jobs:
           import master_control
           import master_science
           import master_account_driver
+          import master_publication_v4
+          import master_science_v4
+          import master_account_driver_v4
           print('master runtime import graph PASS')
           PY
 
-      - name: Run distribution, runtime regression and v3 failure-injection tests
+      - name: Run distribution, runtime regression and publication failure-injection tests
         shell: bash
         run: |
           set -euo pipefail
           python -m unittest -v \
             tests.test_tracka_v12_kaggle_ops \
             tests.test_tracka_v12_kaggle_ops_runtime \
-            tests.test_tracka_v12_kaggle_master_v3
+            tests.test_tracka_v12_kaggle_master_v3 \
+            tests.test_tracka_v12_kaggle_publication_v4
 
       - name: Verify packaged exact-head attestations
         shell: bash
