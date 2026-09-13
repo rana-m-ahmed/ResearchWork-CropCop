@@ -2,8 +2,8 @@
 
 **Scientific source (immutable):** `9a72e9466a9a3e7429e0e36a028edac662f83146`  
 **Master distribution branch:** `ops-tracka-kaggle-master-v3-20260913`  
-**Pinned master runtime:** `5654f35fa52c9b6ae6c28f062969c9ebd65af3fa`  
-**Immutable runtime branch:** `ops-tracka-kaggle-master-runtime-v3-fix1-5654f35`  
+**Pinned master runtime:** `9fdbba6f81bfa2f1ce235b3d31ee52a75719a779`  
+**Immutable runtime branch:** `ops-tracka-kaggle-master-runtime-v3-fix2-9fdbba6`  
 **Authority:** `EAAI-JE-SDL-v2.1-QA`
 
 This branch is operator/distribution infrastructure only. It does not change the frozen scientific source.
@@ -16,13 +16,15 @@ Normal operation uses exactly three notebooks:
 - `TRACKA_V12_MASTER_K2.ipynb`
 - `TRACKA_V12_MASTER_K3.ipynb`
 
-Each notebook clones the immutable master runtime branch, verifies exact HEAD `5654f35...` and a clean worktree, then the runtime checks out the scientific source separately at exact HEAD `9a72e946...`.
+Each notebook clones the immutable master runtime branch, verifies exact HEAD `9fdbba6...` and a clean worktree, then the runtime checks out the scientific source separately at exact HEAD `9a72e946...`.
 
-The previous runtime `f606311...` remains a historical rollback point but is superseded for new execution by this input-preflight fix. The previous eight stage notebooks are retained only on the v2 rollback branch `ops-tracka-kaggle-launch-20260913`; they are not canonical for new execution.
+The previous runtime `5654f35...` remains a historical rollback point but is superseded for new execution by the duplicate-safe bounded preflight fix. The previous eight stage notebooks are retained only on the v2 rollback branch `ops-tracka-kaggle-launch-20260913`; they are not canonical for new execution.
 
 ## Fail-fast input preflight
 
-Before cloning/installing the heavy frozen training stack, every master now verifies the exact frozen V1 manifest, class map and image root. K1 also verifies the complete historical principal G1 bundle at this stage. If the exact manifest/class map is absent or wrong, the operator reports mounted `/kaggle/input` entries plus likely metadata paths, byte counts and SHA-256 values and stops immediately.
+Before cloning/installing the heavy frozen training stack, every master verifies the exact frozen V1 manifest, class map and image root. K1 also verifies the complete historical principal G1 bundle at this stage.
+
+The resolver now uses bounded shallow metadata discovery instead of a broad recursive hash sweep. Byte-identical copies of the frozen metadata are allowed when they have the exact frozen SHA. If the manifest exists in both the certification-report tree and the actual dataset tree, the resolver selects the copy structurally nearest to the image tree. If identical manifests independently qualify different image roots, execution fails closed and requires an explicit override.
 
 Required V1 identities:
 
