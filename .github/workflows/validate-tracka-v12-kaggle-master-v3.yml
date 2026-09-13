@@ -71,6 +71,57 @@ jobs:
           print(f'additive master-operator diff PASS: {len(rows)} files')
           PY
 
+      - name: Validate frozen runtime and exact three-notebook distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          SCIENCE_SHA = '9a72e9466a9a3e7429e0e36a028edac662f83146'
+          RUNTIME_SHA = 'f606311ec5faa2d4d1a2ea44b279357bfd15fb84'
+          RUNTIME_BRANCH = 'ops-tracka-kaggle-master-runtime-v3-f606311'
+          expected = {
+              'TRACKA_V12_MASTER_K1.ipynb': 'K1',
+              'TRACKA_V12_MASTER_K2.ipynb': 'K2',
+              'TRACKA_V12_MASTER_K3.ipynb': 'K3',
+          }
+          root = Path('journal_extension/kaggle/tracka_v12_ops')
+          notebooks = {p.name: p for p in root.glob('*.ipynb')}
+          if set(notebooks) != set(expected):
+              raise SystemExit(f'expected exactly three master notebooks; observed={sorted(notebooks)}')
+          distribution = json.loads((root/'MASTER_NOTEBOOK_DISTRIBUTION.json').read_text(encoding='utf-8'))
+          if distribution.get('status') != 'LOCKED_DISTRIBUTION':
+              raise SystemExit('master notebook distribution is not locked')
+          if distribution.get('operator_runtime_sha') != RUNTIME_SHA:
+              raise SystemExit('distribution runtime SHA mismatch')
+          for name, account in expected.items():
+              nb = json.loads(notebooks[name].read_text(encoding='utf-8'))
+              if nb.get('nbformat') != 4 or nb.get('nbformat_minor') != 5:
+                  raise SystemExit(f'invalid notebook format: {name}')
+              meta = (nb.get('metadata') or {}).get('cropcop_operator') or {}
+              if meta.get('account_id') != account:
+                  raise SystemExit(f'account mismatch in {name}')
+              if meta.get('science_sha') != SCIENCE_SHA:
+                  raise SystemExit(f'science SHA mismatch in {name}')
+              if meta.get('operator_runtime_sha') != RUNTIME_SHA:
+                  raise SystemExit(f'runtime SHA mismatch in {name}')
+              if meta.get('operator_runtime_branch') != RUNTIME_BRANCH:
+                  raise SystemExit(f'runtime branch mismatch in {name}')
+              joined = json.dumps(nb)
+              if RUNTIME_SHA not in joined or RUNTIME_BRANCH not in joined:
+                  raise SystemExit(f'pinned runtime missing from notebook body: {name}')
+              for index, cell in enumerate(nb.get('cells') or []):
+                  if cell.get('cell_type') != 'code':
+                      continue
+                  if cell.get('execution_count') is not None or cell.get('outputs') != []:
+                      raise SystemExit(f'execution residue in {name}:cell-{index}')
+                  compile(''.join(cell.get('source') or []), f'{name}:cell-{index}', 'exec')
+          print('three-notebook distribution syntax/binding PASS')
+          PY
+          git cat-file -e 'f606311ec5faa2d4d1a2ea44b279357bfd15fb84^{commit}'
+
       - name: Compile and import master runtime
         shell: bash
         run: |
@@ -93,7 +144,7 @@ jobs:
           print('master runtime import graph PASS')
           PY
 
-      - name: Run v2 regression and v3 failure-injection tests
+      - name: Run distribution, runtime regression and v3 failure-injection tests
         shell: bash
         run: |
           set -euo pipefail
