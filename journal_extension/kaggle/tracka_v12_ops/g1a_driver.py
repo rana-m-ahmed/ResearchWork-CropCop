@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from tracka_v12_kaggle_operator import (
+from tracka_v12_kaggle_operator_v2 import (
     SCIENCE_SHA,
     assert_clean_science_checkout,
     assert_kaggle_paths,
@@ -89,11 +89,11 @@ def main() -> int:
         raise RuntimeError("G1A did not terminate PASS")
     if seal.get("science_authorized") is not False:
         raise RuntimeError("G1A must not authorize science")
-    if seal.get("source_git_commit") != SCIENCE_SHA:
+    if seal.get("source_git_sha") != SCIENCE_SHA:
         raise RuntimeError("G1A source binding mismatch")
 
     report = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "stage": "TRACKA_V12_G1A",
         "status": "PASS",
         "science_source_sha": SCIENCE_SHA,
