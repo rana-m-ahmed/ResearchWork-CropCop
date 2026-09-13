@@ -10,10 +10,11 @@ from pathlib import Path
 from tracka_v12_kaggle_operator_v3 import (
     SCIENCE_SHA, OperatorError, adopt_g1a_if_present, download_and_validate_g1a_dataset,
     ensure_private_dataset, g1a_handoff_run_id, load_json, operator_runtime_head,
-    prepare_official_torchvision, prepare_r13, publish_public_files,
+    prepare_r13, publish_public_files,
     resolve_principal_g1_bundle, shared_g1a_locator, validate_g1a_bundle_with_science,
     version_private_dataset, wait_for_public_file, wait_kaggle_dataset_ready, write_json,
 )
+from master_verified_pretrained_v5 import prepare_verified_torchvision
 
 G1A_HANDOFF_FILE = "TRACKA_V12_G1A_HANDOFF.json"
 
@@ -77,9 +78,12 @@ def build_g1a_once(repo: Path, *, manifest: Path, class_map: Path, image_root: P
         shutil.rmtree(upstream_root)
     upstream_root.mkdir(parents=True)
 
+    # The downloader receipt is NOT the provenance record. The frozen capture script performs
+    # exact tensor comparison against the frozen TorchVision enum and writes the contract that
+    # seal_tracka_v12_g1a.py validates.
     baselines = _retry_pre_science_io(
-        "Official TorchVision pretrained provenance",
-        lambda: prepare_official_torchvision(repo, upstream_root / "torchvision"),
+        "Official TorchVision download + exact tensor provenance",
+        lambda: prepare_verified_torchvision(repo, upstream_root / "torchvision"),
     )
     r13 = _retry_pre_science_io(
         "Pinned R13 Hugging Face artifact",
