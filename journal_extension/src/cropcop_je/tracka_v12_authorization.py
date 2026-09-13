@@ -89,6 +89,13 @@ def validate_science_authorization(
         empty = sorted(name for name in REQUIRED_PRE_SCIENCE_GATES if bindings.get(name) in (None, "", {}, []))
         if empty:
             errors.append("Track-A science authorization has empty evidence bindings: " + ", ".join(empty))
+        g2a_binding = bindings.get("g2a") or {}
+        if g2a_binding.get("kind") != "track_a_v12_g2a_full_run_forecast":
+            errors.append("Track-A science authorization G2A evidence-binding kind mismatch")
+        if g2a_binding.get("barrier_sha256") != expected_g2a_barrier_sha256:
+            errors.append("Track-A science authorization G2A evidence-binding barrier mismatch")
+        if len(str(g2a_binding.get("durability_contract_sha256", ""))) != 64:
+            errors.append("Track-A science authorization lacks sealed G2A durability binding")
 
     if authorization.get("authorization_sha256") != authorization_hash(authorization):
         errors.append("Track-A science authorization self-hash mismatch")
@@ -123,8 +130,9 @@ def build_science_authorization(
             "R13 S1/S2/S3. It is valid only after the candidate-comparison claim boundary and the complete "
             "training, recovery, six-GPU orchestration, direct selected-checkpoint replay/robustness/XAI, "
             "auxiliary R05/R12 replay and paired-analysis, and comprehensive 21-state closure implementations "
-            "are already frozen and qualified. It does not authorize new models, seeds, hyperparameters, "
-            "V1-test access, external prediction opening or Track-C candidate result opening."
+            "are already frozen and qualified. It also requires the G2A barrier to bind five isolated private "
+            "Kaggle durability targets. It does not authorize new models, seeds, hyperparameters, V1-test access, "
+            "external prediction opening or Track-C candidate result opening."
         ),
     }
     payload["authorization_sha256"] = authorization_hash(payload)
