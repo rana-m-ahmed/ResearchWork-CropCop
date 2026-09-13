@@ -2,8 +2,7 @@ name: Validate Track-A v1.2 Kaggle master v5
 
 on:
   push:
-    branches:
-      - ops-tracka-kaggle-master-v3-20260913
+    branches: [ops-tracka-kaggle-master-v3-20260913]
     paths:
       - 'journal_extension/kaggle/tracka_v12_ops/**'
       - 'tests/test_tracka_v12_kaggle_ops.py'
@@ -45,7 +44,6 @@ jobs:
           git cat-file -e "${SCIENCE_SHA}^{commit}"
           test "$(git merge-base "$SCIENCE_SHA" HEAD)" = "$SCIENCE_SHA"
           git diff --name-status "$SCIENCE_SHA"..HEAD > /tmp/tracka_master_diff.txt
-          cat /tmp/tracka_master_diff.txt
           python - <<'PY'
           from pathlib import Path
           allowed_exact = {
@@ -57,24 +55,24 @@ jobs:
               'tests/test_tracka_v12_kaggle_publication_v4.py',
               'tests/test_tracka_v12_kaggle_master_v5.py',
           }
-          allowed_prefix = 'journal_extension/kaggle/tracka_v12_ops/'
+          prefix = 'journal_extension/kaggle/tracka_v12_ops/'
           rows = []
-          for raw in Path('/tmp/tracka_master_diff.txt').read_text(encoding='utf-8').splitlines():
+          for raw in Path('/tmp/tracka_master_diff.txt').read_text().splitlines():
               if not raw.strip():
                   continue
               status, *paths = raw.split('\t')
-              rows.append((status, paths))
+              rows.append(raw)
               if status != 'A':
-                  raise SystemExit(f'master operator branch is not additive-only: {raw}')
+                  raise SystemExit(f'operator branch is not additive-only: {raw}')
               for path in paths:
-                  if path not in allowed_exact and not path.startswith(allowed_prefix):
-                      raise SystemExit(f'master operator branch changed non-operator path: {path}')
+                  if path not in allowed_exact and not path.startswith(prefix):
+                      raise SystemExit(f'non-operator path changed: {path}')
           if not rows:
-              raise SystemExit('master operator diff unexpectedly empty')
-          print(f'additive master-operator diff PASS: {len(rows)} files')
+              raise SystemExit('operator diff unexpectedly empty')
+          print(f'additive separation PASS: {len(rows)} files')
           PY
 
-      - name: Validate immutable v5 runtime and exact three-notebook distribution
+      - name: Validate immutable runtime and exact three-notebook distribution
         shell: bash
         run: |
           set -euo pipefail
@@ -82,127 +80,80 @@ jobs:
           import json
           from pathlib import Path
 
-          SCIENCE_SHA = '9a72e9466a9a3e7429e0e36a028edac662f83146'
-          RUNTIME_SHA = '902e7774dda32106a03bfb3f5917946c11ff8e2c'
-          RUNTIME_BRANCH = 'ops-tracka-kaggle-master-runtime-v5-902e777'
-          DRIVER = 'master_account_driver_v5.py'
-          expected = {
-              'TRACKA_V12_MASTER_K1.ipynb': 'K1',
-              'TRACKA_V12_MASTER_K2.ipynb': 'K2',
-              'TRACKA_V12_MASTER_K3.ipynb': 'K3',
-          }
-          root = Path('journal_extension/kaggle/tracka_v12_ops')
-          notebooks = {p.name: p for p in root.glob('*.ipynb')}
-          if set(notebooks) != set(expected):
-              raise SystemExit(f'expected exactly three master notebooks; observed={sorted(notebooks)}')
+          SCIENCE_SHA='9a72e9466a9a3e7429e0e36a028edac662f83146'
+          RUNTIME_SHA='902e7774dda32106a03bfb3f5917946c11ff8e2c'
+          RUNTIME_BRANCH='ops-tracka-kaggle-master-runtime-v5-902e777'
+          DRIVER='master_account_driver_v5.py'
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          expected={'TRACKA_V12_MASTER_K1.ipynb':'K1','TRACKA_V12_MASTER_K2.ipynb':'K2','TRACKA_V12_MASTER_K3.ipynb':'K3'}
+          observed={p.name:p for p in root.glob('*.ipynb')}
+          if set(observed) != set(expected):
+              raise SystemExit(f'expected exactly three notebooks; observed={sorted(observed)}')
 
-          distribution = json.loads((root/'MASTER_NOTEBOOK_DISTRIBUTION.json').read_text(encoding='utf-8'))
-          contract = json.loads((root/'OPERATOR_CONTRACT.json').read_text(encoding='utf-8'))
-          freeze = json.loads((root/'MASTER_RUNTIME_FREEZE.json').read_text(encoding='utf-8'))
-          marker = (root/'.runtime-freeze-marker').read_text(encoding='utf-8')
-
-          for payload, label in ((distribution, 'distribution'), (contract, 'contract')):
-              if payload.get('schema_version') != '3.5':
-                  raise SystemExit(f'{label} schema is not v3.5')
-              if payload.get('operator_runtime_sha') != RUNTIME_SHA:
-                  raise SystemExit(f'{label} runtime SHA mismatch')
-              if payload.get('operator_runtime_branch') != RUNTIME_BRANCH:
-                  raise SystemExit(f'{label} runtime branch mismatch')
-              if payload.get('driver') != DRIVER:
-                  raise SystemExit(f'{label} driver mismatch')
-
-          required_true = (
-              'preferred_real_kaggle_mount_paths_embedded',
-              'preferred_paths_still_hash_structure_verified',
-              'two_stage_torchvision_pretrained_provenance',
-              'frozen_torchvision_provenance_validator_before_g1a',
-              'fail_fast_input_preflight_before_stack_install',
-              'bounded_shallow_metadata_discovery',
-              'nested_train_val_root_discovery',
-              'resolved_input_paths_bound_for_downstream_reuse',
-              'bounded_pre_science_io_retry',
-              'idempotent_git_evidence_publication',
-              'partial_bundle_incremental_publication',
-              'changed_file_only_update',
-              'final_full_bundle_roundtrip_required',
-              'scientific_parent_publication_after_frozen_execution',
-          )
-          for key in required_true:
+          distribution=json.loads((root/'MASTER_NOTEBOOK_DISTRIBUTION.json').read_text())
+          contract=json.loads((root/'OPERATOR_CONTRACT.json').read_text())
+          freeze=json.loads((root/'MASTER_RUNTIME_FREEZE.json').read_text())
+          marker=(root/'.runtime-freeze-marker').read_text()
+          for payload,label in ((distribution,'distribution'),(contract,'contract')):
+              if payload.get('schema_version')!='3.5' or payload.get('operator_runtime_sha')!=RUNTIME_SHA or payload.get('operator_runtime_branch')!=RUNTIME_BRANCH or payload.get('driver')!=DRIVER:
+                  raise SystemExit(f'{label} v5 binding mismatch')
+          for key in (
+              'preferred_real_kaggle_mount_paths_embedded','preferred_paths_still_hash_structure_verified',
+              'two_stage_torchvision_pretrained_provenance','frozen_torchvision_provenance_validator_before_g1a',
+              'fail_fast_input_preflight_before_stack_install','bounded_shallow_metadata_discovery',
+              'nested_train_val_root_discovery','resolved_input_paths_bound_for_downstream_reuse',
+              'bounded_pre_science_io_retry','idempotent_git_evidence_publication',
+              'partial_bundle_incremental_publication','changed_file_only_update',
+              'final_full_bundle_roundtrip_required','scientific_parent_publication_after_frozen_execution'):
               if distribution.get(key) is not True:
-                  raise SystemExit(f'distribution missing required gate: {key}')
-          if distribution.get('protected_test_used_for_preflight_root_resolution') is not False:
-              raise SystemExit('preflight must not use protected test images for root resolution')
-          if distribution.get('frozen_scientific_runner_git_publication_enabled') is not False:
-              raise SystemExit('frozen scientific runner Git publication must be disabled')
-
-          if freeze.get('status') != 'PASS' or freeze.get('runtime_candidate_sha') != RUNTIME_SHA or freeze.get('runtime_branch') != RUNTIME_BRANCH:
-              raise SystemExit('runtime freeze record mismatch')
-          if RUNTIME_SHA not in marker or RUNTIME_BRANCH not in marker or SCIENCE_SHA not in marker:
+                  raise SystemExit(f'distribution gate missing: {key}')
+          if distribution.get('protected_test_used_for_preflight_root_resolution') is not False or distribution.get('frozen_scientific_runner_git_publication_enabled') is not False:
+              raise SystemExit('protected/publication safety flag mismatch')
+          if freeze.get('status')!='PASS' or freeze.get('runtime_candidate_sha')!=RUNTIME_SHA or freeze.get('runtime_branch')!=RUNTIME_BRANCH:
+              raise SystemExit('freeze record mismatch')
+          if not all(x in marker for x in (RUNTIME_SHA,RUNTIME_BRANCH,SCIENCE_SHA)):
               raise SystemExit('runtime marker mismatch')
 
-          for name, account in expected.items():
-              nb = json.loads(notebooks[name].read_text(encoding='utf-8'))
-              if nb.get('nbformat') != 4 or nb.get('nbformat_minor') != 5:
-                  raise SystemExit(f'invalid notebook format: {name}')
-              meta = (nb.get('metadata') or {}).get('cropcop_operator') or {}
-              if meta.get('schema_version') != '3.5':
-                  raise SystemExit(f'operator schema mismatch in {name}')
-              if meta.get('account_id') != account or meta.get('science_sha') != SCIENCE_SHA:
-                  raise SystemExit(f'identity mismatch in {name}')
-              if meta.get('operator_runtime_sha') != RUNTIME_SHA or meta.get('operator_runtime_branch') != RUNTIME_BRANCH:
-                  raise SystemExit(f'runtime binding mismatch in {name}')
-              if meta.get('driver') != DRIVER:
-                  raise SystemExit(f'driver binding mismatch in {name}')
-              joined = json.dumps(nb)
-              for required in (RUNTIME_SHA, RUNTIME_BRANCH, DRIVER, 'CropCop_Final_v1', 'audit/final_manifest.csv', 'audit/class_to_idx.json'):
-                  if required not in joined:
+          for name,account in expected.items():
+              nb=json.loads(observed[name].read_text())
+              meta=(nb.get('metadata') or {}).get('cropcop_operator') or {}
+              if nb.get('nbformat')!=4 or nb.get('nbformat_minor')!=5:
+                  raise SystemExit(f'format mismatch: {name}')
+              if meta.get('schema_version')!='3.5' or meta.get('account_id')!=account or meta.get('science_sha')!=SCIENCE_SHA or meta.get('operator_runtime_sha')!=RUNTIME_SHA or meta.get('operator_runtime_branch')!=RUNTIME_BRANCH or meta.get('driver')!=DRIVER:
+                  raise SystemExit(f'identity/runtime mismatch: {name}')
+              body='\n'.join(''.join(c.get('source') or []) for c in nb.get('cells') or [])
+              for required in (RUNTIME_SHA,RUNTIME_BRANCH,DRIVER,'CropCop_Final_v1',"V1 / 'audit' / 'final_manifest.csv'", "V1 / 'audit' / 'class_to_idx.json'", "V1 / 'dataset'"):
+                  if required not in body:
                       raise SystemExit(f'missing {required!r} from {name}')
-              if "V1 / 'dataset'" not in joined:
-                  raise SystemExit(f'preferred image root missing from {name}')
-              if account == 'K1' and 'cropcop-g1-sealed/G1_PACKAGE' not in joined:
+              if account=='K1' and 'cropcop-g1-sealed/G1_PACKAGE' not in body:
                   raise SystemExit('K1 preferred principal G1 path missing')
-              for index, cell in enumerate(nb.get('cells') or []):
-                  if cell.get('cell_type') != 'code':
-                      continue
-                  if cell.get('execution_count') is not None or cell.get('outputs') != []:
-                      raise SystemExit(f'execution residue in {name}:cell-{index}')
-                  compile(''.join(cell.get('source') or []), f'{name}:cell-{index}', 'exec')
-          print('v5 three-notebook distribution syntax/binding PASS')
+              for i,cell in enumerate(nb.get('cells') or []):
+                  if cell.get('cell_type')=='code':
+                      if cell.get('execution_count') is not None or cell.get('outputs') != []:
+                          raise SystemExit(f'execution residue: {name}:cell-{i}')
+                      compile(''.join(cell.get('source') or []), f'{name}:cell-{i}', 'exec')
+          print('v5 three-notebook distribution PASS')
           PY
           test "$(git rev-parse refs/remotes/origin/ops-tracka-kaggle-master-runtime-v5-902e777)" = '902e7774dda32106a03bfb3f5917946c11ff8e2c'
-          git cat-file -e '902e7774dda32106a03bfb3f5917946c11ff8e2c^{commit}'
 
-      - name: Compile and import v5 master runtime
+      - name: Compile and import v5 runtime
         shell: bash
         run: |
           set -euo pipefail
-          python -m py_compile journal_extension/kaggle/tracka_v12_ops/*.py
-          python -m py_compile \
-            tests/test_tracka_v12_kaggle_ops.py \
-            tests/test_tracka_v12_kaggle_ops_runtime.py \
-            tests/test_tracka_v12_kaggle_master_v3.py \
-            tests/test_tracka_v12_kaggle_publication_v4.py \
-            tests/test_tracka_v12_kaggle_master_v5.py
+          python -m py_compile journal_extension/kaggle/tracka_v12_ops/*.py tests/test_tracka_v12_kaggle_*.py
           python - <<'PY'
           import sys
           from pathlib import Path
-          root = Path.cwd()
-          for path in (root/'journal_extension/kaggle/tracka_v12_ops', root/'journal_extension/src'):
-              sys.path.insert(0, str(path))
-          import tracka_v12_kaggle_operator_v3
-          import master_attestations
-          import master_preflight
-          import master_verified_pretrained_v5
-          import master_g1a
-          import master_g2a
-          import master_control
-          import master_publication_v4
-          import master_science_v4
-          import master_account_driver_v5
-          print('v5 master runtime import graph PASS')
+          root=Path.cwd()
+          for p in (root/'journal_extension/kaggle/tracka_v12_ops',root/'journal_extension/src'):
+              sys.path.insert(0,str(p))
+          import tracka_v12_kaggle_operator_v3, master_attestations, master_preflight
+          import master_verified_pretrained_v5, master_g1a, master_g2a, master_control
+          import master_publication_v4, master_science_v4, master_account_driver_v5
+          print('v5 import graph PASS')
           PY
 
-      - name: Run full distribution runtime and failure-injection tests
+      - name: Run full regression and failure-injection suite
         shell: bash
         run: |
           set -euo pipefail
@@ -213,28 +164,25 @@ jobs:
             tests.test_tracka_v12_kaggle_publication_v4 \
             tests.test_tracka_v12_kaggle_master_v5
 
-      - name: Verify frozen provenance scripts and exact-head attestations
+      - name: Verify provenance contract and exact-head attestations
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           import sys
           from pathlib import Path
-          root = Path.cwd()
-          capture = (root/'journal_extension/scripts/capture_torchvision_pretrained_provenance.py').read_text(encoding='utf-8')
+          root=Path.cwd()
+          capture=(root/'journal_extension/scripts/capture_torchvision_pretrained_provenance.py').read_text()
           for field in ('tensor_identity_algorithm','tensor_identity_sha256','official_tensor_identity_algorithm','official_tensor_identity_sha256','official_tensor_match','validate_torchvision_provenance'):
               if field not in capture:
-                  raise SystemExit(f'frozen TorchVision provenance contract missing field: {field}')
-          sys.path.insert(0, str(root/'journal_extension/kaggle/tracka_v12_ops'))
-          sys.path.insert(0, str(root/'journal_extension/src'))
+                  raise SystemExit(f'provenance field missing: {field}')
+          sys.path.insert(0,str(root/'journal_extension/kaggle/tracka_v12_ops'))
+          sys.path.insert(0,str(root/'journal_extension/src'))
           from master_attestations import verified_attestation_paths
           from tracka_v12_kaggle_operator_v3 import load_json
-          code, lock = verified_attestation_paths()
-          c, l = load_json(code), load_json(lock)
-          assert c['status'] == 'PASS' and l['status'] == 'PASS'
-          assert c['github_actions'] is True and l['github_actions'] is True
-          assert l['science_authorized'] is False
-          print('frozen provenance + exact-head attestations PASS')
+          code,lock=verified_attestation_paths(); c,l=load_json(code),load_json(lock)
+          assert c['status']=='PASS' and l['status']=='PASS' and c['github_actions'] is True and l['github_actions'] is True and l['science_authorized'] is False
+          print('provenance + attestations PASS')
           PY
 
       - name: Reject tracked binary or credential artifacts
@@ -243,10 +191,9 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           import subprocess
-          files = subprocess.check_output(['git', 'ls-files', 'journal_extension/kaggle/tracka_v12_ops'], text=True).splitlines()
-          forbidden_suffixes = ('.pt', '.pth', '.ckpt', '.pte', '.safetensors', '.zip', '.tar', '.gz', '.7z', '.env', '.key', '.pem')
-          bad = [path for path in files if path.lower().endswith(forbidden_suffixes)]
-          if bad:
-              raise SystemExit('forbidden master-operator artifacts tracked: ' + ', '.join(bad))
-          print('master-operator artifact hygiene PASS')
+          files=subprocess.check_output(['git','ls-files','journal_extension/kaggle/tracka_v12_ops'],text=True).splitlines()
+          denied=('.pt','.pth','.ckpt','.pte','.safetensors','.zip','.tar','.gz','.7z','.env','.key','.pem')
+          bad=[p for p in files if p.lower().endswith(denied)]
+          if bad: raise SystemExit('forbidden artifacts: '+', '.join(bad))
+          print('artifact hygiene PASS')
           PY
