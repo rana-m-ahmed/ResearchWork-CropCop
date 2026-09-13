@@ -13,6 +13,7 @@ on:
       - 'journal_extension/configs/r13_vit_dlittle/**'
       - 'journal_extension/locks/track_a_comprehensive_execution_authority_v1_2_1.json'
       - 'journal_extension/src/cropcop_je/tracka_v12*.py'
+      - 'journal_extension/src/cropcop_je/secondary.py'
       - 'journal_extension/scripts/*tracka_v12*.py'
       - 'journal_extension/kaggle/run_tracka_v12_account.py'
       - 'tests/test_tracka_v12*.py'
