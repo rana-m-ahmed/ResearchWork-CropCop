@@ -129,10 +129,51 @@ class TrackAV12G2AV122Tests(unittest.TestCase):
         self.assertEqual(set(freeze["priority"]), set(EXPERIMENT_SPECS))
         self.assertEqual(freeze["priority"][:3], sorted(PROFILE_COVERAGE["CAL-R13"]))
 
+    def test_static_slot_queues_are_exact_one_time_partition(self):
+        barrier = build_g2a_v122_barrier(self.summaries(), checkpoint_contract_probe=checkpoint_probe())
+        freeze = build_scheduler_freeze_v122(barrier)
+        queues = freeze["static_slot_queues"]
+        self.assertEqual(set(queues), set(SLOT_ORDER))
+        flattened = [experiment_id for slot in SLOT_ORDER for experiment_id in queues[slot]]
+        self.assertEqual(len(flattened), len(EXPERIMENT_SPECS))
+        self.assertEqual(len(flattened), len(set(flattened)))
+        self.assertEqual(set(flattened), set(EXPERIMENT_SPECS))
+        self.assertTrue(all(queues[slot] for slot in SLOT_ORDER))
+
+    def test_predicted_loads_cover_exact_six_slots(self):
+        barrier = build_g2a_v122_barrier(self.summaries(), checkpoint_contract_probe=checkpoint_probe())
+        freeze = build_scheduler_freeze_v122(barrier)
+        loads = freeze["predicted_slot_load_seconds"]
+        self.assertEqual(set(loads), set(SLOT_ORDER))
+        self.assertTrue(all(float(loads[slot]) > 0 for slot in SLOT_ORDER))
+
+    def test_initial_dispatch_is_exact_queue_heads(self):
+        barrier = build_g2a_v122_barrier(self.summaries(), checkpoint_contract_probe=checkpoint_probe())
+        freeze = build_scheduler_freeze_v122(barrier)
+        expected = [
+            {"slot": slot, "experiment_id": freeze["static_slot_queues"][slot][0]}
+            for slot in SLOT_ORDER
+        ]
+        self.assertEqual(freeze["initial_dispatch"], expected)
+
+    def test_scheduler_is_deterministic_for_identical_qualification(self):
+        barrier = build_g2a_v122_barrier(self.summaries(), checkpoint_contract_probe=checkpoint_probe())
+        first = build_scheduler_freeze_v122(barrier)
+        second = build_scheduler_freeze_v122(barrier)
+        self.assertEqual(first, second)
+
     def test_physical_slot_dependence_is_rejected(self):
         barrier = build_g2a_v122_barrier(self.summaries(), checkpoint_contract_probe=checkpoint_probe())
         freeze = build_scheduler_freeze_v122(barrier)
         freeze["checkpoint_identity_is_physical_slot_independent"] = False
+        self.assertTrue(validate_scheduler_freeze_v122(freeze))
+
+    def test_duplicate_state_across_slot_queues_is_rejected(self):
+        barrier = build_g2a_v122_barrier(self.summaries(), checkpoint_contract_probe=checkpoint_probe())
+        freeze = build_scheduler_freeze_v122(barrier)
+        source_slot = SLOT_ORDER[0]
+        target_slot = SLOT_ORDER[1]
+        freeze["static_slot_queues"][target_slot].append(freeze["static_slot_queues"][source_slot][0])
         self.assertTrue(validate_scheduler_freeze_v122(freeze))
 
 
