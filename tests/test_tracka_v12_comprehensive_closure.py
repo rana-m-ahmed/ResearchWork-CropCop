@@ -1,0 +1,116 @@
+from __future__ import annotations
+
+import sys
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "journal_extension" / "src"
+SCRIPTS = ROOT / "journal_extension" / "scripts"
+for path in (SRC, SCRIPTS):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
+
+import seal_tracka_v12_comprehensive_closure as closure  # noqa: E402
+
+
+def fixtures(selection_status="SELECTED"):
+    direct = {
+        "status": "PASS",
+        "science_selection_sealed": True,
+        "closure_kind": "track_a_direct_model_selection",
+        "direct_state_inventory": sorted(closure.ALL_DIRECT_STATES),
+        "track_b_handoff_authorized": False,
+        "track_c_handoff_authorized": False,
+        "v1_test_accessed": False,
+        "external_predictions_opened": False,
+        "selection": {
+            "status": selection_status,
+            "journal_primary_family": "R13" if selection_status == "SELECTED" else None,
+            "co_primary_families": [] if selection_status == "SELECTED" else ["R06", "R13"],
+        },
+    }
+    auxiliary = {
+        "status": "PASS",
+        "closure_kind": "track_a_auxiliary_three_seed_analysis",
+        "state_inventory": sorted(closure.R04 | closure.R05 | closure.R12),
+        "v1_test_accessed": False,
+        "external_surface_accessed": False,
+        "hypothesis_tests_authorized": False,
+        "paired_analyses": {
+            "R05_teacher_minus_R04_direct": {},
+            "R12_logits_minus_feature": {},
+        },
+    }
+    wave1 = {
+        "status": "PASS",
+        "runs": [{"experiment_id": experiment_id} for experiment_id in sorted(closure.HISTORICAL_WAVE1)],
+        "v1_test_accessed": False,
+        "protected_external_surface_accessed": False,
+    }
+    wave2 = {
+        "status": "PASS",
+        "runs": [{"experiment_id": experiment_id} for experiment_id in sorted(closure.HISTORICAL_WAVE2_REQUIRED)],
+        "v1_test_accessed": False,
+        "protected_external_surface_accessed": False,
+    }
+    return direct, auxiliary, wave1, wave2
+
+
+class TrackAV12ComprehensiveClosureTests(unittest.TestCase):
+    def build(self, selection_status="SELECTED"):
+        direct, auxiliary, wave1, wave2 = fixtures(selection_status)
+        return closure.build_comprehensive_closure(
+            direct_selection=direct,
+            auxiliary_analysis=auxiliary,
+            wave1=wave1,
+            wave2=wave2,
+            evidence_hashes={"a": "1" * 64},
+        )
+
+    def test_selected_primary_closes_21_states_and_opens_handoff(self):
+        result = self.build("SELECTED")
+        self.assertEqual(result["status"], "PASS")
+        self.assertTrue(result["track_a_comprehensive_closed"])
+        self.assertEqual(result["scientific_state_count"], 21)
+        self.assertEqual(len(result["scientific_state_inventory"]), 21)
+        self.assertTrue(result["track_b_handoff_authorized"])
+        self.assertTrue(result["track_c_handoff_authorized"])
+        self.assertFalse(result["deployment_tie_gate_required"])
+
+    def test_co_primary_tie_closes_track_a_but_keeps_handoffs_closed(self):
+        result = self.build("CO_PRIMARY_TIE")
+        self.assertEqual(result["status"], "PASS")
+        self.assertTrue(result["track_a_comprehensive_closed"])
+        self.assertTrue(result["deployment_tie_gate_required"])
+        self.assertFalse(result["track_b_handoff_authorized"])
+        self.assertFalse(result["track_c_handoff_authorized"])
+
+    def test_missing_r12_state_fails_comprehensive_closure(self):
+        direct, auxiliary, wave1, wave2 = fixtures()
+        auxiliary["state_inventory"] = auxiliary["state_inventory"][:-1]
+        result = closure.build_comprehensive_closure(
+            direct_selection=direct,
+            auxiliary_analysis=auxiliary,
+            wave1=wave1,
+            wave2=wave2,
+            evidence_hashes={},
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertFalse(result["track_b_handoff_authorized"])
+
+    def test_direct_selector_cannot_bypass_comprehensive_gate(self):
+        direct, auxiliary, wave1, wave2 = fixtures()
+        direct["track_b_handoff_authorized"] = True
+        result = closure.build_comprehensive_closure(
+            direct_selection=direct,
+            auxiliary_analysis=auxiliary,
+            wave1=wave1,
+            wave2=wave2,
+            evidence_hashes={},
+        )
+        self.assertEqual(result["status"], "FAIL")
+
+
+if __name__ == "__main__":
+    unittest.main()
