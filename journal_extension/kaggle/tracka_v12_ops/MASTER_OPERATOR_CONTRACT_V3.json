@@ -1,54 +1,38 @@
 {
-  "schema_version": "3.0",
+  "schema_version": "3.5",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
+  "operator_runtime_sha": "902e7774dda32106a03bfb3f5917946c11ff8e2c",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v5-902e777",
   "operator_model": "three_account_master_notebooks",
+  "driver": "master_account_driver_v5.py",
   "accounts": {
-    "K1": {
-      "role": "coordinator_and_worker",
-      "gpus": ["K1/GPU0", "K1/GPU1"],
-      "g2a_profiles": ["CAL-EFFB0", "CAL-CNXTT"],
-      "creates_canonical_g1a": true,
-      "seals_control_plane": true
-    },
-    "K2": {
-      "role": "worker",
-      "gpus": ["K2/GPU0", "K2/GPU1"],
-      "g2a_profiles": ["CAL-MNV4-LOGITS", "CAL-MNV4-FEATURE"],
-      "creates_canonical_g1a": false,
-      "seals_control_plane": false
-    },
-    "K3": {
-      "role": "worker",
-      "gpus": ["K3/GPU0", "K3/GPU1"],
-      "g2a_profiles": ["CAL-R13"],
-      "creates_canonical_g1a": false,
-      "seals_control_plane": false
-    }
+    "K1": {"role": "coordinator_and_worker", "gpus": ["K1/GPU0", "K1/GPU1"], "g2a_profiles": ["CAL-EFFB0", "CAL-CNXTT"], "creates_canonical_g1a": true, "seals_control_plane": true},
+    "K2": {"role": "worker", "gpus": ["K2/GPU0", "K2/GPU1"], "g2a_profiles": ["CAL-MNV4-LOGITS", "CAL-MNV4-FEATURE"], "creates_canonical_g1a": false, "seals_control_plane": false},
+    "K3": {"role": "worker", "gpus": ["K3/GPU0", "K3/GPU1"], "g2a_profiles": ["CAL-R13"], "creates_canonical_g1a": false, "seals_control_plane": false}
   },
-  "g2a_gpu_utilization": {
-    "qualified_profiles": 5,
-    "available_t4s": 6,
-    "simultaneous_gpus_used": 5,
-    "unused_gpu_reason": "No sixth prospective G2A profile exists; inventing one would alter the frozen design."
+  "preferred_verified_inputs": {
+    "v1_root": "/kaggle/input/datasets/ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1",
+    "manifest_relative": "audit/final_manifest.csv",
+    "class_map_relative": "audit/class_to_idx.json",
+    "image_root_relative": "dataset",
+    "k1_principal_g1": "/kaggle/input/datasets/ranamuhammadahmed6/cropcop-g1-sealed/G1_PACKAGE",
+    "still_requires_hash_and_structure_validation": true,
+    "fallback": "bounded frozen-hash and TRAIN/VAL structure resolver"
   },
-  "science_gpu_utilization": {
-    "available_t4s": 6,
-    "simultaneous_child_workers": 6,
-    "cross_gpu_gradient_synchronization": false,
-    "child_model_per_gpu": 1
+  "torchvision_pretrained_contract": {
+    "prepare_then_capture": true,
+    "download_receipt_is_provenance": false,
+    "exact_tensor_match_against_frozen_enum": true,
+    "frozen_validator_before_g1a": true
   },
-  "canonical_g1a": {
-    "count": 1,
-    "owner": "K1 authenticated Kaggle user",
-    "transport": "private Kaggle dataset",
-    "worker_access": "K2/K3 Can view collaborator access",
-    "public_git_content": "seal/report/hash metadata only; no private binary payloads"
-  },
+  "g2a_gpu_utilization": {"qualified_profiles": 5, "available_t4s": 6, "simultaneous_gpus_used": 5, "unused_gpu_reason": "No sixth prospective G2A profile exists; inventing one would alter the frozen design."},
+  "science_gpu_utilization": {"available_t4s": 6, "simultaneous_child_workers": 6, "cross_gpu_gradient_synchronization": false, "child_model_per_gpu": 1},
+  "canonical_g1a": {"count": 1, "owner": "K1 authenticated Kaggle user", "transport": "private Kaggle dataset", "worker_access": "K2/K3 Can view collaborator access", "public_git_content": "seal/report/hash metadata only; no private binary payloads"},
   "coordination_plane": {
     "public_safe_evidence": "GitHub run-evidence/* branches",
     "private_material": "private Kaggle datasets",
-    "publication": "parent-only, allowlisted, secret/path audited, serialized, retried",
+    "publication": "parent-only, allowlisted, ancestry-checked, serialized, idempotent, incremental and final-roundtrip verified",
     "gpu_child_git_credentials": false
   },
   "normal_execution": [
@@ -59,20 +43,9 @@
     "K2/K3 consume and validate the published control plane",
     "all three accounts create/preflight their assigned private scientific durability targets",
     "six single-GPU scientific workers execute the frozen 11-state queues",
-    "terminal public-safe evidence is automatically audited and published per run"
+    "terminal public-safe evidence is automatically audited and parent-published per run"
   ],
-  "recovery": {
-    "same_notebook_rerun": true,
-    "scientific_resume_mode": "auto",
-    "checkpoint_backend": "private Kaggle dataset",
-    "dependency_wait_timeout_is_scientific_failure": false,
-    "publication_failure_invalidates_science": false,
-    "malformed_or_failed_run_is_resumable_without_investigation": false
-  },
-  "protected_surfaces": {
-    "v1_test_open_during_master_execution": false,
-    "track_b_open_during_master_execution": false,
-    "track_c_open_during_master_execution": false
-  },
+  "recovery": {"same_notebook_rerun": true, "scientific_resume_mode": "auto", "checkpoint_backend": "private Kaggle dataset", "dependency_wait_timeout_is_scientific_failure": false, "publication_failure_invalidates_science": false, "malformed_or_failed_run_is_resumable_without_investigation": false},
+  "protected_surfaces": {"v1_test_open_during_master_execution": false, "track_b_open_during_master_execution": false, "track_c_open_during_master_execution": false},
   "post_science_boundary": "Post-training direct/auxiliary/XAI/selection/21-state closure remains governed by the frozen scientific source and begins only after all 11 continuation states are terminal PASS."
 }
