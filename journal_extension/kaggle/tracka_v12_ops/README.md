@@ -2,8 +2,8 @@
 
 **Scientific source (immutable):** `9a72e9466a9a3e7429e0e36a028edac662f83146`  
 **Master distribution branch:** `ops-tracka-kaggle-master-v3-20260913`  
-**Pinned master runtime:** `f606311ec5faa2d4d1a2ea44b279357bfd15fb84`  
-**Immutable runtime branch:** `ops-tracka-kaggle-master-runtime-v3-f606311`  
+**Pinned master runtime:** `5654f35fa52c9b6ae6c28f062969c9ebd65af3fa`  
+**Immutable runtime branch:** `ops-tracka-kaggle-master-runtime-v3-fix1-5654f35`  
 **Authority:** `EAAI-JE-SDL-v2.1-QA`
 
 This branch is operator/distribution infrastructure only. It does not change the frozen scientific source.
@@ -16,9 +16,18 @@ Normal operation uses exactly three notebooks:
 - `TRACKA_V12_MASTER_K2.ipynb`
 - `TRACKA_V12_MASTER_K3.ipynb`
 
-Each notebook clones the immutable master runtime branch, verifies exact HEAD `f606311...` and a clean worktree, then the runtime checks out the scientific source separately at exact HEAD `9a72e946...`.
+Each notebook clones the immutable master runtime branch, verifies exact HEAD `5654f35...` and a clean worktree, then the runtime checks out the scientific source separately at exact HEAD `9a72e946...`.
 
-The previous eight stage notebooks are retained only on the v2 rollback branch `ops-tracka-kaggle-launch-20260913`; they are not canonical for new execution.
+The previous runtime `f606311...` remains a historical rollback point but is superseded for new execution by this input-preflight fix. The previous eight stage notebooks are retained only on the v2 rollback branch `ops-tracka-kaggle-launch-20260913`; they are not canonical for new execution.
+
+## Fail-fast input preflight
+
+Before cloning/installing the heavy frozen training stack, every master now verifies the exact frozen V1 manifest, class map and image root. K1 also verifies the complete historical principal G1 bundle at this stage. If the exact manifest/class map is absent or wrong, the operator reports mounted `/kaggle/input` entries plus likely metadata paths, byte counts and SHA-256 values and stops immediately.
+
+Required V1 identities:
+
+- manifest SHA256: `bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2`
+- class map SHA256: `46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2`
 
 ## Runtime behavior
 
@@ -41,7 +50,7 @@ All three accounts:
 - Internet: **ON**;
 - execution: **Save Version -> Save & Run All / Batch**;
 - secrets: `KAGGLE_USERNAME`, `KAGGLE_KEY`, `CROPCOP_GITHUB_TOKEN`;
-- attach the frozen CropCop V1 dataset.
+- attach the frozen CropCop V1 dataset containing the exact manifest, class map and complete image tree.
 
 K1 additionally attaches the complete historical principal G1 bundle.
 
