@@ -49,10 +49,15 @@ class PublicationV4Tests(unittest.TestCase):
             with mock.patch.object(pub4, "_validated_inputs", return_value=(root, [evidence])), \
                  mock.patch.object(pub4.v3, "load_github_token", return_value="token"), \
                  mock.patch.object(pub4, "_publication_api", return_value=(mock.Mock(), frozen)), \
-                 mock.patch.object(pub4, "remote_evidence_matches", side_effect=[False, True]):
+                 mock.patch.object(pub4, "remote_evidence_matches", side_effect=[False, False, True, True]):
                 branch = pub4.publish_public_files(root, "RUN-2", [evidence])
             self.assertEqual(branch, "run-evidence/RUN-2")
-            frozen.assert_called_once()
+            frozen.assert_called_once_with(
+                repo_dir=root,
+                source_git_sha=v3.SCIENCE_SHA,
+                run_id="RUN-2",
+                files=[str(evidence.resolve())],
+            )
 
     def test_publish_exception_after_remote_update_is_recovered(self):
         with tempfile.TemporaryDirectory() as td:
@@ -62,10 +67,48 @@ class PublicationV4Tests(unittest.TestCase):
             with mock.patch.object(pub4, "_validated_inputs", return_value=(root, [evidence])), \
                  mock.patch.object(pub4.v3, "load_github_token", return_value="token"), \
                  mock.patch.object(pub4, "_publication_api", return_value=(mock.Mock(), frozen)), \
-                 mock.patch.object(pub4, "remote_evidence_matches", side_effect=[False, True]):
+                 mock.patch.object(pub4, "remote_evidence_matches", side_effect=[False, False, True, True]):
                 branch = pub4.publish_public_files(root, "RUN-3", [evidence])
             self.assertEqual(branch, "run-evidence/RUN-3")
             frozen.assert_called_once()
+
+    def test_partial_multi_file_bundle_only_publishes_missing_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            already = self._file(root, "already.json", '{"status":"old"}\n')
+            missing = self._file(root, "missing.json", '{"status":"new"}\n')
+            frozen = mock.Mock(return_value="run-evidence/RUN-PARTIAL")
+            with mock.patch.object(pub4, "_validated_inputs", return_value=(root, [already, missing])), \
+                 mock.patch.object(pub4.v3, "load_github_token", return_value="token"), \
+                 mock.patch.object(pub4, "_publication_api", return_value=(mock.Mock(), frozen)), \
+                 mock.patch.object(pub4, "remote_evidence_matches", side_effect=[False, True, False, True, True]):
+                branch = pub4.publish_public_files(root, "RUN-PARTIAL", [already, missing])
+            self.assertEqual(branch, "run-evidence/RUN-PARTIAL")
+            frozen.assert_called_once_with(
+                repo_dir=root,
+                source_git_sha=v3.SCIENCE_SHA,
+                run_id="RUN-PARTIAL",
+                files=[str(missing.resolve())],
+            )
+
+    def test_multi_file_bundle_updates_only_changed_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            unchanged = self._file(root, "unchanged.json", '{"v":1}\n')
+            changed = self._file(root, "changed.json", '{"v":2}\n')
+            frozen = mock.Mock(return_value="run-evidence/RUN-CHANGED")
+            with mock.patch.object(pub4, "_validated_inputs", return_value=(root, [unchanged, changed])), \
+                 mock.patch.object(pub4.v3, "load_github_token", return_value="token"), \
+                 mock.patch.object(pub4, "_publication_api", return_value=(mock.Mock(), frozen)), \
+                 mock.patch.object(pub4, "remote_evidence_matches", side_effect=[False, True, False, True, True]):
+                branch = pub4.publish_public_files(root, "RUN-CHANGED", [unchanged, changed])
+            self.assertEqual(branch, "run-evidence/RUN-CHANGED")
+            frozen.assert_called_once_with(
+                repo_dir=root,
+                source_git_sha=v3.SCIENCE_SHA,
+                run_id="RUN-CHANGED",
+                files=[str(changed.resolve())],
+            )
 
     def test_wrong_remote_ancestry_fails_closed(self):
         fake = subprocess.CompletedProcess([], returncode=1, stdout=b"", stderr=b"")
