@@ -33,6 +33,7 @@ from cropcop_je.tracka_v12_orchestration import (
     scientific_run_id,
     validate_durable_map,
 )
+from cropcop_je.tracka_v12_runtime import load_and_validate_g1a_bundle
 
 RUNNER = SCRIPTS / "run_tracka_v12_training_v121.py"
 PUBLICATION_LOCK = threading.Lock()
@@ -77,8 +78,20 @@ def preflight(args) -> tuple[dict, dict, dict, dict, SessionBudget]:
     if gpu_errors:
         raise RuntimeError("account T4x2 preflight failed: " + "; ".join(gpu_errors))
 
+    g1a, g1a_errors = load_and_validate_g1a_bundle(
+        args.g1a_bundle,
+        expected_source_sha=args.source_git_commit,
+    )
+    if g1a_errors:
+        raise RuntimeError("account G1A preflight failed: " + "; ".join(g1a_errors))
+    g1a_sha = str(g1a.get("g1a_seal_sha256", ""))
+
     g2a = load_json(args.g2a_barrier)
-    g2_errors = validate_g2a_v122_barrier(g2a, expected_source_sha=args.source_git_commit)
+    g2_errors = validate_g2a_v122_barrier(
+        g2a,
+        expected_source_sha=args.source_git_commit,
+        expected_g1a_seal_sha256=g1a_sha,
+    )
     if g2_errors:
         raise RuntimeError("account G2A preflight failed: " + "; ".join(g2_errors))
 
@@ -91,12 +104,14 @@ def preflight(args) -> tuple[dict, dict, dict, dict, SessionBudget]:
         raise RuntimeError("account scheduler preflight failed: " + "; ".join(scheduler_errors))
     if scheduler.get("source_git_commit") != args.source_git_commit:
         raise RuntimeError("account scheduler source SHA mismatch")
+    if scheduler.get("g1a_seal_sha256") != g1a_sha:
+        raise RuntimeError("account scheduler/G1A binding mismatch")
 
     authorization = load_json(args.science_authorization)
     auth_errors = validate_science_authorization(
         authorization,
         expected_source_sha=args.source_git_commit,
-        expected_g1a_seal_sha256=scheduler["g1a_seal_sha256"],
+        expected_g1a_seal_sha256=g1a_sha,
         expected_g2a_barrier_sha256=g2a["barrier_sha256"],
         expected_scheduler_freeze_sha256=scheduler["scheduler_freeze_sha256"],
     )
@@ -109,6 +124,8 @@ def preflight(args) -> tuple[dict, dict, dict, dict, SessionBudget]:
         raise RuntimeError("account durable map invalid: " + "; ".join(durable_errors))
 
     account_manifest = account_queue_manifest(scheduler, args.account_id)
+    if set(account_manifest.get("slots", {})) != set(ACCOUNT_SLOTS[args.account_id]):
+        raise RuntimeError("account frozen queue does not match the two qualified physical slots")
     budget = SessionBudget.establish_global_clock(
         hard_limit_seconds=args.session_hard_limit_seconds,
         finalization_margin_seconds=args.finalization_margin_seconds,
