@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 import _bootstrap  # noqa: F401
 import seal_tracka_v12_science_go as base
@@ -10,6 +11,36 @@ from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.hashing import sha256_file
 from cropcop_je.tracka_v12_authorization import build_science_authorization, validate_science_authorization
 from cropcop_je.tracka_v12_g2a_durability import validate_g2a_durability_contract
+
+
+def compose_durability_bound_gate_inputs(
+    *,
+    source_git_commit: str,
+    code_attestation: dict[str, Any],
+    lock_runtime_attestation: dict[str, Any],
+    g1a: dict[str, Any],
+    g2a: dict[str, Any],
+    scheduler: dict[str, Any],
+    file_hashes: dict[str, str],
+) -> tuple[dict[str, str], dict[str, Any]]:
+    gates, bindings = base.compose_gate_inputs(
+        source_git_commit=source_git_commit,
+        code_attestation=code_attestation,
+        lock_runtime_attestation=lock_runtime_attestation,
+        g1a=g1a,
+        g2a=g2a,
+        scheduler=scheduler,
+        file_hashes=file_hashes,
+    )
+    durability = g2a.get("durability_contract") or {}
+    durability_errors = validate_g2a_durability_contract(
+        durability,
+        expected_input_summary_sha256=g2a.get("input_summary_sha256") or {},
+    )
+    if durability_errors:
+        raise ValueError("G2A durability qualification failed: " + "; ".join(durability_errors))
+    bindings["g2a"]["durability_contract_sha256"] = durability["durability_contract_sha256"]
+    return gates, bindings
 
 
 def main() -> int:
@@ -42,24 +73,18 @@ def main() -> int:
     payloads = {name: base.load_json(path) for name, path in paths.items()}
     file_hashes = {name: sha256_file(path) for name, path in paths.items()}
 
-    gates, bindings = base.compose_gate_inputs(
-        source_git_commit=source,
-        code_attestation=payloads["code_attestation"],
-        lock_runtime_attestation=payloads["lock_runtime_attestation"],
-        g1a=payloads["g1a"],
-        g2a=payloads["g2a"],
-        scheduler=payloads["scheduler"],
-        file_hashes=file_hashes,
-    )
-
-    durability = payloads["g2a"].get("durability_contract") or {}
-    durability_errors = validate_g2a_durability_contract(
-        durability,
-        expected_input_summary_sha256=payloads["g2a"].get("input_summary_sha256") or {},
-    )
-    if durability_errors:
-        raise SystemExit("G2A durability qualification failed: " + "; ".join(durability_errors))
-    bindings["g2a"]["durability_contract_sha256"] = durability["durability_contract_sha256"]
+    try:
+        gates, bindings = compose_durability_bound_gate_inputs(
+            source_git_commit=source,
+            code_attestation=payloads["code_attestation"],
+            lock_runtime_attestation=payloads["lock_runtime_attestation"],
+            g1a=payloads["g1a"],
+            g2a=payloads["g2a"],
+            scheduler=payloads["scheduler"],
+            file_hashes=file_hashes,
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
     authorization = build_science_authorization(
         source_git_commit=source,
