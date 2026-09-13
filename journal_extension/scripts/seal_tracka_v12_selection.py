@@ -144,20 +144,21 @@ def main() -> int:
         xai_gates=xai_gates,
     )
     if closure.get("status") != "PASS":
-        raise SystemExit("Track-A final selection closure failed: " + json.dumps(closure, sort_keys=True))
+        raise SystemExit("Track-A direct model-selection closure failed: " + json.dumps(closure, sort_keys=True))
 
     result = {
         **closure,
-        "closure_kind": "track_a_comprehensive_model_selection",
+        "closure_kind": "track_a_direct_model_selection",
         "evidence_index_sha256": sha256_file(index_path),
         "evidence_sha256": evidence_hashes,
         "selector_rows": [asdict(row) for row in selector_rows],
         "xai_target_paths_by_family_seed": xai_targets,
         "xai_methodological_warnings": xai_warnings,
         "state_gates": state_gates,
-        "track_b_handoff_authorized": True,
-        "track_c_handoff_authorized": True,
-        "note": "Track B/C may begin only for the sealed scientific-primary architecture (or separately frozen deployment tie gate if selection is CO_PRIMARY_TIE); neither Track-B nor Track-C evidence participated in this selection.",
+        "track_a_comprehensive_closed": False,
+        "track_b_handoff_authorized": False,
+        "track_c_handoff_authorized": False,
+        "note": "This artifact seals the scientific-primary selection among the 12 direct candidate states only. Track B/C remain closed until the separate comprehensive Track-A closure also verifies the R05 teacher-effect comparator and all six R12 mechanism states. Neither Track-B nor Track-C evidence participated in this selection.",
     }
     result["closure_sha256"] = sha256_json(result)
     atomic_write_json(args.output, result)
