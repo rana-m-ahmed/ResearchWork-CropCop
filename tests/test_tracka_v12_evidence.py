@@ -18,6 +18,7 @@ from cropcop_je.tracka_v12_evidence import (
     deterministic_subset,
     robustness_seed,
     summarize_prediction_rows,
+    validate_direct_state_evidence_bundle,
     validate_efficiency_identity,
     validate_selected_checkpoint_replay,
     xai_random_control_seed,
@@ -39,6 +40,75 @@ def prediction_rows(count=120):
             }
         )
     return rows
+
+
+def direct_bundle():
+    checkpoint = "c" * 64
+    source = "a" * 40
+    clean = {"row_count": 16368, "class_f1": [0.9] * 120}
+    cells = {
+        corruption: {
+            severity: {"row_count": 16368, "validation_macro_f1": 0.8}
+            for severity in ("1", "2", "3")
+        }
+        for corruption in ("brightness", "contrast", "gaussian_blur", "gaussian_noise_uint8", "jpeg")
+    }
+    direct = {
+        "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+        "source_git_commit": source,
+        "selected_checkpoint_sha256": checkpoint,
+        "status": "PASS",
+        "replay_gate": {"status": "PASS"},
+        "classwise_pass": True,
+        "robustness_pass": True,
+        "efficiency_pass": True,
+        "training_performed": False,
+        "optimizer_state_advanced": False,
+        "v1_test_accessed": False,
+        "external_surface_accessed": False,
+    }
+    robustness = {
+        "experiment_id": direct["experiment_id"],
+        "source_git_commit": source,
+        "selected_checkpoint_sha256": checkpoint,
+        "surface": "DS-V1-VAL",
+        "training_or_adaptation_performed": False,
+        "v1_test_accessed": False,
+        "external_surface_accessed": False,
+        "clean_summary": clean,
+        "cells": cells,
+        "private_row_evidence_sha256": {"clean": "1" * 64, **{f"cell-{i}": "1" * 64 for i in range(15)}},
+    }
+    efficiency = {
+        "experiment_id": direct["experiment_id"],
+        "source_git_commit": source,
+        "selected_checkpoint_sha256": checkpoint,
+        "training_performed": False,
+        "v1_test_accessed": False,
+        "external_surface_accessed": False,
+        "model_state_tensor_bytes_fp32": 100,
+        "total_parameter_count": 25,
+        "trainable_parameter_count": 25,
+        "input_resolution": 256,
+    }
+    xai = {
+        "experiment_id": direct["experiment_id"],
+        "source_git_commit": source,
+        "selected_checkpoint_sha256": checkpoint,
+        "status": "PASS",
+        "method": "Grad-CAM++",
+        "target_module_path": "blocks.13.norm1",
+        "sample_count": 240,
+        "randomization_subset_count": 30,
+        "flip_subset_count": 30,
+        "qualitative_panel_count": 12,
+        "training_or_adaptation_performed": False,
+        "xai_used_as_weighted_selector": False,
+        "v1_test_accessed": False,
+        "external_surface_accessed": False,
+        "private_evidence_sha256": {f"x{i}": "1" * 64 for i in range(4)},
+    }
+    return direct, robustness, efficiency, xai
 
 
 class TrackAV12EvidenceTests(unittest.TestCase):
@@ -121,6 +191,27 @@ class TrackAV12EvidenceTests(unittest.TestCase):
         row["S3"]["total_parameter_count"] = 26
         with self.assertRaises(ValueError):
             validate_efficiency_identity(row)
+
+    def test_direct_bundle_requires_same_checkpoint_and_source(self):
+        direct, robustness, efficiency, xai = direct_bundle()
+        self.assertEqual(validate_direct_state_evidence_bundle(
+            direct["experiment_id"], direct=direct, robustness=robustness, efficiency=efficiency, xai=xai
+        ), [])
+        xai["selected_checkpoint_sha256"] = "d" * 64
+        errors = validate_direct_state_evidence_bundle(
+            direct["experiment_id"], direct=direct, robustness=robustness, efficiency=efficiency, xai=xai
+        )
+        self.assertIn("selected_checkpoint_sha256_mismatch", errors)
+
+    def test_direct_bundle_rejects_incomplete_xai_and_robustness(self):
+        direct, robustness, efficiency, xai = direct_bundle()
+        xai["sample_count"] = 239
+        robustness["cells"]["jpeg"].pop("3")
+        errors = validate_direct_state_evidence_bundle(
+            direct["experiment_id"], direct=direct, robustness=robustness, efficiency=efficiency, xai=xai
+        )
+        self.assertIn("xai:sample_count", errors)
+        self.assertIn("robustness_severity_inventory:jpeg", errors)
 
     def test_final_closure_requires_all_twelve_direct_states_and_all_gates(self):
         state = {
