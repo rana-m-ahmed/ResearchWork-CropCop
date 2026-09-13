@@ -1,10 +1,10 @@
 {
-  "schema_version": "3.2",
+  "schema_version": "3.3",
   "status": "LOCKED_MASTER_OPERATOR_CONTRACT",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "operator_runtime_sha": "e8ea268729663a921db461b337a6cfe50e03630f",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix3-e8ea268",
+  "operator_runtime_sha": "0fe16df9e6782eae34a8c577b5ec13c6b50c2cc4",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix4-0fe16df",
   "dataset": {
     "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
     "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
@@ -25,27 +25,11 @@
     "bytes": 90095744,
     "hf_commit": "10143029df1b2df4c63623de6b740ecccb2b8ea2"
   },
-  "notebooks": [
-    "TRACKA_V12_MASTER_K1.ipynb",
-    "TRACKA_V12_MASTER_K2.ipynb",
-    "TRACKA_V12_MASTER_K3.ipynb"
-  ],
+  "notebooks": ["TRACKA_V12_MASTER_K1.ipynb", "TRACKA_V12_MASTER_K2.ipynb", "TRACKA_V12_MASTER_K3.ipynb"],
   "accounts": {
-    "K1": {
-      "g2a": ["CAL-EFFB0", "CAL-CNXTT"],
-      "coordinator": true,
-      "requires_historical_principal_g1_input": true
-    },
-    "K2": {
-      "g2a": ["CAL-MNV4-LOGITS", "CAL-MNV4-FEATURE"],
-      "coordinator": false,
-      "requires_historical_principal_g1_input": false
-    },
-    "K3": {
-      "g2a": ["CAL-R13"],
-      "coordinator": false,
-      "requires_historical_principal_g1_input": false
-    }
+    "K1": {"g2a": ["CAL-EFFB0", "CAL-CNXTT"], "coordinator": true, "requires_historical_principal_g1_input": true},
+    "K2": {"g2a": ["CAL-MNV4-LOGITS", "CAL-MNV4-FEATURE"], "coordinator": false, "requires_historical_principal_g1_input": false},
+    "K3": {"g2a": ["CAL-R13"], "coordinator": false, "requires_historical_principal_g1_input": false}
   },
   "kaggle": {
     "accelerator": "T4 x2",
@@ -61,9 +45,14 @@
     "parent_only": true,
     "serialized": true,
     "bounded_retry": true,
+    "byte_identical_remote_is_successful_noop": true,
+    "remote_branch_must_descend_from_science_sha": true,
+    "post_error_remote_roundtrip_recovery": true,
     "write_preflight_before_stack_repair": true,
     "public_safe_text_only": true,
     "scientific_child_git_credentials": false,
+    "frozen_scientific_runner_git_publication_enabled": false,
+    "scientific_evidence_published_by_master_parent": true,
     "publication_failure_invalidates_science": false
   },
   "pre_science_io": {
