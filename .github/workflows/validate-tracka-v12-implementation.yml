@@ -3,6 +3,7 @@ name: Validate Track-A v1.2 implementation
 on:
   pull_request:
     paths:
+      - 'journal_extension/TRACK_A_V12_EXECUTION_RUNBOOK.md'
       - 'journal_extension/configs/r06_effb0/**'
       - 'journal_extension/configs/r07_cnxtt/**'
       - 'journal_extension/configs/r12_logits/**'
