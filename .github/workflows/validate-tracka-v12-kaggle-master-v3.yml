@@ -1,0 +1,137 @@
+name: Validate Track-A v1.2 Kaggle master v3
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-v3-20260913
+    paths:
+      - 'journal_extension/kaggle/tracka_v12_ops/**'
+      - 'tests/test_tracka_v12_kaggle_ops.py'
+      - 'tests/test_tracka_v12_kaggle_ops_runtime.py'
+      - 'tests/test_tracka_v12_kaggle_master_v3.py'
+      - '.github/workflows/validate-tracka-v12-kaggle-master-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tracka-v12-kaggle-master-v3-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  master-operator-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout master operator branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12.13'
+
+      - name: Verify additive separation from frozen science source
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE_SHA='9a72e9466a9a3e7429e0e36a028edac662f83146'
+          git cat-file -e "${SCIENCE_SHA}^{commit}"
+          test "$(git merge-base "$SCIENCE_SHA" HEAD)" = "$SCIENCE_SHA"
+          git diff --name-status "$SCIENCE_SHA"..HEAD > /tmp/tracka_master_diff.txt
+          cat /tmp/tracka_master_diff.txt
+          python - <<'PY'
+          from pathlib import Path
+          allowed_exact = {
+              '.github/workflows/validate-tracka-v12-kaggle-ops.yml',
+              '.github/workflows/validate-tracka-v12-kaggle-master-v3.yml',
+              'tests/test_tracka_v12_kaggle_ops.py',
+              'tests/test_tracka_v12_kaggle_ops_runtime.py',
+              'tests/test_tracka_v12_kaggle_master_v3.py',
+          }
+          allowed_prefix = 'journal_extension/kaggle/tracka_v12_ops/'
+          rows = []
+          for raw in Path('/tmp/tracka_master_diff.txt').read_text(encoding='utf-8').splitlines():
+              if not raw.strip():
+                  continue
+              parts = raw.split('\t')
+              status, paths = parts[0], parts[1:]
+              rows.append((status, paths))
+              if status != 'A':
+                  raise SystemExit(f'master operator branch is not additive-only: {raw}')
+              for path in paths:
+                  if path not in allowed_exact and not path.startswith(allowed_prefix):
+                      raise SystemExit(f'master operator branch changed non-operator path: {path}')
+          if not rows:
+              raise SystemExit('master operator diff unexpectedly empty')
+          print(f'additive master-operator diff PASS: {len(rows)} files')
+          PY
+
+      - name: Compile and import master runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile journal_extension/kaggle/tracka_v12_ops/*.py
+          python -m py_compile tests/test_tracka_v12_kaggle_ops.py tests/test_tracka_v12_kaggle_ops_runtime.py tests/test_tracka_v12_kaggle_master_v3.py
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          root = Path.cwd()
+          for path in (root/'journal_extension/kaggle/tracka_v12_ops', root/'journal_extension/src'):
+              sys.path.insert(0, str(path))
+          import tracka_v12_kaggle_operator_v3
+          import master_attestations
+          import master_g1a
+          import master_g2a
+          import master_control
+          import master_science
+          import master_account_driver
+          print('master runtime import graph PASS')
+          PY
+
+      - name: Run v2 regression and v3 failure-injection tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_tracka_v12_kaggle_ops \
+            tests.test_tracka_v12_kaggle_ops_runtime \
+            tests.test_tracka_v12_kaggle_master_v3
+
+      - name: Verify packaged exact-head attestations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          root = Path.cwd()
+          sys.path.insert(0, str(root/'journal_extension/kaggle/tracka_v12_ops'))
+          sys.path.insert(0, str(root/'journal_extension/src'))
+          from master_attestations import verified_attestation_paths
+          from tracka_v12_kaggle_operator_v3 import load_json
+          code, lock = verified_attestation_paths()
+          c, l = load_json(code), load_json(lock)
+          assert c['status'] == 'PASS' and l['status'] == 'PASS'
+          assert c['github_actions'] is True and l['github_actions'] is True
+          assert l['science_authorized'] is False
+          print('packaged exact-head attestations PASS')
+          PY
+
+      - name: Reject tracked binary or credential artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import subprocess
+          files = subprocess.check_output(['git', 'ls-files', 'journal_extension/kaggle/tracka_v12_ops'], text=True).splitlines()
+          forbidden_suffixes = ('.pt', '.pth', '.ckpt', '.pte', '.safetensors', '.zip', '.tar', '.gz', '.7z', '.env', '.key', '.pem')
+          bad = [path for path in files if path.lower().endswith(forbidden_suffixes)]
+          if bad:
+              raise SystemExit('forbidden master-operator artifacts tracked: ' + ', '.join(bad))
+          print('master-operator artifact hygiene PASS')
+          PY
