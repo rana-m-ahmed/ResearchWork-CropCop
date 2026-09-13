@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 import unittest
@@ -14,6 +15,8 @@ for path in (OPS, SRC):
         sys.path.insert(0, str(path))
 
 import tracka_v12_kaggle_operator_v3 as v3
+import master_account_driver
+import master_g1a
 import master_preflight
 from master_attestations import verified_attestation_paths
 from master_control import CONTROL_FILES
@@ -166,13 +169,32 @@ class MasterOperatorV3Tests(unittest.TestCase):
         self.assertTrue(all(3 <= len(slug) <= 50 for slug in slugs))
         self.assertEqual(slugs[0], v3.kaggle_safe_dataset_slug("cropcop", identities[0]))
 
-    def _fake_manifest(self, path: Path) -> list[str]:
-        rels = [f"train/class-a/image-{index}.jpg" for index in range(16)]
+    def _fake_manifest(self, path: Path, *, include_test: bool = True) -> dict[str, list[str]]:
+        rows: list[tuple[str, str]] = []
+        rels = {"train": [], "val": [], "test": []}
+        for split in ("train", "val"):
+            for index in range(8):
+                rel = f"{split}/class-a/{split}-{index}.jpg"
+                rels[split].append(rel)
+                rows.append((split, rel))
+        if include_test:
+            rel = "test/class-a/protected-test-not-required.jpg"
+            rels["test"].append(rel)
+            rows.append(("test", rel))
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("portable_relpath\n" + "\n".join(rels) + "\n", encoding="utf-8")
+        body = ["split,portable_relpath"] + [f"{split},{rel}" for split, rel in rows]
+        path.write_text("\n".join(body) + "\n", encoding="utf-8")
         return rels
 
-    def test_duplicate_exact_manifest_selects_structurally_nearest_dataset_copy(self):
+    @staticmethod
+    def _materialize_train_val(root: Path, rels: dict[str, list[str]]) -> None:
+        for split in ("train", "val"):
+            for rel in rels[split]:
+                image = root / rel
+                image.parent.mkdir(parents=True, exist_ok=True)
+                image.write_bytes(b"x")
+
+    def test_realistic_duplicate_manifest_resolves_nested_images_root(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             package = root / "datasets" / "owner" / "cropcop"
@@ -183,12 +205,13 @@ class MasterOperatorV3Tests(unittest.TestCase):
             rels = self._fake_manifest(actual_manifest)
             report_manifest.parent.mkdir(parents=True, exist_ok=True)
             report_manifest.write_bytes(actual_manifest.read_bytes())
-            for rel in rels:
-                image = actual_root / rel
-                image.parent.mkdir(parents=True, exist_ok=True)
-                image.write_bytes(b"x")
-            actual_class = actual_root / "audit" / "classes.json"
-            report_class = report_root / "audit" / "classes.json"
+
+            nested_images = actual_root / "images"
+            self._materialize_train_val(nested_images, rels)
+            # Deliberately DO NOT materialize the test path: preflight must not open protected V1-test.
+
+            actual_class = actual_root / "audit" / "class_to_idx.json"
+            report_class = report_root / "audit" / "class_to_idx.json"
             actual_class.write_text("{}\n", encoding="utf-8")
             report_class.write_bytes(actual_class.read_bytes())
 
@@ -197,39 +220,61 @@ class MasterOperatorV3Tests(unittest.TestCase):
                 path = Path(path)
                 if path.name == "final_manifest.csv":
                     return v3.MANIFEST_SHA256
-                if path.name == "classes.json":
+                if path.name == "class_to_idx.json":
                     return v3.CLASS_MAP_SHA256
                 return real_sha(path)
 
-            with mock.patch.object(master_preflight, "sha256_file", side_effect=frozen_sha):
+            with mock.patch.object(master_preflight, "sha256_file", side_effect=frozen_sha), \
+                 mock.patch.dict(os.environ, {}, clear=False):
+                for key in ("CROPCOP_MANIFEST", "CROPCOP_CLASS_MAP", "CROPCOP_IMAGE_ROOT"):
+                    os.environ.pop(key, None)
                 manifest, class_map, image_root = master_preflight.resolve_master_inputs("K2", root)
+
             self.assertEqual(manifest, actual_manifest.resolve())
             self.assertEqual(class_map, actual_class.resolve())
-            self.assertEqual(image_root, actual_root.resolve())
+            self.assertEqual(image_root, nested_images.resolve())
+            self.assertFalse((nested_images / rels["test"][0]).exists())
 
-    def test_conflicting_equally_qualified_manifest_roots_fail_closed(self):
+    def test_conflicting_equally_ranked_nested_roots_fail_closed(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
-            roots = [root / "datasets" / "a" / "d1", root / "datasets" / "b" / "d2"]
-            manifests = []
-            for data_root in roots:
+            dataset_roots = [
+                root / "datasets" / "owner-a" / "copy" / "CropCop_Final_v1",
+                root / "datasets" / "owner-b" / "copy" / "CropCop_Final_v1",
+            ]
+            for data_root in dataset_roots:
                 manifest = data_root / "audit" / "final_manifest.csv"
-                rels = self._fake_manifest(manifest)
-                for rel in rels:
-                    image = data_root / rel
-                    image.parent.mkdir(parents=True, exist_ok=True)
-                    image.write_bytes(b"x")
-                manifests.append(manifest)
+                rels = self._fake_manifest(manifest, include_test=False)
+                self._materialize_train_val(data_root / "images", rels)
+
             real_sha = master_preflight.sha256_file
             def frozen_sha(path):
                 path = Path(path)
                 if path.name == "final_manifest.csv":
                     return v3.MANIFEST_SHA256
                 return real_sha(path)
-            with mock.patch.object(master_preflight, "sha256_file", side_effect=frozen_sha):
+
+            with mock.patch.object(master_preflight, "sha256_file", side_effect=frozen_sha), \
+                 mock.patch.dict(os.environ, {}, clear=False):
+                os.environ.pop("CROPCOP_MANIFEST", None)
+                os.environ.pop("CROPCOP_IMAGE_ROOT", None)
                 with self.assertRaises(v3.OperatorError) as ctx:
                     master_preflight._resolve_manifest_and_image_root(root)
             self.assertIn("different image roots", str(ctx.exception))
+
+    def test_manual_image_root_override_is_structure_verified(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            manifest = root / "audit" / "final_manifest.csv"
+            rels = self._fake_manifest(manifest, include_test=False)
+            good = root / "nested" / "images"
+            self._materialize_train_val(good, rels)
+            bad = root / "bad"
+            bad.mkdir()
+            with self.assertRaises(v3.OperatorError):
+                master_preflight._qualify_image_root(manifest, [good], override=str(bad))
+            resolved, _ = master_preflight._qualify_image_root(manifest, [good], override=str(good))
+            self.assertEqual(resolved, good.resolve())
 
     def test_input_diagnostics_report_wrong_candidate_hash(self):
         with tempfile.TemporaryDirectory() as td:
@@ -252,7 +297,7 @@ class MasterOperatorV3Tests(unittest.TestCase):
                 master_preflight.resolve_master_inputs("K1", td)
             text = str(ctx.exception)
             self.assertIn("before dependency installation", text)
-            self.assertIn("attach the frozen CropCop V1 dataset", text)
+            self.assertIn("keep the frozen V1 dataset attached", text)
 
     def test_k1_principal_g1_preflight_is_required(self):
         with tempfile.TemporaryDirectory() as td, \
@@ -263,6 +308,25 @@ class MasterOperatorV3Tests(unittest.TestCase):
                 master_preflight.resolve_master_inputs("K1", td)
             self.assertIn("historical principal-G1 preflight failed", str(ctx.exception))
 
+    def test_resolved_inputs_are_bound_for_all_downstream_helpers(self):
+        manifest = Path("/canonical/final_manifest.csv")
+        class_map = Path("/canonical/class_to_idx.json")
+        image_root = Path("/canonical/images")
+        principal = Path("/canonical/G1_PACKAGE")
+        with tempfile.TemporaryDirectory() as td, \
+             mock.patch.object(master_preflight, "_resolve_manifest_and_image_root", return_value=(manifest, image_root)), \
+             mock.patch.object(master_preflight, "_resolve_class_map", return_value=class_map), \
+             mock.patch.object(master_preflight, "_resolve_principal_g1_fast", return_value=principal), \
+             mock.patch.dict(os.environ, {}, clear=False):
+            for key in ("CROPCOP_MANIFEST", "CROPCOP_CLASS_MAP", "CROPCOP_IMAGE_ROOT", "CROPCOP_PRINCIPAL_G1"):
+                os.environ.pop(key, None)
+            result = master_preflight.resolve_master_inputs("K1", td)
+            self.assertEqual(result, (manifest, class_map, image_root))
+            self.assertEqual(os.environ["CROPCOP_MANIFEST"], str(manifest))
+            self.assertEqual(os.environ["CROPCOP_CLASS_MAP"], str(class_map))
+            self.assertEqual(os.environ["CROPCOP_IMAGE_ROOT"], str(image_root))
+            self.assertEqual(os.environ["CROPCOP_PRINCIPAL_G1"], str(principal))
+
     def test_worker_does_not_require_principal_g1_mount(self):
         with tempfile.TemporaryDirectory() as td, \
              mock.patch.object(master_preflight, "_resolve_manifest_and_image_root", return_value=(Path("/m"), Path("/images"))), \
@@ -272,10 +336,36 @@ class MasterOperatorV3Tests(unittest.TestCase):
             self.assertEqual(result, (Path("/m"), Path("/c"), Path("/images")))
             principal.assert_not_called()
 
-    def test_master_driver_checks_inputs_before_stack_install(self):
+    def test_science_checkout_retry_is_bounded(self):
+        fn = mock.Mock(side_effect=[v3.OperatorError("network"), Path("/repo")])
+        with mock.patch.object(master_account_driver.time, "sleep") as sleep:
+            result = master_account_driver.retry_operator_call("checkout", fn, attempts=2)
+        self.assertEqual(result, Path("/repo"))
+        self.assertEqual(fn.call_count, 2)
+        sleep.assert_called_once_with(5)
+
+    def test_g1a_upstream_download_retry_is_bounded(self):
+        fn = mock.Mock(side_effect=[RuntimeError("transient"), {"ok": True}])
+        with mock.patch.object(master_g1a.time, "sleep") as sleep:
+            result = master_g1a._retry_pre_science_io("upstream", fn, attempts=2)
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(fn.call_count, 2)
+        sleep.assert_called_once_with(10)
+
+    def test_master_driver_orders_fail_fast_gates_before_stack_install(self):
         source = (OPS / "master_account_driver.py").read_text(encoding="utf-8")
-        self.assertLess(source.index("resolve_master_inputs(account_id)"), source.index("ensure_science_checkout()"))
-        self.assertLess(source.index("resolve_master_inputs(account_id)"), source.index("ensure_locked_stack(repo)"))
+        input_pos = source.index("resolve_master_inputs(account_id)")
+        checkout_pos = source.index('retry_operator_call("Frozen science checkout"')
+        github_pos = source.index('retry_operator_call("GitHub evidence write preflight"')
+        stack_pos = source.index("ensure_locked_stack(repo)")
+        self.assertLess(input_pos, checkout_pos)
+        self.assertLess(checkout_pos, github_pos)
+        self.assertLess(github_pos, stack_pos)
+
+    def test_g1a_build_reuses_preflight_bound_principal_path(self):
+        source = (OPS / "master_g1a.py").read_text(encoding="utf-8")
+        self.assertIn('resolve_principal_g1_bundle(override=os.environ.get("CROPCOP_PRINCIPAL_G1", ""))', source)
+        self.assertIn("_retry_pre_science_io", source)
 
 
 if __name__ == "__main__":
