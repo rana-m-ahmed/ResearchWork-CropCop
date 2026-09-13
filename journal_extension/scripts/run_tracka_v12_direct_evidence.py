@@ -206,11 +206,16 @@ def main() -> int:
     if replay_gate["status"] != "PASS":
         raise SystemExit("selected-checkpoint validation replay failed frozen metric tolerance")
 
+    source_git_commit = str(run_record["source_git_commit"])
     efficiency = efficiency_evidence(model)
     atomic_write_json(public / "efficiency.json", {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "experiment_id": run_record["experiment_id"],
+        "source_git_commit": source_git_commit,
         "selected_checkpoint_sha256": selected_sha,
+        "training_performed": False,
+        "v1_test_accessed": False,
+        "external_surface_accessed": False,
         **efficiency,
     })
 
@@ -230,8 +235,9 @@ def main() -> int:
 
     robustness = state_robustness_summary(float(clean_summary["validation_macro_f1"]), cell_summaries)
     robustness_public = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "experiment_id": run_record["experiment_id"],
+        "source_git_commit": source_git_commit,
         "selected_checkpoint_sha256": selected_sha,
         "surface": "DS-V1-VAL",
         "training_or_adaptation_performed": False,
@@ -245,11 +251,11 @@ def main() -> int:
     atomic_write_json(public / "robustness_and_replay.json", robustness_public)
 
     final = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "status": "PASS",
         "experiment_id": run_record["experiment_id"],
         "run_id": run_record["run_id"],
-        "source_git_commit": run_record["source_git_commit"],
+        "source_git_commit": source_git_commit,
         "selected_checkpoint_sha256": selected_sha,
         "selected_checkpoint_file_sha256": sha256_file(checkpoint_path),
         "selected_checkpoint_epoch": int(checkpoint_payload["epoch"]),
