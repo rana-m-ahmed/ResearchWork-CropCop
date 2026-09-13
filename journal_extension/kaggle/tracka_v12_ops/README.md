@@ -2,8 +2,8 @@
 
 **Scientific source (immutable):** `9a72e9466a9a3e7429e0e36a028edac662f83146`  
 **Master distribution branch:** `ops-tracka-kaggle-master-v3-20260913`  
-**Pinned master runtime:** `9fdbba6f81bfa2f1ce235b3d31ee52a75719a779`  
-**Immutable runtime branch:** `ops-tracka-kaggle-master-runtime-v3-fix2-9fdbba6`  
+**Pinned master runtime:** `e8ea268729663a921db461b337a6cfe50e03630f`  
+**Immutable runtime branch:** `ops-tracka-kaggle-master-runtime-v3-fix3-e8ea268`  
 **Authority:** `EAAI-JE-SDL-v2.1-QA`
 
 This branch is operator/distribution infrastructure only. It does not change the frozen scientific source.
@@ -16,20 +16,22 @@ Normal operation uses exactly three notebooks:
 - `TRACKA_V12_MASTER_K2.ipynb`
 - `TRACKA_V12_MASTER_K3.ipynb`
 
-Each notebook clones the immutable master runtime branch, verifies exact HEAD `9fdbba6...` and a clean worktree, then the runtime checks out the scientific source separately at exact HEAD `9a72e946...`.
+Each notebook clones the immutable master runtime branch, verifies exact HEAD `e8ea268...` and a clean worktree, then the runtime checks out the scientific source separately at exact HEAD `9a72e946...`.
 
-The previous runtime `5654f35...` remains a historical rollback point but is superseded for new execution by the duplicate-safe bounded preflight fix. The previous eight stage notebooks are retained only on the v2 rollback branch `ops-tracka-kaggle-launch-20260913`; they are not canonical for new execution.
+The previous runtimes remain historical rollback points; new execution uses fix3. The previous eight stage notebooks are retained only on the v2 rollback branch `ops-tracka-kaggle-launch-20260913`; they are not canonical for new execution.
 
 ## Fail-fast input preflight
 
-Before cloning/installing the heavy frozen training stack, every master verifies the exact frozen V1 manifest, class map and image root. K1 also verifies the complete historical principal G1 bundle at this stage.
+Before dependency repair, every master verifies the exact frozen V1 manifest, class map and image root. K1 also verifies the complete historical principal G1 bundle.
 
-The resolver now uses bounded shallow metadata discovery instead of a broad recursive hash sweep. Byte-identical copies of the frozen metadata are allowed when they have the exact frozen SHA. If the manifest exists in both the certification-report tree and the actual dataset tree, the resolver selects the copy structurally nearest to the image tree. If identical manifests independently qualify different image roots, execution fails closed and requires an explicit override.
+The resolver matches the real Kaggle packaging: metadata may live under `audit/`, while images may live in a nested directory whose direct children are `train/` and `val/`. It discovers such split roots with bounded directory traversal, validates only frozen TRAIN/VAL manifest paths, accepts byte-identical manifest/class-map copies only under their exact frozen hashes, and chooses the metadata/root pairing with strongest dataset structural affinity. It deliberately does not require/open V1-test images for root qualification. Conflicting equally qualified roots still fail closed. Exact resolved paths are exported for all downstream helpers so later stages cannot rediscover a different duplicate.
 
 Required V1 identities:
 
 - manifest SHA256: `bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2`
 - class map SHA256: `46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2`
+
+GitHub evidence write authorization is checked before heavyweight dependency repair. Deterministic pre-science clone and upstream TorchVision/R13 downloads use bounded retry; scientific result-producing steps do not gain a generic retry loop.
 
 ## Runtime behavior
 
