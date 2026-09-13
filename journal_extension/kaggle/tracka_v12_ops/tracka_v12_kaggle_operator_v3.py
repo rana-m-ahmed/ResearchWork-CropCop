@@ -7,6 +7,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -18,6 +19,7 @@ MASTER_WAIT_POLL_SECONDS = 30
 MASTER_WAIT_MAX_SECONDS = 30 * 60
 CODE_ATTESTATION_FILE_SHA256 = "b5421c6c91b7699651ac13c7352b7be9cb64735802d4a7d07bfb5282749f9212"
 LOCK_RUNTIME_ATTESTATION_FILE_SHA256 = "fdf20eeea650215b61ca4b9201e78196d73bb7a7258adb4d0bd383d413198087"
+_PUBLICATION_LOCK = threading.Lock()
 
 
 def assert_kaggle_batch() -> None:
@@ -27,6 +29,17 @@ def assert_kaggle_batch() -> None:
             "Canonical Track-A execution must use Kaggle Save Version -> Save & Run All / Batch. "
             f"Observed KAGGLE_KERNEL_RUN_TYPE={run_type or '<missing>'}. Interactive runs are diagnostic only."
         )
+
+
+def ensure_locked_stack(repo: str | Path) -> dict:
+    """Reuse an already-exact environment; install the frozen stack only when verification fails."""
+    try:
+        return verify_locked_stack(repo)
+    except OperatorError as first_error:
+        print(f"Frozen stack verification requires repair: {first_error}")
+        print("Installing exact repository training lock once, then re-verifying.")
+        install_locked_stack(repo)
+        return verify_locked_stack(repo)
 
 
 def load_github_token() -> str:
@@ -113,19 +126,44 @@ def account_public_run_id(account_id: str) -> str:
     return public_run_id(f"ACCOUNT-{account_id}")
 
 
-def publish_public_files(repo: str | Path, run_id: str, files: list[str | Path]) -> str:
+def publish_public_files(
+    repo: str | Path,
+    run_id: str,
+    files: list[str | Path],
+    *,
+    attempts: int = 3,
+) -> str:
+    """Serialize parent-side Git publication and retry transient failures without exposing credentials to children."""
+    if attempts < 1:
+        raise OperatorError("publication attempts must be positive")
     load_github_token()
     src = Path(repo).resolve() / "journal_extension" / "src"
     if str(src) not in sys.path:
         sys.path.insert(0, str(src))
     from cropcop_je.publication import publish_to_github_branch
 
-    return publish_to_github_branch(
-        repo_dir=Path(repo).resolve(),
-        source_git_sha=SCIENCE_SHA,
-        run_id=run_id,
-        files=[str(Path(p).resolve()) for p in files],
-    )
+    last_error: Exception | None = None
+    with _PUBLICATION_LOCK:
+        for attempt in range(1, attempts + 1):
+            try:
+                return publish_to_github_branch(
+                    repo_dir=Path(repo).resolve(),
+                    source_git_sha=SCIENCE_SHA,
+                    run_id=run_id,
+                    files=[str(Path(p).resolve()) for p in files],
+                )
+            except Exception as exc:
+                last_error = exc
+                if attempt == attempts:
+                    break
+                delay = (5, 15, 30)[min(attempt - 1, 2)]
+                print(
+                    f"public evidence publication attempt {attempt}/{attempts} failed for {run_id}: "
+                    f"{type(exc).__name__}; retrying in {delay}s"
+                )
+                time.sleep(delay)
+    assert last_error is not None
+    raise last_error
 
 
 def _fetch_evidence_branch(repo: str | Path, run_id: str) -> str | None:
