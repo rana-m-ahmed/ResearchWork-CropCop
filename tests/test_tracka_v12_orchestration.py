@@ -103,6 +103,22 @@ def durable_map():
     }
 
 
+def terminal_results(manifest: dict, account: str) -> dict[str, list[dict]]:
+    output = {}
+    for slot in ACCOUNT_SLOTS[account]:
+        output[slot] = [
+            {
+                "experiment_id": experiment_id,
+                "return_code": 0,
+                "run_status": "PASS",
+                "continuation_required": False,
+                "publication": {"status": "NOT_REQUESTED"},
+            }
+            for experiment_id in manifest["slots"][slot]["queue"]
+        ]
+    return output
+
+
 class TrackAV12OrchestrationTests(unittest.TestCase):
     def test_account_slot_partition_is_exact_six_slots(self):
         self.assertEqual(set(ACCOUNT_SLOTS), {"K1", "K2", "K3"})
@@ -230,6 +246,67 @@ class TrackAV12OrchestrationTests(unittest.TestCase):
             (private / "x.ckpt").write_bytes(b"x")
             names = {path.name for path in parent.public_evidence_candidates(root)}
             self.assertEqual(names, {"run_record.json", "metrics.json", "segments.jsonl"})
+
+    def test_account_completion_requires_every_frozen_queue_item_terminal(self):
+        freeze = scheduler()
+        manifest = account_queue_manifest(freeze, "K1")
+        results = terminal_results(manifest, "K1")
+        complete = parent.evaluate_account_completion(
+            account_id="K1",
+            account_manifest=manifest,
+            results=results,
+            worker_errors={},
+            publish_requested=False,
+        )
+        self.assertEqual(complete["status"], "PASS")
+        self.assertTrue(complete["science_complete"])
+        slot = ACCOUNT_SLOTS["K1"][0]
+        results[slot] = results[slot][:-1]
+        incomplete = parent.evaluate_account_completion(
+            account_id="K1",
+            account_manifest=manifest,
+            results=results,
+            worker_errors={},
+            publish_requested=False,
+        )
+        self.assertEqual(incomplete["status"], "ATTENTION_REQUIRED")
+        self.assertFalse(incomplete["science_complete"])
+        self.assertTrue(any("incomplete_queue" in error for error in incomplete["execution_errors"]))
+
+    def test_account_completion_rejects_missing_slot_and_worker_exception(self):
+        freeze = scheduler()
+        manifest = account_queue_manifest(freeze, "K2")
+        results = terminal_results(manifest, "K2")
+        missing_slot = ACCOUNT_SLOTS["K2"][1]
+        results.pop(missing_slot)
+        outcome = parent.evaluate_account_completion(
+            account_id="K2",
+            account_manifest=manifest,
+            results=results,
+            worker_errors={missing_slot: {"type": "RuntimeError", "reason": "boom"}},
+            publish_requested=False,
+        )
+        self.assertEqual(outcome["status"], "ATTENTION_REQUIRED")
+        self.assertFalse(outcome["science_complete"])
+        self.assertIn("missing_or_extra_slot_results", outcome["execution_errors"])
+        self.assertIn(f"{missing_slot}:worker_exception", outcome["execution_errors"])
+
+    def test_requested_publication_failure_never_reports_pass(self):
+        freeze = scheduler()
+        manifest = account_queue_manifest(freeze, "K3")
+        results = terminal_results(manifest, "K3")
+        slot = ACCOUNT_SLOTS["K3"][0]
+        results[slot][0]["publication"] = {"status": "REPAIR_REQUIRED"}
+        outcome = parent.evaluate_account_completion(
+            account_id="K3",
+            account_manifest=manifest,
+            results=results,
+            worker_errors={},
+            publish_requested=True,
+        )
+        self.assertTrue(outcome["science_complete"])
+        self.assertEqual(outcome["status"], "ATTENTION_REQUIRED")
+        self.assertTrue(outcome["publication_repairs"])
 
 
 if __name__ == "__main__":
