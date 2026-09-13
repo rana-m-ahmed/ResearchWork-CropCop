@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.2.2",
+  "plan_id": "TRACKA-A1-PARALLEL-EXECUTION-V1.2.2",
+  "status": "PRE_SCIENCE_EXECUTION_POLICY",
+  "science_authorized": false,
+  "supersedes_only": "The runtime-cost estimator used to order the already frozen 11-state queue in parallel_execution_plan_v1_2_1.json. Scientific experiment IDs, seeds, initializations, configs, checkpoint selection and analysis semantics are unchanged.",
+  "resource_envelope": {
+    "kaggle_accounts": 3,
+    "gpus_per_account": 2,
+    "gpu_type": "NVIDIA T4",
+    "total_concurrent_gpu_slots": 6,
+    "process_model": "one independent single-GPU child per slot"
+  },
+  "qualification_profiles": [
+    "CAL-EFFB0",
+    "CAL-CNXTT",
+    "CAL-MNV4-LOGITS",
+    "CAL-MNV4-FEATURE",
+    "CAL-R13"
+  ],
+  "allowed_pre_science_measurements": [
+    "steady-state wall seconds per optimizer step after subtracting checkpoint save/load time",
+    "validation forward end-to-end examples per second with labels/metrics unopened",
+    "single checkpoint save duration",
+    "durable sync duration",
+    "peak allocated GPU memory",
+    "resume/load duration"
+  ],
+  "forbidden_pre_science_measurements": [
+    "validation macro-F1",
+    "validation balanced accuracy",
+    "validation NLL",
+    "validation accuracy",
+    "classwise metrics",
+    "corruption metrics",
+    "XAI outputs",
+    "V1-test outputs",
+    "external predictions"
+  ],
+  "forecast_contract": {
+    "train_rows": 76376,
+    "validation_rows": 16368,
+    "micro_batch_size": 16,
+    "gradient_accumulation": 4,
+    "epochs": 30,
+    "checkpoint_every_optimizer_steps": 250,
+    "optimizer_step_attempts_per_epoch": 1194,
+    "optimizer_step_attempts_per_30_epochs": 35820,
+    "validation_passes": 30,
+    "validation_examples_total": 491040,
+    "checkpoint_event_upper_bound": 203,
+    "checkpoint_event_upper_bound_definition": "floor(35820/250) periodic latest writes + 30 epoch-end latest writes + at most 30 selected-checkpoint writes",
+    "estimated_full_run_seconds_upper_bound": "steady_sec_per_optimizer_step * 35820 + 491040 / validation_end_to_end_examples_per_second + checkpoint_save_seconds_per_event * 203 + durable_sync_seconds_per_segment",
+    "purpose": "Scheduling only. Forecast values are never model-selection evidence and do not change scientific training."
+  },
+  "priority_freeze_algorithm": {
+    "name": "deterministic_longest_processing_time_first",
+    "state_cost": "estimated_full_run_seconds_upper_bound from the sealed v1.2.2 profile qualification",
+    "tie_break": "experiment_id ascending",
+    "initial_dispatch": "assign first six states to K1/GPU0, K1/GPU1, K2/GPU0, K2/GPU1, K3/GPU0, K3/GPU1 in that order",
+    "continuation_dispatch": "next queued state goes to the first qualified physical slot that becomes free; simultaneous-free ties use fixed slot order",
+    "scientific_results_may_change_priority": false
+  },
+  "placement_and_recovery": {
+    "checkpoint_scientific_identity": "stable logical experiment lane independent of physical Kaggle account/GPU",
+    "physical_slot": "telemetry and orchestration only",
+    "cross_slot_resume": "authorized after exact durable-checkpoint identity/hash verification on another qualified T4",
+    "seed_or_initialization_change_on_migration": false
+  }
+}
