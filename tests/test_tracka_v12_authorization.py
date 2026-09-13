@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import sys
 import unittest
 from pathlib import Path
@@ -11,6 +10,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from cropcop_je.tracka_v12_authorization import (  # noqa: E402
+    REQUIRED_PRE_SCIENCE_GATES,
     build_science_authorization,
     validate_science_authorization,
 )
@@ -18,19 +18,10 @@ from cropcop_je.tracka_v12_authorization import (  # noqa: E402
 
 class TrackAV12AuthorizationTests(unittest.TestCase):
     def gates(self):
-        return {
-            "exact_head_ci": "PASS",
-            "immutable_v12_lock": "PASS",
-            "v121_runtime_qualification": "PASS",
-            "config_contract_and_failure_injection": "PASS",
-            "principal_science_diff": "PASS",
-            "secondary_science_diff": "PASS",
-            "g1a": "PASS",
-            "g2a": "PASS",
-            "scheduler_freeze": "PASS",
-            "analysis_selector_implementation": "PASS",
-            "checkpoint_recovery_contract": "PASS",
-        }
+        return {name: "PASS" for name in REQUIRED_PRE_SCIENCE_GATES}
+
+    def bindings(self):
+        return {name: {"evidence": f"synthetic:{name}"} for name in REQUIRED_PRE_SCIENCE_GATES}
 
     def build(self):
         return build_science_authorization(
@@ -39,7 +30,7 @@ class TrackAV12AuthorizationTests(unittest.TestCase):
             g2a_barrier_sha256="3" * 64,
             scheduler_freeze_sha256="4" * 64,
             pre_science_gates=self.gates(),
-            evidence_bindings={"qa": "synthetic-test"},
+            evidence_bindings=self.bindings(),
         )
 
     def validate(self, payload):
@@ -54,6 +45,12 @@ class TrackAV12AuthorizationTests(unittest.TestCase):
     def test_valid_authorization_passes(self):
         self.assertEqual(self.validate(self.build()), [])
 
+    def test_r13_training_is_in_authorized_inventory(self):
+        payload = self.build()
+        self.assertIn("R13-VIT-DLITTLE-DIFF-CONTEXT-S1", payload["authorized_experiment_ids"])
+        self.assertIn("R13-VIT-DLITTLE-DIFF-CONTEXT-S2", payload["authorized_experiment_ids"])
+        self.assertIn("R13-VIT-DLITTLE-DIFF-CONTEXT-S3", payload["authorized_experiment_ids"])
+
     def test_non_pass_gate_cannot_authorize_science(self):
         gates = self.gates()
         gates["g2a"] = "FAIL"
@@ -64,7 +61,46 @@ class TrackAV12AuthorizationTests(unittest.TestCase):
                 g2a_barrier_sha256="3" * 64,
                 scheduler_freeze_sha256="4" * 64,
                 pre_science_gates=gates,
-                evidence_bindings={},
+                evidence_bindings=self.bindings(),
+            )
+
+    def test_missing_analysis_executor_gate_cannot_authorize_science(self):
+        gates = self.gates()
+        gates.pop("xai_gradcampp_implementation")
+        with self.assertRaises(Exception):
+            build_science_authorization(
+                source_git_commit="1" * 40,
+                g1a_seal_sha256="2" * 64,
+                g2a_barrier_sha256="3" * 64,
+                scheduler_freeze_sha256="4" * 64,
+                pre_science_gates=gates,
+                evidence_bindings=self.bindings(),
+            )
+
+    def test_missing_six_gpu_orchestration_gate_cannot_authorize_science(self):
+        gates = self.gates()
+        gates.pop("six_gpu_parent_orchestration")
+        with self.assertRaises(Exception):
+            build_science_authorization(
+                source_git_commit="1" * 40,
+                g1a_seal_sha256="2" * 64,
+                g2a_barrier_sha256="3" * 64,
+                scheduler_freeze_sha256="4" * 64,
+                pre_science_gates=gates,
+                evidence_bindings=self.bindings(),
+            )
+
+    def test_missing_evidence_binding_cannot_authorize_science(self):
+        bindings = self.bindings()
+        bindings.pop("robustness_executor_implementation")
+        with self.assertRaises(Exception):
+            build_science_authorization(
+                source_git_commit="1" * 40,
+                g1a_seal_sha256="2" * 64,
+                g2a_barrier_sha256="3" * 64,
+                scheduler_freeze_sha256="4" * 64,
+                pre_science_gates=self.gates(),
+                evidence_bindings=bindings,
             )
 
     def test_test_surface_must_remain_closed(self):
