@@ -9,8 +9,9 @@ from pathlib import Path
 from tracka_v12_kaggle_operator_v3 import (
     SCIENCE_SHA, MASTER_WAIT_MAX_SECONDS, OperatorError, control_public_run_id,
     fetch_public_bundle, load_json, operator_runtime_head, publish_public_files,
-    scientific_durable_map, verified_attestation_paths, write_json,
+    scientific_durable_map, write_json,
 )
+from master_attestations import verified_attestation_paths
 from master_g2a import REQUIRED_G2A, owner_from_summary
 
 CONTROL_FILES = [
