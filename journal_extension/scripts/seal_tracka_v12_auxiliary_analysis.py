@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import subprocess
 from pathlib import Path
 
 import _bootstrap  # noqa: F401
@@ -23,13 +24,8 @@ def load_json(path: str | Path) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def clean_summary(payload: dict) -> dict:
-    if "clean_summary" in payload:
-        return payload["clean_summary"]
-    clean = payload.get("clean_summary") or payload.get("clean")
-    if clean:
-        return clean
-    raise ValueError("evidence artifact lacks clean summary")
+def git_head(repo: Path) -> str:
+    return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
 
 
 def summarize_condition(rows: dict[str, dict]) -> dict:
@@ -83,9 +79,15 @@ def paired_summary(left: dict[str, dict], right: dict[str, dict], *, label: str)
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--repo-root", default=".")
     ap.add_argument("--evidence-index", required=True)
     ap.add_argument("--output", required=True)
     args = ap.parse_args()
+
+    repo = Path(args.repo_root).resolve()
+    closure_source_git_commit = git_head(repo)
+    if len(closure_source_git_commit) != 40:
+        raise SystemExit("auxiliary-analysis checkout is not bound to a full Git SHA")
 
     index_path = Path(args.evidence_index).resolve()
     index = load_json(index_path)
@@ -95,6 +97,7 @@ def main() -> int:
 
     loaded = {}
     hashes = {}
+    lineage = {}
     for experiment_id, raw_path in states.items():
         path = Path(raw_path).resolve()
         if not path.is_file():
@@ -106,22 +109,42 @@ def main() -> int:
             raise SystemExit(f"auxiliary-analysis state is not PASS: {experiment_id}")
         if payload.get("v1_test_accessed") is not False or payload.get("external_surface_accessed") is not False:
             raise SystemExit(f"protected surface marker invalid: {experiment_id}")
+        selected_sha = str(payload.get("selected_checkpoint_sha256", ""))
+        source_sha = str(payload.get("source_git_commit", ""))
+        if len(selected_sha) != 64 or len(source_sha) != 40:
+            raise SystemExit(f"auxiliary-analysis state lacks selected-checkpoint/source identity: {experiment_id}")
+
         if experiment_id.startswith("R04-"):
-            summary = payload.get("clean_summary")
-            if summary is None:
-                robust_path = Path(index.get("r04_robustness_replay", {}).get(experiment_id, "")).resolve()
-                if not robust_path.is_file():
-                    raise SystemExit(f"R04 clean-summary source missing: {experiment_id}")
-                summary = load_json(robust_path).get("clean_summary")
-                hashes[f"{experiment_id}:robustness_replay"] = sha256_file(robust_path)
+            robust_path = Path(index.get("r04_robustness_replay", {}).get(experiment_id, "")).resolve()
+            if not robust_path.is_file():
+                raise SystemExit(f"R04 clean-summary source missing: {experiment_id}")
+            robust = load_json(robust_path)
+            if robust.get("experiment_id") != experiment_id:
+                raise SystemExit(f"R04 robustness experiment identity mismatch: {experiment_id}")
+            if robust.get("selected_checkpoint_sha256") != selected_sha:
+                raise SystemExit(f"R04 direct/robustness selected-checkpoint mismatch: {experiment_id}")
+            if robust.get("source_git_commit") != source_sha:
+                raise SystemExit(f"R04 direct/robustness source mismatch: {experiment_id}")
+            if robust.get("surface") != "DS-V1-VAL" or robust.get("training_or_adaptation_performed") is not False:
+                raise SystemExit(f"R04 robustness surface/adaptation marker invalid: {experiment_id}")
+            if robust.get("v1_test_accessed") is not False or robust.get("external_surface_accessed") is not False:
+                raise SystemExit(f"R04 robustness protected-surface marker invalid: {experiment_id}")
+            summary = robust.get("clean_summary")
+            hashes[f"{experiment_id}:robustness_replay"] = sha256_file(robust_path)
         else:
             if payload.get("replay_gate", {}).get("status") != "PASS" or payload.get("classwise_pass") is not True:
                 raise SystemExit(f"auxiliary replay/classwise gate failed: {experiment_id}")
+            if payload.get("training_performed") is not False or payload.get("optimizer_state_advanced") is not False:
+                raise SystemExit(f"auxiliary evidence is not inference-only: {experiment_id}")
             summary = payload.get("clean_summary")
         if not summary or int(summary.get("row_count", -1)) != 16368 or len(summary.get("class_f1", [])) != 120:
             raise SystemExit(f"clean summary incomplete: {experiment_id}")
         loaded[experiment_id] = summary
         hashes[experiment_id] = sha256_file(path)
+        lineage[experiment_id] = {
+            "selected_checkpoint_sha256": selected_sha,
+            "scientific_source_git_commit": source_sha,
+        }
 
     def group(mapping):
         return {seed: loaded[experiment_id] for seed, experiment_id in mapping.items()}
@@ -131,9 +154,10 @@ def main() -> int:
     logits = group(R12_LOGITS)
     feature = group(R12_FEATURE)
     result = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "status": "PASS",
         "closure_kind": "track_a_auxiliary_three_seed_analysis",
+        "closure_source_git_commit": closure_source_git_commit,
         "state_inventory": sorted(REQUIRED),
         "state_count": len(REQUIRED),
         "conditions": {
@@ -152,6 +176,7 @@ def main() -> int:
         "external_surface_accessed": False,
         "evidence_index_sha256": sha256_file(index_path),
         "evidence_sha256": hashes,
+        "state_lineage": lineage,
     }
     result["closure_sha256"] = sha256_json(result)
     atomic_write_json(args.output, result)
