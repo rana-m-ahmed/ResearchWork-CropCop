@@ -1,6 +1,6 @@
 {
   "schema_version": "3.0",
-  "status": "DRAFT_DISTRIBUTION",
+  "status": "LOCKED_DISTRIBUTION",
   "science_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
   "operator_runtime_sha": "f606311ec5faa2d4d1a2ea44b279357bfd15fb84",
   "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-f606311",
@@ -9,7 +9,11 @@
     "TRACKA_V12_MASTER_K2.ipynb",
     "TRACKA_V12_MASTER_K3.ipynb"
   ],
+  "normal_operator_notebook_count": 3,
   "legacy_v2_notebooks_are_canonical_here": false,
+  "same_notebook_rerun_is_recovery": true,
+  "automatic_public_safe_git_evidence": true,
+  "private_binary_material_committed_to_git": false,
   "batch_required": true,
   "internet_required": true,
   "accelerator": "T4 x2"
