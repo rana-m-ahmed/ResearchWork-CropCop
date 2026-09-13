@@ -7,8 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OPS = ROOT / "journal_extension" / "kaggle" / "tracka_v12_ops"
 SCIENCE_SHA = "9a72e9466a9a3e7429e0e36a028edac662f83146"
-RUNTIME_SHA = "5654f35fa52c9b6ae6c28f062969c9ebd65af3fa"
-RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v3-fix1-5654f35"
+RUNTIME_SHA = "9fdbba6f81bfa2f1ce235b3d31ee52a75719a779"
+RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v3-fix2-9fdbba6"
 AUTHORITY = "EAAI-JE-SDL-v2.1-QA"
 NOTEBOOKS = {
     "TRACKA_V12_MASTER_K1.ipynb": "K1",
