@@ -1,13 +1,20 @@
 {
-  "schema_version": "3.4",
+  "schema_version": "3.5",
   "status": "LOCKED_MASTER_OPERATOR_CONTRACT",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "operator_runtime_sha": "481d347022c4dececdd81f2d676570a79f6c0105",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix4b-481d347",
+  "operator_runtime_sha": "902e7774dda32106a03bfb3f5917946c11ff8e2c",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v5-902e777",
+  "driver": "master_account_driver_v5.py",
   "dataset": {
     "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
     "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "preferred_verified_v1_root": "/kaggle/input/datasets/ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1",
+    "preferred_manifest_relative": "audit/final_manifest.csv",
+    "preferred_class_map_relative": "audit/class_to_idx.json",
+    "preferred_image_root_relative": "dataset",
+    "preferred_principal_g1": "/kaggle/input/datasets/ranamuhammadahmed6/cropcop-g1-sealed/G1_PACKAGE",
+    "preferred_paths_are_trusted_without_verification": false,
     "fail_fast_before_dependency_install": true,
     "diagnose_mounted_candidate_hashes": true,
     "byte_identical_duplicate_metadata_allowed": true,
@@ -20,6 +27,14 @@
     "resolved_paths_bound_for_downstream_reuse": true
   },
   "principal_g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
+  "torchvision_provenance": {
+    "download_script": "journal_extension/scripts/prepare_torchvision_pretrained.py",
+    "capture_script": "journal_extension/scripts/capture_torchvision_pretrained_provenance.py",
+    "download_receipt_is_scientific_provenance": false,
+    "exact_tensor_match_required": true,
+    "candidate_and_official_tensor_identity_must_match": true,
+    "frozen_validator_required_before_g1a_seal": true
+  },
   "r13": {
     "sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed",
     "bytes": 90095744,
@@ -35,6 +50,7 @@
     "accelerator": "T4 x2",
     "internet_required": true,
     "batch_required": true,
+    "optional_expected_username_gate": true,
     "dataset_slug_max_length": 50,
     "g2a_distinct_private_dataset_count": 5,
     "scientific_distinct_private_dataset_count": 11,
