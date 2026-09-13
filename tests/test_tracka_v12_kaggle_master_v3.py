@@ -14,6 +14,7 @@ for path in (OPS, SRC):
         sys.path.insert(0, str(path))
 
 import tracka_v12_kaggle_operator_v3 as v3
+import master_preflight
 from master_attestations import verified_attestation_paths
 from master_control import CONTROL_FILES
 from master_g2a import REQUIRED_G2A, g2a_profile_command
@@ -164,6 +165,52 @@ class MasterOperatorV3Tests(unittest.TestCase):
         self.assertEqual(len(slugs), len(set(slugs)))
         self.assertTrue(all(3 <= len(slug) <= 50 for slug in slugs))
         self.assertEqual(slugs[0], v3.kaggle_safe_dataset_slug("cropcop", identities[0]))
+
+    def test_input_diagnostics_report_wrong_candidate_hash(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            mounted = root / "wrong-v1"
+            mounted.mkdir()
+            candidate = mounted / "dataset_manifest.csv"
+            candidate.write_text("wrong revision\n", encoding="utf-8")
+            message = master_preflight._dataset_error_message(v3.OperatorError("found 0"), root)
+            self.assertIn(v3.MANIFEST_SHA256, message)
+            self.assertIn(v3.CLASS_MAP_SHA256, message)
+            self.assertIn(str(candidate), message)
+            self.assertIn(v3.sha256_file(candidate), message)
+            self.assertIn("wrong-v1", message)
+
+    def test_master_input_failure_is_fail_fast_and_actionable(self):
+        with tempfile.TemporaryDirectory() as td, \
+             mock.patch.object(master_preflight, "resolve_frozen_dataset", side_effect=v3.OperatorError("found 0")):
+            with self.assertRaises(v3.OperatorError) as ctx:
+                master_preflight.resolve_master_inputs("K1", td)
+            text = str(ctx.exception)
+            self.assertIn("before dependency installation", text)
+            self.assertIn("attach the frozen CropCop V1 Kaggle dataset", text)
+
+    def test_k1_principal_g1_preflight_is_required(self):
+        with tempfile.TemporaryDirectory() as td, \
+             mock.patch.object(master_preflight, "resolve_frozen_dataset", return_value=(Path("/m"), Path("/c"))), \
+             mock.patch.object(master_preflight, "resolve_image_root", return_value=Path("/images")), \
+             mock.patch.object(master_preflight, "resolve_principal_g1_bundle", side_effect=v3.OperatorError("missing G1")):
+            with self.assertRaises(v3.OperatorError) as ctx:
+                master_preflight.resolve_master_inputs("K1", td)
+            self.assertIn("historical principal-G1 preflight failed", str(ctx.exception))
+
+    def test_worker_does_not_require_principal_g1_mount(self):
+        with tempfile.TemporaryDirectory() as td, \
+             mock.patch.object(master_preflight, "resolve_frozen_dataset", return_value=(Path("/m"), Path("/c"))), \
+             mock.patch.object(master_preflight, "resolve_image_root", return_value=Path("/images")), \
+             mock.patch.object(master_preflight, "resolve_principal_g1_bundle") as principal:
+            result = master_preflight.resolve_master_inputs("K2", td)
+            self.assertEqual(result, (Path("/m"), Path("/c"), Path("/images")))
+            principal.assert_not_called()
+
+    def test_master_driver_checks_inputs_before_stack_install(self):
+        source = (OPS / "master_account_driver.py").read_text(encoding="utf-8")
+        self.assertLess(source.index("resolve_master_inputs(account_id)"), source.index("ensure_science_checkout()"))
+        self.assertLess(source.index("resolve_master_inputs(account_id)"), source.index("ensure_locked_stack(repo)"))
 
 
 if __name__ == "__main__":
