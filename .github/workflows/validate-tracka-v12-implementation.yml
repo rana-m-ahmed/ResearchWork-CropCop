@@ -16,6 +16,8 @@ on:
       - 'journal_extension/src/cropcop_je/tracka_v12_authorization.py'
       - 'journal_extension/scripts/seal_tracka_v12_g1a.py'
       - 'journal_extension/scripts/run_tracka_v12_training.py'
+      - 'journal_extension/scripts/qualify_tracka_v12_profile.py'
+      - 'journal_extension/scripts/seal_tracka_v12_g2a.py'
       - 'journal_extension/locks/track_a_comprehensive_execution_authority_v1_2_1.json'
       - 'journal_extension/amendments/track_a_strengthening_v1/model_selection_operationalization_v1_2_1.json'
       - 'journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2_1.json'
@@ -58,6 +60,8 @@ jobs:
             journal_extension/src/cropcop_je/tracka_v12_authorization.py \
             journal_extension/scripts/seal_tracka_v12_g1a.py \
             journal_extension/scripts/run_tracka_v12_training.py \
+            journal_extension/scripts/qualify_tracka_v12_profile.py \
+            journal_extension/scripts/seal_tracka_v12_g2a.py \
             tests/test_tracka_v12_contract.py \
             tests/test_tracka_v12_g1a_contract.py \
             tests/test_tracka_v12_g2a.py \
