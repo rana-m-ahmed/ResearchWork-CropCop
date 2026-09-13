@@ -7,8 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OPS = ROOT / "journal_extension" / "kaggle" / "tracka_v12_ops"
 SCIENCE_SHA = "9a72e9466a9a3e7429e0e36a028edac662f83146"
-RUNTIME_SHA = "9fdbba6f81bfa2f1ce235b3d31ee52a75719a779"
-RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v3-fix2-9fdbba6"
+RUNTIME_SHA = "e8ea268729663a921db461b337a6cfe50e03630f"
+RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v3-fix3-e8ea268"
 AUTHORITY = "EAAI-JE-SDL-v2.1-QA"
 NOTEBOOKS = {
     "TRACKA_V12_MASTER_K1.ipynb": "K1",
@@ -24,7 +24,7 @@ def text(path: str) -> str:
 class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
     def test_operator_contract_is_v3_and_exact(self):
         contract = json.loads(text("OPERATOR_CONTRACT.json"))
-        self.assertEqual(contract["schema_version"], "3.1")
+        self.assertEqual(contract["schema_version"], "3.2")
         self.assertEqual(contract["status"], "LOCKED_MASTER_OPERATOR_CONTRACT")
         self.assertEqual(contract["scientific_source_sha"], SCIENCE_SHA)
         self.assertEqual(contract["operator_runtime_sha"], RUNTIME_SHA)
@@ -36,6 +36,15 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
         self.assertEqual(contract["kaggle"]["canonical_g1a_private_dataset_count"], 1)
         self.assertTrue(contract["dataset"]["fail_fast_before_dependency_install"])
         self.assertTrue(contract["dataset"]["diagnose_mounted_candidate_hashes"])
+        self.assertTrue(contract["dataset"]["nested_split_root_discovery"])
+        self.assertEqual(contract["dataset"]["root_qualification_surfaces"], ["train", "val"])
+        self.assertFalse(contract["dataset"]["protected_test_opened_for_root_qualification"])
+        self.assertTrue(contract["dataset"]["resolved_paths_bound_for_downstream_reuse"])
+        self.assertTrue(contract["publication"]["write_preflight_before_stack_repair"])
+        self.assertTrue(contract["pre_science_io"]["science_checkout_bounded_retry"])
+        self.assertTrue(contract["pre_science_io"]["torchvision_upstream_bounded_retry"])
+        self.assertTrue(contract["pre_science_io"]["r13_upstream_bounded_retry"])
+        self.assertFalse(contract["pre_science_io"]["scientific_result_steps_auto_retried"])
         self.assertFalse(contract["rules"]["scientific_source_may_follow_operator_head"])
         self.assertFalse(contract["rules"]["notebooks_may_follow_distribution_head"])
         self.assertFalse(contract["rules"]["protected_test_open_before_track_a_closure"])
@@ -57,7 +66,7 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
                 self.assertEqual(nb["nbformat"], 4)
                 self.assertEqual(nb["nbformat_minor"], 5)
                 meta = nb["metadata"]["cropcop_operator"]
-                self.assertEqual(meta["schema_version"], "3.1")
+                self.assertEqual(meta["schema_version"], "3.2")
                 self.assertEqual(meta["account_id"], account)
                 self.assertEqual(meta["science_sha"], SCIENCE_SHA)
                 self.assertEqual(meta["operator_runtime_sha"], RUNTIME_SHA)
