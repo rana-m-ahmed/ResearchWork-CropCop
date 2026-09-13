@@ -1,102 +1,53 @@
-# Track-A v1.2 — Three-Account Master Operator v3
+# Track-A v1.2 — Three-Account Master Operator v5
 
-This is the high-efficiency Kaggle operator for the frozen Track-A source.
-
-Scientific source (never modified by this operator):
+Scientific source remains immutable at:
 
 `9a72e9466a9a3e7429e0e36a028edac662f83146`
 
-The master operator deliberately separates:
+Canonical operator runtime:
 
-- **scientific identity** — the frozen source SHA above;
-- **operator identity** — the immutable master-runtime SHA pinned by the distributed notebooks;
-- **public-safe evidence** — GitHub `run-evidence/*` branches;
-- **private material** — private Kaggle datasets only.
+`902e7774dda32106a03bfb3f5917946c11ff8e2c` on `ops-tracka-kaggle-master-runtime-v5-902e777`.
 
-## Normal topology
+The operator separates scientific identity, operator identity, public-safe GitHub evidence, and private Kaggle durability material.
 
-Use exactly three notebooks, one per Kaggle account:
+## Topology
 
-- K1 master: coordinator + two-GPU worker;
-- K2 master: two-GPU worker;
-- K3 master: two-GPU worker.
+Use exactly three notebooks: K1, K2 and K3. All require T4 x2, Internet ON, Batch execution, `KAGGLE_USERNAME`, `KAGGLE_KEY`, `CROPCOP_GITHUB_TOKEN`, and the frozen V1 dataset. K1 additionally attaches the complete historical principal G1 bundle.
 
-Every master notebook requires:
+The notebooks prefer the real verified V1 mount observed in Kaggle (`CropCop_Final_v1/audit/final_manifest.csv`, `audit/class_to_idx.json`, and `CropCop_Final_v1/dataset`) and K1's `cropcop-g1-sealed/G1_PACKAGE`. Every preferred path is still cryptographically/structurally verified; bounded discovery is the fallback.
 
-- Kaggle T4 x2;
-- Internet enabled;
-- `Save Version -> Save & Run All` / Batch execution;
-- Kaggle secrets `KAGGLE_USERNAME`, `KAGGLE_KEY`, `CROPCOP_GITHUB_TOKEN`;
-- the frozen CropCop V1 dataset attached.
+## K1
 
-K1 additionally requires the complete historical principal G1 bundle attached.
+1. Runtime/hardware/account preflight.
+2. Frozen V1 + historical principal-G1 resolution.
+3. Detached frozen science checkout and GitHub write preflight.
+4. Exact dependency stack verification/repair.
+5. Official EFFB0/CNXT bytes preparation **followed by exact tensor-provenance capture and frozen validation**.
+6. Canonical G1A seal + private Kaggle round-trip + recovery-safe public handoff.
+7. Parallel `CAL-EFFB0` and `CAL-CNXTT` on GPU0/GPU1.
+8. Collect all five validated G2A summaries.
+9. Seal barrier, scheduler and durability-bound `SCIENCE_GO`.
+10. Create/preflight K1 scientific durability targets.
+11. Run K1 frozen two-GPU queue; parent publishes audited public evidence after frozen execution.
 
-## What the notebooks do
+## K2
 
-### K1
+Acquire/validate exact K1 G1A, run `CAL-MNV4-LOGITS` + `CAL-MNV4-FEATURE` in parallel, validate the published control plane, preflight K2 durability targets, then run K2's frozen two-GPU science queue.
 
-1. Clone and verify the frozen science source.
-2. Verify the exact locked environment; install it only if the kernel differs.
-3. Create or adopt the one canonical Track-A G1A bundle.
-4. Round-trip verify that G1A through a private Kaggle dataset.
-5. Publish only the G1A seal/public report/handoff to GitHub.
-6. Run `CAL-EFFB0` and `CAL-CNXTT` concurrently on GPU0/GPU1.
-7. Collect all five canonical G2A summaries from GitHub.
-8. Seal the G2A barrier, deterministic six-slot scheduler and durability-bound `SCIENCE_GO` using the packaged exact-head CI attestations.
-9. Publish the clean control plane to GitHub.
-10. Create/preflight K1 scientific durability datasets.
-11. Execute K1's frozen two-GPU queue with automatic private recovery and public-safe evidence publication.
+## K3
 
-### K2
+Acquire/validate exact K1 G1A, run `CAL-R13` on GPU0 for G2A (GPU1 intentionally idle because no sixth prospective calibration exists), validate control, preflight durability, then use both GPUs for K3 science.
 
-1. Wait for K1's canonical G1A handoff.
-2. Download and validate the exact shared private G1A dataset.
-3. Run `CAL-MNV4-LOGITS` and `CAL-MNV4-FEATURE` concurrently.
-4. Publish both canonical summaries.
-5. Wait for and validate K1's frozen control plane.
-6. Create/preflight K2 scientific durability datasets.
-7. Execute K2's frozen two-GPU queue with automatic recovery/evidence publication.
+## TorchVision provenance rule
 
-### K3
+A `prepare_torchvision_pretrained.py` download receipt is never accepted as scientific provenance. `capture_torchvision_pretrained_provenance.py` must independently compare the artifact against the frozen TorchVision enum and produce matching candidate/official tensor identities with `official_tensor_match=true`. The frozen provenance validator must pass before G1A can seal.
 
-1. Wait for K1's canonical G1A handoff.
-2. Download and validate the exact shared private G1A dataset.
-3. Run `CAL-R13` on one T4. The second T4 is intentionally unused during G2A because no sixth prospective calibration profile exists.
-4. Publish the canonical summary.
-5. Wait for and validate K1's frozen control plane.
-6. Create/preflight K3 scientific durability datasets.
-7. Execute K3's frozen two-GPU queue with automatic recovery/evidence publication.
+## Coordination/recovery
 
-## One unavoidable one-time action
+GitHub `run-evidence/*` branches carry public-safe text only. Private artifacts/checkpoints remain in private Kaggle datasets. Parent publication is serialized and idempotent; partial bundles repair only missing/changed files and require a final full-bundle round-trip. GPU children do not receive Git credentials.
 
-After K1 creates the canonical private G1A dataset, open that Kaggle dataset and add the K2 and K3 account usernames under **Settings -> Sharing** with **Can view** access.
-
-Do not make the G1A dataset public and do not grant edit access unless independently required.
-
-The K1 log prints the exact private dataset locator. The public handoff contains the same locator and G1A seal hash so worker notebooks can fail closed on identity.
-
-## Recovery
-
-A recovery run uses the **same account master notebook**.
-
-The runtime reuses already-canonical G1A/G2A/control evidence, validates it again, restores scientific checkpoints from private Kaggle durability datasets and continues the frozen queue.
-
-A bounded dependency timeout or planned session-budget rollover is not a scientific failure. A malformed run record, worker exception, corrupted checkpoint, source drift, protected-surface access, wrong G1A/G2A/control identity, or unauthorized experiment is a hard stop requiring investigation.
-
-## Git evidence policy
-
-Only allowlisted text evidence is committed. The inherited publisher rejects:
-
-- model/checkpoint binaries;
-- archives;
-- secret-like content;
-- `/kaggle/input` or `/kaggle/working` private paths;
-- files above the public evidence size limit.
-
-GPU children never receive Git credentials. Parent publication is serialized and retried. A publication failure is reported separately from scientific validity.
+After a real K1 G1A PASS, share its private G1A dataset with K2/K3 as **Can view** once. A controlled technical/session/publication continuation uses the same notebook again. Real validation/scientific failures remain hard stops.
 
 ## Stop boundary
 
-These three master notebooks automate pre-science qualification plus the 11 remaining Track-A scientific continuation states.
-
-They do **not** open V1-test, Track B or Track C. Post-training direct evidence, auxiliary evidence, XAI, four-family selection and comprehensive 21-state closure remain under the already-frozen scientific source and begin only after all 11 continuation states are terminal PASS.
+The master system covers pre-science qualification and the 11 remaining Track-A training states only. Protected V1-test, Track B and Track C remain closed. Post-training direct/auxiliary/XAI/selection/21-state closure begins only after actual terminal scientific results exist.
