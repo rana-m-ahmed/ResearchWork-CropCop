@@ -32,6 +32,7 @@ STATIC_GATES = (
 )
 
 IMPLEMENTATION_FILES = (
+    "journal_extension/TRACK_A_V12_EXECUTION_RUNBOOK.md",
     "journal_extension/src/cropcop_je/tracka_v12.py",
     "journal_extension/src/cropcop_je/tracka_v12_analysis.py",
     "journal_extension/src/cropcop_je/tracka_v12_authorization.py",
@@ -110,7 +111,7 @@ def main() -> int:
             "principal": json.loads(principal.read_text(encoding="utf-8")),
             "secondary": json.loads(secondary.read_text(encoding="utf-8")),
         },
-        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, analysis evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the complete pre-science training, recovery, direct/auxiliary analysis, XAI, direct model-selection closure and comprehensive 21-state Track-A closure implementation, but does not independently authorize scientific execution.",
+        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, analysis evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the canonical operator runbook plus the complete pre-science training, recovery, direct/auxiliary analysis, XAI, direct model-selection closure and comprehensive 21-state Track-A closure implementation, but does not independently authorize scientific execution.",
     }
     payload["attestation_sha256"] = sha256_json(payload)
     atomic_write_json(args.output, payload)
