@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -110,6 +111,22 @@ class TrackAV12ComprehensiveClosureTests(unittest.TestCase):
             evidence_hashes={},
         )
         self.assertEqual(result["status"], "FAIL")
+
+    def test_real_historical_closure_artifacts_match_integration_contract(self):
+        evidence = ROOT / "journal_extension" / "evidence" / "public" / "track_a"
+        wave1 = json.loads((evidence / "WAVE1_PRINCIPAL_VALIDATION_CLOSURE.json").read_text(encoding="utf-8"))
+        wave2 = json.loads((evidence / "WAVE2_SECONDARY_VALIDATION_CLOSURE.json").read_text(encoding="utf-8"))
+        direct, auxiliary, _synthetic_wave1, _synthetic_wave2 = fixtures()
+        result = closure.build_comprehensive_closure(
+            direct_selection=direct,
+            auxiliary_analysis=auxiliary,
+            wave1=wave1,
+            wave2=wave2,
+            evidence_hashes={"historical": "1" * 64},
+        )
+        self.assertEqual(result["status"], "PASS")
+        self.assertTrue(result["historical_wave_closures_verified"])
+        self.assertEqual(result["scientific_state_count"], 21)
 
 
 if __name__ == "__main__":
