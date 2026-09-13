@@ -80,8 +80,8 @@ jobs:
           from pathlib import Path
 
           SCIENCE_SHA = '9a72e9466a9a3e7429e0e36a028edac662f83146'
-          RUNTIME_SHA = 'f606311ec5faa2d4d1a2ea44b279357bfd15fb84'
-          RUNTIME_BRANCH = 'ops-tracka-kaggle-master-runtime-v3-f606311'
+          RUNTIME_SHA = '5654f35fa52c9b6ae6c28f062969c9ebd65af3fa'
+          RUNTIME_BRANCH = 'ops-tracka-kaggle-master-runtime-v3-fix1-5654f35'
           expected = {
               'TRACKA_V12_MASTER_K1.ipynb': 'K1',
               'TRACKA_V12_MASTER_K2.ipynb': 'K2',
@@ -96,6 +96,10 @@ jobs:
               raise SystemExit('master notebook distribution is not locked')
           if distribution.get('operator_runtime_sha') != RUNTIME_SHA:
               raise SystemExit('distribution runtime SHA mismatch')
+          if distribution.get('operator_runtime_branch') != RUNTIME_BRANCH:
+              raise SystemExit('distribution runtime branch mismatch')
+          if distribution.get('fail_fast_input_preflight_before_stack_install') is not True:
+              raise SystemExit('distribution does not require fail-fast input preflight')
           for name, account in expected.items():
               nb = json.loads(notebooks[name].read_text(encoding='utf-8'))
               if nb.get('nbformat') != 4 or nb.get('nbformat_minor') != 5:
@@ -120,7 +124,7 @@ jobs:
                   compile(''.join(cell.get('source') or []), f'{name}:cell-{index}', 'exec')
           print('three-notebook distribution syntax/binding PASS')
           PY
-          git cat-file -e 'f606311ec5faa2d4d1a2ea44b279357bfd15fb84^{commit}'
+          git cat-file -e '5654f35fa52c9b6ae6c28f062969c9ebd65af3fa^{commit}'
 
       - name: Compile and import master runtime
         shell: bash
@@ -136,6 +140,7 @@ jobs:
               sys.path.insert(0, str(path))
           import tracka_v12_kaggle_operator_v3
           import master_attestations
+          import master_preflight
           import master_g1a
           import master_g2a
           import master_control
