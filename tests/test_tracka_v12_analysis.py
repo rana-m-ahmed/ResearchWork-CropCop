@@ -11,6 +11,7 @@ if str(SRC) not in sys.path:
 
 from cropcop_je.tracka_v12_analysis import (  # noqa: E402
     ArchitectureSelectorRow,
+    ROBUSTNESS_CORRUPTIONS,
     class_tail_summary,
     corruption_summary,
     dominates,
@@ -47,16 +48,32 @@ class TrackAV12AnalysisTests(unittest.TestCase):
         self.assertAlmostEqual(summary["bottom_12_class_mean_f1"], 0.2)
         self.assertEqual(summary["minimum_class_index"], 0)
 
+    def test_robustness_inventory_matches_frozen_protocol(self):
+        self.assertEqual(
+            ROBUSTNESS_CORRUPTIONS,
+            ("brightness", "contrast", "gaussian_blur", "gaussian_noise_uint8", "jpeg"),
+        )
+
     def test_corruption_degradation_retains_negative_values(self):
         clean = {label: 0.8 for label in ("S1", "S2", "S3")}
         corruptions = {}
         for label in clean:
             corruptions[label] = {}
-            for corruption in ("brightness", "contrast", "gaussian_blur", "gaussian_noise", "jpeg"):
+            for corruption in ROBUSTNESS_CORRUPTIONS:
                 corruptions[label][corruption] = {"1": 0.81, "2": 0.79, "3": 0.78}
         summary = corruption_summary(clean, corruptions)
-        self.assertAlmostEqual(summary["mean_corruption_degradation_pp"], ( -1.0 + 1.0 + 2.0) / 3.0)
+        self.assertAlmostEqual(summary["mean_corruption_degradation_pp"], (-1.0 + 1.0 + 2.0) / 3.0)
         self.assertEqual(summary["severity_monotonicity_violations_count"], 0)
+
+    def test_legacy_gaussian_noise_alias_is_rejected(self):
+        clean = {label: 0.8 for label in ("S1", "S2", "S3")}
+        corruptions = {}
+        for label in clean:
+            corruptions[label] = {}
+            for corruption in ("brightness", "contrast", "gaussian_blur", "gaussian_noise", "jpeg"):
+                corruptions[label][corruption] = {"1": 0.8, "2": 0.8, "3": 0.8}
+        with self.assertRaisesRegex(ValueError, "corruption inventory mismatch"):
+            corruption_summary(clean, corruptions)
 
     def test_pareto_dominance_uses_all_five_dimensions(self):
         a = row("R04", .90, .89, .80, 3.0, 10, 10)
