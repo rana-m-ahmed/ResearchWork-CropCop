@@ -12,6 +12,8 @@ on:
       - 'journal_extension/configs/r12_feature/**'
       - 'journal_extension/configs/r13_vit_dlittle/**'
       - 'journal_extension/locks/track_a_comprehensive_execution_authority_v1_2_1.json'
+      - 'journal_extension/src/cropcop_je/checkpointing.py'
+      - 'journal_extension/src/cropcop_je/persistence.py'
       - 'journal_extension/src/cropcop_je/tracka_v12*.py'
       - 'journal_extension/src/cropcop_je/secondary.py'
       - 'journal_extension/scripts/*tracka_v12*.py'
