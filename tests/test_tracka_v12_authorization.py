@@ -77,6 +77,19 @@ class TrackAV12AuthorizationTests(unittest.TestCase):
                 evidence_bindings=self.bindings(),
             )
 
+    def test_missing_comprehensive_21_state_closure_gate_cannot_authorize_science(self):
+        gates = self.gates()
+        gates.pop("comprehensive_21_state_closure_implementation")
+        with self.assertRaises(Exception):
+            build_science_authorization(
+                source_git_commit="1" * 40,
+                g1a_seal_sha256="2" * 64,
+                g2a_barrier_sha256="3" * 64,
+                scheduler_freeze_sha256="4" * 64,
+                pre_science_gates=gates,
+                evidence_bindings=self.bindings(),
+            )
+
     def test_missing_six_gpu_orchestration_gate_cannot_authorize_science(self):
         gates = self.gates()
         gates.pop("six_gpu_parent_orchestration")
