@@ -7,8 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OPS = ROOT / "journal_extension" / "kaggle" / "tracka_v12_ops"
 SCIENCE_SHA = "9a72e9466a9a3e7429e0e36a028edac662f83146"
-RUNTIME_SHA = "0fe16df9e6782eae34a8c577b5ec13c6b50c2cc4"
-RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v3-fix4-0fe16df"
+RUNTIME_SHA = "481d347022c4dececdd81f2d676570a79f6c0105"
+RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v3-fix4b-481d347"
 AUTHORITY = "EAAI-JE-SDL-v2.1-QA"
 NOTEBOOKS = {
     "TRACKA_V12_MASTER_K1.ipynb": "K1",
@@ -24,7 +24,7 @@ def text(path: str) -> str:
 class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
     def test_operator_contract_is_v3_and_exact(self):
         contract = json.loads(text("OPERATOR_CONTRACT.json"))
-        self.assertEqual(contract["schema_version"], "3.3")
+        self.assertEqual(contract["schema_version"], "3.4")
         self.assertEqual(contract["status"], "LOCKED_MASTER_OPERATOR_CONTRACT")
         self.assertEqual(contract["scientific_source_sha"], SCIENCE_SHA)
         self.assertEqual(contract["operator_runtime_sha"], RUNTIME_SHA)
@@ -40,13 +40,17 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
         self.assertEqual(contract["dataset"]["root_qualification_surfaces"], ["train", "val"])
         self.assertFalse(contract["dataset"]["protected_test_opened_for_root_qualification"])
         self.assertTrue(contract["dataset"]["resolved_paths_bound_for_downstream_reuse"])
-        self.assertTrue(contract["publication"]["write_preflight_before_stack_repair"])
-        self.assertTrue(contract["publication"]["byte_identical_remote_is_successful_noop"])
-        self.assertTrue(contract["publication"]["remote_branch_must_descend_from_science_sha"])
-        self.assertTrue(contract["publication"]["post_error_remote_roundtrip_recovery"])
-        self.assertFalse(contract["publication"]["frozen_scientific_runner_git_publication_enabled"])
-        self.assertTrue(contract["publication"]["scientific_evidence_published_by_master_parent"])
-        self.assertFalse(contract["publication"]["publication_failure_invalidates_science"])
+        publication = contract["publication"]
+        self.assertTrue(publication["write_preflight_before_stack_repair"])
+        self.assertTrue(publication["byte_identical_remote_is_successful_noop"])
+        self.assertTrue(publication["partial_bundle_incremental_publication"])
+        self.assertTrue(publication["changed_file_only_update"])
+        self.assertTrue(publication["final_full_bundle_roundtrip_required"])
+        self.assertTrue(publication["remote_branch_must_descend_from_science_sha"])
+        self.assertTrue(publication["post_error_remote_roundtrip_recovery"])
+        self.assertFalse(publication["frozen_scientific_runner_git_publication_enabled"])
+        self.assertTrue(publication["scientific_evidence_published_by_master_parent"])
+        self.assertFalse(publication["publication_failure_invalidates_science"])
         self.assertTrue(contract["pre_science_io"]["science_checkout_bounded_retry"])
         self.assertTrue(contract["pre_science_io"]["torchvision_upstream_bounded_retry"])
         self.assertTrue(contract["pre_science_io"]["r13_upstream_bounded_retry"])
@@ -72,7 +76,7 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
                 self.assertEqual(nb["nbformat"], 4)
                 self.assertEqual(nb["nbformat_minor"], 5)
                 meta = nb["metadata"]["cropcop_operator"]
-                self.assertEqual(meta["schema_version"], "3.3")
+                self.assertEqual(meta["schema_version"], "3.4")
                 self.assertEqual(meta["account_id"], account)
                 self.assertEqual(meta["science_sha"], SCIENCE_SHA)
                 self.assertEqual(meta["operator_runtime_sha"], RUNTIME_SHA)
@@ -108,8 +112,11 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
         marker = text(".runtime-freeze-marker")
         self.assertEqual(distribution["operator_runtime_sha"], RUNTIME_SHA)
         self.assertEqual(distribution["operator_runtime_branch"], RUNTIME_BRANCH)
+        self.assertTrue(distribution["partial_bundle_incremental_publication"])
+        self.assertTrue(distribution["final_full_bundle_roundtrip_required"])
         self.assertEqual(freeze["runtime_candidate_sha"], RUNTIME_SHA)
         self.assertEqual(freeze["runtime_branch"], RUNTIME_BRANCH)
+        self.assertEqual(freeze["qa_test_count"], 53)
         self.assertIn(RUNTIME_SHA, marker)
         self.assertIn(RUNTIME_BRANCH, marker)
 
