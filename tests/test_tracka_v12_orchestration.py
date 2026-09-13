@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "journal_extension" / "src"
@@ -165,6 +166,24 @@ class TrackAV12OrchestrationTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(first, f"JE-{experiment_id}-{'1' * 12}-A01")
         self.assertNotEqual(first, scientific_run_id(experiment_id, "2" * 40))
+
+    def test_parent_preflight_rejects_invalid_g1a_before_g2a_or_launch(self):
+        args = SimpleNamespace(
+            repo_root=str(ROOT),
+            output_root="/tmp/tracka-parent-preflight",
+            source_git_commit="1" * 40,
+            g1a_bundle="/tmp/invalid-g1a",
+        )
+        with (
+            patch.object(parent, "verify_clean_source", return_value=None),
+            patch.object(parent, "gpu_inventory", return_value=[{"name": "NVIDIA T4"}, {"name": "NVIDIA T4"}]),
+            patch.object(parent, "validate_t4x2_inventory", return_value=[]),
+            patch.object(parent, "load_and_validate_g1a_bundle", return_value=({}, ["G1A seal mismatch"])),
+            patch.object(parent, "load_json") as load_json_mock,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "account G1A preflight failed"):
+                parent.preflight(args)
+            load_json_mock.assert_not_called()
 
     def test_parent_child_command_uses_scientific_mode_and_durable_required(self):
         args = SimpleNamespace(
