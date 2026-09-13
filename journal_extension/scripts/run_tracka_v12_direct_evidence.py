@@ -11,6 +11,7 @@ from cropcop_je.frozen_v1_manifest import load_frozen_v1_rows
 from cropcop_je.hashing import sha256_file, sha256_json
 from cropcop_je.models import load_pair_initialization
 from cropcop_je.persistence import build_store
+from cropcop_je.source_state import verify_clean_source
 from cropcop_je.surfaces import validate_training_config
 from cropcop_je.tracka_v12 import (
     CLASS_MAP_SHA256,
@@ -22,7 +23,9 @@ from cropcop_je.tracka_v12_analysis import ROBUSTNESS_CORRUPTIONS, ROBUSTNESS_SE
 from cropcop_je.tracka_v12_evidence import validate_selected_checkpoint_replay
 from cropcop_je.tracka_v12_historical import (
     HISTORICAL_SECONDARY_DIRECT_SPECS,
+    HISTORICAL_TRACKA_CLOSURE_SPECS,
     load_historical_secondary_direct_model,
+    validate_historical_closure_identity,
 )
 from cropcop_je.tracka_v12_posttraining import (
     clean_replay,
@@ -155,6 +158,7 @@ def state_robustness_summary(clean_macro_f1: float, cell_summaries: dict) -> dic
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-root", default=".")
+    ap.add_argument("--analysis-source-git-commit", required=True)
     ap.add_argument("--run-record", required=True)
     ap.add_argument("--run-id", required=True)
     ap.add_argument("--checkpoint-root", required=True)
@@ -183,9 +187,21 @@ def main() -> int:
 
     import torch
 
+    repo = Path(args.repo_root).resolve()
+    output = Path(args.output_dir).resolve()
+    analysis_source = args.analysis_source_git_commit.strip()
+    if len(analysis_source) != 40:
+        raise SystemExit("analysis source Git commit must be a full 40-character SHA")
+    verify_clean_source(repo, authorized_source_sha=analysis_source, output_roots=[output])
+
     run_record = load_json(args.run_record)
     if run_record.get("run_id") != args.run_id or run_record.get("status") != "PASS":
         raise SystemExit("run record is not the requested terminal PASS scientific run")
+    experiment_id = str(run_record.get("experiment_id", ""))
+    if experiment_id in HISTORICAL_TRACKA_CLOSURE_SPECS:
+        historical_errors = validate_historical_closure_identity(run_record)
+        if historical_errors:
+            raise SystemExit("historical run record is not the canonical sealed Track-A state: " + "; ".join(historical_errors))
     if run_record.get("v1_test_accessed") not in {None, False}:
         raise SystemExit("run record indicates V1-test access")
     if run_record.get("protected_external_surface_accessed") not in {None, False}:
@@ -196,20 +212,12 @@ def main() -> int:
 
     model, config, checkpoint_path, checkpoint_payload, selected_sha = load_model(args, run_record)
     rows = validation_rows(args)
-    output = Path(args.output_dir).resolve()
     private = output / "private_evidence"
     public = output / "public_evidence"
     private.mkdir(parents=True, exist_ok=False)
     public.mkdir(parents=True, exist_ok=False)
 
-    clean_rows, clean_summary = clean_replay(
-        model,
-        rows,
-        args.image_root,
-        device,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-    )
+    clean_rows, clean_summary = clean_replay(model, rows, args.image_root, device, batch_size=args.batch_size, num_workers=args.num_workers)
     clean_path = private / "selected_checkpoint_validation_predictions.jsonl"
     write_jsonl(clean_path, clean_rows)
     expected_metrics = run_record.get("result_summary", {}).get("selected_metrics") or {}
@@ -217,12 +225,14 @@ def main() -> int:
     if replay_gate["status"] != "PASS":
         raise SystemExit("selected-checkpoint validation replay failed frozen metric tolerance")
 
-    source_git_commit = str(run_record["source_git_commit"])
+    scientific_source = str(run_record["source_git_commit"])
     efficiency = efficiency_evidence(model)
     atomic_write_json(public / "efficiency.json", {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "experiment_id": run_record["experiment_id"],
-        "source_git_commit": source_git_commit,
+        "source_git_commit": scientific_source,
+        "scientific_source_git_commit": scientific_source,
+        "analysis_source_git_commit": analysis_source,
         "selected_checkpoint_sha256": selected_sha,
         "training_performed": False,
         "v1_test_accessed": False,
@@ -230,14 +240,7 @@ def main() -> int:
         **efficiency,
     })
 
-    cell_rows, cell_summaries = robustness_sweep(
-        model,
-        rows,
-        args.image_root,
-        device,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-    )
+    cell_rows, cell_summaries = robustness_sweep(model, rows, args.image_root, device, batch_size=args.batch_size, num_workers=args.num_workers)
     private_hashes = {"clean": sha256_file(clean_path)}
     for (corruption, severity), predictions in cell_rows.items():
         path = private / f"robustness__{corruption}__s{severity}.jsonl"
@@ -246,9 +249,11 @@ def main() -> int:
 
     robustness = state_robustness_summary(float(clean_summary["validation_macro_f1"]), cell_summaries)
     robustness_public = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "experiment_id": run_record["experiment_id"],
-        "source_git_commit": source_git_commit,
+        "source_git_commit": scientific_source,
+        "scientific_source_git_commit": scientific_source,
+        "analysis_source_git_commit": analysis_source,
         "selected_checkpoint_sha256": selected_sha,
         "surface": "DS-V1-VAL",
         "training_or_adaptation_performed": False,
@@ -262,11 +267,13 @@ def main() -> int:
     atomic_write_json(public / "robustness_and_replay.json", robustness_public)
 
     final = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "status": "PASS",
         "experiment_id": run_record["experiment_id"],
         "run_id": run_record["run_id"],
-        "source_git_commit": source_git_commit,
+        "source_git_commit": scientific_source,
+        "scientific_source_git_commit": scientific_source,
+        "analysis_source_git_commit": analysis_source,
         "selected_checkpoint_sha256": selected_sha,
         "selected_checkpoint_file_sha256": sha256_file(checkpoint_path),
         "selected_checkpoint_epoch": int(checkpoint_payload["epoch"]),
