@@ -72,6 +72,10 @@ def main() -> int:
     run_record = load_json(args.run_record)
     if run_record.get("run_id") != args.run_id or run_record.get("status") != "PASS":
         raise SystemExit("XAI requires the requested terminal PASS scientific run")
+    if run_record.get("v1_test_accessed") not in {None, False}:
+        raise SystemExit("XAI run record indicates V1-test access")
+    if run_record.get("protected_external_surface_accessed") not in {None, False}:
+        raise SystemExit("XAI run record indicates protected external-surface access")
     if args.device == "cuda" and not torch.cuda.is_available():
         raise SystemExit("CUDA XAI requested but CUDA is unavailable")
     device = torch.device(args.device)
@@ -219,10 +223,11 @@ def main() -> int:
     random_corr = [row["spearman"] for row in randomization if row["spearman"] is not None]
     flip_corr = [row["spearman"] for row in flip if row["spearman"] is not None]
     summary = {
-        "schema_version": "1.2.2",
+        "schema_version": "1.2.3",
         "status": "PASS" if finite_count == len(analysis_rows) else "WARNING_NONFINITE_MAPS",
         "experiment_id": run_record["experiment_id"],
         "run_id": run_record["run_id"],
+        "source_git_commit": str(run_record["source_git_commit"]),
         "family": family,
         "selected_checkpoint_sha256": selected_sha,
         "method": "Grad-CAM++",
