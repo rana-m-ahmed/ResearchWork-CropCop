@@ -34,6 +34,26 @@ def assert_t4x2() -> list[str]:
     return names
 
 
+def retry_operator_call(label: str, fn, *, attempts: int = 3):
+    """Retry only infrastructure I/O before any scientific execution begins."""
+    if attempts < 1:
+        raise OperatorError("retry attempts must be positive")
+    last_error: Exception | None = None
+    delays = (5, 15, 30)
+    for attempt in range(1, attempts + 1):
+        try:
+            return fn()
+        except (OperatorError, subprocess.SubprocessError, OSError) as exc:
+            last_error = exc
+            if attempt == attempts:
+                break
+            delay = delays[min(attempt - 1, len(delays) - 1)]
+            print(f"{label} attempt {attempt}/{attempts} failed: {type(exc).__name__}; retrying in {delay}s")
+            time.sleep(delay)
+    assert last_error is not None
+    raise last_error
+
+
 def main() -> int:
     if len(sys.argv) != 2 or sys.argv[1] not in MASTER_ACCOUNTS:
         raise SystemExit("usage: master_account_driver.py K1|K2|K3")
@@ -56,13 +76,16 @@ def main() -> int:
     os.environ["CROPCOP_NOTEBOOK_HARD_LIMIT_SECONDS"] = repr(12 * 3600.0)
     os.environ["CROPCOP_NOTEBOOK_FINALIZATION_MARGIN_SECONDS"] = repr(3600.0)
 
-    # Fail fast on immutable Kaggle inputs before cloning/installing the heavy frozen stack.
+    # Resolve and bind immutable Kaggle inputs before any heavyweight installation.
     manifest, class_map, image_root = resolve_master_inputs(account_id)
 
-    repo = ensure_science_checkout()
+    # Network/auth gates happen before dependency repair so a bad PAT/transient clone does not waste GPU time.
+    repo = retry_operator_call("Frozen science checkout", ensure_science_checkout)
+    assert_clean_science_checkout(repo)
+    retry_operator_call("GitHub evidence write preflight", lambda: github_write_preflight(repo))
+
     stack = ensure_locked_stack(repo)
     assert_clean_science_checkout(repo)
-    github_write_preflight(repo)
 
     if account_id == "K1":
         g1a_bundle, g1a_seal, shared_locator = ensure_canonical_g1a_k1(
