@@ -29,7 +29,7 @@ Required GitHub Actions artifacts from the same `${CROPCOP_SOURCE_SHA}`:
 - `tracka-v12-pre-science-code-attestation.json`
 - `tracka-v12-exact-head-lock-runtime-attestation.json`
 
-The code attestation is emitted only after contract/failure-injection tests, canonical historical-lineage tests, and both historical science-diff sentinels pass. It hashes the Track-A v1.2 implementation, historical replay registry, and reused secondary architecture surface. The lock/runtime attestation binds the immutable v1.2 protocol lock, exact R13 runtime/XAI interface, candidate claim boundary, and XAI operationalization to the same source SHA.
+The code attestation is emitted only after contract/failure-injection tests, canonical historical-lineage tests, G2A private-durability tests, orchestration/recovery tests and both historical science-diff sentinels pass. It hashes the Track-A v1.2 implementation including G1A/G2A qualification, checkpointing/persistence, the historical replay registry, the reused secondary architecture surface and the canonical final GO sealer. The lock/runtime attestation binds the immutable v1.2 protocol lock, exact R13 runtime/XAI interface, candidate claim boundary, and XAI operationalization to the same source SHA.
 
 **Gate:** no G1A/G2A science authorization if either attestation is absent, stale, non-PASS, or source-mismatched.
 
@@ -85,7 +85,19 @@ Use `journal_extension/scripts/qualify_tracka_v12_profile_v122.py` for exactly t
 4. `CAL-MNV4-FEATURE`
 5. `CAL-R13`
 
-Each profile must use its frozen representative experiment, one visible T4, calibration mode, durable private storage, initial checkpointing, destructive local checkpoint removal, durable restore, and resumed optimizer progress. Validation metrics must remain disabled and no scientific output may be produced.
+Each profile must use its frozen representative experiment, one visible T4, calibration mode, initial checkpointing, destructive local checkpoint removal, durable restore, and resumed optimizer progress. Validation metrics must remain disabled and no scientific output may be produced.
+
+**Durability is mandatory and production-equivalent:**
+
+- use `--durable-required`;
+- use exactly `--durable-store-kind kaggle-dataset`;
+- use one pre-created **private** Kaggle dataset locator in `owner/dataset` form;
+- the locator owner must match the authenticated Kaggle account running that profile;
+- authenticated read/private-metadata preflight must PASS before calibration;
+- the first real calibration sync is the write exercise;
+- use **five distinct private Kaggle datasets** across the five profiles. No two calibration profiles may share a durable locator.
+
+The five profiles may run concurrently when five T4 slots and five isolated private durability targets are available.
 
 Every calibration summary must bind the same:
 
@@ -94,6 +106,8 @@ Every calibration summary must bind the same:
 - G1A seal SHA;
 - dependency-lock SHA;
 - T4 hardware class.
+
+Each summary must additionally record its Kaggle-private durability backend, locator, successful private-target preflight, successful sync, destructive local deletion, restore and resumed optimizer advance.
 
 ## 4. Seal the G2A v1.2.2 barrier and six-slot schedule
 
@@ -111,6 +125,8 @@ python journal_extension/scripts/seal_tracka_v12_g2a.py \
 The sealer must produce:
 
 - a `1.2.2` full-run forecast barrier;
+- a self-hashed G2A durability contract bound to the exact five calibration-summary hashes;
+- exactly five unique private Kaggle durability locators;
 - deterministic LPT assignment over exactly six slots: K1/GPU0, K1/GPU1, K2/GPU0, K2/GPU1, K3/GPU0, K3/GPU1;
 - an exact one-time partition of all 11 remaining states;
 - source/G1A/G2A bindings;
@@ -120,10 +136,10 @@ Scientific outcomes must never reorder these queues.
 
 ## 5. Seal the final science-GO artifact
 
-Only after Steps 1–4 PASS:
+Only after Steps 1–4 PASS, use the durability-bound canonical GO sealer:
 
 ```bash
-python journal_extension/scripts/seal_tracka_v12_science_go.py \
+python journal_extension/scripts/seal_tracka_v12_science_go_v123.py \
   --repo-root . \
   --code-attestation "$CODE_ATTESTATION" \
   --lock-runtime-attestation "$LOCK_RUNTIME_ATTESTATION" \
@@ -133,9 +149,9 @@ python journal_extension/scripts/seal_tracka_v12_science_go.py \
   --output "$TRACKA_SCIENCE_GO"
 ```
 
-The GO artifact must bind one identical source SHA across code attestation, lock/runtime attestation, G1A, G2A and scheduler. It authorizes only the frozen 11 remaining Track-A training states.
+The GO artifact must bind one identical source SHA across code attestation, lock/runtime attestation, G1A, G2A and scheduler, and its G2A evidence binding must contain the sealed durability-contract SHA. The authorization validator rejects GO artifacts without that durability binding. It authorizes only the frozen 11 remaining Track-A training states.
 
-**Do not launch scientific training without this artifact.**
+**Do not use the legacy GO command and do not launch scientific training without the durability-bound GO artifact.**
 
 ## 6. Prepare durable-state mapping
 
@@ -164,7 +180,7 @@ The parent performs fail-closed preflight before launching either GPU:
 3. exact G1A bundle;
 4. G2A ↔ G1A binding;
 5. scheduler ↔ G2A/G1A/source binding;
-6. science-GO binding;
+6. science-GO binding, including the G2A durability hash;
 7. exact durable-map inventory.
 
 Each account launches one independent single-GPU child per physical T4. `DDP`, `DataParallel`, `FSDP`, and cross-run gradient synchronization are forbidden. Child environments strip Git publication credentials and expose exactly one GPU.
