@@ -8,17 +8,19 @@
 
 This runbook is operational only. It does not alter any frozen scientific protocol, seed, objective, model family, or selection rule.
 
-## 0. Freeze the execution source
+## 0. Freeze the execution and analysis source
 
-Use one clean repository checkout and bind every downstream artifact to the same full commit SHA:
+Use one clean repository checkout and bind every downstream qualification, training, replay, robustness, XAI, auxiliary-analysis and closure artifact to the same full commit SHA:
 
 ```bash
 export CROPCOP_SOURCE_SHA="$(git rev-parse HEAD)"
+export CROPCOP_ANALYSIS_SHA="$CROPCOP_SOURCE_SHA"
 test "${#CROPCOP_SOURCE_SHA}" -eq 40
-git status --porcelain
+test "$CROPCOP_ANALYSIS_SHA" = "$CROPCOP_SOURCE_SHA"
+test -z "$(git status --porcelain)"
 ```
 
-The worktree must be clean apart from designated output roots. Do not create a later scientific artifact from a different source SHA.
+The worktree must be clean apart from designated output roots. Do not create a later scientific or analysis artifact from a different source SHA. Historical training run records retain their original scientific source SHAs; new post-training evidence additionally records `analysis_source_git_commit=$CROPCOP_ANALYSIS_SHA`.
 
 ## 1. Obtain the two exact-head CI attestations
 
@@ -27,7 +29,7 @@ Required GitHub Actions artifacts from the same `${CROPCOP_SOURCE_SHA}`:
 - `tracka-v12-pre-science-code-attestation.json`
 - `tracka-v12-exact-head-lock-runtime-attestation.json`
 
-The code attestation is emitted only after contract/failure-injection tests and both historical science-diff sentinels pass. The lock/runtime attestation binds the immutable v1.2 protocol lock, exact R13 runtime/XAI interface, candidate claim boundary, and XAI operationalization to the same source SHA.
+The code attestation is emitted only after contract/failure-injection tests, canonical historical-lineage tests, and both historical science-diff sentinels pass. It hashes the Track-A v1.2 implementation, historical replay registry, and reused secondary architecture surface. The lock/runtime attestation binds the immutable v1.2 protocol lock, exact R13 runtime/XAI interface, candidate claim boundary, and XAI operationalization to the same source SHA.
 
 **Gate:** no G1A/G2A science authorization if either attestation is absent, stale, non-PASS, or source-mismatched.
 
@@ -182,6 +184,14 @@ For R04/R06/R07/R13 × S1/S2/S3, run:
 - `run_tracka_v12_direct_evidence.py`
 - `run_tracka_v12_xai.py`
 
+Both executors must receive:
+
+```bash
+--analysis-source-git-commit "$CROPCOP_ANALYSIS_SHA"
+```
+
+and must run from a clean checkout exactly at that SHA. Their outputs preserve the original `source_git_commit` of each scientific training run and separately record the frozen `analysis_source_git_commit`.
+
 Required direct evidence per state:
 
 - hash-verified selected checkpoint;
@@ -193,21 +203,25 @@ Required direct evidence per state:
 - efficiency identity;
 - frozen 240-image Grad-CAM++ audit and sanity checks.
 
-R04 must use its historical sealed initialization lineage. R06/R07/R13 use the G1A lineage. Do not rewrite historical evidence.
+Historical R04 S1/S2/S3 and historical R06/R07 S1 must use their already sealed selected checkpoints and original scientific lineages. R06/R07 S2/S3 and R13 S1/S2/S3 use the new G1A lineage. The canonical historical registry must match the immutable Wave-1/Wave-2 closures. Do not rewrite or substitute historical evidence.
 
 ## 10. Build auxiliary evidence
 
-For R05 S1/S2/S3 and R12 logits/feature S1/S2/S3, run `run_tracka_v12_auxiliary_evidence.py`.
+For R05 S1/S2/S3 and R12 logits/feature S1/S2/S3, run `run_tracka_v12_auxiliary_evidence.py` with:
 
-- Historical R05 and R12-S1 use the original sealed principal pair-init lineage.
+```bash
+--analysis-source-git-commit "$CROPCOP_ANALYSIS_SHA"
+```
+
+- Historical R05 and R12-S1 must match the exact selected checkpoints sealed in the immutable Wave closures and use the original sealed principal pair-init lineage.
 - R12-S2/S3 use exact G1A reused-pair bytes.
 - Auxiliary states require selected-checkpoint replay and 120-class evidence, but do not enter the primary architecture selector and do not inherit robustness/XAI requirements.
 
-Then run `seal_tracka_v12_auxiliary_analysis.py` over exact R04/R05/R12 S1/S2/S3 evidence. The outputs are descriptive paired three-seed analyses; no hypothesis test or multiple-comparison p-value is authorized by this executor.
+Then run `seal_tracka_v12_auxiliary_analysis.py` over exact R04/R05/R12 S1/S2/S3 evidence. It must reject any evidence whose analysis SHA differs from the current frozen checkout. The outputs are descriptive paired three-seed analyses; no hypothesis test or multiple-comparison p-value is authorized by this executor.
 
 ## 11. Seal direct scientific-primary selection
 
-Run `seal_tracka_v12_selection.py` only after all 12 direct states have complete replay/robustness/classwise/efficiency/XAI evidence.
+Run `seal_tracka_v12_selection.py` only after all 12 direct states have complete replay/robustness/classwise/efficiency/XAI evidence. Every direct bundle must share one selected checkpoint per state, preserve its scientific source, and bind the current frozen analysis SHA.
 
 Selection remains the frozen v1.2 rule:
 
@@ -226,6 +240,8 @@ Run `seal_tracka_v12_comprehensive_closure.py` with:
 - auxiliary-analysis artifact;
 - immutable `WAVE1_PRINCIPAL_VALIDATION_CLOSURE.json`;
 - immutable `WAVE2_SECONDARY_VALIDATION_CLOSURE.json`.
+
+The historical closure inventories must match exactly, including the exact four Wave-2 S1 states; supersets are rejected. The direct and auxiliary closure/analysis source must equal the frozen repository head.
 
 The closure must resolve exactly:
 
