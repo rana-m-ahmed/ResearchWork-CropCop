@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED"
-      - name: Validate v1.2 content lock and emit SHA-256 attestation
+      - name: Validate immutable v1.2 content lock and emit SHA-256 attestation
         run: |
           python journal_extension/amendments/track_a_strengthening_v1/validate_v1_2_lock.py \
             --report tracka-amendment-v12-content-report.json
@@ -61,13 +61,12 @@ jobs:
         with:
           name: r13-interface-probe
           path: r13-interface-probe.json
-      - name: Validate R13 architecture/runtime interface
+      - name: Validate sealed R13 v1.2.1 architecture/runtime interface
         run: |
-          python journal_extension/amendments/track_a_strengthening_v1/validate_v1_2_lock.py \
-            --runtime \
-            --report tracka-amendment-v12-runtime-report.json
+          python journal_extension/amendments/track_a_strengthening_v1/validate_v1_2_1_runtime.py \
+            --report tracka-amendment-v121-runtime-report.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tracka-amendment-v12-runtime-report
-          path: tracka-amendment-v12-runtime-report.json
+          name: tracka-amendment-v121-runtime-report
+          path: tracka-amendment-v121-runtime-report.json
