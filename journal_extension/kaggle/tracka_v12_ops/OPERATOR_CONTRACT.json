@@ -1,53 +1,18 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "status": "LOCKED_OPERATOR_CONTRACT",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
   "operator_schema_version": "2.1",
-  "dataset": {
-    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
-    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2"
-  },
+  "operator_release_branch": "ops-tracka-kaggle-launch-v1-20260913",
+  "dataset": {"manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2", "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2"},
   "principal_g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
-  "r13": {
-    "sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed",
-    "bytes": 90095744,
-    "hf_commit": "10143029df1b2df4c63623de6b740ecccb2b8ea2"
-  },
+  "r13": {"sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed", "bytes": 90095744, "hf_commit": "10143029df1b2df4c63623de6b740ecccb2b8ea2"},
   "g2a_profiles": {
-    "K1": [
-      ["CAL-EFFB0", "R06-EFFB0-CONTEXT-S2", "K1/GPU0", 0],
-      ["CAL-CNXTT", "R07-CNXTT-CONTEXT-S2", "K1/GPU1", 1]
-    ],
-    "K2": [
-      ["CAL-MNV4-LOGITS", "R12-MNV4-LOGITS-S2", "K2/GPU0", 0],
-      ["CAL-MNV4-FEATURE", "R12-MNV4-FEATURE-S2", "K2/GPU1", 1]
-    ],
-    "K3": [
-      ["CAL-R13", "R13-VIT-DLITTLE-DIFF-CONTEXT-S1", "K3/GPU0", 0]
-    ]
+    "K1": [["CAL-EFFB0","R06-EFFB0-CONTEXT-S2","K1/GPU0",0],["CAL-CNXTT","R07-CNXTT-CONTEXT-S2","K1/GPU1",1]],
+    "K2": [["CAL-MNV4-LOGITS","R12-MNV4-LOGITS-S2","K2/GPU0",0],["CAL-MNV4-FEATURE","R12-MNV4-FEATURE-S2","K2/GPU1",1]],
+    "K3": [["CAL-R13","R13-VIT-DLITTLE-DIFF-CONTEXT-S1","K3/GPU0",0]]
   },
-  "notebooks": [
-    "01_TRACKA_V12_G1A_SEAL.ipynb",
-    "02_TRACKA_V12_G2A_K1.ipynb",
-    "03_TRACKA_V12_G2A_K2.ipynb",
-    "04_TRACKA_V12_G2A_K3.ipynb",
-    "05_TRACKA_V12_SEAL_G2A_AND_SCIENCE_GO.ipynb",
-    "06_TRACKA_V12_SCIENCE_K1.ipynb",
-    "07_TRACKA_V12_SCIENCE_K2.ipynb",
-    "08_TRACKA_V12_SCIENCE_K3.ipynb"
-  ],
-  "rules": {
-    "scientific_source_may_follow_operator_head": false,
-    "protected_test_open_before_track_a_closure": false,
-    "external_prediction_open_before_track_a_closure": false,
-    "g2a_validation_metrics_enabled": false,
-    "g2a_requires_unique_private_kaggle_durability": true,
-    "science_requires_final_durability_bound_go": true,
-    "scientific_children_per_gpu": 1,
-    "ddp_allowed": false,
-    "dataparallel_allowed": false,
-    "fsdp_allowed": false,
-    "silent_fresh_restart_after_durable_checkpoint": false
-  }
+  "notebooks": ["01_TRACKA_V12_G1A_SEAL.ipynb","02_TRACKA_V12_G2A_K1.ipynb","03_TRACKA_V12_G2A_K2.ipynb","04_TRACKA_V12_G2A_K3.ipynb","05_TRACKA_V12_SEAL_G2A_AND_SCIENCE_GO.ipynb","06_TRACKA_V12_SCIENCE_K1.ipynb","07_TRACKA_V12_SCIENCE_K2.ipynb","08_TRACKA_V12_SCIENCE_K3.ipynb"],
+  "rules": {"scientific_source_may_follow_operator_head":false,"protected_test_open_before_track_a_closure":false,"external_prediction_open_before_track_a_closure":false,"g2a_validation_metrics_enabled":false,"g2a_requires_unique_private_kaggle_durability":true,"science_requires_final_durability_bound_go":true,"scientific_children_per_gpu":1,"ddp_allowed":false,"dataparallel_allowed":false,"fsdp_allowed":false,"silent_fresh_restart_after_durable_checkpoint":false}
 }
