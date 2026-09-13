@@ -21,7 +21,13 @@ class TrackAV12AuthorizationTests(unittest.TestCase):
         return {name: "PASS" for name in REQUIRED_PRE_SCIENCE_GATES}
 
     def bindings(self):
-        return {name: {"evidence": f"synthetic:{name}"} for name in REQUIRED_PRE_SCIENCE_GATES}
+        rows = {name: {"evidence": f"synthetic:{name}"} for name in REQUIRED_PRE_SCIENCE_GATES}
+        rows["g2a"] = {
+            "kind": "track_a_v12_g2a_full_run_forecast",
+            "barrier_sha256": "3" * 64,
+            "durability_contract_sha256": "5" * 64,
+        }
+        return rows
 
     def build(self):
         return build_science_authorization(
@@ -106,6 +112,32 @@ class TrackAV12AuthorizationTests(unittest.TestCase):
     def test_missing_evidence_binding_cannot_authorize_science(self):
         bindings = self.bindings()
         bindings.pop("robustness_executor_implementation")
+        with self.assertRaises(Exception):
+            build_science_authorization(
+                source_git_commit="1" * 40,
+                g1a_seal_sha256="2" * 64,
+                g2a_barrier_sha256="3" * 64,
+                scheduler_freeze_sha256="4" * 64,
+                pre_science_gates=self.gates(),
+                evidence_bindings=bindings,
+            )
+
+    def test_missing_g2a_durability_binding_cannot_authorize_science(self):
+        bindings = self.bindings()
+        bindings["g2a"].pop("durability_contract_sha256")
+        with self.assertRaises(Exception):
+            build_science_authorization(
+                source_git_commit="1" * 40,
+                g1a_seal_sha256="2" * 64,
+                g2a_barrier_sha256="3" * 64,
+                scheduler_freeze_sha256="4" * 64,
+                pre_science_gates=self.gates(),
+                evidence_bindings=bindings,
+            )
+
+    def test_g2a_binding_barrier_must_match_authorized_barrier(self):
+        bindings = self.bindings()
+        bindings["g2a"]["barrier_sha256"] = "9" * 64
         with self.assertRaises(Exception):
             build_science_authorization(
                 source_git_commit="1" * 40,
