@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .hashing import require_sha256, sha256_file, sha256_json
+from .hashing import sha256_file, sha256_json
 from .models import build_projection_without_state_drift, load_exact_teacher, load_pair_initialization
 from .secondary import load_baseline_initialization
 from .tracka_v12 import EXPERIMENT_SPECS, PAIR_IDS, validate_tracka_v12_config
@@ -135,10 +135,12 @@ def load_student_and_teacher(
             pair_id=PAIR_IDS[label],
             seed=seed,
         )
-        if payload.get("pretrained_sha256") != config.get("required_pretrained_evidence") and False:
-            raise TrackAV12RuntimeError("unreachable compatibility guard")
+        reuse_evidence = load_json(evidence / f"R12_REUSED_PAIR_{label}.json")
+        expected_pretrained_sha = str(reuse_evidence.get("pretrained_sha256", ""))
+        if len(expected_pretrained_sha) != 64 or payload.get("pretrained_sha256") != expected_pretrained_sha:
+            raise TrackAV12RuntimeError("R12 initialization/pretrained lineage mismatch")
         init_sha = row["student_init_sha256"]
-        pretrained_sha = payload["pretrained_sha256"]
+        pretrained_sha = expected_pretrained_sha
         teacher_row = seal["teacher"]
         factory_manifest = load_json(evidence / "TEACHER_FACTORY_BUNDLE.json")
         factory_spec = str(factory_manifest.get("entrypoint", ""))
