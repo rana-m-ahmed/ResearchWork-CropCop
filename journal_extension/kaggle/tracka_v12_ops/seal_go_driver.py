@@ -137,16 +137,25 @@ def main() -> int:
 
     sys.path.insert(0, str(repo / "journal_extension/src"))
     from cropcop_je.tracka_v12_orchestration import validate_durable_map
+    from cropcop_je.tracka_v12_authorization import validate_science_authorization
 
     errors = validate_durable_map(durable_map)
     if errors:
         raise RuntimeError("scientific durable map invalid: " + "; ".join(errors))
 
+    barrier_payload = load_json(barrier)
     go = load_json(science_go)
-    if go.get("status") != "PASS" or go.get("science_authorized") is not True:
-        raise RuntimeError("final science authorization is not PASS/authorized")
-    if go.get("source_git_commit") != SCIENCE_SHA:
-        raise RuntimeError("final science GO source mismatch")
+    auth_errors = validate_science_authorization(
+        go,
+        expected_source_sha=SCIENCE_SHA,
+        expected_g1a_seal_sha256=load_json(g1a_seal)["g1a_seal_sha256"],
+        expected_g2a_barrier_sha256=barrier_payload["barrier_sha256"],
+        expected_scheduler_freeze_sha256=scheduler_payload["scheduler_freeze_sha256"],
+    )
+    if auth_errors:
+        raise RuntimeError("final science authorization validation failed: " + "; ".join(auth_errors))
+    if go.get("status") != "GO":
+        raise RuntimeError("final science authorization is not GO")
     if len(go.get("authorized_experiment_ids", [])) != 11:
         raise RuntimeError("final science GO must authorize exactly 11 continuation states")
 
@@ -158,13 +167,14 @@ def main() -> int:
         shutil.copy2(path, output_root / f"{calibration_id}_SUMMARY.json")
 
     report = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "stage": "TRACKA_V12_FINAL_PRE_SCIENCE_CONTROL_PLANE",
         "status": "PASS",
+        "science_go_status": go["status"],
         "science_source_sha": SCIENCE_SHA,
         "dependency_lock_sha256": stack["dependency_lock_sha256"],
         "g1a_seal_sha256": load_json(g1a_seal)["g1a_seal_sha256"],
-        "g2a_barrier_sha256": load_json(barrier)["barrier_sha256"],
+        "g2a_barrier_sha256": barrier_payload["barrier_sha256"],
         "scheduler_freeze_sha256": scheduler_payload["scheduler_freeze_sha256"],
         "science_authorization_sha256": go["authorization_sha256"],
         "code_attestation_file_sha256": sha256_file(code_attestation),
