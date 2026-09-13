@@ -3,13 +3,17 @@
   "status": "LOCKED_MASTER_OPERATOR_CONTRACT",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "operator_runtime_sha": "5654f35fa52c9b6ae6c28f062969c9ebd65af3fa",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix1-5654f35",
+  "operator_runtime_sha": "9fdbba6f81bfa2f1ce235b3d31ee52a75719a779",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix2-9fdbba6",
   "dataset": {
     "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
     "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
     "fail_fast_before_dependency_install": true,
-    "diagnose_mounted_candidate_hashes": true
+    "diagnose_mounted_candidate_hashes": true,
+    "byte_identical_duplicate_metadata_allowed": true,
+    "duplicate_manifest_selection": "structurally_nearest_image_tree",
+    "conflicting_image_roots_fail_closed": true,
+    "bounded_shallow_metadata_discovery": true
   },
   "principal_g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
   "r13": {
