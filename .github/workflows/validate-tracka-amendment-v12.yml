@@ -51,6 +51,16 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check --no-input -r journal_extension/requirements-training.lock.txt
           python -m pip check
+      - name: Probe exact R13 architecture interface before scientific outputs
+        run: |
+          python journal_extension/amendments/track_a_strengthening_v1/probe_r13_interface.py \
+            --report r13-interface-probe.json
+      - name: Upload R13 interface qualification probe
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r13-interface-probe
+          path: r13-interface-probe.json
       - name: Validate R13 architecture/runtime interface
         run: |
           python journal_extension/amendments/track_a_strengthening_v1/validate_v1_2_lock.py \
