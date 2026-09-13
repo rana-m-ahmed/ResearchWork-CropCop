@@ -82,8 +82,8 @@ jobs:
           from pathlib import Path
 
           SCIENCE_SHA = '9a72e9466a9a3e7429e0e36a028edac662f83146'
-          RUNTIME_SHA = '0fe16df9e6782eae34a8c577b5ec13c6b50c2cc4'
-          RUNTIME_BRANCH = 'ops-tracka-kaggle-master-runtime-v3-fix4-0fe16df'
+          RUNTIME_SHA = '481d347022c4dececdd81f2d676570a79f6c0105'
+          RUNTIME_BRANCH = 'ops-tracka-kaggle-master-runtime-v3-fix4b-481d347'
           expected = {
               'TRACKA_V12_MASTER_K1.ipynb': 'K1',
               'TRACKA_V12_MASTER_K2.ipynb': 'K2',
@@ -94,8 +94,8 @@ jobs:
           if set(notebooks) != set(expected):
               raise SystemExit(f'expected exactly three master notebooks; observed={sorted(notebooks)}')
           distribution = json.loads((root/'MASTER_NOTEBOOK_DISTRIBUTION.json').read_text(encoding='utf-8'))
-          if distribution.get('status') != 'LOCKED_DISTRIBUTION':
-              raise SystemExit('master notebook distribution is not locked')
+          if distribution.get('schema_version') != '3.4' or distribution.get('status') != 'LOCKED_DISTRIBUTION':
+              raise SystemExit('master notebook distribution is not final fix4b lock')
           if distribution.get('operator_runtime_sha') != RUNTIME_SHA:
               raise SystemExit('distribution runtime SHA mismatch')
           if distribution.get('operator_runtime_branch') != RUNTIME_BRANCH:
@@ -107,6 +107,9 @@ jobs:
               'resolved_input_paths_bound_for_downstream_reuse',
               'bounded_pre_science_io_retry',
               'idempotent_git_evidence_publication',
+              'partial_bundle_incremental_publication',
+              'changed_file_only_update',
+              'final_full_bundle_roundtrip_required',
               'scientific_parent_publication_after_frozen_execution',
           )
           for key in required_true:
@@ -121,7 +124,7 @@ jobs:
               if nb.get('nbformat') != 4 or nb.get('nbformat_minor') != 5:
                   raise SystemExit(f'invalid notebook format: {name}')
               meta = (nb.get('metadata') or {}).get('cropcop_operator') or {}
-              if meta.get('schema_version') != '3.3':
+              if meta.get('schema_version') != '3.4':
                   raise SystemExit(f'operator schema mismatch in {name}')
               if meta.get('account_id') != account:
                   raise SystemExit(f'account mismatch in {name}')
@@ -135,16 +138,16 @@ jobs:
               if RUNTIME_SHA not in joined or RUNTIME_BRANCH not in joined:
                   raise SystemExit(f'pinned runtime missing from notebook body: {name}')
               if 'master_account_driver_v4.py' not in joined:
-                  raise SystemExit(f'fix4 driver missing from notebook body: {name}')
+                  raise SystemExit(f'fix4b driver missing from notebook body: {name}')
               for index, cell in enumerate(nb.get('cells') or []):
                   if cell.get('cell_type') != 'code':
                       continue
                   if cell.get('execution_count') is not None or cell.get('outputs') != []:
                       raise SystemExit(f'execution residue in {name}:cell-{index}')
                   compile(''.join(cell.get('source') or []), f'{name}:cell-{index}', 'exec')
-          print('three-notebook fix4 distribution syntax/binding PASS')
+          print('three-notebook fix4b distribution syntax/binding PASS')
           PY
-          git cat-file -e '0fe16df9e6782eae34a8c577b5ec13c6b50c2cc4^{commit}'
+          git cat-file -e '481d347022c4dececdd81f2d676570a79f6c0105^{commit}'
 
       - name: Compile and import master runtime
         shell: bash
@@ -167,7 +170,7 @@ jobs:
           import master_publication_v4
           import master_science_v4
           import master_account_driver_v4
-          print('fix4 master runtime import graph PASS')
+          print('fix4b master runtime import graph PASS')
           PY
 
       - name: Run distribution, runtime regression and publication failure-injection tests
