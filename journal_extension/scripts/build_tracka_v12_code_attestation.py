@@ -45,6 +45,9 @@ IMPLEMENTATION_FILES = (
     "journal_extension/scripts/run_tracka_v12_direct_evidence.py",
     "journal_extension/scripts/run_tracka_v12_xai.py",
     "journal_extension/scripts/seal_tracka_v12_selection.py",
+    "journal_extension/scripts/build_tracka_v12_code_attestation.py",
+    "journal_extension/scripts/build_tracka_v12_lock_runtime_attestation.py",
+    "journal_extension/scripts/seal_tracka_v12_science_go.py",
     "journal_extension/kaggle/run_tracka_v12_account.py",
     "journal_extension/amendments/track_a_strengthening_v1/model_selection_operationalization_v1_2_1.json",
     "journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2_2.json",
@@ -100,7 +103,7 @@ def main() -> int:
             "principal": json.loads(principal.read_text(encoding="utf-8")),
             "secondary": json.loads(secondary.read_text(encoding="utf-8")),
         },
-        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, analysis evidence tests and both historical science-diff sentinels pass in GitHub Actions. It does not independently authorize scientific execution.",
+        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, analysis evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the complete pre-science training, recovery, analysis, XAI and final-selection implementation, but does not independently authorize scientific execution.",
     }
     payload["attestation_sha256"] = sha256_json(payload)
     atomic_write_json(args.output, payload)
