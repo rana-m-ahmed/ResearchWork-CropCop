@@ -1,10 +1,10 @@
 {
-  "schema_version": "1.1",
-  "status": "LOCKED_OPERATOR_CONTRACT",
+  "schema_version": "3.0",
+  "status": "LOCKED_MASTER_OPERATOR_CONTRACT",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "operator_runtime_sha": "200dd76b00201b81630ce4877d8b3197c6b687cc",
-  "operator_schema_version": "2.2",
+  "operator_runtime_sha": "f606311ec5faa2d4d1a2ea44b279357bfd15fb84",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-f606311",
   "dataset": {
     "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
     "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2"
@@ -15,50 +15,63 @@
     "bytes": 90095744,
     "hf_commit": "10143029df1b2df4c63623de6b740ecccb2b8ea2"
   },
-  "kaggle": {
-    "dataset_slug_max_length": 50,
-    "durability_backend": "kaggle_private_dataset",
-    "g2a_distinct_private_dataset_count": 5,
-    "scientific_distinct_private_dataset_count": 11
-  },
-  "g2a_profiles": {
-    "K1": [
-      ["CAL-EFFB0", "R06-EFFB0-CONTEXT-S2", "K1/GPU0", 0],
-      ["CAL-CNXTT", "R07-CNXTT-CONTEXT-S2", "K1/GPU1", 1]
-    ],
-    "K2": [
-      ["CAL-MNV4-LOGITS", "R12-MNV4-LOGITS-S2", "K2/GPU0", 0],
-      ["CAL-MNV4-FEATURE", "R12-MNV4-FEATURE-S2", "K2/GPU1", 1]
-    ],
-    "K3": [
-      ["CAL-R13", "R13-VIT-DLITTLE-DIFF-CONTEXT-S1", "K3/GPU0", 0]
-    ]
-  },
   "notebooks": [
-    "01_TRACKA_V12_G1A_SEAL.ipynb",
-    "02_TRACKA_V12_G2A_K1.ipynb",
-    "03_TRACKA_V12_G2A_K2.ipynb",
-    "04_TRACKA_V12_G2A_K3.ipynb",
-    "05_TRACKA_V12_SEAL_G2A_AND_SCIENCE_GO.ipynb",
-    "06_TRACKA_V12_SCIENCE_K1.ipynb",
-    "07_TRACKA_V12_SCIENCE_K2.ipynb",
-    "08_TRACKA_V12_SCIENCE_K3.ipynb"
+    "TRACKA_V12_MASTER_K1.ipynb",
+    "TRACKA_V12_MASTER_K2.ipynb",
+    "TRACKA_V12_MASTER_K3.ipynb"
   ],
+  "accounts": {
+    "K1": {
+      "g2a": ["CAL-EFFB0", "CAL-CNXTT"],
+      "coordinator": true,
+      "requires_historical_principal_g1_input": true
+    },
+    "K2": {
+      "g2a": ["CAL-MNV4-LOGITS", "CAL-MNV4-FEATURE"],
+      "coordinator": false,
+      "requires_historical_principal_g1_input": false
+    },
+    "K3": {
+      "g2a": ["CAL-R13"],
+      "coordinator": false,
+      "requires_historical_principal_g1_input": false
+    }
+  },
+  "kaggle": {
+    "accelerator": "T4 x2",
+    "internet_required": true,
+    "batch_required": true,
+    "dataset_slug_max_length": 50,
+    "g2a_distinct_private_dataset_count": 5,
+    "scientific_distinct_private_dataset_count": 11,
+    "canonical_g1a_private_dataset_count": 1
+  },
+  "publication": {
+    "github_evidence_branches": true,
+    "parent_only": true,
+    "serialized": true,
+    "bounded_retry": true,
+    "public_safe_text_only": true,
+    "scientific_child_git_credentials": false,
+    "publication_failure_invalidates_science": false
+  },
+  "recovery": {
+    "same_notebook_rerun": true,
+    "scientific_resume_mode": "auto",
+    "dependency_timeout_is_science_failure": false,
+    "explicit_continuation_required": true,
+    "malformed_summary_is_resumable": false
+  },
   "rules": {
     "scientific_source_may_follow_operator_head": false,
-    "notebooks_may_follow_operator_branch_head": false,
+    "notebooks_may_follow_distribution_head": false,
     "protected_test_open_before_track_a_closure": false,
     "external_prediction_open_before_track_a_closure": false,
     "g2a_validation_metrics_enabled": false,
-    "g2a_requires_unique_private_kaggle_durability": true,
-    "g2a_handoff_contains_private_checkpoints": false,
-    "g2a_handoff_contains_console_logs": false,
-    "science_requires_final_durability_bound_go": true,
-    "scientific_rollover_requires_explicit_continuation_evidence": true,
+    "science_requires_durability_bound_go": true,
     "scientific_children_per_gpu": 1,
     "ddp_allowed": false,
     "dataparallel_allowed": false,
-    "fsdp_allowed": false,
-    "silent_fresh_restart_after_durable_checkpoint": false
+    "fsdp_allowed": false
   }
 }
