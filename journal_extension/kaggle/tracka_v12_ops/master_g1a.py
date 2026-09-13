@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from tracka_v12_kaggle_operator_v3 import (
@@ -15,6 +16,26 @@ from tracka_v12_kaggle_operator_v3 import (
 )
 
 G1A_HANDOFF_FILE = "TRACKA_V12_G1A_HANDOFF.json"
+
+
+def _retry_pre_science_io(label: str, fn, *, attempts: int = 3):
+    """Retry deterministic upstream downloads before any G1A result exists."""
+    if attempts < 1:
+        raise OperatorError("retry attempts must be positive")
+    last_error: Exception | None = None
+    delays = (10, 30, 60)
+    for attempt in range(1, attempts + 1):
+        try:
+            return fn()
+        except (OperatorError, subprocess.SubprocessError, OSError, RuntimeError) as exc:
+            last_error = exc
+            if attempt == attempts:
+                break
+            delay = delays[min(attempt - 1, len(delays) - 1)]
+            print(f"{label} attempt {attempt}/{attempts} failed: {type(exc).__name__}; retrying in {delay}s")
+            time.sleep(delay)
+    assert last_error is not None
+    raise last_error
 
 
 def publish_json(repo: Path, run_id: str, path: Path) -> str:
@@ -49,13 +70,22 @@ def g1a_public_report(path: Path, seal: dict, locator: str, stack: dict) -> dict
 
 
 def build_g1a_once(repo: Path, *, manifest: Path, class_map: Path, image_root: Path, output_bundle: Path) -> dict:
+    # Preflight binds CROPCOP_PRINCIPAL_G1 to one exact complete historical package.
     principal = resolve_principal_g1_bundle(override=os.environ.get("CROPCOP_PRINCIPAL_G1", ""))
     upstream_root = output_bundle.parent / "upstream"
     if upstream_root.exists():
         shutil.rmtree(upstream_root)
     upstream_root.mkdir(parents=True)
-    baselines = prepare_official_torchvision(repo, upstream_root / "torchvision")
-    r13 = prepare_r13(upstream_root / "r13")
+
+    baselines = _retry_pre_science_io(
+        "Official TorchVision pretrained provenance",
+        lambda: prepare_official_torchvision(repo, upstream_root / "torchvision"),
+    )
+    r13 = _retry_pre_science_io(
+        "Pinned R13 Hugging Face artifact",
+        lambda: prepare_r13(upstream_root / "r13"),
+    )
+
     command = [
         sys.executable, str(repo / "journal_extension/scripts/seal_tracka_v12_g1a.py"),
         "--repo-root", str(repo), "--authorized-source-sha", SCIENCE_SHA,
@@ -84,6 +114,8 @@ def ensure_canonical_g1a_k1(
     handoff = master_root / G1A_HANDOFF_FILE
     print(f"Canonical private G1A dataset: {locator}")
     print("One-time setup: give K2 and K3 Can view access in Kaggle Dataset Settings > Sharing.")
+
+    # An empty placeholder dataset is safe to resume; a present invalid/stale G1A seal remains a hard stop.
     adopted = adopt_g1a_if_present(repo, locator, master_root / "g1a-shared-download", env=kaggle_env)
     if adopted is not None:
         bundle, seal = adopted
@@ -102,6 +134,7 @@ def ensure_canonical_g1a_k1(
         if roundtrip_seal["g1a_seal_sha256"] != seal["g1a_seal_sha256"]:
             raise OperatorError("private G1A round-trip changed canonical seal")
         bundle, seal = roundtrip_bundle, roundtrip_seal
+
     report = master_root / "TRACKA_V12_G1A_PUBLIC_REPORT.json"
     g1a_public_report(report, seal, locator, stack)
     public_seal = master_root / "TRACKA_V12_G1A_SEAL.json"
