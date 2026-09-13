@@ -10,11 +10,10 @@ SRC = ROOT / "journal_extension" / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-RUNTIME_STACK_AVAILABLE = all(
-    importlib.util.find_spec(name) is not None
-    for name in ("numpy", "PIL", "torch")
-)
+RUNTIME_STACK_AVAILABLE = all(importlib.util.find_spec(name) is not None for name in ("numpy", "PIL", "torch"))
+R13_STACK_AVAILABLE = RUNTIME_STACK_AVAILABLE and importlib.util.find_spec("timm") is not None
 RUNTIME_STACK_REASON = "exact Track-A runtime stack (numpy, Pillow, torch) is unavailable in this lightweight CPU-safe test environment"
+R13_STACK_REASON = "exact R13 runtime stack (torch, timm) is unavailable in this environment"
 
 
 @unittest.skipUnless(RUNTIME_STACK_AVAILABLE, RUNTIME_STACK_REASON)
@@ -68,6 +67,27 @@ class TrackAV12RuntimeAnalysisTests(unittest.TestCase):
         result = gradcampp(model, torch.ones((1, 3, 256, 256)), module_by_path(model, path))
         self.assertEqual(tuple(result["heatmap"].shape), (256, 256))
         self.assertFalse(result["nonfinite"])
+
+    @unittest.skipUnless(R13_STACK_AVAILABLE, R13_STACK_REASON)
+    def test_exact_r13_target_executes_gradcampp_end_to_end(self):
+        import timm
+        import torch
+        from cropcop_je.tracka_v12 import R13_MODEL_ID
+        from cropcop_je.tracka_v12_xai import R13_TARGET_PATH, gradcampp, target_for_family
+
+        model = timm.create_model(R13_MODEL_ID, pretrained=False, num_classes=120).eval()
+        device = torch.device("cpu")
+        target_path, target_module, reshape = target_for_family(model, "R13", device)
+        self.assertEqual(target_path, R13_TARGET_PATH)
+        result = gradcampp(
+            model,
+            torch.zeros((1, 3, 256, 256), dtype=torch.float32),
+            target_module,
+            reshape_transform=reshape,
+        )
+        self.assertFalse(result["nonfinite"])
+        self.assertIsNotNone(result["heatmap"])
+        self.assertEqual(tuple(result["heatmap"].shape), (256, 256))
 
     def test_classifier_randomization_is_exactly_restorable(self):
         import torch
