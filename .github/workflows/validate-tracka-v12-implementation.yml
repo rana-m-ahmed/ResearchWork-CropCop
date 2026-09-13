@@ -10,6 +10,7 @@ on:
       - 'journal_extension/configs/r12_feature/**'
       - 'journal_extension/configs/r13_vit_dlittle/**'
       - 'journal_extension/src/cropcop_je/tracka_v12*.py'
+      - 'journal_extension/src/cropcop_je/secondary.py'
       - 'journal_extension/scripts/seal_tracka_v12_g1a.py'
       - 'journal_extension/scripts/run_tracka_v12_training.py'
       - 'journal_extension/scripts/run_tracka_v12_training_v121.py'
@@ -61,6 +62,7 @@ jobs:
       - name: Compile complete pre-science Track-A implementation
         run: |
           python -m compileall -q \
+            journal_extension/src/cropcop_je/secondary.py \
             journal_extension/src/cropcop_je/tracka_v12.py \
             journal_extension/src/cropcop_je/tracka_v12_g1a.py \
             journal_extension/src/cropcop_je/tracka_v12_g2a.py \
@@ -71,6 +73,7 @@ jobs:
             journal_extension/src/cropcop_je/tracka_v12_placement.py \
             journal_extension/src/cropcop_je/tracka_v12_orchestration.py \
             journal_extension/src/cropcop_je/tracka_v12_evidence.py \
+            journal_extension/src/cropcop_je/tracka_v12_historical.py \
             journal_extension/src/cropcop_je/tracka_v12_posttraining.py \
             journal_extension/src/cropcop_je/tracka_v12_xai.py \
             journal_extension/scripts/seal_tracka_v12_g1a.py \
@@ -99,6 +102,7 @@ jobs:
             tests/test_tracka_v12_placement.py \
             tests/test_tracka_v12_orchestration.py \
             tests/test_tracka_v12_evidence.py \
+            tests/test_tracka_v12_historical.py \
             tests/test_tracka_v12_science_go.py \
             tests/test_tracka_v12_comprehensive_closure.py
       - name: Validate contracts, failure injection, orchestration, evidence and closure composition
@@ -113,6 +117,7 @@ jobs:
             tests.test_tracka_v12_placement \
             tests.test_tracka_v12_orchestration \
             tests.test_tracka_v12_evidence \
+            tests.test_tracka_v12_historical \
             tests.test_tracka_v12_science_go \
             tests.test_tracka_v12_comprehensive_closure \
             -v
