@@ -10,6 +10,7 @@ on:
       - 'journal_extension/configs/r13_vit_dlittle/**'
       - 'journal_extension/src/cropcop_je/tracka_v12.py'
       - 'journal_extension/src/cropcop_je/tracka_v12_g1a.py'
+      - 'journal_extension/src/cropcop_je/tracka_v12_g2a.py'
       - 'journal_extension/src/cropcop_je/tracka_v12_analysis.py'
       - 'journal_extension/scripts/seal_tracka_v12_g1a.py'
       - 'journal_extension/locks/track_a_comprehensive_execution_authority_v1_2_1.json'
@@ -17,6 +18,7 @@ on:
       - 'journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2_1.json'
       - 'tests/test_tracka_v12_contract.py'
       - 'tests/test_tracka_v12_g1a_contract.py'
+      - 'tests/test_tracka_v12_g2a.py'
       - 'tests/test_tracka_v12_analysis.py'
       - '.github/workflows/validate-tracka-v12-implementation.yml'
   workflow_dispatch:
@@ -46,16 +48,19 @@ jobs:
           python -m compileall -q \
             journal_extension/src/cropcop_je/tracka_v12.py \
             journal_extension/src/cropcop_je/tracka_v12_g1a.py \
+            journal_extension/src/cropcop_je/tracka_v12_g2a.py \
             journal_extension/src/cropcop_je/tracka_v12_analysis.py \
             journal_extension/scripts/seal_tracka_v12_g1a.py \
             tests/test_tracka_v12_contract.py \
             tests/test_tracka_v12_g1a_contract.py \
+            tests/test_tracka_v12_g2a.py \
             tests/test_tracka_v12_analysis.py
-      - name: Validate frozen contracts, failure injection and final selector
+      - name: Validate frozen contracts, failure injection, scheduler and final selector
         run: |
           python -m unittest \
             tests.test_tracka_v12_contract \
             tests.test_tracka_v12_g1a_contract \
+            tests.test_tracka_v12_g2a \
             tests.test_tracka_v12_analysis \
             -v
       - name: Prove original principal science semantics remain unchanged
