@@ -7,8 +7,55 @@ from pathlib import Path
 import _bootstrap  # noqa: F401
 from cropcop_je.runlog import write_run_record
 from cropcop_je.segments import append_segment_event, utc_now
+from cropcop_je.tracka_v12_g2a import (
+    validate_g2a_barrier_object as validate_g2a_v121,
+    validate_scheduler_freeze as validate_scheduler_v121,
+)
+from cropcop_je.tracka_v12_g2a_v122 import (
+    validate_g2a_v122_barrier,
+    validate_scheduler_freeze_v122,
+)
 from cropcop_je.tracka_v12_placement import SLOT_IDS, logical_lane_id
 import run_tracka_v12_training as base
+
+
+def validate_g2a_compatible(
+    barrier: dict,
+    *,
+    expected_source_sha: str | None = None,
+    expected_g1a_seal_sha256: str | None = None,
+) -> list[str]:
+    if str(barrier.get("schema_version")) == "1.2.2":
+        return validate_g2a_v122_barrier(
+            barrier,
+            expected_source_sha=expected_source_sha,
+            expected_g1a_seal_sha256=expected_g1a_seal_sha256,
+        )
+    return validate_g2a_v121(
+        barrier,
+        expected_source_sha=expected_source_sha,
+        expected_g1a_seal_sha256=expected_g1a_seal_sha256,
+    )
+
+
+def validate_scheduler_compatible(
+    scheduler: dict,
+    *,
+    expected_g2a_barrier_sha256: str | None = None,
+) -> list[str]:
+    if str(scheduler.get("schema_version")) == "1.2.2":
+        return validate_scheduler_freeze_v122(
+            scheduler,
+            expected_g2a_barrier_sha256=expected_g2a_barrier_sha256,
+        )
+    return validate_scheduler_v121(
+        scheduler,
+        expected_g2a_barrier_sha256=expected_g2a_barrier_sha256,
+    )
+
+
+base.validate_g2a_barrier_object = validate_g2a_compatible
+base.validate_scheduler_freeze = validate_scheduler_compatible
 
 
 def annotate_physical_placement(
