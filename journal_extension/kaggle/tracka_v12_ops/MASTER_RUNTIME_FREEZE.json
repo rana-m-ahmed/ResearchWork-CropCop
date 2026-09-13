@@ -1,13 +1,12 @@
 {
-  "schema_version": "1.5",
+  "schema_version": "1.6",
   "status": "PASS",
   "science_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "runtime_candidate_sha": "481d347022c4dececdd81f2d676570a79f6c0105",
-  "runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix4b-481d347",
+  "runtime_candidate_sha": "902e7774dda32106a03bfb3f5917946c11ff8e2c",
+  "runtime_branch": "ops-tracka-kaggle-master-runtime-v5-902e777",
   "qa_check": "master-operator-qa",
   "qa_conclusion": "success",
-  "qa_workflow_run_id": 34775361279,
-  "qa_test_count": 53,
-  "fix": "Recovery-safe incremental evidence publication: complete bundles are no-op safe; partial bundles publish only missing or changed audited files one at a time on the same source-bound evidence branch; every file and the final full bundle are round-trip verified; frozen scientific execution remains separate from parent-side Git publication.",
-  "note": "This immutable runtime is operator-only. Frozen science remains unchanged at the exact attested science SHA."
+  "qa_workflow_run_id": 34776870603,
+  "fix": "V5 clean mitigation: restore the frozen two-stage TorchVision preparation plus exact tensor-provenance capture contract before G1A, prevalidate candidate/official tensor identity, retain verified real Kaggle mount paths with fail-closed hash/structure checks, use staged account driver diagnostics, preserve idempotent evidence recovery, and keep scientific execution bound to the immutable science SHA.",
+  "note": "This PASS is operator implementation/CI qualification only. It does not claim a real Kaggle G1A or scientific result; those require runtime artifacts from the actual account executions."
 }
