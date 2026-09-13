@@ -19,13 +19,13 @@ from tracka_v12_kaggle_operator_v2 import (
     ensure_private_dataset,
     ensure_science_checkout,
     install_locked_stack,
+    kaggle_safe_dataset_slug,
     load_json,
     load_kaggle_credentials,
     resolve_frozen_dataset,
     resolve_image_root,
     sanitized_child_env,
     sha256_file,
-    slugify,
     validate_private_locators_with_science,
     verify_locked_stack,
     write_json,
@@ -100,9 +100,10 @@ def main() -> int:
     assert_python_version()
 
     output_root = Path(f"/kaggle/working/TRACKA_V12_G2A_{account_id}")
-    if output_root.exists():
+    handoff_root = Path(f"/kaggle/working/TRACKA_V12_G2A_{account_id}_HANDOFF")
+    if output_root.exists() or handoff_root.exists():
         raise RuntimeError(
-            f"{output_root} already exists. G2A calibration is immutable; use a fresh Kaggle session "
+            "G2A output already exists. Qualification is immutable; use a fresh Kaggle session "
             "rather than mixing partial attempts."
         )
     output_root.mkdir(parents=True)
@@ -131,9 +132,11 @@ def main() -> int:
     kaggle_env = dict(os.environ)
     locators: dict[str, str] = {}
     for calibration_id, _experiment_id, _slot_id, _gpu_index in profiles:
-        locator = f"{username}/cropcop-g2a-{slugify(calibration_id)}-{SCIENCE_SHA[:12]}"
+        locator = f"{username}/{kaggle_safe_dataset_slug('cropcop-g2a', calibration_id)}"
         ensure_private_dataset(locator, env=kaggle_env)
         locators[calibration_id] = locator
+    if len(set(locators.values())) != len(locators):
+        raise RuntimeError("G2A calibration durability locators collided")
 
     preflight = validate_private_locators_with_science(
         repo,
@@ -209,10 +212,14 @@ def main() -> int:
             raise RuntimeError(f"{calibration_id} source SHA mismatch")
         if payload.get("durability", {}).get("locator") != locators[calibration_id]:
             raise RuntimeError(f"{calibration_id} durability locator mismatch")
+        if payload.get("durability", {}).get("backend") != "kaggle_private_dataset":
+            raise RuntimeError(f"{calibration_id} did not exercise Kaggle-private durability")
+        if payload.get("durable_roundtrip_success") is not True or payload.get("resume_success") is not True:
+            raise RuntimeError(f"{calibration_id} did not prove destructive restore/resume")
         summaries[calibration_id] = payload
 
     report = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "stage": "TRACKA_V12_G2A_ACCOUNT",
         "account_id": account_id,
         "status": "PASS",
@@ -227,18 +234,43 @@ def main() -> int:
                 "durable_locator": locators[calibration_id],
                 "validation_enabled": summaries[calibration_id]["validation_enabled"],
                 "scientific_metric_computed": summaries[calibration_id]["scientific_metric_computed"],
+                "durable_roundtrip_success": summaries[calibration_id]["durable_roundtrip_success"],
+                "resume_success": summaries[calibration_id]["resume_success"],
             }
             for calibration_id, *_ in profiles
         },
     }
-    write_json(output_root / f"G2A_{account_id}_OPERATOR_REPORT.json", report)
+    report_path = output_root / f"G2A_{account_id}_OPERATOR_REPORT.json"
+    write_json(report_path, report)
+
+    # Cross-account handoff contains only qualification summaries/report, never private checkpoints or logs.
+    handoff_root.mkdir(parents=True, exist_ok=False)
+    for calibration_id, *_ in profiles:
+        src = Path(results[calibration_id]["summary_path"])
+        shutil.copy2(src, handoff_root / src.name)
+    shutil.copy2(report_path, handoff_root / report_path.name)
+    handoff_manifest = {
+        "schema_version": "1.0",
+        "account_id": account_id,
+        "science_source_sha": SCIENCE_SHA,
+        "files": {
+            path.name: sha256_file(path)
+            for path in sorted(handoff_root.iterdir())
+            if path.is_file()
+        },
+        "contains_private_checkpoints": False,
+        "contains_console_logs": False,
+    }
+    write_json(handoff_root / "HANDOFF_MANIFEST.json", handoff_manifest)
+
     archive = shutil.make_archive(
         f"/kaggle/working/TRACKA_V12_G2A_{account_id}_SUMMARIES",
         "zip",
-        root_dir=output_root,
+        root_dir=handoff_root,
     )
     print(json.dumps(report, indent=2, sort_keys=True))
-    print(f"Summary transfer archive: {archive}")
+    print(f"Summary handoff directory: {handoff_root}")
+    print(f"Summary-only transfer archive: {archive}")
     return 0
 
 
