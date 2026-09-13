@@ -11,12 +11,12 @@ import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.checkpointing import CheckpointCorruptionError, save_torch_checkpoint, verify_selected
 from cropcop_je.hashing import sha256_json
-from cropcop_je.tracka_v12_g2a import (
-    REQUIRED_PROFILES,
-    build_g2a_barrier,
-    build_scheduler_freeze,
-    validate_g2a_barrier_object,
-    validate_scheduler_freeze,
+from cropcop_je.tracka_v12_g2a import REQUIRED_PROFILES
+from cropcop_je.tracka_v12_g2a_v122 import (
+    build_g2a_v122_barrier,
+    build_scheduler_freeze_v122,
+    validate_g2a_v122_barrier,
+    validate_scheduler_freeze_v122,
 )
 
 
@@ -47,7 +47,7 @@ def checkpoint_contract_probe() -> dict:
             "dependency_lock_sha256": "8" * 64,
             "g1_seal_sha256": "9" * 64,
             "g2_barrier_sha256": None,
-            "lane_id": "K1/GPU0",
+            "lane_id": "TRACKA-V12:CHECKPOINT-CONTRACT-PROBE",
         }
         payload = {
             "schema_version": "2.0",
@@ -101,36 +101,37 @@ def checkpoint_contract_probe() -> dict:
             "corrupt_checkpoint_rejected": corrupt_rejected,
             "scientific_result_produced": False,
             "protected_data_accessed": False,
+            "checkpoint_identity_is_physical_slot_independent": True,
         }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--summary", action="append", required=True, help="Path to one G2A calibration summary; provide exactly five.")
+    ap.add_argument("--summary", action="append", required=True, help="Path to one G2A v1.2.2 calibration summary; provide exactly five.")
     ap.add_argument("--barrier-out", required=True)
     ap.add_argument("--scheduler-out", required=True)
     args = ap.parse_args()
 
     summaries = [load_json(path) for path in args.summary]
     if len(summaries) != len(REQUIRED_PROFILES):
-        raise SystemExit(f"expected exactly {len(REQUIRED_PROFILES)} G2A summaries")
+        raise SystemExit(f"expected exactly {len(REQUIRED_PROFILES)} G2A v1.2.2 summaries")
     if {str(row.get("calibration_id")) for row in summaries} != set(REQUIRED_PROFILES):
-        raise SystemExit("G2A summary set must contain each required calibration profile exactly once")
+        raise SystemExit("G2A v1.2.2 summary set must contain each required calibration profile exactly once")
 
     probe = checkpoint_contract_probe()
     if probe["status"] != "PASS":
         raise SystemExit("checkpoint contract probe failed")
-    barrier = build_g2a_barrier(summaries, checkpoint_contract_probe=probe)
-    barrier_errors = validate_g2a_barrier_object(barrier)
+    barrier = build_g2a_v122_barrier(summaries, checkpoint_contract_probe=probe)
+    barrier_errors = validate_g2a_v122_barrier(barrier)
     if barrier_errors:
-        raise SystemExit("G2A barrier invalid: " + "; ".join(barrier_errors))
-    scheduler = build_scheduler_freeze(barrier)
-    scheduler_errors = validate_scheduler_freeze(
+        raise SystemExit("G2A v1.2.2 barrier invalid: " + "; ".join(barrier_errors))
+    scheduler = build_scheduler_freeze_v122(barrier)
+    scheduler_errors = validate_scheduler_freeze_v122(
         scheduler,
         expected_g2a_barrier_sha256=barrier["barrier_sha256"],
     )
     if scheduler_errors:
-        raise SystemExit("scheduler freeze invalid: " + "; ".join(scheduler_errors))
+        raise SystemExit("v1.2.2 scheduler freeze invalid: " + "; ".join(scheduler_errors))
 
     atomic_write_json(args.barrier_out, barrier)
     atomic_write_json(args.scheduler_out, scheduler)
