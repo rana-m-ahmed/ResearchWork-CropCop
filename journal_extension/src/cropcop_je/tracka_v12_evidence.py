@@ -223,6 +223,99 @@ def validate_efficiency_identity(seed_rows: dict[str, dict[str, int]]) -> dict[s
     return output
 
 
+def validate_direct_state_evidence_bundle(
+    experiment_id: str,
+    *,
+    direct: dict[str, Any],
+    robustness: dict[str, Any],
+    efficiency: dict[str, Any],
+    xai: dict[str, Any],
+) -> list[str]:
+    """Fail closed if one direct-state evidence bundle mixes checkpoints, sources or incomplete protocol surfaces."""
+    errors: list[str] = []
+    for payload, label in ((direct, "direct"), (robustness, "robustness"), (efficiency, "efficiency"), (xai, "xai")):
+        if payload.get("experiment_id") != experiment_id:
+            errors.append(f"{label}:experiment_id")
+
+    checkpoint_values = {
+        str(payload.get("selected_checkpoint_sha256", ""))
+        for payload in (direct, robustness, efficiency, xai)
+    }
+    if len(checkpoint_values) != 1 or any(len(value) != 64 for value in checkpoint_values):
+        errors.append("selected_checkpoint_sha256_mismatch")
+
+    source_values = {
+        str(payload.get("source_git_commit", ""))
+        for payload in (direct, robustness, efficiency, xai)
+    }
+    if len(source_values) != 1 or any(len(value) != 40 for value in source_values):
+        errors.append("source_git_commit_mismatch")
+
+    if direct.get("status") != "PASS" or direct.get("replay_gate", {}).get("status") != "PASS":
+        errors.append("direct_replay_not_pass")
+    for field in ("classwise_pass", "robustness_pass", "efficiency_pass"):
+        if direct.get(field) is not True:
+            errors.append(f"direct:{field}")
+    if direct.get("training_performed") is not False or direct.get("optimizer_state_advanced") is not False:
+        errors.append("direct_inference_only_marker")
+    if direct.get("v1_test_accessed") is not False or direct.get("external_surface_accessed") is not False:
+        errors.append("direct_protected_surface")
+
+    if robustness.get("surface") != "DS-V1-VAL" or robustness.get("training_or_adaptation_performed") is not False:
+        errors.append("robustness_surface_or_adaptation")
+    if robustness.get("v1_test_accessed") is not False or robustness.get("external_surface_accessed") is not False:
+        errors.append("robustness_protected_surface")
+    clean = robustness.get("clean_summary", {})
+    if int(clean.get("row_count", -1)) != VAL_ROWS or len(clean.get("class_f1", [])) != NUM_CLASSES:
+        errors.append("robustness_clean_summary")
+    cells = robustness.get("cells", {})
+    if set(cells) != set(ROBUSTNESS_CORRUPTIONS):
+        errors.append("robustness_corruption_inventory")
+    else:
+        for corruption in ROBUSTNESS_CORRUPTIONS:
+            if set(cells.get(corruption, {})) != set(ROBUSTNESS_SEVERITIES):
+                errors.append(f"robustness_severity_inventory:{corruption}")
+                continue
+            for severity in ROBUSTNESS_SEVERITIES:
+                if int(cells[corruption][severity].get("row_count", -1)) != VAL_ROWS:
+                    errors.append(f"robustness_row_count:{corruption}:{severity}")
+    if len(robustness.get("private_row_evidence_sha256", {})) != 16:
+        errors.append("robustness_private_evidence_inventory")
+
+    if efficiency.get("training_performed") is not False:
+        errors.append("efficiency_training_marker")
+    if efficiency.get("v1_test_accessed") is not False or efficiency.get("external_surface_accessed") is not False:
+        errors.append("efficiency_protected_surface")
+    for field in ("model_state_tensor_bytes_fp32", "total_parameter_count", "trainable_parameter_count", "input_resolution"):
+        try:
+            if int(efficiency.get(field, 0)) <= 0:
+                errors.append(f"efficiency:{field}")
+        except (TypeError, ValueError):
+            errors.append(f"efficiency:{field}")
+
+    xai_status = str(xai.get("status", ""))
+    if xai_status not in {"PASS", "WARNING_NONFINITE_MAPS"}:
+        errors.append("xai_status")
+    if xai.get("method") != "Grad-CAM++" or not str(xai.get("target_module_path", "")):
+        errors.append("xai_method_or_target")
+    expected_counts = {
+        "sample_count": 240,
+        "randomization_subset_count": 30,
+        "flip_subset_count": 30,
+        "qualitative_panel_count": 12,
+    }
+    for field, expected in expected_counts.items():
+        if int(xai.get(field, -1)) != expected:
+            errors.append(f"xai:{field}")
+    if xai.get("training_or_adaptation_performed") is not False or xai.get("xai_used_as_weighted_selector") is not False:
+        errors.append("xai_role_or_adaptation")
+    if xai.get("v1_test_accessed") is not False or xai.get("external_surface_accessed") is not False:
+        errors.append("xai_protected_surface")
+    if len(xai.get("private_evidence_sha256", {})) != 4:
+        errors.append("xai_private_evidence_inventory")
+    return errors
+
+
 def build_family_selector_row(
     family: str,
     *,
