@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OPS = ROOT / "journal_extension" / "kaggle" / "tracka_v12_ops"
 SCIENCE_SHA = "9a72e9466a9a3e7429e0e36a028edac662f83146"
+RUNTIME_SHA = "200dd76b00201b81630ce4877d8b3197c6b687cc"
 AUTHORITY = "EAAI-JE-SDL-v2.1-QA"
 NOTEBOOKS = [
     "01_TRACKA_V12_G1A_SEAL.ipynb",
@@ -29,14 +30,22 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
         contract = json.loads(text("OPERATOR_CONTRACT.json"))
         self.assertEqual(contract["status"], "LOCKED_OPERATOR_CONTRACT")
         self.assertEqual(contract["scientific_source_sha"], SCIENCE_SHA)
+        self.assertEqual(contract["operator_runtime_sha"], RUNTIME_SHA)
         self.assertEqual(contract["authority_id"], AUTHORITY)
-        self.assertEqual(contract["operator_schema_version"], "2.1")
+        self.assertEqual(contract["operator_schema_version"], "2.2")
         self.assertEqual(contract["notebooks"], NOTEBOOKS)
+        self.assertEqual(contract["kaggle"]["dataset_slug_max_length"], 50)
+        self.assertEqual(contract["kaggle"]["g2a_distinct_private_dataset_count"], 5)
+        self.assertEqual(contract["kaggle"]["scientific_distinct_private_dataset_count"], 11)
         self.assertFalse(contract["rules"]["scientific_source_may_follow_operator_head"])
+        self.assertFalse(contract["rules"]["notebooks_may_follow_operator_branch_head"])
         self.assertFalse(contract["rules"]["protected_test_open_before_track_a_closure"])
         self.assertFalse(contract["rules"]["external_prediction_open_before_track_a_closure"])
         self.assertTrue(contract["rules"]["g2a_requires_unique_private_kaggle_durability"])
+        self.assertFalse(contract["rules"]["g2a_handoff_contains_private_checkpoints"])
+        self.assertFalse(contract["rules"]["g2a_handoff_contains_console_logs"])
         self.assertTrue(contract["rules"]["science_requires_final_durability_bound_go"])
+        self.assertTrue(contract["rules"]["scientific_rollover_requires_explicit_continuation_evidence"])
         self.assertFalse(contract["rules"]["ddp_allowed"])
         self.assertFalse(contract["rules"]["dataparallel_allowed"])
         self.assertFalse(contract["rules"]["fsdp_allowed"])
@@ -51,7 +60,6 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
                 self.assertEqual(meta["science_sha"], SCIENCE_SHA)
                 self.assertEqual(meta["authority"], AUTHORITY)
                 joined = json.dumps(nb)
-                self.assertIn("ops-tracka-kaggle-launch-20260913", joined)
                 self.assertNotIn("GITHUB_TOKEN", joined)
                 self.assertNotIn("CROPCOP_GITHUB_TOKEN", joined)
 
@@ -75,13 +83,15 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
             self.assertIn("from tracka_v12_kaggle_operator_v2 import", source)
             self.assertNotIn("from tracka_v12_kaggle_operator import (", source)
 
-    def test_v2_fixes_json_serialization_and_g1a_schema(self):
+    def test_v2_fixes_json_serialization_g1a_schema_and_slug_limit(self):
         source = text("tracka_v12_kaggle_operator_v2.py")
-        self.assertIn("OPERATOR_SCHEMA_VERSION = \"2.1\"", source)
+        self.assertIn('OPERATOR_SCHEMA_VERSION = "2.2"', source)
+        self.assertIn("KAGGLE_DATASET_SLUG_MAX = 50", source)
         self.assertIn("payload = json.dumps(mapping, sort_keys=True)", source)
         self.assertNotIn("json.dumps(json.dumps(mapping))", source)
         self.assertIn('payload.get("source_git_sha") == SCIENCE_SHA', source)
         self.assertNotIn('payload.get("source_git_commit") == SCIENCE_SHA', source)
+        self.assertIn("kaggle_safe_dataset_slug", source)
 
     def test_helper_constants_match_contract(self):
         source = text("tracka_v12_kaggle_operator.py")
@@ -111,7 +121,7 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
         self.assertEqual(len(all_profiles), 5)
         self.assertEqual(len(set(all_profiles)), 5)
 
-    def test_g2a_driver_is_non_scientific_and_durable(self):
+    def test_g2a_driver_is_non_scientific_durable_and_summary_only(self):
         source = text("g2a_account_driver.py")
         for required in (
             '"--mode", "calibration"',
@@ -121,6 +131,13 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
             '"--resume-steps", "8"',
             'payload.get("validation_enabled") is not False',
             'payload.get("scientific_metric_computed") is not False',
+            'payload.get("durable_roundtrip_success") is not True',
+            'payload.get("resume_success") is not True',
+            'payload.get("durability", {}).get("backend") != "kaggle_private_dataset"',
+            "HANDOFF_MANIFEST.json",
+            '"contains_private_checkpoints": False',
+            '"contains_console_logs": False',
+            "root_dir=handoff_root",
         ):
             self.assertIn(required, source)
         self.assertIn("CUDA_VISIBLE_DEVICES", text("tracka_v12_kaggle_operator.py"))
@@ -146,6 +163,9 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
         self.assertIn("wrong_owner", source)
         self.assertIn("continuation_is_technical", source)
         self.assertIn("cp.returncode not in {0, 2}", source)
+        self.assertIn('summary.get("status") != "ATTENTION_REQUIRED"', source)
+        self.assertIn("saw_continuation", source)
+        self.assertIn("dataset_slug", source)
 
     def test_g1a_driver_uses_frozen_seal_key(self):
         source = text("g1a_driver.py")
