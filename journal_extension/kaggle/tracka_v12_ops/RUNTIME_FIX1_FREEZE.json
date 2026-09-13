@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "status": "LOCKED_RUNTIME_FIX1",
+  "science_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
+  "operator_runtime_sha": "5654f35fa52c9b6ae6c28f062969c9ebd65af3fa",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix1-5654f35",
+  "qa": "PASS",
+  "purpose": "Fail-fast exact Kaggle input preflight after K1 zero-manifest failure"
+}
