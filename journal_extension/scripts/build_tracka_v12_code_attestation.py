@@ -63,6 +63,7 @@ def git_head(repo: Path) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-root", default=".")
+    ap.add_argument("--expected-source-sha", required=True)
     ap.add_argument("--principal-science-diff", required=True)
     ap.add_argument("--secondary-science-diff", required=True)
     ap.add_argument("--output", required=True)
@@ -72,9 +73,9 @@ def main() -> int:
         raise SystemExit("code attestation may only be emitted by GitHub Actions after the gated test sequence")
     repo = Path(args.repo_root).resolve()
     head = git_head(repo)
-    github_sha = os.environ.get("GITHUB_SHA", "").strip()
-    if len(head) != 40 or github_sha != head:
-        raise SystemExit(f"GitHub Actions/head SHA mismatch: actions={github_sha}, checkout={head}")
+    expected = args.expected_source_sha.strip()
+    if len(expected) != 40 or head != expected:
+        raise SystemExit(f"exact-head mismatch: expected={expected}, checkout={head}")
 
     principal = Path(args.principal_science_diff).resolve()
     secondary = Path(args.secondary_science_diff).resolve()
@@ -92,7 +93,7 @@ def main() -> int:
         "github_actions": True,
         "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
         "workflow_run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
-        "pull_request_head_sha": github_sha,
+        "pull_request_head_sha": expected,
         "static_pre_science_gates": {name: "PASS" for name in STATIC_GATES},
         "implementation_sha256": {path: sha256_file(repo / path) for path in IMPLEMENTATION_FILES},
         "science_diff_sha256": {
