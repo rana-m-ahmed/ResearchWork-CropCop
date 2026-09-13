@@ -166,6 +166,71 @@ class MasterOperatorV3Tests(unittest.TestCase):
         self.assertTrue(all(3 <= len(slug) <= 50 for slug in slugs))
         self.assertEqual(slugs[0], v3.kaggle_safe_dataset_slug("cropcop", identities[0]))
 
+    def _fake_manifest(self, path: Path) -> list[str]:
+        rels = [f"train/class-a/image-{index}.jpg" for index in range(16)]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("portable_relpath\n" + "\n".join(rels) + "\n", encoding="utf-8")
+        return rels
+
+    def test_duplicate_exact_manifest_selects_structurally_nearest_dataset_copy(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            package = root / "datasets" / "owner" / "cropcop"
+            actual_root = package / "CropCop_Final_v1"
+            report_root = package / "CropCop_Final_v1_CERTIFICATION_REPORTS"
+            actual_manifest = actual_root / "audit" / "final_manifest.csv"
+            report_manifest = report_root / "audit" / "final_manifest.csv"
+            rels = self._fake_manifest(actual_manifest)
+            report_manifest.parent.mkdir(parents=True, exist_ok=True)
+            report_manifest.write_bytes(actual_manifest.read_bytes())
+            for rel in rels:
+                image = actual_root / rel
+                image.parent.mkdir(parents=True, exist_ok=True)
+                image.write_bytes(b"x")
+            actual_class = actual_root / "audit" / "classes.json"
+            report_class = report_root / "audit" / "classes.json"
+            actual_class.write_text("{}\n", encoding="utf-8")
+            report_class.write_bytes(actual_class.read_bytes())
+
+            real_sha = master_preflight.sha256_file
+            def frozen_sha(path):
+                path = Path(path)
+                if path.name == "final_manifest.csv":
+                    return v3.MANIFEST_SHA256
+                if path.name == "classes.json":
+                    return v3.CLASS_MAP_SHA256
+                return real_sha(path)
+
+            with mock.patch.object(master_preflight, "sha256_file", side_effect=frozen_sha):
+                manifest, class_map, image_root = master_preflight.resolve_master_inputs("K2", root)
+            self.assertEqual(manifest, actual_manifest.resolve())
+            self.assertEqual(class_map, actual_class.resolve())
+            self.assertEqual(image_root, actual_root.resolve())
+
+    def test_conflicting_equally_qualified_manifest_roots_fail_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            roots = [root / "datasets" / "a" / "d1", root / "datasets" / "b" / "d2"]
+            manifests = []
+            for data_root in roots:
+                manifest = data_root / "audit" / "final_manifest.csv"
+                rels = self._fake_manifest(manifest)
+                for rel in rels:
+                    image = data_root / rel
+                    image.parent.mkdir(parents=True, exist_ok=True)
+                    image.write_bytes(b"x")
+                manifests.append(manifest)
+            real_sha = master_preflight.sha256_file
+            def frozen_sha(path):
+                path = Path(path)
+                if path.name == "final_manifest.csv":
+                    return v3.MANIFEST_SHA256
+                return real_sha(path)
+            with mock.patch.object(master_preflight, "sha256_file", side_effect=frozen_sha):
+                with self.assertRaises(v3.OperatorError) as ctx:
+                    master_preflight._resolve_manifest_and_image_root(root)
+            self.assertIn("different image roots", str(ctx.exception))
+
     def test_input_diagnostics_report_wrong_candidate_hash(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -182,27 +247,27 @@ class MasterOperatorV3Tests(unittest.TestCase):
 
     def test_master_input_failure_is_fail_fast_and_actionable(self):
         with tempfile.TemporaryDirectory() as td, \
-             mock.patch.object(master_preflight, "resolve_frozen_dataset", side_effect=v3.OperatorError("found 0")):
+             mock.patch.object(master_preflight, "_resolve_manifest_and_image_root", side_effect=v3.OperatorError("found 0")):
             with self.assertRaises(v3.OperatorError) as ctx:
                 master_preflight.resolve_master_inputs("K1", td)
             text = str(ctx.exception)
             self.assertIn("before dependency installation", text)
-            self.assertIn("attach the frozen CropCop V1 Kaggle dataset", text)
+            self.assertIn("attach the frozen CropCop V1 dataset", text)
 
     def test_k1_principal_g1_preflight_is_required(self):
         with tempfile.TemporaryDirectory() as td, \
-             mock.patch.object(master_preflight, "resolve_frozen_dataset", return_value=(Path("/m"), Path("/c"))), \
-             mock.patch.object(master_preflight, "resolve_image_root", return_value=Path("/images")), \
-             mock.patch.object(master_preflight, "resolve_principal_g1_bundle", side_effect=v3.OperatorError("missing G1")):
+             mock.patch.object(master_preflight, "_resolve_manifest_and_image_root", return_value=(Path("/m"), Path("/images"))), \
+             mock.patch.object(master_preflight, "_resolve_class_map", return_value=Path("/c")), \
+             mock.patch.object(master_preflight, "_resolve_principal_g1_fast", side_effect=v3.OperatorError("missing G1")):
             with self.assertRaises(v3.OperatorError) as ctx:
                 master_preflight.resolve_master_inputs("K1", td)
             self.assertIn("historical principal-G1 preflight failed", str(ctx.exception))
 
     def test_worker_does_not_require_principal_g1_mount(self):
         with tempfile.TemporaryDirectory() as td, \
-             mock.patch.object(master_preflight, "resolve_frozen_dataset", return_value=(Path("/m"), Path("/c"))), \
-             mock.patch.object(master_preflight, "resolve_image_root", return_value=Path("/images")), \
-             mock.patch.object(master_preflight, "resolve_principal_g1_bundle") as principal:
+             mock.patch.object(master_preflight, "_resolve_manifest_and_image_root", return_value=(Path("/m"), Path("/images"))), \
+             mock.patch.object(master_preflight, "_resolve_class_map", return_value=Path("/c")), \
+             mock.patch.object(master_preflight, "_resolve_principal_g1_fast") as principal:
             result = master_preflight.resolve_master_inputs("K2", td)
             self.assertEqual(result, (Path("/m"), Path("/c"), Path("/images")))
             principal.assert_not_called()
