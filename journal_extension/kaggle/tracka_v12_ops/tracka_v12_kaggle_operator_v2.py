@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -7,7 +8,8 @@ from pathlib import Path
 
 from tracka_v12_kaggle_operator import *  # noqa: F401,F403
 
-OPERATOR_SCHEMA_VERSION = "2.1"
+OPERATOR_SCHEMA_VERSION = "2.2"
+KAGGLE_DATASET_SLUG_MAX = 50
 
 
 def discover_g1a_bundle(input_root: str | Path = "/kaggle/input", override: str = "") -> Path:
@@ -64,4 +66,43 @@ def validate_private_locators_with_science(
     result = json.loads(lines[-1])
     if not isinstance(result, dict) or result.get("status") != "PASS":
         raise OperatorError(f"private durable preflight returned invalid result: {result!r}")
+    return result
+
+
+def kaggle_safe_dataset_slug(prefix: str, identity: str) -> str:
+    """Build a deterministic Kaggle-safe slug <=50 chars without losing uniqueness."""
+    prefix = slugify(prefix)
+    identity_slug = slugify(identity)
+    digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:8]
+    science = SCIENCE_SHA[:8]
+    fixed = len(prefix) + 1 + 1 + len(digest) + 1 + len(science)
+    body_budget = KAGGLE_DATASET_SLUG_MAX - fixed
+    if body_budget < 3:
+        raise OperatorError("dataset slug prefix leaves insufficient identity budget")
+    body = identity_slug[:body_budget].strip("-")
+    if len(body) < 3:
+        body = digest[:3]
+    slug = f"{prefix}-{body}-{digest}-{science}"
+    if len(slug) > KAGGLE_DATASET_SLUG_MAX:
+        raise OperatorError(f"internal Kaggle slug overflow: {slug}")
+    if any(not (ch.isalnum() or ch == "-") for ch in slug):
+        raise OperatorError(f"internal Kaggle slug contains invalid characters: {slug}")
+    return slug
+
+
+def scientific_durable_map(scheduler: dict, account_owners: dict[str, str]) -> dict[str, str]:
+    """Derive exact 11-state private durability map with Kaggle-valid deterministic slugs."""
+    result: dict[str, str] = {}
+    queues = scheduler.get("static_slot_queues") or {}
+    for slot_id, queue in queues.items():
+        account_id = slot_id.split("/", 1)[0]
+        owner = account_owners.get(account_id, "")
+        if not owner:
+            raise OperatorError(f"missing Kaggle owner for {account_id}")
+        for experiment_id in queue:
+            if experiment_id in result:
+                raise OperatorError(f"experiment appears more than once in scheduler: {experiment_id}")
+            result[experiment_id] = f"{owner}/{kaggle_safe_dataset_slug('cropcop', experiment_id)}"
+    if len(result) != 11 or len(set(result.values())) != 11:
+        raise OperatorError("scientific durability map must contain exactly 11 unique locators")
     return result
