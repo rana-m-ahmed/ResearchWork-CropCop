@@ -1,10 +1,10 @@
 {
-  "schema_version": "3.3",
+  "schema_version": "3.4",
   "status": "LOCKED_MASTER_OPERATOR_CONTRACT",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "operator_runtime_sha": "0fe16df9e6782eae34a8c577b5ec13c6b50c2cc4",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix4-0fe16df",
+  "operator_runtime_sha": "481d347022c4dececdd81f2d676570a79f6c0105",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix4b-481d347",
   "dataset": {
     "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
     "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
@@ -46,6 +46,9 @@
     "serialized": true,
     "bounded_retry": true,
     "byte_identical_remote_is_successful_noop": true,
+    "partial_bundle_incremental_publication": true,
+    "changed_file_only_update": true,
+    "final_full_bundle_roundtrip_required": true,
     "remote_branch_must_descend_from_science_sha": true,
     "post_error_remote_roundtrip_recovery": true,
     "write_preflight_before_stack_repair": true,
