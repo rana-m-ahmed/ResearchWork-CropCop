@@ -46,6 +46,7 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
             with self.subTest(name=name):
                 nb = json.loads(text(name))
                 self.assertEqual(nb["nbformat"], 4)
+                self.assertEqual(nb["nbformat_minor"], 5)
                 meta = nb["metadata"]["cropcop_operator"]
                 self.assertEqual(meta["science_sha"], SCIENCE_SHA)
                 self.assertEqual(meta["authority"], AUTHORITY)
@@ -66,7 +67,7 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
         for name, account in mapping.items():
             nb = json.loads(text(name))
             self.assertEqual(nb["metadata"]["cropcop_operator"]["account_id"], account)
-            self.assertIn(repr(account), json.dumps(nb))
+            self.assertIn(account, json.dumps(nb))
 
     def test_all_canonical_drivers_import_v2(self):
         for name in ("g1a_driver.py", "g2a_account_driver.py", "seal_go_driver.py", "science_account_driver.py"):
@@ -76,6 +77,7 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
 
     def test_v2_fixes_json_serialization_and_g1a_schema(self):
         source = text("tracka_v12_kaggle_operator_v2.py")
+        self.assertIn("OPERATOR_SCHEMA_VERSION = \"2.1\"", source)
         self.assertIn("payload = json.dumps(mapping, sort_keys=True)", source)
         self.assertNotIn("json.dumps(json.dumps(mapping))", source)
         self.assertIn('payload.get("source_git_sha") == SCIENCE_SHA', source)
@@ -119,9 +121,9 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
             '"--resume-steps", "8"',
             'payload.get("validation_enabled") is not False',
             'payload.get("scientific_metric_computed") is not False',
-            "CUDA_VISIBLE_DEVICES",
         ):
-            self.assertIn(required, source if required != "CUDA_VISIBLE_DEVICES" else text("tracka_v12_kaggle_operator.py"))
+            self.assertIn(required, source)
+        self.assertIn("CUDA_VISIBLE_DEVICES", text("tracka_v12_kaggle_operator.py"))
         self.assertNotIn("--science-authorization", source)
 
     def test_go_driver_uses_v123_and_canonical_go_status(self):
@@ -144,6 +146,12 @@ class TrackAV12KaggleOperatorTests(unittest.TestCase):
         self.assertIn("wrong_owner", source)
         self.assertIn("continuation_is_technical", source)
         self.assertIn("cp.returncode not in {0, 2}", source)
+
+    def test_g1a_driver_uses_frozen_seal_key(self):
+        source = text("g1a_driver.py")
+        self.assertIn('seal.get("source_git_sha") != SCIENCE_SHA', source)
+        self.assertNotIn('seal.get("source_git_commit") != SCIENCE_SHA', source)
+        self.assertIn('seal.get("science_authorized") is not False', source)
 
     def test_protected_surfaces_not_requested_by_operator(self):
         combined = "\n".join(text(name) for name in (
