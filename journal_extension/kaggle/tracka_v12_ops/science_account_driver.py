@@ -94,16 +94,41 @@ def main() -> int:
     science_go = unique_control("TRACKA_V12_SCIENCE_GO.json")
     durable_map_path = unique_control("TRACKA_V12_DURABLE_MAP.json")
 
+    g1a = load_json(g1a_bundle / "TRACKA_V12_G1A_SEAL.json")
+    g2a = load_json(g2a_barrier)
     scheduler = load_json(scheduler_path)
     durable_map = load_json(durable_map_path)
     go = load_json(science_go)
-    if go.get("status") != "PASS" or go.get("science_authorized") is not True:
-        raise RuntimeError("science GO is not PASS/authorized")
-    if go.get("source_git_commit") != SCIENCE_SHA:
-        raise RuntimeError("science GO source SHA mismatch")
 
     sys.path.insert(0, str(repo / "journal_extension/src"))
+    from cropcop_je.tracka_v12_authorization import validate_science_authorization
+    from cropcop_je.tracka_v12_g2a_v122 import validate_g2a_v122_barrier, validate_scheduler_freeze_v122
     from cropcop_je.tracka_v12_orchestration import validate_durable_map
+
+    g2_errors = validate_g2a_v122_barrier(
+        g2a,
+        expected_source_sha=SCIENCE_SHA,
+        expected_g1a_seal_sha256=g1a["g1a_seal_sha256"],
+    )
+    if g2_errors:
+        raise RuntimeError("G2A barrier invalid: " + "; ".join(g2_errors))
+    scheduler_errors = validate_scheduler_freeze_v122(
+        scheduler,
+        expected_g2a_barrier_sha256=g2a["barrier_sha256"],
+    )
+    if scheduler_errors:
+        raise RuntimeError("scheduler freeze invalid: " + "; ".join(scheduler_errors))
+    auth_errors = validate_science_authorization(
+        go,
+        expected_source_sha=SCIENCE_SHA,
+        expected_g1a_seal_sha256=g1a["g1a_seal_sha256"],
+        expected_g2a_barrier_sha256=g2a["barrier_sha256"],
+        expected_scheduler_freeze_sha256=scheduler["scheduler_freeze_sha256"],
+    )
+    if auth_errors:
+        raise RuntimeError("science GO invalid: " + "; ".join(auth_errors))
+    if go.get("status") != "GO":
+        raise RuntimeError("science GO is not GO")
 
     map_errors = validate_durable_map(durable_map)
     if map_errors:
@@ -191,10 +216,11 @@ def main() -> int:
         )
 
     report = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "stage": "TRACKA_V12_SCIENCE_ACCOUNT",
         "account_id": account_id,
         "science_source_sha": SCIENCE_SHA,
+        "science_go_status": go["status"],
         "dependency_lock_sha256": stack["dependency_lock_sha256"],
         "runner_return_code": cp.returncode,
         "runner_status": summary.get("status"),
