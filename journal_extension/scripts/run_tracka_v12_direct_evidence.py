@@ -20,6 +20,10 @@ from cropcop_je.tracka_v12 import (
 )
 from cropcop_je.tracka_v12_analysis import ROBUSTNESS_CORRUPTIONS, ROBUSTNESS_SEVERITIES
 from cropcop_je.tracka_v12_evidence import validate_selected_checkpoint_replay
+from cropcop_je.tracka_v12_historical import (
+    HISTORICAL_SECONDARY_DIRECT_SPECS,
+    load_historical_secondary_direct_model,
+)
 from cropcop_je.tracka_v12_posttraining import (
     clean_replay,
     efficiency_evidence,
@@ -62,6 +66,12 @@ def load_model(args, run_record: dict):
             expected_source_sha=str(run_record["source_git_commit"]),
         )
         model = loaded["student"]
+    elif experiment_id in HISTORICAL_SECONDARY_DIRECT_SPECS:
+        model, config = load_historical_secondary_direct_model(
+            repo_root=repo,
+            run_record=run_record,
+            secondary_g1_bundle=getattr(args, "secondary_g1_bundle", "") or None,
+        )
     elif experiment_id.startswith("R04-MNV4-DIRECT-"):
         if not args.principal_config or not args.principal_pair_init or not args.principal_pair_evidence:
             raise RuntimeError("historical R04 evidence requires principal config, pair init and pair-init evidence")
@@ -153,6 +163,7 @@ def main() -> int:
     ap.add_argument("--image-root", required=True)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--g1a-bundle", default="")
+    ap.add_argument("--secondary-g1-bundle", default="")
     ap.add_argument("--principal-config", default="")
     ap.add_argument("--principal-pair-init", default="")
     ap.add_argument("--principal-pair-evidence", default="")
