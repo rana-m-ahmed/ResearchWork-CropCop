@@ -25,7 +25,10 @@ STATIC_GATES = (
     "efficiency_profiler_implementation",
     "xai_gradcampp_implementation",
     "analysis_selector_implementation",
-    "final_selection_closure_implementation",
+    "direct_selection_closure_implementation",
+    "auxiliary_replay_implementation",
+    "auxiliary_paired_analysis_implementation",
+    "comprehensive_21_state_closure_implementation",
 )
 
 IMPLEMENTATION_FILES = (
@@ -107,7 +110,7 @@ def main() -> int:
             "principal": json.loads(principal.read_text(encoding="utf-8")),
             "secondary": json.loads(secondary.read_text(encoding="utf-8")),
         },
-        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, analysis evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the complete pre-science training, recovery, direct/auxiliary analysis, XAI, model-selection and comprehensive 21-state closure implementation, but does not independently authorize scientific execution.",
+        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, analysis evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the complete pre-science training, recovery, direct/auxiliary analysis, XAI, direct model-selection closure and comprehensive 21-state Track-A closure implementation, but does not independently authorize scientific execution.",
     }
     payload["attestation_sha256"] = sha256_json(payload)
     atomic_write_json(args.output, payload)
