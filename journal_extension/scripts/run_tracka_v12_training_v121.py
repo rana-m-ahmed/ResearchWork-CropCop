@@ -7,16 +7,8 @@ from pathlib import Path
 import _bootstrap  # noqa: F401
 from cropcop_je.runlog import write_run_record
 from cropcop_je.segments import append_segment_event, utc_now
-from cropcop_je.tracka_v12 import EXPERIMENT_SPECS
-from run_tracka_v12_training import SLOT_IDS, execute as base_execute, parser as base_parser
-
-LOGICAL_LANE_PREFIX = "TRACKA-V12"
-
-
-def logical_lane_id(experiment_id: str) -> str:
-    if experiment_id not in EXPERIMENT_SPECS:
-        raise ValueError(f"unauthorized Track-A v1.2 experiment: {experiment_id}")
-    return f"{LOGICAL_LANE_PREFIX}:{experiment_id}"
+from cropcop_je.tracka_v12_placement import SLOT_IDS, logical_lane_id
+import run_tracka_v12_training as base
 
 
 def annotate_physical_placement(
@@ -64,7 +56,7 @@ def execute(args, *, mode: str, max_optimizer_steps: int | None = None, resume_m
     child_args = copy.copy(args)
     child_args.slot_id = logical_lane
     try:
-        record = base_execute(
+        record = base.execute(
             child_args,
             mode=mode,
             max_optimizer_steps=max_optimizer_steps,
@@ -86,7 +78,7 @@ def execute(args, *, mode: str, max_optimizer_steps: int | None = None, resume_m
 
 
 def parser():
-    return base_parser()
+    return base.parser()
 
 
 def main() -> int:
