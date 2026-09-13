@@ -7,6 +7,14 @@ from typing import Any, Iterable
 FAMILIES = ("R04", "R06", "R07", "R13")
 SEED_LABELS = ("S1", "S2", "S3")
 Q8 = Decimal("0.00000001")
+ROBUSTNESS_CORRUPTIONS = (
+    "brightness",
+    "contrast",
+    "gaussian_blur",
+    "gaussian_noise_uint8",
+    "jpeg",
+)
+ROBUSTNESS_SEVERITIES = ("1", "2", "3")
 
 
 def q8(value: float | int | str | Decimal) -> Decimal:
@@ -54,8 +62,8 @@ def corruption_summary(
     clean_macro_f1_by_seed: dict[str, float],
     corrupted_macro_f1_by_seed: dict[str, dict[str, dict[str, float]]],
     *,
-    expected_corruptions: tuple[str, ...] = ("brightness", "contrast", "gaussian_blur", "gaussian_noise", "jpeg"),
-    expected_severities: tuple[str, ...] = ("1", "2", "3"),
+    expected_corruptions: tuple[str, ...] = ROBUSTNESS_CORRUPTIONS,
+    expected_severities: tuple[str, ...] = ROBUSTNESS_SEVERITIES,
 ) -> dict[str, Any]:
     if set(clean_macro_f1_by_seed) != set(SEED_LABELS) or set(corrupted_macro_f1_by_seed) != set(SEED_LABELS):
         raise ValueError("corruption evidence must contain exactly S1,S2,S3")
