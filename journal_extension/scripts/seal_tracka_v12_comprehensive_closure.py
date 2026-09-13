@@ -64,6 +64,8 @@ def build_comprehensive_closure(
         errors.append("direct-selection self-hash mismatch")
     if direct_selection.get("closure_source_git_commit") != expected_closure_source_git_commit:
         errors.append("direct-selection closure source mismatch")
+    if direct_selection.get("analysis_source_git_commit") != expected_closure_source_git_commit:
+        errors.append("direct-selection analysis source mismatch")
     if set(direct_selection.get("direct_state_inventory", [])) != set(ALL_DIRECT_STATES):
         errors.append("direct-selection state inventory mismatch")
     if direct_selection.get("track_b_handoff_authorized") is not False or direct_selection.get("track_c_handoff_authorized") is not False:
@@ -79,6 +81,8 @@ def build_comprehensive_closure(
         errors.append("auxiliary-analysis self-hash mismatch")
     if auxiliary_analysis.get("closure_source_git_commit") != expected_closure_source_git_commit:
         errors.append("auxiliary-analysis closure source mismatch")
+    if auxiliary_analysis.get("analysis_source_git_commit") != expected_closure_source_git_commit:
+        errors.append("auxiliary-analysis analysis source mismatch")
     auxiliary_inventory = set(auxiliary_analysis.get("state_inventory", []))
     expected_aux_analysis_inventory = R04 | R05 | R12
     if auxiliary_inventory != expected_aux_analysis_inventory:
@@ -100,7 +104,7 @@ def build_comprehensive_closure(
         errors.append("historical Wave-1 protected surface marker invalid")
 
     wave2_runs = {row.get("experiment_id") for row in wave2.get("runs", [])}
-    if wave2.get("status") != "PASS" or not HISTORICAL_WAVE2_REQUIRED.issubset(wave2_runs):
+    if wave2.get("status") != "PASS" or wave2_runs != HISTORICAL_WAVE2_REQUIRED:
         errors.append("historical Wave-2 R06/R07/R12-S1 closure mismatch")
     if wave2.get("v1_test_accessed") is not False or wave2.get("protected_external_surface_accessed") is not False:
         errors.append("historical Wave-2 protected surface marker invalid")
@@ -127,7 +131,7 @@ def build_comprehensive_closure(
 
     if errors:
         return {
-            "schema_version": "1.1",
+            "schema_version": "1.2",
             "status": "FAIL",
             "closure_kind": "track_a_comprehensive_21_state_closure",
             "closure_source_git_commit": expected_closure_source_git_commit,
@@ -139,10 +143,11 @@ def build_comprehensive_closure(
 
     tie = selection_status == "CO_PRIMARY_TIE"
     result = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "status": "PASS",
         "closure_kind": "track_a_comprehensive_21_state_closure",
         "closure_source_git_commit": expected_closure_source_git_commit,
+        "analysis_source_git_commit": expected_closure_source_git_commit,
         "track_a_comprehensive_closed": True,
         "scientific_state_count": 21,
         "scientific_state_inventory": sorted(FULL_TRACK_A),
