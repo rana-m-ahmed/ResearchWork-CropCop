@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import subprocess
 from pathlib import Path
 
@@ -10,6 +9,7 @@ import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.hashing import sha256_file, sha256_json
 from cropcop_je.tracka_v12_analysis import arithmetic_mean, sample_sd
+from cropcop_je.tracka_v12_historical import HISTORICAL_TRACKA_CLOSURE_SPECS
 
 SEEDS = ("S1", "S2", "S3")
 R04 = {seed: f"R04-MNV4-DIRECT-{seed}" for seed in SEEDS}
@@ -48,26 +48,17 @@ def paired_summary(left: dict[str, dict], right: dict[str, dict], *, label: str)
     for metric in METRICS:
         deltas = {seed: float(left[seed][metric]) - float(right[seed][metric]) for seed in SEEDS}
         values = list(deltas.values())
-        result["metric_deltas"][metric] = {
-            "seedwise": deltas,
-            "mean": arithmetic_mean(values),
-            "sample_sd": sample_sd(values),
-        }
+        result["metric_deltas"][metric] = {"seedwise": deltas, "mean": arithmetic_mean(values), "sample_sd": sample_sd(values)}
     class_deltas = []
     for class_index in range(120):
-        seedwise = {
-            seed: float(left[seed]["class_f1"][class_index]) - float(right[seed]["class_f1"][class_index])
-            for seed in SEEDS
-        }
+        seedwise = {seed: float(left[seed]["class_f1"][class_index]) - float(right[seed]["class_f1"][class_index]) for seed in SEEDS}
         values = list(seedwise.values())
-        class_deltas.append(
-            {
-                "class_index": class_index,
-                "seedwise_f1_delta": seedwise,
-                "mean_f1_delta": arithmetic_mean(values),
-                "sample_sd_f1_delta": sample_sd(values),
-            }
-        )
+        class_deltas.append({
+            "class_index": class_index,
+            "seedwise_f1_delta": seedwise,
+            "mean_f1_delta": arithmetic_mean(values),
+            "sample_sd_f1_delta": sample_sd(values),
+        })
     result["per_class_f1_delta"] = class_deltas
     result["class_delta_summary"] = {
         "mean_of_120_class_mean_deltas": arithmetic_mean(row["mean_f1_delta"] for row in class_deltas),
@@ -111,8 +102,18 @@ def main() -> int:
             raise SystemExit(f"protected surface marker invalid: {experiment_id}")
         selected_sha = str(payload.get("selected_checkpoint_sha256", ""))
         source_sha = str(payload.get("source_git_commit", ""))
+        analysis_sha = str(payload.get("analysis_source_git_commit", ""))
         if len(selected_sha) != 64 or len(source_sha) != 40:
             raise SystemExit(f"auxiliary-analysis state lacks selected-checkpoint/source identity: {experiment_id}")
+        if analysis_sha != closure_source_git_commit:
+            raise SystemExit(f"auxiliary-analysis source provenance mismatch: {experiment_id}")
+
+        historical = HISTORICAL_TRACKA_CLOSURE_SPECS.get(experiment_id)
+        if historical is not None:
+            if selected_sha != historical["selected_checkpoint_sha256"]:
+                raise SystemExit(f"historical selected-checkpoint lineage mismatch: {experiment_id}")
+            if source_sha != historical["source_git_commit"]:
+                raise SystemExit(f"historical scientific-source lineage mismatch: {experiment_id}")
 
         if experiment_id.startswith("R04-"):
             robust_path = Path(index.get("r04_robustness_replay", {}).get(experiment_id, "")).resolve()
@@ -124,7 +125,9 @@ def main() -> int:
             if robust.get("selected_checkpoint_sha256") != selected_sha:
                 raise SystemExit(f"R04 direct/robustness selected-checkpoint mismatch: {experiment_id}")
             if robust.get("source_git_commit") != source_sha:
-                raise SystemExit(f"R04 direct/robustness source mismatch: {experiment_id}")
+                raise SystemExit(f"R04 direct/robustness scientific-source mismatch: {experiment_id}")
+            if robust.get("analysis_source_git_commit") != closure_source_git_commit:
+                raise SystemExit(f"R04 direct/robustness analysis-source mismatch: {experiment_id}")
             if robust.get("surface") != "DS-V1-VAL" or robust.get("training_or_adaptation_performed") is not False:
                 raise SystemExit(f"R04 robustness surface/adaptation marker invalid: {experiment_id}")
             if robust.get("v1_test_accessed") is not False or robust.get("external_surface_accessed") is not False:
@@ -144,6 +147,7 @@ def main() -> int:
         lineage[experiment_id] = {
             "selected_checkpoint_sha256": selected_sha,
             "scientific_source_git_commit": source_sha,
+            "analysis_source_git_commit": analysis_sha,
         }
 
     def group(mapping):
@@ -154,10 +158,11 @@ def main() -> int:
     logits = group(R12_LOGITS)
     feature = group(R12_FEATURE)
     result = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "status": "PASS",
         "closure_kind": "track_a_auxiliary_three_seed_analysis",
         "closure_source_git_commit": closure_source_git_commit,
+        "analysis_source_git_commit": closure_source_git_commit,
         "state_inventory": sorted(REQUIRED),
         "state_count": len(REQUIRED),
         "conditions": {
