@@ -45,6 +45,36 @@ def verify_embedded_hash(payload: dict[str, Any], field: str) -> bool:
     return isinstance(observed, str) and len(observed) == 64 and observed == sha256_json(clean)
 
 
+def _valid_actions_run_id(value: Any) -> bool:
+    text = str(value or "")
+    return text.isdigit() and int(text) > 0
+
+
+def _validate_ci_attestation_provenance(
+    payload: dict[str, Any],
+    *,
+    expected_kind: str,
+    source_git_commit: str,
+    label: str,
+) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema_version") != "1.0":
+        errors.append(f"{label} schema version mismatch")
+    if payload.get("attestation_kind") != expected_kind:
+        errors.append(f"{label} kind mismatch")
+    if payload.get("github_actions") is not True:
+        errors.append(f"{label} is not marked as GitHub Actions emitted")
+    if payload.get("pull_request_head_sha") != source_git_commit:
+        errors.append(f"{label} PR-head SHA mismatch")
+    if payload.get("source_git_commit") != source_git_commit:
+        errors.append(f"{label} source SHA mismatch")
+    if not _valid_actions_run_id(payload.get("workflow_run_id")):
+        errors.append(f"{label} workflow run ID is missing/invalid")
+    if not _valid_actions_run_id(payload.get("workflow_run_attempt")):
+        errors.append(f"{label} workflow run attempt is missing/invalid")
+    return errors
+
+
 def compose_gate_inputs(
     *,
     source_git_commit: str,
@@ -56,16 +86,40 @@ def compose_gate_inputs(
     file_hashes: dict[str, str],
 ) -> tuple[dict[str, str], dict[str, Any]]:
     errors: list[str] = []
-    if code_attestation.get("status") != "PASS" or code_attestation.get("source_git_commit") != source_git_commit:
-        errors.append("code attestation is not exact-source PASS")
+    errors.extend(_validate_ci_attestation_provenance(
+        code_attestation,
+        expected_kind="track_a_v12_pre_science_code",
+        source_git_commit=source_git_commit,
+        label="code attestation",
+    ))
+    if code_attestation.get("status") != "PASS":
+        errors.append("code attestation is not PASS")
     if not verify_embedded_hash(code_attestation, "attestation_sha256"):
         errors.append("code attestation self-hash mismatch")
     static = code_attestation.get("static_pre_science_gates", {})
     if set(static) != STATIC_GATES or any(static.get(name) != "PASS" for name in STATIC_GATES):
         errors.append("code attestation static gate inventory/PASS state mismatch")
+    science_diff_reports = code_attestation.get("science_diff_reports", {})
+    if set(science_diff_reports) != {"principal", "secondary"}:
+        errors.append("code attestation science-diff report inventory mismatch")
+    else:
+        for name in ("principal", "secondary"):
+            if (science_diff_reports.get(name) or {}).get("status") != "PASS":
+                errors.append(f"code attestation {name} science-diff report is not PASS")
+    science_diff_sha = code_attestation.get("science_diff_sha256", {})
+    if set(science_diff_sha) != {"principal", "secondary"} or any(
+        len(str(science_diff_sha.get(name, ""))) != 64 for name in ("principal", "secondary")
+    ):
+        errors.append("code attestation science-diff SHA inventory invalid")
 
-    if lock_runtime_attestation.get("status") != "PASS" or lock_runtime_attestation.get("source_git_commit") != source_git_commit:
-        errors.append("lock/runtime attestation is not exact-source PASS")
+    errors.extend(_validate_ci_attestation_provenance(
+        lock_runtime_attestation,
+        expected_kind="track_a_v12_exact_head_lock_runtime",
+        source_git_commit=source_git_commit,
+        label="lock/runtime attestation",
+    ))
+    if lock_runtime_attestation.get("status") != "PASS":
+        errors.append("lock/runtime attestation is not PASS")
     if not verify_embedded_hash(lock_runtime_attestation, "attestation_sha256"):
         errors.append("lock/runtime attestation self-hash mismatch")
     if lock_runtime_attestation.get("science_authorized") is not False:
@@ -73,6 +127,14 @@ def compose_gate_inputs(
     for gate in ("immutable_v12_lock", "v121_runtime_qualification", "candidate_claim_boundary_lock"):
         if lock_runtime_attestation.get(gate) != "PASS":
             errors.append(f"lock/runtime attestation gate is not PASS: {gate}")
+    content_report = lock_runtime_attestation.get("content_lock_report") or {}
+    runtime_report = lock_runtime_attestation.get("runtime_report") or {}
+    if content_report.get("overall_status") != "PASS" or content_report.get("static", {}).get("status") != "PASS":
+        errors.append("embedded immutable content-lock report is not PASS")
+    if runtime_report.get("status") != "PASS" or runtime_report.get("science_authorized") is not False:
+        errors.append("embedded R13 runtime report is not pre-science PASS")
+    if runtime_report.get("qualified_target") != "blocks.13.norm1":
+        errors.append("embedded R13 runtime target drift")
 
     g1_errors = validate_g1a_seal_object(g1a)
     if g1_errors:
@@ -118,6 +180,7 @@ def compose_gate_inputs(
             "attestation_sha256": code_attestation["attestation_sha256"],
             "artifact_file_sha256": file_hashes["code_attestation"],
             "source_git_commit": source_git_commit,
+            "workflow_run_id": str(code_attestation["workflow_run_id"]),
         }
     bindings["immutable_v12_lock"] = {
         "kind": "exact_head_lock_runtime_attestation",
@@ -125,6 +188,7 @@ def compose_gate_inputs(
         "content_lock_report_sha256": lock_runtime_attestation["content_lock_report_sha256"],
         "artifact_file_sha256": file_hashes["lock_runtime_attestation"],
         "source_git_commit": source_git_commit,
+        "workflow_run_id": str(lock_runtime_attestation["workflow_run_id"]),
     }
     bindings["v121_runtime_qualification"] = {
         "kind": "exact_head_lock_runtime_attestation",
@@ -132,6 +196,7 @@ def compose_gate_inputs(
         "runtime_report_sha256": lock_runtime_attestation["runtime_report_sha256"],
         "artifact_file_sha256": file_hashes["lock_runtime_attestation"],
         "source_git_commit": source_git_commit,
+        "workflow_run_id": str(lock_runtime_attestation["workflow_run_id"]),
     }
     bindings["candidate_claim_boundary_lock"] = {
         "kind": "exact_head_lock_runtime_attestation",
@@ -139,6 +204,7 @@ def compose_gate_inputs(
         "candidate_claim_boundary_sha256": lock_runtime_attestation["candidate_claim_boundary_sha256"],
         "xai_operationalization_sha256": lock_runtime_attestation["xai_operationalization_sha256"],
         "source_git_commit": source_git_commit,
+        "workflow_run_id": str(lock_runtime_attestation["workflow_run_id"]),
     }
     bindings["g1a"] = {
         "kind": "track_a_v12_g1a",
