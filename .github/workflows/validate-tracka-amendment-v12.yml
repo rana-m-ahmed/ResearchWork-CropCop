@@ -17,6 +17,7 @@ on:
       - 'journal_extension/kaggle/run_tracka_v12_account.py'
       - 'tests/test_tracka_v12*.py'
       - '.github/workflows/validate-tracka-amendment-v12.yml'
+      - '.github/workflows/validate-tracka-v12-implementation.yml'
   workflow_dispatch:
 
 permissions:
