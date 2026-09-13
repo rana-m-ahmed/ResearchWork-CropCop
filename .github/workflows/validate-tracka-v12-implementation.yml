@@ -10,10 +10,14 @@ on:
       - 'journal_extension/configs/r13_vit_dlittle/**'
       - 'journal_extension/src/cropcop_je/tracka_v12.py'
       - 'journal_extension/src/cropcop_je/tracka_v12_g1a.py'
+      - 'journal_extension/src/cropcop_je/tracka_v12_analysis.py'
       - 'journal_extension/scripts/seal_tracka_v12_g1a.py'
       - 'journal_extension/locks/track_a_comprehensive_execution_authority_v1_2_1.json'
+      - 'journal_extension/amendments/track_a_strengthening_v1/model_selection_operationalization_v1_2_1.json'
+      - 'journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2_1.json'
       - 'tests/test_tracka_v12_contract.py'
       - 'tests/test_tracka_v12_g1a_contract.py'
+      - 'tests/test_tracka_v12_analysis.py'
       - '.github/workflows/validate-tracka-v12-implementation.yml'
   workflow_dispatch:
 
@@ -37,19 +41,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12.13'
-      - name: Compile additive Track-A v1.2 contracts and G1A sealer
+      - name: Compile additive Track-A v1.2 implementation
         run: |
           python -m compileall -q \
             journal_extension/src/cropcop_je/tracka_v12.py \
             journal_extension/src/cropcop_je/tracka_v12_g1a.py \
+            journal_extension/src/cropcop_je/tracka_v12_analysis.py \
             journal_extension/scripts/seal_tracka_v12_g1a.py \
             tests/test_tracka_v12_contract.py \
-            tests/test_tracka_v12_g1a_contract.py
-      - name: Validate frozen continuation configs and G1A failure injection
+            tests/test_tracka_v12_g1a_contract.py \
+            tests/test_tracka_v12_analysis.py
+      - name: Validate frozen contracts, failure injection and final selector
         run: |
           python -m unittest \
             tests.test_tracka_v12_contract \
             tests.test_tracka_v12_g1a_contract \
+            tests.test_tracka_v12_analysis \
             -v
       - name: Prove original principal science semantics remain unchanged
         run: python journal_extension/scripts/check_science_diff.py --repo-root . --json-report principal-science-diff-tracka-v12.json
