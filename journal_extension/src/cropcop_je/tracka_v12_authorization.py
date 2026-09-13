@@ -32,7 +32,10 @@ REQUIRED_PRE_SCIENCE_GATES = frozenset(
         "efficiency_profiler_implementation",
         "xai_gradcampp_implementation",
         "analysis_selector_implementation",
-        "final_selection_closure_implementation",
+        "direct_selection_closure_implementation",
+        "auxiliary_replay_implementation",
+        "auxiliary_paired_analysis_implementation",
+        "comprehensive_21_state_closure_implementation",
     }
 )
 
@@ -118,7 +121,8 @@ def build_science_authorization(
         "note": (
             "This GO authorizes only the frozen eleven Track-A v1.2 continuation training states, including "
             "R13 S1/S2/S3. It is valid only after the candidate-comparison claim boundary and the complete "
-            "training, recovery, six-GPU orchestration and post-training inference/analysis implementations "
+            "training, recovery, six-GPU orchestration, direct selected-checkpoint replay/robustness/XAI, "
+            "auxiliary R05/R12 replay and paired-analysis, and comprehensive 21-state closure implementations "
             "are already frozen and qualified. It does not authorize new models, seeds, hyperparameters, "
             "V1-test access, external prediction opening or Track-C candidate result opening."
         ),
