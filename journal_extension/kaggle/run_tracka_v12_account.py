@@ -181,73 +181,142 @@ def publish_run(args, *, run_id: str, output_dir: Path) -> dict:
         return {"status": "REPAIR_REQUIRED", "branch": None, "error": f"{type(exc).__name__}: {exc}"}
 
 
-def worker(args, *, slot_id: str, queue: list[str], durable_map: dict, budget: SessionBudget, results: dict, lock: threading.Lock) -> None:
+def evaluate_account_completion(
+    *,
+    account_id: str,
+    account_manifest: dict,
+    results: dict[str, list[dict]],
+    worker_errors: dict[str, dict],
+    publish_requested: bool,
+) -> dict:
+    expected_slots = set(ACCOUNT_SLOTS[account_id])
+    errors: list[str] = []
+    publication_repairs: list[str] = []
+    if set(results) != expected_slots:
+        errors.append("missing_or_extra_slot_results")
+    if set(worker_errors) - expected_slots:
+        errors.append("worker_error_slot_outside_account")
+    for slot in ACCOUNT_SLOTS[account_id]:
+        expected_queue = list(account_manifest["slots"][slot]["queue"])
+        observed = list(results.get(slot, []))
+        if slot in worker_errors:
+            errors.append(f"{slot}:worker_exception")
+        if len(observed) != len(expected_queue):
+            errors.append(f"{slot}:incomplete_queue")
+        observed_ids = [row.get("experiment_id") for row in observed]
+        if observed_ids != expected_queue[: len(observed_ids)]:
+            errors.append(f"{slot}:queue_order_or_identity_drift")
+        for row in observed:
+            experiment_id = str(row.get("experiment_id", "UNKNOWN"))
+            if row.get("return_code") != 0:
+                errors.append(f"{slot}:{experiment_id}:nonzero_return_code")
+            if row.get("run_status") != "PASS":
+                errors.append(f"{slot}:{experiment_id}:nonterminal_run")
+            if row.get("continuation_required") not in {None, False}:
+                errors.append(f"{slot}:{experiment_id}:continuation_required")
+            if row.get("slot_quarantined") is True or row.get("session_rollover_required") is True:
+                errors.append(f"{slot}:{experiment_id}:slot_not_terminal")
+            if publish_requested and (row.get("publication") or {}).get("status") != "PASS":
+                publication_repairs.append(f"{slot}:{experiment_id}:publication")
+    science_complete = not errors
+    status = "PASS" if science_complete and not publication_repairs else "ATTENTION_REQUIRED"
+    return {
+        "status": status,
+        "science_complete": science_complete,
+        "execution_errors": sorted(set(errors)),
+        "publication_repairs": sorted(set(publication_repairs)),
+    }
+
+
+def worker(
+    args,
+    *,
+    slot_id: str,
+    queue: list[str],
+    durable_map: dict,
+    budget: SessionBudget,
+    results: dict,
+    worker_errors: dict,
+    lock: threading.Lock,
+) -> None:
     slot_results = []
-    for experiment_id in queue:
-        if budget.remaining_safe_seconds <= float(args.minimum_new_run_safe_seconds):
-            slot_results.append(
-                {
-                    "experiment_id": experiment_id,
-                    "status": "NOT_STARTED_SESSION_BUDGET",
-                    "remaining_safe_seconds": budget.remaining_safe_seconds,
-                }
+    try:
+        for experiment_id in queue:
+            if budget.remaining_safe_seconds <= float(args.minimum_new_run_safe_seconds):
+                slot_results.append(
+                    {
+                        "experiment_id": experiment_id,
+                        "status": "NOT_STARTED_SESSION_BUDGET",
+                        "run_status": None,
+                        "return_code": None,
+                        "continuation_required": True,
+                        "remaining_safe_seconds": budget.remaining_safe_seconds,
+                    }
+                )
+                break
+            run_id = scientific_run_id(experiment_id, args.source_git_commit)
+            output_dir = account_output_path(
+                args.output_root,
+                account_id=args.account_id,
+                experiment_id=experiment_id,
+            ).resolve()
+            output_dir.mkdir(parents=True, exist_ok=True)
+            env = sanitized_child_environment(dict(os.environ), slot_id=slot_id)
+            if git_credentials_present(env):
+                raise RuntimeError("child environment still contains Git credentials after sanitization")
+            command = child_command(
+                args,
+                experiment_id=experiment_id,
+                slot_id=slot_id,
+                run_id=run_id,
+                output_dir=output_dir,
+                durable_locator=durable_map[experiment_id],
             )
-            break
-        run_id = scientific_run_id(experiment_id, args.source_git_commit)
-        output_dir = account_output_path(
-            args.output_root,
-            account_id=args.account_id,
-            experiment_id=experiment_id,
-        ).resolve()
-        output_dir.mkdir(parents=True, exist_ok=True)
-        env = sanitized_child_environment(dict(os.environ), slot_id=slot_id)
-        if git_credentials_present(env):
-            raise RuntimeError("child environment still contains Git credentials after sanitization")
-        command = child_command(
-            args,
-            experiment_id=experiment_id,
-            slot_id=slot_id,
-            run_id=run_id,
-            output_dir=output_dir,
-            durable_locator=durable_map[experiment_id],
-        )
-        log_path = output_dir / "console.log"
-        with log_path.open("a", encoding="utf-8") as log:
-            cp = subprocess.run(
-                command,
-                cwd=Path(args.repo_root).resolve(),
-                env=env,
-                stdout=log,
-                stderr=subprocess.STDOUT,
-                text=True,
-                check=False,
-            )
-        record_path = output_dir / "run_record.json"
-        record = load_json(record_path) if record_path.is_file() else {}
-        publication = publish_run(args, run_id=run_id, output_dir=output_dir) if record.get("status") == "PASS" else {"status": "NOT_TERMINAL", "branch": None, "error": None}
-        result = {
-            "experiment_id": experiment_id,
-            "run_id": run_id,
-            "slot_id": slot_id,
-            "return_code": cp.returncode,
-            "run_status": record.get("status"),
-            "continuation_required": record.get("continuation_required"),
-            "selected_checkpoint_sha256": (record.get("result_summary") or {}).get("selected_checkpoint_sha256"),
-            "publication": publication,
-            "console_log": str(log_path),
-        }
-        slot_results.append(result)
-        if cp.returncode != 0 or record.get("status") == "FAIL":
-            result["slot_quarantined"] = True
-            break
-        if record.get("continuation_required") is True or record.get("status") == "LAUNCHED":
-            result["session_rollover_required"] = True
-            break
-        if record.get("status") != "PASS":
-            result["slot_quarantined"] = True
-            break
-    with lock:
-        results[slot_id] = slot_results
+            log_path = output_dir / "console.log"
+            with log_path.open("a", encoding="utf-8") as log:
+                cp = subprocess.run(
+                    command,
+                    cwd=Path(args.repo_root).resolve(),
+                    env=env,
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    check=False,
+                )
+            record_path = output_dir / "run_record.json"
+            record = load_json(record_path) if record_path.is_file() else {}
+            publication = publish_run(args, run_id=run_id, output_dir=output_dir) if record.get("status") == "PASS" else {"status": "NOT_TERMINAL", "branch": None, "error": None}
+            result = {
+                "experiment_id": experiment_id,
+                "run_id": run_id,
+                "slot_id": slot_id,
+                "return_code": cp.returncode,
+                "run_status": record.get("status"),
+                "continuation_required": record.get("continuation_required"),
+                "selected_checkpoint_sha256": (record.get("result_summary") or {}).get("selected_checkpoint_sha256"),
+                "publication": publication,
+                "console_log": str(log_path),
+            }
+            slot_results.append(result)
+            if cp.returncode != 0 or record.get("status") == "FAIL":
+                result["slot_quarantined"] = True
+                break
+            if record.get("continuation_required") is True or record.get("status") == "LAUNCHED":
+                result["session_rollover_required"] = True
+                break
+            if record.get("status") != "PASS":
+                result["slot_quarantined"] = True
+                break
+    except BaseException as exc:
+        with lock:
+            worker_errors[slot_id] = {
+                "type": type(exc).__name__,
+                "reason": str(exc),
+                "traceback_tail": traceback.format_exc()[-5000:],
+            }
+    finally:
+        with lock:
+            results[slot_id] = slot_results
 
 
 def main() -> int:
@@ -261,6 +330,7 @@ def main() -> int:
         account_manifest = account_queue_manifest(scheduler, args.account_id)
         atomic_write_json(account_summary_path.parent / "FROZEN_ACCOUNT_QUEUE.json", account_manifest)
         results: dict[str, list[dict]] = {}
+        worker_errors: dict[str, dict] = {}
         lock = threading.Lock()
         threads = []
         for slot_id in ACCOUNT_SLOTS[args.account_id]:
@@ -274,6 +344,7 @@ def main() -> int:
                     "durable_map": durable_map,
                     "budget": budget,
                     "results": results,
+                    "worker_errors": worker_errors,
                     "lock": lock,
                 },
                 name=f"tracka-{slot_id.replace('/', '-')}",
@@ -284,12 +355,16 @@ def main() -> int:
         for thread in threads:
             thread.join()
 
+        completion = evaluate_account_completion(
+            account_id=args.account_id,
+            account_manifest=account_manifest,
+            results=results,
+            worker_errors=worker_errors,
+            publish_requested=bool(args.publish_evidence),
+        )
         summary = {
-            "schema_version": "1.0",
-            "status": "PASS" if all(
-                all(row.get("run_status") == "PASS" for row in results.get(slot, []))
-                for slot in ACCOUNT_SLOTS[args.account_id]
-            ) else "ATTENTION_REQUIRED",
+            "schema_version": "1.1",
+            **completion,
             "account_id": args.account_id,
             "source_git_commit": args.source_git_commit,
             "scheduler_freeze_sha256": scheduler["scheduler_freeze_sha256"],
@@ -297,6 +372,7 @@ def main() -> int:
             "gpu_inventory": inventory,
             "session_budget": budget.snapshot(),
             "slot_results": results,
+            "worker_errors": worker_errors,
             "child_git_credentials_removed": True,
             "one_child_per_visible_gpu": True,
             "cross_gpu_gradient_synchronization": False,
@@ -306,7 +382,7 @@ def main() -> int:
         return 0 if summary["status"] == "PASS" else 2
     except BaseException as exc:
         failure = {
-            "schema_version": "1.0",
+            "schema_version": "1.1",
             "status": "FAIL",
             "account_id": args.account_id,
             "source_git_commit": args.source_git_commit,
