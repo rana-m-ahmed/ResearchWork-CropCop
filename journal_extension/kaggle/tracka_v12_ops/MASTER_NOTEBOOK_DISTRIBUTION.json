@@ -1,9 +1,9 @@
 {
-  "schema_version": "3.2",
+  "schema_version": "3.3",
   "status": "LOCKED_DISTRIBUTION",
   "science_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "operator_runtime_sha": "e8ea268729663a921db461b337a6cfe50e03630f",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix3-e8ea268",
+  "operator_runtime_sha": "0fe16df9e6782eae34a8c577b5ec13c6b50c2cc4",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix4-0fe16df",
   "normal_operator_notebooks": [
     "TRACKA_V12_MASTER_K1.ipynb",
     "TRACKA_V12_MASTER_K2.ipynb",
@@ -13,6 +13,9 @@
   "legacy_v2_notebooks_are_canonical_here": false,
   "same_notebook_rerun_is_recovery": true,
   "automatic_public_safe_git_evidence": true,
+  "idempotent_git_evidence_publication": true,
+  "scientific_parent_publication_after_frozen_execution": true,
+  "frozen_scientific_runner_git_publication_enabled": false,
   "private_binary_material_committed_to_git": false,
   "fail_fast_input_preflight_before_stack_install": true,
   "duplicate_metadata_resolution": "byte-identical + strongest dataset structural affinity",
