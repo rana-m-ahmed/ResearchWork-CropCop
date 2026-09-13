@@ -7,14 +7,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "journal_extension" / "src"
-SCRIPTS = ROOT / "journal_extension" / "scripts"
-for path in (SRC, SCRIPTS):
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 from cropcop_je.runlog import claim_run_directory  # noqa: E402
-from cropcop_je.train import _identity as checkpoint_identity  # noqa: E402
-from run_tracka_v12_training_v121 import SLOT_IDS, logical_lane_id  # noqa: E402
+from cropcop_je.tracka_v12_placement import (  # noqa: E402
+    SLOT_IDS,
+    checkpoint_identity_projection,
+    logical_lane_id,
+)
 
 
 class TrackAV12PlacementTests(unittest.TestCase):
@@ -49,10 +50,10 @@ class TrackAV12PlacementTests(unittest.TestCase):
             "lane_id": logical,
             "physical_slot_id": "K1/GPU0",
         }
-        first = checkpoint_identity(base)
+        first = checkpoint_identity_projection(base)
         migrated = dict(base)
         migrated["physical_slot_id"] = "K3/GPU1"
-        second = checkpoint_identity(migrated)
+        second = checkpoint_identity_projection(migrated)
         self.assertEqual(first, second)
         self.assertEqual(first["lane_id"], logical)
         self.assertNotIn("physical_slot_id", first)
