@@ -7,7 +7,34 @@ from pathlib import Path
 
 from tracka_v12_kaggle_operator import *  # noqa: F401,F403
 
-OPERATOR_SCHEMA_VERSION = "2.0"
+OPERATOR_SCHEMA_VERSION = "2.1"
+
+
+def discover_g1a_bundle(input_root: str | Path = "/kaggle/input", override: str = "") -> Path:
+    """Resolve one complete Track-A G1A bundle using the frozen seal schema."""
+    roots = [Path(override).resolve()] if override else [
+        p.parent.resolve() for p in Path(input_root).rglob("TRACKA_V12_G1A_SEAL.json")
+    ]
+    matches = []
+    for root in roots:
+        seal_path = root / "TRACKA_V12_G1A_SEAL.json"
+        if not seal_path.is_file() or not (root / "private").is_dir() or not (root / "evidence").is_dir():
+            continue
+        try:
+            payload = load_json(seal_path)
+        except Exception:
+            continue
+        if (
+            payload.get("status") == "PASS"
+            and payload.get("science_authorized") is False
+            and payload.get("source_git_sha") == SCIENCE_SHA
+            and len(str(payload.get("g1a_seal_sha256", ""))) == 64
+        ):
+            matches.append(root)
+    matches = sorted({p.resolve() for p in matches})
+    if len(matches) != 1:
+        raise OperatorError(f"G1A bundle resolution must be unique, found {len(matches)}: {matches}")
+    return matches[0]
 
 
 def validate_private_locators_with_science(
@@ -16,12 +43,7 @@ def validate_private_locators_with_science(
     *,
     env: dict[str, str] | None = None,
 ) -> dict:
-    """Run the frozen repository's Kaggle private-durability preflight.
-
-    v2 deliberately serializes the locator mapping exactly once before embedding it
-    into the isolated subprocess. This replaces the superseded v1 helper implementation
-    that double-encoded the mapping and could turn it into a JSON string.
-    """
+    """Run the frozen repository's Kaggle private-durability preflight."""
     env = dict(os.environ if env is None else env)
     payload = json.dumps(mapping, sort_keys=True)
     code = (
