@@ -22,6 +22,7 @@ def git_head(repo: Path) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-root", default=".")
+    ap.add_argument("--expected-source-sha", required=True)
     ap.add_argument("--content-lock-report", required=True)
     ap.add_argument("--runtime-report", required=True)
     ap.add_argument("--output", required=True)
@@ -31,9 +32,9 @@ def main() -> int:
         raise SystemExit("lock/runtime attestation may only be emitted by GitHub Actions")
     repo = Path(args.repo_root).resolve()
     head = git_head(repo)
-    github_sha = os.environ.get("GITHUB_SHA", "").strip()
-    if len(head) != 40 or head != github_sha:
-        raise SystemExit(f"exact-head mismatch: checkout={head}, GITHUB_SHA={github_sha}")
+    expected = args.expected_source_sha.strip()
+    if len(expected) != 40 or head != expected:
+        raise SystemExit(f"exact-head mismatch: expected={expected}, checkout={head}")
 
     content_path = Path(args.content_lock_report).resolve()
     runtime_path = Path(args.runtime_report).resolve()
@@ -65,6 +66,7 @@ def main() -> int:
         "github_actions": True,
         "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
         "workflow_run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+        "pull_request_head_sha": expected,
         "immutable_v12_lock": "PASS",
         "v121_runtime_qualification": "PASS",
         "candidate_claim_boundary_lock": "PASS",
