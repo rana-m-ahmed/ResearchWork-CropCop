@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import sys
 import unittest
 from pathlib import Path
@@ -9,7 +10,14 @@ SRC = ROOT / "journal_extension" / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+RUNTIME_STACK_AVAILABLE = all(
+    importlib.util.find_spec(name) is not None
+    for name in ("numpy", "PIL", "torch")
+)
+RUNTIME_STACK_REASON = "exact Track-A runtime stack (numpy, Pillow, torch) is unavailable in this lightweight CPU-safe test environment"
 
+
+@unittest.skipUnless(RUNTIME_STACK_AVAILABLE, RUNTIME_STACK_REASON)
 class TrackAV12RuntimeAnalysisTests(unittest.TestCase):
     def test_locked_gaussian_noise_is_deterministic(self):
         import numpy as np
