@@ -1,10 +1,12 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "status": "PASS",
   "science_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "runtime_candidate_sha": "f606311ec5faa2d4d1a2ea44b279357bfd15fb84",
+  "runtime_candidate_sha": "5654f35fa52c9b6ae6c28f062969c9ebd65af3fa",
+  "runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix1-5654f35",
   "qa_check": "master-operator-qa",
   "qa_conclusion": "success",
-  "qa_workflow_run_id": 34762759183,
-  "note": "This record documents the validated pre-distribution runtime candidate. The immutable runtime branch is created from this exact commit; distribution-only notebook commits occur afterward and are not part of the runtime."
+  "qa_workflow_run_id": 34764824937,
+  "fix": "Fail-fast exact V1/principal-G1 preflight with mounted-input SHA diagnostics before dependency installation",
+  "note": "This immutable runtime is operator-only. Frozen science remains unchanged at the exact attested science SHA."
 }
