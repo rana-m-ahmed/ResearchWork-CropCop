@@ -1,0 +1,65 @@
+name: Validate Track-A v1.2 Kaggle operator infrastructure
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-launch-20260913
+    paths:
+      - 'journal_extension/kaggle/tracka_v12_ops/**'
+      - 'tests/test_tracka_v12_kaggle_ops.py'
+      - '.github/workflows/validate-tracka-v12-kaggle-ops.yml'
+  pull_request:
+    paths:
+      - 'journal_extension/kaggle/tracka_v12_ops/**'
+      - 'tests/test_tracka_v12_kaggle_ops.py'
+      - '.github/workflows/validate-tracka-v12-kaggle-ops.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  operator-static-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile operator drivers
+        run: |
+          python -m compileall -q journal_extension/kaggle/tracka_v12_ops
+      - name: Run independent operator contract tests
+        run: |
+          python -m unittest tests.test_tracka_v12_kaggle_ops -v
+      - name: Validate notebook JSON and no embedded outputs
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('journal_extension/kaggle/tracka_v12_ops')
+          notebooks = sorted(root.glob('*.ipynb'))
+          assert len(notebooks) == 8, notebooks
+          for path in notebooks:
+              nb = json.loads(path.read_text(encoding='utf-8'))
+              assert nb['nbformat'] == 4
+              for cell in nb['cells']:
+                  if cell.get('cell_type') == 'code':
+                      assert cell.get('outputs', []) == [], path
+                      assert cell.get('execution_count') is None, path
+          print('validated', len(notebooks), 'clean notebooks')
+          PY
+      - name: Guard frozen scientific source binding
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          expected = '9a72e9466a9a3e7429e0e36a028edac662f83146'
+          contract = json.loads(Path('journal_extension/kaggle/tracka_v12_ops/OPERATOR_CONTRACT.json').read_text())
+          assert contract['scientific_source_sha'] == expected
+          for path in Path('journal_extension/kaggle/tracka_v12_ops').glob('*.ipynb'):
+              nb = json.loads(path.read_text())
+              assert nb['metadata']['cropcop_operator']['science_sha'] == expected
+          print('frozen science binding:', expected)
+          PY
