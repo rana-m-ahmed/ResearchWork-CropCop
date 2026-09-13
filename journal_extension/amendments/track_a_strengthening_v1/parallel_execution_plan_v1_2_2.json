@@ -3,7 +3,7 @@
   "plan_id": "TRACKA-A1-PARALLEL-EXECUTION-V1.2.2",
   "status": "PRE_SCIENCE_EXECUTION_POLICY",
   "science_authorized": false,
-  "supersedes_only": "The runtime-cost estimator used to order the already frozen 11-state queue in parallel_execution_plan_v1_2_1.json. Scientific experiment IDs, seeds, initializations, configs, checkpoint selection and analysis semantics are unchanged.",
+  "supersedes_only": "The runtime-cost estimator and cross-account dispatch mechanism used by parallel_execution_plan_v1_2_1.json. Scientific experiment IDs, seeds, initializations, configs, checkpoint selection and analysis semantics are unchanged.",
   "resource_envelope": {
     "kaggle_accounts": 3,
     "gpus_per_account": 2,
@@ -54,17 +54,19 @@
     "purpose": "Scheduling only. Forecast values are never model-selection evidence and do not change scientific training."
   },
   "priority_freeze_algorithm": {
-    "name": "deterministic_longest_processing_time_first",
+    "name": "deterministic LPT list scheduling to six physical slots",
     "state_cost": "estimated_full_run_seconds_upper_bound from the sealed v1.2.2 profile qualification",
-    "tie_break": "experiment_id ascending",
-    "initial_dispatch": "assign first six states to K1/GPU0, K1/GPU1, K2/GPU0, K2/GPU1, K3/GPU0, K3/GPU1 in that order",
-    "continuation_dispatch": "next queued state goes to the first qualified physical slot that becomes free; simultaneous-free ties use fixed slot order",
-    "scientific_results_may_change_priority": false
+    "job_order": "descending estimated full-run seconds, then experiment_id ascending",
+    "assignment": "assign each job in job_order to the physical slot with the currently smallest predicted cumulative load; equal-load ties use K1/GPU0, K1/GPU1, K2/GPU0, K2/GPU1, K3/GPU0, K3/GPU1",
+    "output": "six immutable per-slot queues plus predicted cumulative slot loads",
+    "account_execution": "K1 consumes only K1/GPU0 and K1/GPU1 queues; K2 consumes only K2 queues; K3 consumes only K3 queues. No mutable cross-account queue or race is required.",
+    "scientific_results_may_change_priority_or_assignment": false
   },
   "placement_and_recovery": {
     "checkpoint_scientific_identity": "stable logical experiment lane independent of physical Kaggle account/GPU",
     "physical_slot": "telemetry and orchestration only",
     "cross_slot_resume": "authorized after exact durable-checkpoint identity/hash verification on another qualified T4",
-    "seed_or_initialization_change_on_migration": false
+    "seed_or_initialization_change_on_migration": false,
+    "migration_rule": "a technical migration is an operational recovery action only; it may not change experiment ID, seed, initialization, configuration, selected-checkpoint rule or post-training analysis"
   }
 }
