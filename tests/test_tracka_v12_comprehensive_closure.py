@@ -28,6 +28,7 @@ def fixtures(selection_status="SELECTED"):
         "science_selection_sealed": True,
         "closure_kind": "track_a_direct_model_selection",
         "closure_source_git_commit": SOURCE,
+        "analysis_source_git_commit": SOURCE,
         "direct_state_inventory": sorted(closure.ALL_DIRECT_STATES),
         "track_b_handoff_authorized": False,
         "track_c_handoff_authorized": False,
@@ -44,6 +45,7 @@ def fixtures(selection_status="SELECTED"):
         "status": "PASS",
         "closure_kind": "track_a_auxiliary_three_seed_analysis",
         "closure_source_git_commit": SOURCE,
+        "analysis_source_git_commit": SOURCE,
         "state_inventory": sorted(closure.R04 | closure.R05 | closure.R12),
         "v1_test_accessed": False,
         "external_surface_accessed": False,
@@ -91,6 +93,7 @@ class TrackAV12ComprehensiveClosureTests(unittest.TestCase):
         self.assertTrue(result["track_c_handoff_authorized"])
         self.assertFalse(result["deployment_tie_gate_required"])
         self.assertEqual(result["closure_source_git_commit"], SOURCE)
+        self.assertEqual(result["analysis_source_git_commit"], SOURCE)
 
     def test_co_primary_tie_closes_track_a_but_keeps_handoffs_closed(self):
         result = self.build("CO_PRIMARY_TIE")
@@ -145,7 +148,7 @@ class TrackAV12ComprehensiveClosureTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("direct-selection self-hash mismatch", result["errors"])
 
-    def test_mismatched_closure_source_fails(self):
+    def test_mismatched_closure_or_analysis_source_fails(self):
         direct, auxiliary, wave1, wave2 = fixtures()
         result = closure.build_comprehensive_closure(
             direct_selection=direct,
@@ -158,6 +161,22 @@ class TrackAV12ComprehensiveClosureTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("direct-selection closure source mismatch", result["errors"])
         self.assertIn("auxiliary-analysis closure source mismatch", result["errors"])
+        self.assertIn("direct-selection analysis source mismatch", result["errors"])
+        self.assertIn("auxiliary-analysis analysis source mismatch", result["errors"])
+
+    def test_wave2_superset_is_rejected(self):
+        direct, auxiliary, wave1, wave2 = fixtures()
+        wave2["runs"].append({"experiment_id": "R99-UNAUTHORIZED-S1"})
+        result = closure.build_comprehensive_closure(
+            direct_selection=direct,
+            auxiliary_analysis=auxiliary,
+            wave1=wave1,
+            wave2=wave2,
+            evidence_hashes={},
+            expected_closure_source_git_commit=SOURCE,
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("historical Wave-2 R06/R07/R12-S1 closure mismatch", result["errors"])
 
     def test_real_historical_closure_artifacts_match_integration_contract(self):
         evidence = ROOT / "journal_extension" / "evidence" / "public" / "track_a"
