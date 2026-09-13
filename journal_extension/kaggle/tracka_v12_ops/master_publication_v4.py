@@ -92,6 +92,54 @@ def remote_evidence_matches(repo: str | Path, run_id: str, files: list[str | Pat
     return True
 
 
+def _publish_one(
+    repo: Path,
+    run_id: str,
+    path: Path,
+    frozen_publish,
+    *,
+    attempts: int,
+) -> str:
+    branch = f"run-evidence/{run_id}"
+    last_error: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        if remote_evidence_matches(repo, run_id, [path]):
+            return branch
+        try:
+            result = frozen_publish(
+                repo_dir=repo,
+                source_git_sha=SCIENCE_SHA,
+                run_id=run_id,
+                files=[str(path)],
+            )
+            if not remote_evidence_matches(repo, run_id, [path]):
+                raise OperatorError(
+                    f"public evidence file did not round-trip after publish: {branch}/{path.name}"
+                )
+            return result
+        except Exception as exc:
+            last_error = exc
+            try:
+                if remote_evidence_matches(repo, run_id, [path]):
+                    print(
+                        f"Public evidence became canonical despite client-side publish error: "
+                        f"{branch}/{path.name}"
+                    )
+                    return branch
+            except Exception as verification_exc:
+                last_error = verification_exc
+            if attempt == attempts:
+                break
+            delay = (5, 15, 30)[min(attempt - 1, 2)]
+            print(
+                f"public evidence publication attempt {attempt}/{attempts} failed for "
+                f"{run_id}/{path.name}: {type(last_error).__name__}; retrying in {delay}s"
+            )
+            time.sleep(delay)
+    assert last_error is not None
+    raise last_error
+
+
 def publish_public_files(
     repo: str | Path,
     run_id: str,
@@ -99,12 +147,13 @@ def publish_public_files(
     *,
     attempts: int = 3,
 ) -> str:
-    """Publish allowlisted text evidence idempotently without changing frozen science code.
+    """Publish audited text evidence idempotently without changing frozen science code.
 
-    Existing byte-identical evidence is a successful no-op. Differing evidence is updated through
-    the frozen publisher. If a publish raises after the remote was actually updated, a post-failure
-    byte comparison recognizes the completed operation. Existing evidence branches must descend
-    from the frozen scientific source SHA.
+    Each file is reconciled independently on one source-bound evidence branch. This handles empty,
+    complete, and partially published bundles. Existing byte-identical files are successful no-ops;
+    changed/missing files are updated one at a time through the frozen publisher. A final full-bundle
+    round-trip is mandatory. A publish that raises after the remote was updated is recognized by
+    re-reading the branch. Existing branches must descend from the frozen scientific source SHA.
     """
     if attempts < 1:
         raise OperatorError("publication attempts must be positive")
@@ -112,42 +161,16 @@ def publish_public_files(
     v3.load_github_token()
     _, frozen_publish = _publication_api(repo)
     branch = f"run-evidence/{run_id}"
-    last_error: Exception | None = None
 
     with _PUBLICATION_LOCK:
-        for attempt in range(1, attempts + 1):
-            if remote_evidence_matches(repo, run_id, paths):
-                print(f"Public evidence already canonical: {branch}")
-                return branch
-            try:
-                result = frozen_publish(
-                    repo_dir=repo,
-                    source_git_sha=SCIENCE_SHA,
-                    run_id=run_id,
-                    files=[str(path) for path in paths],
-                )
-                if not remote_evidence_matches(repo, run_id, paths):
-                    raise OperatorError(f"public evidence did not round-trip after publish: {branch}")
-                return result
-            except Exception as exc:
-                last_error = exc
-                try:
-                    if remote_evidence_matches(repo, run_id, paths):
-                        print(f"Public evidence became canonical despite client-side publish error: {branch}")
-                        return branch
-                except Exception as verification_exc:
-                    last_error = verification_exc
-                if attempt == attempts:
-                    break
-                delay = (5, 15, 30)[min(attempt - 1, 2)]
-                print(
-                    f"public evidence publication attempt {attempt}/{attempts} failed for {run_id}: "
-                    f"{type(last_error).__name__}; retrying in {delay}s"
-                )
-                time.sleep(delay)
-
-    assert last_error is not None
-    raise last_error
+        if remote_evidence_matches(repo, run_id, paths):
+            print(f"Public evidence bundle already canonical: {branch}")
+            return branch
+        for path in paths:
+            _publish_one(repo, run_id, path, frozen_publish, attempts=attempts)
+        if not remote_evidence_matches(repo, run_id, paths):
+            raise OperatorError(f"public evidence bundle failed final round-trip verification: {branch}")
+    return branch
 
 
 def install_stage_publication_hooks() -> None:
