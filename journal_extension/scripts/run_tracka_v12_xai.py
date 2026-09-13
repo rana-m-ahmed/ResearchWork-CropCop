@@ -8,6 +8,7 @@ from pathlib import Path
 import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.hashing import sha256_file
+from cropcop_je.source_state import verify_clean_source
 from cropcop_je.tracka_v12_xai import (
     deletion_faithfulness,
     deterministic_randomize_classifier,
@@ -42,6 +43,7 @@ def mean(values):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-root", default=".")
+    ap.add_argument("--analysis-source-git-commit", required=True)
     ap.add_argument("--run-record", required=True)
     ap.add_argument("--run-id", required=True)
     ap.add_argument("--checkpoint-root", required=True)
@@ -50,6 +52,7 @@ def main() -> int:
     ap.add_argument("--image-root", required=True)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--g1a-bundle", default="")
+    ap.add_argument("--secondary-g1-bundle", default="")
     ap.add_argument("--principal-config", default="")
     ap.add_argument("--principal-pair-init", default="")
     ap.add_argument("--principal-pair-evidence", default="")
@@ -68,6 +71,13 @@ def main() -> int:
     import numpy as np
     import torch
     from PIL import Image, ImageOps
+
+    repo = Path(args.repo_root).resolve()
+    output = Path(args.output_dir).resolve()
+    analysis_source = args.analysis_source_git_commit.strip()
+    if len(analysis_source) != 40:
+        raise SystemExit("analysis source Git commit must be a full 40-character SHA")
+    verify_clean_source(repo, authorized_source_sha=analysis_source, output_roots=[output])
 
     run_record = load_json(args.run_record)
     if run_record.get("run_id") != args.run_id or run_record.get("status") != "PASS":
@@ -88,7 +98,6 @@ def main() -> int:
     family = family_for_experiment(str(run_record["experiment_id"]))
     target_path, target_module, reshape = target_for_family(model, family, device)
 
-    output = Path(args.output_dir).resolve()
     private = output / "private_xai"
     public = output / "public_xai"
     panel_dir = private / "qualitative_panel"
@@ -120,18 +129,16 @@ def main() -> int:
             )
             map_cache[row_id] = heatmap.detach().cpu()
             input_cache[row_id] = working.copy()
-        analysis_rows.append(
-            {
-                "stable_row_id": row_id,
-                "target_class_index": int(row.class_index),
-                "predicted_class_index": int(result["predicted_class_index"]),
-                "attribution_target_class_index": int(result["target_class_index"]),
-                "top1_confidence": float(result["target_probability"]),
-                "finite_map": not bool(result["nonfinite"]),
-                "degenerate_map": bool(result["degenerate"]),
-                "faithfulness": faithfulness,
-            }
-        )
+        analysis_rows.append({
+            "stable_row_id": row_id,
+            "target_class_index": int(row.class_index),
+            "predicted_class_index": int(result["predicted_class_index"]),
+            "attribution_target_class_index": int(result["target_class_index"]),
+            "top1_confidence": float(result["target_probability"]),
+            "finite_map": not bool(result["nonfinite"]),
+            "degenerate_map": bool(result["degenerate"]),
+            "faithfulness": faithfulness,
+        })
 
     baseline_by_id = {row["stable_row_id"]: row for row in analysis_rows}
     randomization = []
@@ -144,13 +151,7 @@ def main() -> int:
                 randomization.append({"stable_row_id": row_id, "spearman": None, "status": "BASELINE_MAP_UNAVAILABLE"})
                 continue
             tensor = image_to_normalized_tensor(input_cache[row_id]).unsqueeze(0).to(device)
-            randomized = gradcampp(
-                model,
-                tensor,
-                target_module,
-                target_class=int(baseline["attribution_target_class_index"]),
-                reshape_transform=reshape,
-            )
+            randomized = gradcampp(model, tensor, target_module, target_class=int(baseline["attribution_target_class_index"]), reshape_transform=reshape)
             if randomized["heatmap"] is None:
                 correlation = None
                 status = "RANDOMIZED_MAP_UNAVAILABLE"
@@ -169,13 +170,7 @@ def main() -> int:
             continue
         flipped_image = ImageOps.mirror(input_cache[row_id])
         tensor = image_to_normalized_tensor(flipped_image).unsqueeze(0).to(device)
-        flipped = gradcampp(
-            model,
-            tensor,
-            target_module,
-            target_class=int(baseline["attribution_target_class_index"]),
-            reshape_transform=reshape,
-        )
+        flipped = gradcampp(model, tensor, target_module, target_class=int(baseline["attribution_target_class_index"]), reshape_transform=reshape)
         if flipped["heatmap"] is None:
             correlation = None
             status = "FLIPPED_MAP_UNAVAILABLE"
@@ -215,19 +210,18 @@ def main() -> int:
 
     finite_count = sum(bool(row["finite_map"]) for row in analysis_rows)
     degenerate_count = sum(bool(row["degenerate_map"]) for row in analysis_rows)
-    advantages = [
-        cell["saliency_minus_random_confidence_drop_advantage"]
-        for row in analysis_rows
-        for cell in row["faithfulness"]
-    ]
+    advantages = [cell["saliency_minus_random_confidence_drop_advantage"] for row in analysis_rows for cell in row["faithfulness"]]
     random_corr = [row["spearman"] for row in randomization if row["spearman"] is not None]
     flip_corr = [row["spearman"] for row in flip if row["spearman"] is not None]
+    scientific_source = str(run_record["source_git_commit"])
     summary = {
-        "schema_version": "1.2.3",
+        "schema_version": "1.2.4",
         "status": "PASS" if finite_count == len(analysis_rows) else "WARNING_NONFINITE_MAPS",
         "experiment_id": run_record["experiment_id"],
         "run_id": run_record["run_id"],
-        "source_git_commit": str(run_record["source_git_commit"]),
+        "source_git_commit": scientific_source,
+        "scientific_source_git_commit": scientific_source,
+        "analysis_source_git_commit": analysis_source,
         "family": family,
         "selected_checkpoint_sha256": selected_sha,
         "method": "Grad-CAM++",
