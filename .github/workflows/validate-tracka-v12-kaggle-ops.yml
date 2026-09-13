@@ -24,12 +24,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout operator branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up frozen Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12.13'
 
@@ -85,6 +86,7 @@ jobs:
           from pathlib import Path
 
           root = Path('journal_extension/kaggle/tracka_v12_ops')
+          contract = json.loads((root / 'OPERATOR_CONTRACT.json').read_text(encoding='utf-8'))
           notebooks = sorted(root.glob('*.ipynb'))
           if len(notebooks) != 8:
               raise SystemExit(f'expected exactly 8 operator notebooks, found {len(notebooks)}')
@@ -92,16 +94,24 @@ jobs:
               nb = json.loads(path.read_text(encoding='utf-8'))
               if nb.get('nbformat') != 4 or nb.get('nbformat_minor') != 5:
                   raise SystemExit(f'invalid notebook format: {path}')
+              meta = (nb.get('metadata') or {}).get('cropcop_operator') or {}
+              if meta.get('science_sha') != contract['scientific_source_sha']:
+                  raise SystemExit(f'science SHA mismatch in {path}')
+              if meta.get('operator_runtime_sha') != contract['operator_runtime_sha']:
+                  raise SystemExit(f'operator runtime SHA mismatch in {path}')
               cells = nb.get('cells')
               if not isinstance(cells, list) or not cells:
                   raise SystemExit(f'notebook has no cells: {path}')
+              joined = json.dumps(nb)
+              if contract['operator_runtime_sha'] not in joined:
+                  raise SystemExit(f'pinned runtime SHA absent from notebook body: {path}')
               for index, cell in enumerate(cells):
                   if cell.get('cell_type') == 'code':
                       if cell.get('outputs', []) != [] or cell.get('execution_count') is not None:
                           raise SystemExit(f'notebook contains execution residue: {path}:cell-{index}')
                       source = ''.join(cell.get('source') or [])
                       compile(source, f'{path}:cell-{index}', 'exec')
-          print(f'notebook parse/syntax PASS: {len(notebooks)} notebooks')
+          print(f'notebook parse/syntax/binding PASS: {len(notebooks)} notebooks')
           PY
 
       - name: Run static and behavioral operator tests
