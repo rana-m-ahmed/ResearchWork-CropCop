@@ -1,19 +1,23 @@
 {
-  "schema_version": "3.1",
+  "schema_version": "3.2",
   "status": "LOCKED_MASTER_OPERATOR_CONTRACT",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "operator_runtime_sha": "9fdbba6f81bfa2f1ce235b3d31ee52a75719a779",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix2-9fdbba6",
+  "operator_runtime_sha": "e8ea268729663a921db461b337a6cfe50e03630f",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix3-e8ea268",
   "dataset": {
     "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
     "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
     "fail_fast_before_dependency_install": true,
     "diagnose_mounted_candidate_hashes": true,
     "byte_identical_duplicate_metadata_allowed": true,
-    "duplicate_manifest_selection": "structurally_nearest_image_tree",
+    "nested_split_root_discovery": true,
+    "root_qualification_surfaces": ["train", "val"],
+    "protected_test_opened_for_root_qualification": false,
+    "duplicate_manifest_selection": "strongest_dataset_structural_affinity",
     "conflicting_image_roots_fail_closed": true,
-    "bounded_shallow_metadata_discovery": true
+    "bounded_shallow_metadata_discovery": true,
+    "resolved_paths_bound_for_downstream_reuse": true
   },
   "principal_g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
   "r13": {
@@ -57,13 +61,22 @@
     "parent_only": true,
     "serialized": true,
     "bounded_retry": true,
+    "write_preflight_before_stack_repair": true,
     "public_safe_text_only": true,
     "scientific_child_git_credentials": false,
     "publication_failure_invalidates_science": false
   },
+  "pre_science_io": {
+    "science_checkout_bounded_retry": true,
+    "torchvision_upstream_bounded_retry": true,
+    "r13_upstream_bounded_retry": true,
+    "scientific_result_steps_auto_retried": false
+  },
   "recovery": {
     "same_notebook_rerun": true,
     "scientific_resume_mode": "auto",
+    "empty_g1a_placeholder_is_recoverable": true,
+    "stale_or_invalid_g1a_seal_is_recoverable_without_investigation": false,
     "dependency_timeout_is_science_failure": false,
     "explicit_continuation_required": true,
     "malformed_summary_is_resumable": false
