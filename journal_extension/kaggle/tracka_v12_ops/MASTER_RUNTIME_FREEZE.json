@@ -1,12 +1,12 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "status": "PASS",
   "science_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "runtime_candidate_sha": "5654f35fa52c9b6ae6c28f062969c9ebd65af3fa",
-  "runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix1-5654f35",
+  "runtime_candidate_sha": "9fdbba6f81bfa2f1ce235b3d31ee52a75719a779",
+  "runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix2-9fdbba6",
   "qa_check": "master-operator-qa",
   "qa_conclusion": "success",
-  "qa_workflow_run_id": 34764824937,
-  "fix": "Fail-fast exact V1/principal-G1 preflight with mounted-input SHA diagnostics before dependency installation",
+  "qa_workflow_run_id": 34768212167,
+  "fix": "Bounded shallow V1 metadata discovery; byte-identical duplicate manifest/class-map copies allowed only under exact frozen hashes; manifest copy selected by nearest co-resolving image tree; conflicting image roots fail closed.",
   "note": "This immutable runtime is operator-only. Frozen science remains unchanged at the exact attested science SHA."
 }
