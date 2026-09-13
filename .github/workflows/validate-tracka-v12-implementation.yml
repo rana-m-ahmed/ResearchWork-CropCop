@@ -10,6 +10,7 @@ on:
       - 'journal_extension/configs/r13_vit_dlittle/**'
       - 'journal_extension/src/cropcop_je/tracka_v12.py'
       - 'journal_extension/src/cropcop_je/tracka_v12_g1a.py'
+      - 'journal_extension/scripts/seal_tracka_v12_g1a.py'
       - 'journal_extension/locks/track_a_comprehensive_execution_authority_v1_2_1.json'
       - 'tests/test_tracka_v12_contract.py'
       - 'tests/test_tracka_v12_g1a_contract.py'
@@ -36,11 +37,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12.13'
-      - name: Compile additive Track-A v1.2 contracts
+      - name: Compile additive Track-A v1.2 contracts and G1A sealer
         run: |
           python -m compileall -q \
             journal_extension/src/cropcop_je/tracka_v12.py \
             journal_extension/src/cropcop_je/tracka_v12_g1a.py \
+            journal_extension/scripts/seal_tracka_v12_g1a.py \
             tests/test_tracka_v12_contract.py \
             tests/test_tracka_v12_g1a_contract.py
       - name: Validate frozen continuation configs and G1A failure injection
