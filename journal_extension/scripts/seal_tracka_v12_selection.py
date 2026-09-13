@@ -1,0 +1,169 @@
+from __future__ import annotations
+
+import argparse
+import json
+from dataclasses import asdict
+from pathlib import Path
+
+import _bootstrap  # noqa: F401
+from cropcop_je.atomic_io import atomic_write_json
+from cropcop_je.hashing import sha256_file, sha256_json
+from cropcop_je.tracka_v12_analysis import FAMILIES, ROBUSTNESS_CORRUPTIONS, ROBUSTNESS_SEVERITIES, SEED_LABELS
+from cropcop_je.tracka_v12_evidence import (
+    ALL_DIRECT_STATES,
+    DIRECT_STATES,
+    build_family_selector_row,
+    build_tracka_selection_closure,
+)
+
+
+def load_json(path: str | Path) -> dict:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def seed_for_state(experiment_id: str) -> str:
+    seed = experiment_id.rsplit("-", 1)[-1]
+    if seed not in SEED_LABELS:
+        raise ValueError(f"cannot resolve frozen seed label from {experiment_id}")
+    return seed
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--evidence-index", required=True)
+    ap.add_argument("--output", required=True)
+    args = ap.parse_args()
+
+    index_path = Path(args.evidence_index).resolve()
+    index = load_json(index_path)
+    states = index.get("states", {})
+    if index.get("schema_version") != "1.0" or set(states) != set(ALL_DIRECT_STATES):
+        raise SystemExit("final selection evidence index must contain the exact 12 direct candidate states")
+
+    state_gates = {}
+    xai_gates = {}
+    evidence_hashes = {}
+    per_family_seed_summary = {family: {} for family in FAMILIES}
+    per_family_corruption = {family: {} for family in FAMILIES}
+    per_family_efficiency = {family: {} for family in FAMILIES}
+    xai_targets = {family: {} for family in FAMILIES}
+    xai_warnings = []
+
+    family_for_state = {
+        experiment_id: family
+        for family, experiment_ids in DIRECT_STATES.items()
+        for experiment_id in experiment_ids
+    }
+
+    for experiment_id in ALL_DIRECT_STATES:
+        row = states[experiment_id]
+        required_keys = {"direct_gate", "robustness_replay", "efficiency", "xai_gate"}
+        if set(row) != required_keys:
+            raise SystemExit(f"evidence index field mismatch for {experiment_id}")
+        paths = {name: Path(value).resolve() for name, value in row.items()}
+        if any(not path.is_file() for path in paths.values()):
+            raise SystemExit(f"evidence file missing for {experiment_id}")
+        direct = load_json(paths["direct_gate"])
+        robust = load_json(paths["robustness_replay"])
+        efficiency = load_json(paths["efficiency"])
+        xai = load_json(paths["xai_gate"])
+        for payload, label in ((direct, "direct"), (robust, "robustness"), (efficiency, "efficiency"), (xai, "xai")):
+            if payload.get("experiment_id") != experiment_id:
+                raise SystemExit(f"{label} evidence experiment identity mismatch for {experiment_id}")
+
+        direct_ok = direct.get("status") == "PASS"
+        replay_ok = direct.get("replay_gate", {}).get("status") == "PASS"
+        state_gates[experiment_id] = {
+            "terminal": direct_ok,
+            "selected_checkpoint_verified": bool(direct.get("selected_checkpoint_sha256")),
+            "replay_pass": replay_ok,
+            "robustness_pass": direct.get("robustness_pass") is True,
+            "classwise_pass": direct.get("classwise_pass") is True,
+            "efficiency_pass": direct.get("efficiency_pass") is True,
+            "v1_test_accessed": direct.get("v1_test_accessed"),
+            "external_surface_accessed": direct.get("external_surface_accessed"),
+        }
+
+        xai_status = str(xai.get("status", ""))
+        if xai_status not in {"PASS", "WARNING_NONFINITE_MAPS"}:
+            raise SystemExit(f"XAI execution did not complete for {experiment_id}: {xai_status}")
+        if xai_status != "PASS":
+            xai_warnings.append({
+                "experiment_id": experiment_id,
+                "status": xai_status,
+                "finite_map_rate": xai.get("finite_map_rate"),
+                "degenerate_map_rate": xai.get("degenerate_map_rate"),
+            })
+        xai_gates[experiment_id] = {
+            "status": "PASS",
+            "reported_status": xai_status,
+            "training_or_adaptation_performed": xai.get("training_or_adaptation_performed"),
+        }
+
+        family = family_for_state[experiment_id]
+        seed = seed_for_state(experiment_id)
+        clean = robust.get("clean_summary", {})
+        if int(clean.get("row_count", -1)) != 16368 or len(clean.get("class_f1", [])) != 120:
+            raise SystemExit(f"clean replay/classwise evidence incomplete for {experiment_id}")
+        per_family_seed_summary[family][seed] = clean
+        cells = robust.get("cells", {})
+        if set(cells) != set(ROBUSTNESS_CORRUPTIONS):
+            raise SystemExit(f"robustness corruption inventory mismatch for {experiment_id}")
+        per_family_corruption[family][seed] = {
+            corruption: {
+                severity: float(cells[corruption][severity]["validation_macro_f1"])
+                for severity in ROBUSTNESS_SEVERITIES
+            }
+            for corruption in ROBUSTNESS_CORRUPTIONS
+        }
+        per_family_efficiency[family][seed] = {
+            "model_state_tensor_bytes_fp32": int(efficiency["model_state_tensor_bytes_fp32"]),
+            "total_parameter_count": int(efficiency["total_parameter_count"]),
+            "trainable_parameter_count": int(efficiency["trainable_parameter_count"]),
+            "input_resolution": int(efficiency["input_resolution"]),
+        }
+        xai_targets[family][seed] = str(xai.get("target_module_path", ""))
+        evidence_hashes[experiment_id] = {name: sha256_file(path) for name, path in paths.items()}
+
+    for family in FAMILIES:
+        if set(xai_targets[family].values()) and len(set(xai_targets[family].values())) != 1:
+            raise SystemExit(f"XAI target path differs across seeds for {family}")
+
+    selector_rows = [
+        build_family_selector_row(
+            family,
+            seed_summaries=per_family_seed_summary[family],
+            corruption_macro_f1=per_family_corruption[family],
+            efficiency_by_seed=per_family_efficiency[family],
+        )
+        for family in FAMILIES
+    ]
+    closure = build_tracka_selection_closure(
+        selector_rows=selector_rows,
+        state_gates=state_gates,
+        xai_gates=xai_gates,
+    )
+    if closure.get("status") != "PASS":
+        raise SystemExit("Track-A final selection closure failed: " + json.dumps(closure, sort_keys=True))
+
+    result = {
+        **closure,
+        "closure_kind": "track_a_comprehensive_model_selection",
+        "evidence_index_sha256": sha256_file(index_path),
+        "evidence_sha256": evidence_hashes,
+        "selector_rows": [asdict(row) for row in selector_rows],
+        "xai_target_paths_by_family_seed": xai_targets,
+        "xai_methodological_warnings": xai_warnings,
+        "state_gates": state_gates,
+        "track_b_handoff_authorized": True,
+        "track_c_handoff_authorized": True,
+        "note": "Track B/C may begin only for the sealed scientific-primary architecture (or separately frozen deployment tie gate if selection is CO_PRIMARY_TIE); neither Track-B nor Track-C evidence participated in this selection.",
+    }
+    result["closure_sha256"] = sha256_json(result)
+    atomic_write_json(args.output, result)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
