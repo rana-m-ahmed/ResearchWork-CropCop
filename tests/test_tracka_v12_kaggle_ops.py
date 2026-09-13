@@ -7,8 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OPS = ROOT / "journal_extension" / "kaggle" / "tracka_v12_ops"
 SCIENCE_SHA = "9a72e9466a9a3e7429e0e36a028edac662f83146"
-RUNTIME_SHA = "e8ea268729663a921db461b337a6cfe50e03630f"
-RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v3-fix3-e8ea268"
+RUNTIME_SHA = "0fe16df9e6782eae34a8c577b5ec13c6b50c2cc4"
+RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v3-fix4-0fe16df"
 AUTHORITY = "EAAI-JE-SDL-v2.1-QA"
 NOTEBOOKS = {
     "TRACKA_V12_MASTER_K1.ipynb": "K1",
@@ -24,7 +24,7 @@ def text(path: str) -> str:
 class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
     def test_operator_contract_is_v3_and_exact(self):
         contract = json.loads(text("OPERATOR_CONTRACT.json"))
-        self.assertEqual(contract["schema_version"], "3.2")
+        self.assertEqual(contract["schema_version"], "3.3")
         self.assertEqual(contract["status"], "LOCKED_MASTER_OPERATOR_CONTRACT")
         self.assertEqual(contract["scientific_source_sha"], SCIENCE_SHA)
         self.assertEqual(contract["operator_runtime_sha"], RUNTIME_SHA)
@@ -41,6 +41,12 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
         self.assertFalse(contract["dataset"]["protected_test_opened_for_root_qualification"])
         self.assertTrue(contract["dataset"]["resolved_paths_bound_for_downstream_reuse"])
         self.assertTrue(contract["publication"]["write_preflight_before_stack_repair"])
+        self.assertTrue(contract["publication"]["byte_identical_remote_is_successful_noop"])
+        self.assertTrue(contract["publication"]["remote_branch_must_descend_from_science_sha"])
+        self.assertTrue(contract["publication"]["post_error_remote_roundtrip_recovery"])
+        self.assertFalse(contract["publication"]["frozen_scientific_runner_git_publication_enabled"])
+        self.assertTrue(contract["publication"]["scientific_evidence_published_by_master_parent"])
+        self.assertFalse(contract["publication"]["publication_failure_invalidates_science"])
         self.assertTrue(contract["pre_science_io"]["science_checkout_bounded_retry"])
         self.assertTrue(contract["pre_science_io"]["torchvision_upstream_bounded_retry"])
         self.assertTrue(contract["pre_science_io"]["r13_upstream_bounded_retry"])
@@ -66,7 +72,7 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
                 self.assertEqual(nb["nbformat"], 4)
                 self.assertEqual(nb["nbformat_minor"], 5)
                 meta = nb["metadata"]["cropcop_operator"]
-                self.assertEqual(meta["schema_version"], "3.2")
+                self.assertEqual(meta["schema_version"], "3.3")
                 self.assertEqual(meta["account_id"], account)
                 self.assertEqual(meta["science_sha"], SCIENCE_SHA)
                 self.assertEqual(meta["operator_runtime_sha"], RUNTIME_SHA)
@@ -75,6 +81,7 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
                 joined = json.dumps(nb)
                 self.assertIn(RUNTIME_SHA, joined)
                 self.assertIn(RUNTIME_BRANCH, joined)
+                self.assertIn("master_account_driver_v4.py", joined)
                 self.assertIn(f"str(driver), '{account}'", joined)
                 for cell in nb["cells"]:
                     if cell["cell_type"] == "code":
@@ -96,19 +103,19 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
         self.assertNotIn("CROPCOP_PRINCIPAL_G1", text("TRACKA_V12_MASTER_K3.ipynb"))
 
     def test_distribution_documents_same_runtime(self):
-        readme = text("README.md")
-        master_readme = text("README_MASTER_V3.md")
-        contract = json.loads(text("MASTER_OPERATOR_CONTRACT_V3.json"))
-        for body in (readme, master_readme, json.dumps(contract)):
-            self.assertIn(SCIENCE_SHA, body)
-        self.assertIn(RUNTIME_SHA, readme)
-        self.assertIn(RUNTIME_BRANCH, readme)
-        self.assertEqual(contract["scientific_source_sha"], SCIENCE_SHA)
-        self.assertEqual(contract["operator_model"], "three_account_master_notebooks")
+        distribution = json.loads(text("MASTER_NOTEBOOK_DISTRIBUTION.json"))
+        freeze = json.loads(text("MASTER_RUNTIME_FREEZE.json"))
+        marker = text(".runtime-freeze-marker")
+        self.assertEqual(distribution["operator_runtime_sha"], RUNTIME_SHA)
+        self.assertEqual(distribution["operator_runtime_branch"], RUNTIME_BRANCH)
+        self.assertEqual(freeze["runtime_candidate_sha"], RUNTIME_SHA)
+        self.assertEqual(freeze["runtime_branch"], RUNTIME_BRANCH)
+        self.assertIn(RUNTIME_SHA, marker)
+        self.assertIn(RUNTIME_BRANCH, marker)
 
     def test_protected_surfaces_remain_closed_in_master_runtime(self):
         combined = "\n".join(text(name) for name in (
-            "master_account_driver.py", "master_g1a.py", "master_g2a.py", "master_control.py", "master_science.py"
+            "master_account_driver_v4.py", "master_g1a.py", "master_g2a.py", "master_control.py", "master_science_v4.py"
         ))
         self.assertNotIn("DS-V1-TEST-CONSUMED", combined)
         self.assertNotIn("--test", combined)
