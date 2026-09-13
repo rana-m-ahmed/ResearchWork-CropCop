@@ -12,7 +12,12 @@ from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.checkpointing import CheckpointCorruptionError, save_torch_checkpoint, verify_selected
 from cropcop_je.hashing import sha256_json
 from cropcop_je.tracka_v12_g2a import REQUIRED_PROFILES
+from cropcop_je.tracka_v12_g2a_durability import (
+    build_g2a_durability_contract,
+    validate_g2a_durability_contract,
+)
 from cropcop_je.tracka_v12_g2a_v122 import (
+    barrier_hash,
     build_g2a_v122_barrier,
     build_scheduler_freeze_v122,
     validate_g2a_v122_barrier,
@@ -118,11 +123,25 @@ def main() -> int:
     if {str(row.get("calibration_id")) for row in summaries} != set(REQUIRED_PROFILES):
         raise SystemExit("G2A v1.2.2 summary set must contain each required calibration profile exactly once")
 
+    durability = build_g2a_durability_contract(summaries)
+    durability_errors = validate_g2a_durability_contract(durability)
+    if durability_errors:
+        raise SystemExit("G2A v1.2.2 durability contract invalid: " + "; ".join(durability_errors))
+
     probe = checkpoint_contract_probe()
     if probe["status"] != "PASS":
         raise SystemExit("checkpoint contract probe failed")
     barrier = build_g2a_v122_barrier(summaries, checkpoint_contract_probe=probe)
+    barrier["durability_contract"] = durability
+    barrier["barrier_sha256"] = barrier_hash(barrier)
+
     barrier_errors = validate_g2a_v122_barrier(barrier)
+    barrier_errors.extend(
+        validate_g2a_durability_contract(
+            barrier.get("durability_contract") or {},
+            expected_input_summary_sha256=barrier.get("input_summary_sha256") or {},
+        )
+    )
     if barrier_errors:
         raise SystemExit("G2A v1.2.2 barrier invalid: " + "; ".join(barrier_errors))
     scheduler = build_scheduler_freeze_v122(barrier)
