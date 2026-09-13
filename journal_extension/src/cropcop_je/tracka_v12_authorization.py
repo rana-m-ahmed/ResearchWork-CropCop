@@ -16,6 +16,7 @@ REQUIRED_PRE_SCIENCE_GATES = frozenset(
         "immutable_v12_lock",
         "v121_runtime_qualification",
         "config_contract_and_failure_injection",
+        "candidate_claim_boundary_lock",
         "principal_science_diff",
         "secondary_science_diff",
         "g1a",
@@ -116,10 +117,10 @@ def build_science_authorization(
         "evidence_bindings": dict(evidence_bindings),
         "note": (
             "This GO authorizes only the frozen eleven Track-A v1.2 continuation training states, including "
-            "R13 S1/S2/S3. It is valid only after the complete training, recovery, six-GPU orchestration and "
-            "post-training inference/analysis implementations are already frozen and qualified. It does not "
-            "authorize new models, seeds, hyperparameters, V1-test access, external prediction opening or "
-            "Track-C candidate result opening."
+            "R13 S1/S2/S3. It is valid only after the candidate-comparison claim boundary and the complete "
+            "training, recovery, six-GPU orchestration and post-training inference/analysis implementations "
+            "are already frozen and qualified. It does not authorize new models, seeds, hyperparameters, "
+            "V1-test access, external prediction opening or Track-C candidate result opening."
         ),
     }
     payload["authorization_sha256"] = authorization_hash(payload)
