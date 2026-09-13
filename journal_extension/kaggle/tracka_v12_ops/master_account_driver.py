@@ -11,8 +11,8 @@ from tracka_v12_kaggle_operator_v3 import (
     MASTER_ACCOUNTS, OperatorError, assert_clean_science_checkout, assert_kaggle_batch,
     assert_kaggle_paths, assert_python_version, ensure_locked_stack, ensure_science_checkout,
     github_write_preflight, load_github_token, load_kaggle_credentials, operator_runtime_head,
-    resolve_frozen_dataset, resolve_image_root,
 )
+from master_preflight import resolve_master_inputs
 from master_g1a import acquire_canonical_g1a_worker, ensure_canonical_g1a_k1
 from master_g2a import collect_all_g2a, ensure_account_g2a
 from master_control import acquire_control_worker, build_control_k1
@@ -56,15 +56,13 @@ def main() -> int:
     os.environ["CROPCOP_NOTEBOOK_HARD_LIMIT_SECONDS"] = repr(12 * 3600.0)
     os.environ["CROPCOP_NOTEBOOK_FINALIZATION_MARGIN_SECONDS"] = repr(3600.0)
 
+    # Fail fast on immutable Kaggle inputs before cloning/installing the heavy frozen stack.
+    manifest, class_map, image_root = resolve_master_inputs(account_id)
+
     repo = ensure_science_checkout()
     stack = ensure_locked_stack(repo)
     assert_clean_science_checkout(repo)
     github_write_preflight(repo)
-    manifest, class_map = resolve_frozen_dataset(
-        manifest_override=os.environ.get("CROPCOP_MANIFEST", ""),
-        class_map_override=os.environ.get("CROPCOP_CLASS_MAP", ""),
-    )
-    image_root = resolve_image_root(manifest, override=os.environ.get("CROPCOP_IMAGE_ROOT", ""))
 
     if account_id == "K1":
         g1a_bundle, g1a_seal, shared_locator = ensure_canonical_g1a_k1(
