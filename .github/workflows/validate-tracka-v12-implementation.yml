@@ -15,6 +15,8 @@ on:
       - 'journal_extension/src/cropcop_je/tracka_v12_analysis.py'
       - 'journal_extension/src/cropcop_je/tracka_v12_runtime.py'
       - 'journal_extension/src/cropcop_je/tracka_v12_authorization.py'
+      - 'journal_extension/src/cropcop_je/tracka_v12_placement.py'
+      - 'journal_extension/src/cropcop_je/tracka_v12_orchestration.py'
       - 'journal_extension/scripts/seal_tracka_v12_g1a.py'
       - 'journal_extension/scripts/run_tracka_v12_training.py'
       - 'journal_extension/scripts/run_tracka_v12_training_v121.py'
@@ -22,6 +24,7 @@ on:
       - 'journal_extension/scripts/qualify_tracka_v12_profile_v121.py'
       - 'journal_extension/scripts/qualify_tracka_v12_profile_v122.py'
       - 'journal_extension/scripts/seal_tracka_v12_g2a.py'
+      - 'journal_extension/kaggle/run_tracka_v12_account.py'
       - 'journal_extension/locks/track_a_comprehensive_execution_authority_v1_2_1.json'
       - 'journal_extension/amendments/track_a_strengthening_v1/model_selection_operationalization_v1_2_1.json'
       - 'journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2_1.json'
@@ -34,6 +37,7 @@ on:
       - 'tests/test_tracka_v12_analysis.py'
       - 'tests/test_tracka_v12_authorization.py'
       - 'tests/test_tracka_v12_placement.py'
+      - 'tests/test_tracka_v12_orchestration.py'
       - '.github/workflows/validate-tracka-v12-implementation.yml'
   workflow_dispatch:
 
@@ -67,6 +71,8 @@ jobs:
             journal_extension/src/cropcop_je/tracka_v12_analysis.py \
             journal_extension/src/cropcop_je/tracka_v12_runtime.py \
             journal_extension/src/cropcop_je/tracka_v12_authorization.py \
+            journal_extension/src/cropcop_je/tracka_v12_placement.py \
+            journal_extension/src/cropcop_je/tracka_v12_orchestration.py \
             journal_extension/scripts/seal_tracka_v12_g1a.py \
             journal_extension/scripts/run_tracka_v12_training.py \
             journal_extension/scripts/run_tracka_v12_training_v121.py \
@@ -74,14 +80,16 @@ jobs:
             journal_extension/scripts/qualify_tracka_v12_profile_v121.py \
             journal_extension/scripts/qualify_tracka_v12_profile_v122.py \
             journal_extension/scripts/seal_tracka_v12_g2a.py \
+            journal_extension/kaggle/run_tracka_v12_account.py \
             tests/test_tracka_v12_contract.py \
             tests/test_tracka_v12_g1a_contract.py \
             tests/test_tracka_v12_g2a.py \
             tests/test_tracka_v12_g2a_v122.py \
             tests/test_tracka_v12_analysis.py \
             tests/test_tracka_v12_authorization.py \
-            tests/test_tracka_v12_placement.py
-      - name: Validate frozen contracts, failure injection, scheduling, placement, selector and GO gate
+            tests/test_tracka_v12_placement.py \
+            tests/test_tracka_v12_orchestration.py
+      - name: Validate frozen contracts, failure injection, scheduling, placement, orchestration, selector and GO gate
         run: |
           python -m unittest \
             tests.test_tracka_v12_contract \
@@ -91,6 +99,7 @@ jobs:
             tests.test_tracka_v12_analysis \
             tests.test_tracka_v12_authorization \
             tests.test_tracka_v12_placement \
+            tests.test_tracka_v12_orchestration \
             -v
       - name: Prove original principal science semantics remain unchanged
         run: python journal_extension/scripts/check_science_diff.py --repo-root . --json-report principal-science-diff-tracka-v12.json
