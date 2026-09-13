@@ -82,8 +82,8 @@ jobs:
           from pathlib import Path
 
           SCIENCE_SHA = '9a72e9466a9a3e7429e0e36a028edac662f83146'
-          RUNTIME_SHA = 'e8ea268729663a921db461b337a6cfe50e03630f'
-          RUNTIME_BRANCH = 'ops-tracka-kaggle-master-runtime-v3-fix3-e8ea268'
+          RUNTIME_SHA = '0fe16df9e6782eae34a8c577b5ec13c6b50c2cc4'
+          RUNTIME_BRANCH = 'ops-tracka-kaggle-master-runtime-v3-fix4-0fe16df'
           expected = {
               'TRACKA_V12_MASTER_K1.ipynb': 'K1',
               'TRACKA_V12_MASTER_K2.ipynb': 'K2',
@@ -106,17 +106,23 @@ jobs:
               'nested_train_val_root_discovery',
               'resolved_input_paths_bound_for_downstream_reuse',
               'bounded_pre_science_io_retry',
+              'idempotent_git_evidence_publication',
+              'scientific_parent_publication_after_frozen_execution',
           )
           for key in required_true:
               if distribution.get(key) is not True:
                   raise SystemExit(f'distribution missing required gate: {key}')
           if distribution.get('protected_test_used_for_preflight_root_resolution') is not False:
               raise SystemExit('preflight must not use protected test images for root resolution')
+          if distribution.get('frozen_scientific_runner_git_publication_enabled') is not False:
+              raise SystemExit('frozen scientific runner Git publication must be disabled')
           for name, account in expected.items():
               nb = json.loads(notebooks[name].read_text(encoding='utf-8'))
               if nb.get('nbformat') != 4 or nb.get('nbformat_minor') != 5:
                   raise SystemExit(f'invalid notebook format: {name}')
               meta = (nb.get('metadata') or {}).get('cropcop_operator') or {}
+              if meta.get('schema_version') != '3.3':
+                  raise SystemExit(f'operator schema mismatch in {name}')
               if meta.get('account_id') != account:
                   raise SystemExit(f'account mismatch in {name}')
               if meta.get('science_sha') != SCIENCE_SHA:
@@ -128,15 +134,17 @@ jobs:
               joined = json.dumps(nb)
               if RUNTIME_SHA not in joined or RUNTIME_BRANCH not in joined:
                   raise SystemExit(f'pinned runtime missing from notebook body: {name}')
+              if 'master_account_driver_v4.py' not in joined:
+                  raise SystemExit(f'fix4 driver missing from notebook body: {name}')
               for index, cell in enumerate(nb.get('cells') or []):
                   if cell.get('cell_type') != 'code':
                       continue
                   if cell.get('execution_count') is not None or cell.get('outputs') != []:
                       raise SystemExit(f'execution residue in {name}:cell-{index}')
                   compile(''.join(cell.get('source') or []), f'{name}:cell-{index}', 'exec')
-          print('three-notebook distribution syntax/binding PASS')
+          print('three-notebook fix4 distribution syntax/binding PASS')
           PY
-          git cat-file -e 'e8ea268729663a921db461b337a6cfe50e03630f^{commit}'
+          git cat-file -e '0fe16df9e6782eae34a8c577b5ec13c6b50c2cc4^{commit}'
 
       - name: Compile and import master runtime
         shell: bash
@@ -156,12 +164,10 @@ jobs:
           import master_g1a
           import master_g2a
           import master_control
-          import master_science
-          import master_account_driver
           import master_publication_v4
           import master_science_v4
           import master_account_driver_v4
-          print('master runtime import graph PASS')
+          print('fix4 master runtime import graph PASS')
           PY
 
       - name: Run distribution, runtime regression and publication failure-injection tests
