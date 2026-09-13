@@ -33,12 +33,16 @@ STATIC_GATES = (
 
 IMPLEMENTATION_FILES = (
     "journal_extension/TRACK_A_V12_EXECUTION_RUNBOOK.md",
+    "journal_extension/src/cropcop_je/checkpointing.py",
+    "journal_extension/src/cropcop_je/persistence.py",
+    "journal_extension/src/cropcop_je/secondary.py",
     "journal_extension/src/cropcop_je/tracka_v12.py",
     "journal_extension/src/cropcop_je/tracka_v12_analysis.py",
     "journal_extension/src/cropcop_je/tracka_v12_authorization.py",
     "journal_extension/src/cropcop_je/tracka_v12_evidence.py",
     "journal_extension/src/cropcop_je/tracka_v12_g1a.py",
     "journal_extension/src/cropcop_je/tracka_v12_g2a.py",
+    "journal_extension/src/cropcop_je/tracka_v12_g2a_durability.py",
     "journal_extension/src/cropcop_je/tracka_v12_g2a_v122.py",
     "journal_extension/src/cropcop_je/tracka_v12_historical.py",
     "journal_extension/src/cropcop_je/tracka_v12_orchestration.py",
@@ -46,7 +50,9 @@ IMPLEMENTATION_FILES = (
     "journal_extension/src/cropcop_je/tracka_v12_posttraining.py",
     "journal_extension/src/cropcop_je/tracka_v12_runtime.py",
     "journal_extension/src/cropcop_je/tracka_v12_xai.py",
-    "journal_extension/src/cropcop_je/secondary.py",
+    "journal_extension/scripts/seal_tracka_v12_g1a.py",
+    "journal_extension/scripts/qualify_tracka_v12_profile_v122.py",
+    "journal_extension/scripts/seal_tracka_v12_g2a.py",
     "journal_extension/scripts/run_tracka_v12_training_v121.py",
     "journal_extension/scripts/run_tracka_v12_direct_evidence.py",
     "journal_extension/scripts/run_tracka_v12_auxiliary_evidence.py",
@@ -57,6 +63,7 @@ IMPLEMENTATION_FILES = (
     "journal_extension/scripts/build_tracka_v12_code_attestation.py",
     "journal_extension/scripts/build_tracka_v12_lock_runtime_attestation.py",
     "journal_extension/scripts/seal_tracka_v12_science_go.py",
+    "journal_extension/scripts/seal_tracka_v12_science_go_v123.py",
     "journal_extension/kaggle/run_tracka_v12_account.py",
     "journal_extension/amendments/track_a_strengthening_v1/model_selection_operationalization_v1_2_1.json",
     "journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2_2.json",
@@ -113,7 +120,7 @@ def main() -> int:
             "principal": json.loads(principal.read_text(encoding="utf-8")),
             "secondary": json.loads(secondary.read_text(encoding="utf-8")),
         },
-        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, historical-lineage tests, analysis-evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the canonical operator runbook plus the complete pre-science training, recovery, historical replay, direct/auxiliary analysis, XAI, direct model-selection closure and comprehensive 21-state Track-A closure implementation, but does not independently authorize scientific execution.",
+        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, historical-lineage tests, G2A private-durability tests, analysis-evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the canonical runbook plus G1A/G2A qualification, checkpoint/persistence recovery, six-GPU execution, historical replay, direct/auxiliary analysis, XAI, direct selection and comprehensive 21-state closure implementations, but does not independently authorize scientific execution.",
     }
     payload["attestation_sha256"] = sha256_json(payload)
     atomic_write_json(args.output, payload)
