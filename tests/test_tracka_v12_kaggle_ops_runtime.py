@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import csv
+import json
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -80,6 +83,64 @@ class TrackAV12KaggleOperatorRuntimeTests(unittest.TestCase):
         }
         with self.assertRaises(ops.OperatorError):
             ops.scientific_durable_map(scheduler, {"K1": "alpha"})
+
+    def test_image_root_resolves_one_manifest_compatible_mount(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            manifest = root / "manifest.csv"
+            rels = [f"class-{i % 2}/image-{i}.jpg" for i in range(8)]
+            with manifest.open("w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=["portable_relpath"])
+                writer.writeheader()
+                for rel in rels:
+                    writer.writerow({"portable_relpath": rel})
+            mount = root / "mount-a"
+            for rel in rels:
+                path = mount / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"x")
+            self.assertEqual(ops.resolve_image_root(manifest, input_root=root), mount.resolve())
+
+    def test_image_root_rejects_duplicate_compatible_mounts(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            manifest = root / "manifest.csv"
+            rels = [f"class-{i % 2}/image-{i}.jpg" for i in range(8)]
+            with manifest.open("w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=["portable_relpath"])
+                writer.writeheader()
+                for rel in rels:
+                    writer.writerow({"portable_relpath": rel})
+            for name in ("mount-a", "mount-b"):
+                mount = root / name
+                for rel in rels:
+                    path = mount / rel
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b"x")
+            with self.assertRaises(ops.OperatorError):
+                ops.resolve_image_root(manifest, input_root=root)
+
+    def test_principal_g1_bundle_resolves_by_seal_and_rejects_duplicates(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            bundle = root / "one" / "principal"
+            (bundle / "private").mkdir(parents=True)
+            (bundle / "evidence").mkdir()
+            (bundle / "G1_MODEL_IDENTITY_SEAL.json").write_text(
+                json.dumps({"g1_seal_sha256": ops.PRINCIPAL_G1_SEAL_SHA256}),
+                encoding="utf-8",
+            )
+            self.assertEqual(ops.resolve_principal_g1_bundle(root), bundle.resolve())
+
+            duplicate = root / "two" / "principal"
+            (duplicate / "private").mkdir(parents=True)
+            (duplicate / "evidence").mkdir()
+            (duplicate / "G1_MODEL_IDENTITY_SEAL.json").write_text(
+                json.dumps({"g1_seal_sha256": ops.PRINCIPAL_G1_SEAL_SHA256}),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ops.OperatorError):
+                ops.resolve_principal_g1_bundle(root)
 
     def test_child_environment_strips_git_credentials_but_keeps_kaggle_credentials(self):
         env = {
