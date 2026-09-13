@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.2.1",
+  "protocol_id": "TRACKA-A1-MODEL-SELECTION-OPERATIONALIZATION-V1.2.1",
+  "status": "PRE_REMAINING_SCIENCE_LOCK",
+  "science_authorized": false,
+  "parent_protocol": "model_selection_protocol_v1_2.json",
+  "scope": "Operational definition only. This document resolves scalar, aggregation, ordering and tie semantics already required by v1.2; it does not add or remove an architecture, seed, metric family or selection stage.",
+  "outcome_use_in_this_operationalization": "No new v1.2 continuation-state scientific output was used to choose these definitions.",
+  "candidate_families": ["R04", "R06", "R07", "R13"],
+  "required_seed_labels": ["S1", "S2", "S3"],
+  "metric_precision": {
+    "predictive_and_class_f1": "quantize decimal values to 8 places using ROUND_HALF_EVEN for selector comparisons",
+    "corruption_degradation_percentage_points": "quantize to 8 decimal places using ROUND_HALF_EVEN for selector comparisons",
+    "integer_efficiency_metrics": "compare exact integers",
+    "reporting": "retain higher/raw computational precision in evidence alongside selector-precision values"
+  },
+  "pareto_dimensions_exact": [
+    {
+      "name": "clean_predictive_quality",
+      "scalar": "mean_validation_macro_f1",
+      "direction": "maximize",
+      "definition": "Arithmetic mean of selected-checkpoint DS-V1-VAL macro-F1 over exactly S1,S2,S3 for the architecture."
+    },
+    {
+      "name": "worst_seed_reliability",
+      "scalar": "worst_seed_validation_macro_f1",
+      "direction": "maximize",
+      "definition": "Minimum selected-checkpoint DS-V1-VAL macro-F1 over exactly S1,S2,S3 for the architecture."
+    },
+    {
+      "name": "class_tail_reliability",
+      "scalar": "bottom_12_class_mean_f1",
+      "direction": "maximize",
+      "definition": "For each of the 120 class indices, first compute the arithmetic mean class-F1 over S1,S2,S3. Sort the 120 class means ascending by (mean_f1, class_index); take the first 12; report the arithmetic mean of those 12 class means. The 12-class set is therefore architecture-specific but deterministically defined without manual class selection."
+    },
+    {
+      "name": "corruption_robustness",
+      "scalar": "mean_corruption_degradation_pp",
+      "direction": "minimize",
+      "definition": "For each direct state, compute clean validation macro-F1 minus corrupted macro-F1 in percentage points for every one of the fixed 5 corruptions x 3 severities, average the 15 deltas, then arithmetic-mean that state-level quantity over S1,S2,S3. Negative deltas, if any, are retained rather than clipped."
+    },
+    {
+      "name": "efficiency",
+      "scalar": "model_state_tensor_bytes_fp32",
+      "direction": "minimize",
+      "definition": "Architecture-level deterministic model-state footprint: for each state_dict tensor, floating tensors count numel*4 bytes (FP32 canonical footprint); non-floating buffers count numel*their actual element_size; sum over model state only, excluding optimizer, scheduler, checkpoint metadata and serialization-container overhead. This value must be identical across seeds or the architecture fails the efficiency-identity check."
+    }
+  ],
+  "pareto_rule": {
+    "dominance": "Architecture A dominates B iff A is no worse than B on every one of the five exact selector-precision scalars in the declared direction and strictly better on at least one.",
+    "single_nondominated": "If exactly one candidate is non-dominated, select it as journal-primary.",
+    "multiple_nondominated": "Apply the frozen lexicographic rule below only to the non-dominated set."
+  },
+  "lexicographic_rule_exact": [
+    {"criterion": "mean_validation_macro_f1", "direction": "maximize"},
+    {"criterion": "worst_seed_validation_macro_f1", "direction": "maximize"},
+    {"criterion": "mean_corruption_degradation_pp", "direction": "minimize"},
+    {"criterion": "bottom_12_class_mean_f1", "direction": "maximize"},
+    {"criterion": "model_state_tensor_bytes_fp32", "direction": "minimize"},
+    {"criterion": "total_parameter_count", "direction": "minimize", "definition": "Exact sum of numel over model.parameters(), independent of requires_grad state."}
+  ],
+  "exact_tie": {
+    "definition": "A tie persists only when every frozen lexicographic criterion is equal at selector precision (metric criteria) or exactly equal (integer criteria).",
+    "action": "Report co-primary scientific candidates and invoke only the separately frozen deployment-feasibility tie gate already authorized by v1.2. No additional Track-A experiment, model, seed, corruption, XAI method or post-result weighting is allowed."
+  },
+  "supporting_reported_not_selector_dimensions": [
+    "three-seed sample SD validation macro-F1",
+    "three-seed mean balanced accuracy",
+    "three-seed mean validation NLL",
+    "minimum class-F1 and its deterministic class index",
+    "major confusion pairs/concentration",
+    "worst-case corruption macro-F1 delta",
+    "severity monotonicity violation count",
+    "Grad-CAM++ faithfulness and sanity diagnostics",
+    "theoretical MACs/FLOPs if one audited profiler supports every architecture"
+  ],
+  "missing_or_failed_state_policy": "A family is eligible only if all three intended direct states complete, unless the existing v1.2 transparent irrecoverable-technical-failure rule is invoked. Any such exception must be reported before model selection and may not be converted into a favorable missing-data rule.",
+  "forbidden": [
+    "changing a selector scalar after seeing continuation-state outputs",
+    "adding a fifth architecture",
+    "using Track-B predictions",
+    "using Track-C candidate runtime outcomes",
+    "using DS-V1-TEST-CONSUMED",
+    "using XAI visual appeal as a selector",
+    "clipping favorable or unfavorable corruption deltas",
+    "manually choosing the bottom-12 classes"
+  ]
+}
