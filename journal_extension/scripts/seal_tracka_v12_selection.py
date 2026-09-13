@@ -17,6 +17,7 @@ from cropcop_je.tracka_v12_evidence import (
     build_tracka_selection_closure,
     validate_direct_state_evidence_bundle,
 )
+from cropcop_je.tracka_v12_historical import HISTORICAL_TRACKA_CLOSURE_SPECS
 
 
 def load_json(path: str | Path) -> dict:
@@ -90,6 +91,20 @@ def main() -> int:
         if bundle_errors:
             raise SystemExit(f"direct evidence bundle failed for {experiment_id}: " + "; ".join(bundle_errors))
 
+        analysis_sources = {
+            str(payload.get("analysis_source_git_commit", ""))
+            for payload in (direct, robust, efficiency, xai)
+        }
+        if analysis_sources != {closure_source_git_commit}:
+            raise SystemExit(f"analysis-source provenance mismatch for {experiment_id}: {sorted(analysis_sources)}")
+
+        historical = HISTORICAL_TRACKA_CLOSURE_SPECS.get(experiment_id)
+        if historical is not None:
+            if direct.get("selected_checkpoint_sha256") != historical["selected_checkpoint_sha256"]:
+                raise SystemExit(f"historical selected-checkpoint lineage mismatch for {experiment_id}")
+            if direct.get("source_git_commit") != historical["source_git_commit"]:
+                raise SystemExit(f"historical scientific-source lineage mismatch for {experiment_id}")
+
         actual_efficiency_sha = sha256_file(paths["efficiency"])
         actual_robustness_sha = sha256_file(paths["robustness_replay"])
         bound_public = direct.get("public_evidence_sha256", {})
@@ -151,6 +166,7 @@ def main() -> int:
             "xai_gate": sha256_file(paths["xai_gate"]),
             "selected_checkpoint_sha256": direct["selected_checkpoint_sha256"],
             "scientific_source_git_commit": direct["source_git_commit"],
+            "analysis_source_git_commit": closure_source_git_commit,
         }
 
     for family in FAMILIES:
@@ -166,11 +182,7 @@ def main() -> int:
         )
         for family in FAMILIES
     ]
-    closure = build_tracka_selection_closure(
-        selector_rows=selector_rows,
-        state_gates=state_gates,
-        xai_gates=xai_gates,
-    )
+    closure = build_tracka_selection_closure(selector_rows=selector_rows, state_gates=state_gates, xai_gates=xai_gates)
     if closure.get("status") != "PASS":
         raise SystemExit("Track-A direct model-selection closure failed: " + json.dumps(closure, sort_keys=True))
 
@@ -178,6 +190,7 @@ def main() -> int:
         **closure,
         "closure_kind": "track_a_direct_model_selection",
         "closure_source_git_commit": closure_source_git_commit,
+        "analysis_source_git_commit": closure_source_git_commit,
         "evidence_index_sha256": sha256_file(index_path),
         "evidence_sha256": evidence_hashes,
         "selector_rows": [asdict(row) for row in selector_rows],
