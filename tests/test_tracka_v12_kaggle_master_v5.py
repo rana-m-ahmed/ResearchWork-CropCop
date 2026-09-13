@@ -15,6 +15,7 @@ for path in (OPS, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
+import master_account_driver_v5 as driver_v5
 import master_g1a
 import master_verified_pretrained_v5 as verified
 
@@ -109,6 +110,29 @@ class TrackAV12MasterV5Tests(unittest.TestCase):
             "validate_torchvision_provenance",
         ):
             self.assertIn(field, source)
+
+    def test_v5_driver_orders_preflight_before_stack_and_science(self):
+        source = (OPS / "master_account_driver_v5.py").read_text(encoding="utf-8")
+        ordered = [
+            'stage("RUNTIME_AND_HARDWARE_PREFLIGHT"',
+            'stage("FROZEN_INPUT_RESOLUTION"',
+            'stage("SCIENCE_SOURCE_AND_GITHUB_PREFLIGHT"',
+            'stage("EXACT_EXECUTION_STACK"',
+            'stage("CANONICAL_G1A"',
+            'stage("ACCOUNT_G2A"',
+            'stage("CONTROL_PLANE"',
+            'stage("SCIENCE_DURABILITY_PREFLIGHT"',
+            'stage("SCIENTIFIC_QUEUE"',
+        ]
+        positions = [source.index(token) for token in ordered]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_optional_expected_account_gate_fails_closed(self):
+        with mock.patch.dict("os.environ", {"CROPCOP_EXPECTED_KAGGLE_USERNAME": "expected-user"}, clear=False):
+            with self.assertRaisesRegex(Exception, "Kaggle account mismatch"):
+                driver_v5.assert_expected_account("K1", "other-user")
+        with mock.patch.dict("os.environ", {"CROPCOP_EXPECTED_KAGGLE_USERNAME": "Expected-User"}, clear=False):
+            driver_v5.assert_expected_account("K1", "expected-user")
 
 
 if __name__ == "__main__":
