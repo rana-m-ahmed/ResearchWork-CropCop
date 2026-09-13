@@ -8,15 +8,7 @@ on:
       - 'journal_extension/configs/r12_logits/**'
       - 'journal_extension/configs/r12_feature/**'
       - 'journal_extension/configs/r13_vit_dlittle/**'
-      - 'journal_extension/src/cropcop_je/tracka_v12.py'
-      - 'journal_extension/src/cropcop_je/tracka_v12_g1a.py'
-      - 'journal_extension/src/cropcop_je/tracka_v12_g2a.py'
-      - 'journal_extension/src/cropcop_je/tracka_v12_g2a_v122.py'
-      - 'journal_extension/src/cropcop_je/tracka_v12_analysis.py'
-      - 'journal_extension/src/cropcop_je/tracka_v12_runtime.py'
-      - 'journal_extension/src/cropcop_je/tracka_v12_authorization.py'
-      - 'journal_extension/src/cropcop_je/tracka_v12_placement.py'
-      - 'journal_extension/src/cropcop_je/tracka_v12_orchestration.py'
+      - 'journal_extension/src/cropcop_je/tracka_v12*.py'
       - 'journal_extension/scripts/seal_tracka_v12_g1a.py'
       - 'journal_extension/scripts/run_tracka_v12_training.py'
       - 'journal_extension/scripts/run_tracka_v12_training_v121.py'
@@ -24,20 +16,20 @@ on:
       - 'journal_extension/scripts/qualify_tracka_v12_profile_v121.py'
       - 'journal_extension/scripts/qualify_tracka_v12_profile_v122.py'
       - 'journal_extension/scripts/seal_tracka_v12_g2a.py'
+      - 'journal_extension/scripts/run_tracka_v12_direct_evidence.py'
+      - 'journal_extension/scripts/run_tracka_v12_xai.py'
+      - 'journal_extension/scripts/seal_tracka_v12_selection.py'
+      - 'journal_extension/scripts/build_tracka_v12_code_attestation.py'
+      - 'journal_extension/scripts/build_tracka_v12_lock_runtime_attestation.py'
+      - 'journal_extension/scripts/seal_tracka_v12_science_go.py'
       - 'journal_extension/kaggle/run_tracka_v12_account.py'
       - 'journal_extension/locks/track_a_comprehensive_execution_authority_v1_2_1.json'
       - 'journal_extension/amendments/track_a_strengthening_v1/model_selection_operationalization_v1_2_1.json'
       - 'journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2_1.json'
       - 'journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2_2.json'
       - 'journal_extension/amendments/track_a_strengthening_v1/candidate_comparison_claim_boundary_v1_2_1.json'
-      - 'tests/test_tracka_v12_contract.py'
-      - 'tests/test_tracka_v12_g1a_contract.py'
-      - 'tests/test_tracka_v12_g2a.py'
-      - 'tests/test_tracka_v12_g2a_v122.py'
-      - 'tests/test_tracka_v12_analysis.py'
-      - 'tests/test_tracka_v12_authorization.py'
-      - 'tests/test_tracka_v12_placement.py'
-      - 'tests/test_tracka_v12_orchestration.py'
+      - 'journal_extension/amendments/track_a_strengthening_v1/xai_operationalization_v1_2_2.json'
+      - 'tests/test_tracka_v12*.py'
       - '.github/workflows/validate-tracka-v12-implementation.yml'
   workflow_dispatch:
 
@@ -61,7 +53,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12.13'
-      - name: Compile additive Track-A v1.2 implementation
+      - name: Compile complete pre-science Track-A implementation
         run: |
           python -m compileall -q \
             journal_extension/src/cropcop_je/tracka_v12.py \
@@ -73,6 +65,9 @@ jobs:
             journal_extension/src/cropcop_je/tracka_v12_authorization.py \
             journal_extension/src/cropcop_je/tracka_v12_placement.py \
             journal_extension/src/cropcop_je/tracka_v12_orchestration.py \
+            journal_extension/src/cropcop_je/tracka_v12_evidence.py \
+            journal_extension/src/cropcop_je/tracka_v12_posttraining.py \
+            journal_extension/src/cropcop_je/tracka_v12_xai.py \
             journal_extension/scripts/seal_tracka_v12_g1a.py \
             journal_extension/scripts/run_tracka_v12_training.py \
             journal_extension/scripts/run_tracka_v12_training_v121.py \
@@ -80,6 +75,12 @@ jobs:
             journal_extension/scripts/qualify_tracka_v12_profile_v121.py \
             journal_extension/scripts/qualify_tracka_v12_profile_v122.py \
             journal_extension/scripts/seal_tracka_v12_g2a.py \
+            journal_extension/scripts/run_tracka_v12_direct_evidence.py \
+            journal_extension/scripts/run_tracka_v12_xai.py \
+            journal_extension/scripts/seal_tracka_v12_selection.py \
+            journal_extension/scripts/build_tracka_v12_code_attestation.py \
+            journal_extension/scripts/build_tracka_v12_lock_runtime_attestation.py \
+            journal_extension/scripts/seal_tracka_v12_science_go.py \
             journal_extension/kaggle/run_tracka_v12_account.py \
             tests/test_tracka_v12_contract.py \
             tests/test_tracka_v12_g1a_contract.py \
@@ -88,8 +89,10 @@ jobs:
             tests/test_tracka_v12_analysis.py \
             tests/test_tracka_v12_authorization.py \
             tests/test_tracka_v12_placement.py \
-            tests/test_tracka_v12_orchestration.py
-      - name: Validate frozen contracts, failure injection, scheduling, placement, orchestration, selector and GO gate
+            tests/test_tracka_v12_orchestration.py \
+            tests/test_tracka_v12_evidence.py \
+            tests/test_tracka_v12_science_go.py
+      - name: Validate contracts, failure injection, orchestration, evidence and GO composition
         run: |
           python -m unittest \
             tests.test_tracka_v12_contract \
@@ -100,6 +103,8 @@ jobs:
             tests.test_tracka_v12_authorization \
             tests.test_tracka_v12_placement \
             tests.test_tracka_v12_orchestration \
+            tests.test_tracka_v12_evidence \
+            tests.test_tracka_v12_science_go \
             -v
       - name: Prove original principal science semantics remain unchanged
         run: python journal_extension/scripts/check_science_diff.py --repo-root . --json-report principal-science-diff-tracka-v12.json
@@ -116,6 +121,16 @@ jobs:
           if offenders:
               raise SystemExit("forbidden tracked binary/secret artifacts: " + repr(offenders))
           PY
+      - name: Emit exact-head pre-science code attestation
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python journal_extension/scripts/build_tracka_v12_code_attestation.py \
+            --repo-root . \
+            --expected-source-sha "$EXPECTED_SOURCE_SHA" \
+            --principal-science-diff principal-science-diff-tracka-v12.json \
+            --secondary-science-diff secondary-science-diff-tracka-v12.json \
+            --output tracka-v12-pre-science-code-attestation.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -123,3 +138,4 @@ jobs:
           path: |
             principal-science-diff-tracka-v12.json
             secondary-science-diff-tracka-v12.json
+            tracka-v12-pre-science-code-attestation.json
