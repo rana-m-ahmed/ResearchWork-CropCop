@@ -1,4 +1,4 @@
-name: Validate Track-A v1.2 Kaggle operator infrastructure
+name: Validate Track-A v1.2 Kaggle operator
 
 on:
   push:
@@ -7,59 +7,122 @@ on:
     paths:
       - 'journal_extension/kaggle/tracka_v12_ops/**'
       - 'tests/test_tracka_v12_kaggle_ops.py'
-      - '.github/workflows/validate-tracka-v12-kaggle-ops.yml'
-  pull_request:
-    paths:
-      - 'journal_extension/kaggle/tracka_v12_ops/**'
-      - 'tests/test_tracka_v12_kaggle_ops.py'
+      - 'tests/test_tracka_v12_kaggle_ops_runtime.py'
       - '.github/workflows/validate-tracka-v12-kaggle-ops.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: tracka-v12-kaggle-ops-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  operator-static-qa:
+  operator-qa:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout operator branch
+        uses: actions/checkout@v4
         with:
-          python-version: '3.12'
-      - name: Compile operator drivers
+          fetch-depth: 0
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Verify additive separation from frozen science source
+        shell: bash
         run: |
-          python -m compileall -q journal_extension/kaggle/tracka_v12_ops
-      - name: Run independent operator contract tests
+          set -euo pipefail
+          SCIENCE_SHA='9a72e9466a9a3e7429e0e36a028edac662f83146'
+          git cat-file -e "${SCIENCE_SHA}^{commit}"
+          test "$(git merge-base "$SCIENCE_SHA" HEAD)" = "$SCIENCE_SHA"
+          git diff --name-status "$SCIENCE_SHA"..HEAD > /tmp/tracka_ops_diff.txt
+          cat /tmp/tracka_ops_diff.txt
+          python - <<'PY'
+          from pathlib import Path
+
+          allowed_exact = {
+              '.github/workflows/validate-tracka-v12-kaggle-ops.yml',
+              'tests/test_tracka_v12_kaggle_ops.py',
+              'tests/test_tracka_v12_kaggle_ops_runtime.py',
+          }
+          allowed_prefix = 'journal_extension/kaggle/tracka_v12_ops/'
+          rows = []
+          for raw in Path('/tmp/tracka_ops_diff.txt').read_text(encoding='utf-8').splitlines():
+              if not raw.strip():
+                  continue
+              parts = raw.split('\t')
+              status = parts[0]
+              paths = parts[1:]
+              rows.append((status, paths))
+              if status != 'A':
+                  raise SystemExit(f'operator branch is not additive-only: {raw}')
+              for path in paths:
+                  if path not in allowed_exact and not path.startswith(allowed_prefix):
+                      raise SystemExit(f'operator branch changed non-operator path: {path}')
+          if not rows:
+              raise SystemExit('operator diff unexpectedly empty')
+          print(f'additive operator diff PASS: {len(rows)} files')
+          PY
+
+      - name: Compile operator Python modules
+        shell: bash
         run: |
-          python -m unittest tests.test_tracka_v12_kaggle_ops -v
-      - name: Validate notebook JSON and no embedded outputs
+          set -euo pipefail
+          python -m py_compile journal_extension/kaggle/tracka_v12_ops/*.py
+          python -m py_compile tests/test_tracka_v12_kaggle_ops.py tests/test_tracka_v12_kaggle_ops_runtime.py
+
+      - name: Validate notebook JSON and code-cell syntax
+        shell: bash
         run: |
+          set -euo pipefail
           python - <<'PY'
           import json
           from pathlib import Path
+
           root = Path('journal_extension/kaggle/tracka_v12_ops')
           notebooks = sorted(root.glob('*.ipynb'))
-          assert len(notebooks) == 8, notebooks
+          if len(notebooks) != 8:
+              raise SystemExit(f'expected exactly 8 operator notebooks, found {len(notebooks)}')
           for path in notebooks:
               nb = json.loads(path.read_text(encoding='utf-8'))
-              assert nb['nbformat'] == 4
-              for cell in nb['cells']:
+              if nb.get('nbformat') != 4 or nb.get('nbformat_minor') != 5:
+                  raise SystemExit(f'invalid notebook format: {path}')
+              cells = nb.get('cells')
+              if not isinstance(cells, list) or not cells:
+                  raise SystemExit(f'notebook has no cells: {path}')
+              for index, cell in enumerate(cells):
                   if cell.get('cell_type') == 'code':
-                      assert cell.get('outputs', []) == [], path
-                      assert cell.get('execution_count') is None, path
-          print('validated', len(notebooks), 'clean notebooks')
+                      if cell.get('outputs', []) != [] or cell.get('execution_count') is not None:
+                          raise SystemExit(f'notebook contains execution residue: {path}:cell-{index}')
+                      source = ''.join(cell.get('source') or [])
+                      compile(source, f'{path}:cell-{index}', 'exec')
+          print(f'notebook parse/syntax PASS: {len(notebooks)} notebooks')
           PY
-      - name: Guard frozen scientific source binding
+
+      - name: Run static and behavioral operator tests
+        shell: bash
         run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_tracka_v12_kaggle_ops \
+            tests.test_tracka_v12_kaggle_ops_runtime
+
+      - name: Reject tracked binary or secret-like operator artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
           python - <<'PY'
-          import json
-          from pathlib import Path
-          expected = '9a72e9466a9a3e7429e0e36a028edac662f83146'
-          contract = json.loads(Path('journal_extension/kaggle/tracka_v12_ops/OPERATOR_CONTRACT.json').read_text())
-          assert contract['scientific_source_sha'] == expected
-          for path in Path('journal_extension/kaggle/tracka_v12_ops').glob('*.ipynb'):
-              nb = json.loads(path.read_text())
-              assert nb['metadata']['cropcop_operator']['science_sha'] == expected
-          print('frozen science binding:', expected)
+          import subprocess
+
+          files = subprocess.check_output(['git', 'ls-files', 'journal_extension/kaggle/tracka_v12_ops'], text=True).splitlines()
+          forbidden_suffixes = ('.pt', '.pth', '.ckpt', '.pte', '.safetensors', '.zip', '.tar', '.gz', '.7z', '.env')
+          bad = [path for path in files if path.lower().endswith(forbidden_suffixes)]
+          if bad:
+              raise SystemExit('forbidden operator artifacts tracked: ' + ', '.join(bad))
+          print('operator artifact hygiene PASS')
           PY
