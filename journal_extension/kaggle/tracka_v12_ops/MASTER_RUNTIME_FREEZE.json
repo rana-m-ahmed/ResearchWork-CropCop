@@ -1,13 +1,13 @@
 {
-  "schema_version": "1.4",
+  "schema_version": "1.5",
   "status": "PASS",
   "science_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "runtime_candidate_sha": "0fe16df9e6782eae34a8c577b5ec13c6b50c2cc4",
-  "runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix4-0fe16df",
+  "runtime_candidate_sha": "481d347022c4dececdd81f2d676570a79f6c0105",
+  "runtime_branch": "ops-tracka-kaggle-master-runtime-v3-fix4b-481d347",
   "qa_check": "master-operator-qa",
   "qa_conclusion": "success",
-  "qa_workflow_run_id": 34774975221,
-  "qa_test_count": 51,
-  "fix": "Recovery-safe evidence publication: byte-identical remote evidence is a successful no-op, evidence branches must descend from the frozen science SHA, post-error remote round-trip is recognized, all G1A/G2A/control publishers route through the idempotent parent layer, and frozen scientific execution is separated from parent-side Git publication.",
+  "qa_workflow_run_id": 34775361279,
+  "qa_test_count": 53,
+  "fix": "Recovery-safe incremental evidence publication: complete bundles are no-op safe; partial bundles publish only missing or changed audited files one at a time on the same source-bound evidence branch; every file and the final full bundle are round-trip verified; frozen scientific execution remains separate from parent-side Git publication.",
   "note": "This immutable runtime is operator-only. Frozen science remains unchanged at the exact attested science SHA."
 }
