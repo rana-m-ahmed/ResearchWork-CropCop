@@ -12,12 +12,88 @@ from .secondary import (
 )
 from .tracka_v12 import AUTHORITY_ID, CLASS_MAP_SHA256, MANIFEST_SHA256
 
+HISTORICAL_PRINCIPAL_SOURCE_SHA = "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433"
 HISTORICAL_SECONDARY_SOURCE_SHA = "8904b100d223e4319776199c87ab397db23600ce"
 HISTORICAL_SECONDARY_G1_SHA256 = "a723d511e4cb590924942496025962c854baaf3c254c9893187ab845afb30966"
 HISTORICAL_SECONDARY_G2_SHA256 = "850d1d3cb0545937446a9853f786c5ecb41cb082facba45cba93e32007ed9e09"
 HISTORICAL_SECONDARY_DEPENDENCY_LOCK_SHA256 = "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37"
 HISTORICAL_CTC_V2_SHA256 = "ed2331e63455e35ade00b548217fe987a9504f26a41e6c5d8a794e38741550bb"
 HISTORICAL_SECONDARY_SOFTWARE_STACK_SHA256 = "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0"
+
+# Canonical selected-checkpoint lineage for every completed Track-A scientific state.
+# Values are copied from the immutable Wave-1/Wave-2 validation closure artifacts.
+HISTORICAL_TRACKA_CLOSURE_SPECS: dict[str, dict[str, Any]] = {
+    "R04-MNV4-DIRECT-S1": {
+        "wave": "WAVE1",
+        "source_git_commit": HISTORICAL_PRINCIPAL_SOURCE_SHA,
+        "run_id": "JE-R04-MNV4-DIRECT-S1-f171309fc7e9-A01",
+        "selected_epoch": 28,
+        "selected_checkpoint_sha256": "63a5ba04a278fcc5a0a333bfc38a21ab4718df5530c9b4f99bc81ef13011251c",
+    },
+    "R05-MNV4-TEACHER-S1": {
+        "wave": "WAVE1",
+        "source_git_commit": HISTORICAL_PRINCIPAL_SOURCE_SHA,
+        "run_id": "JE-R05-MNV4-TEACHER-S1-f171309fc7e9-A01",
+        "selected_epoch": 29,
+        "selected_checkpoint_sha256": "331b4eb79bd7d02fb1f2887918ff5266e3c600814d51533a6730ab8b8ce7f5fa",
+    },
+    "R04-MNV4-DIRECT-S2": {
+        "wave": "WAVE1",
+        "source_git_commit": HISTORICAL_PRINCIPAL_SOURCE_SHA,
+        "run_id": "JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01",
+        "selected_epoch": 25,
+        "selected_checkpoint_sha256": "66a3e5f4a90d363c3f6b4ea342ae804af666414851f874238fd3ad83397cd32a",
+    },
+    "R05-MNV4-TEACHER-S2": {
+        "wave": "WAVE1",
+        "source_git_commit": HISTORICAL_PRINCIPAL_SOURCE_SHA,
+        "run_id": "JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01",
+        "selected_epoch": 30,
+        "selected_checkpoint_sha256": "157375477b04cf36095f8b66dff557760c44839373c77691738bca7e9de8468c",
+    },
+    "R04-MNV4-DIRECT-S3": {
+        "wave": "WAVE1",
+        "source_git_commit": HISTORICAL_PRINCIPAL_SOURCE_SHA,
+        "run_id": "JE-R04-MNV4-DIRECT-S3-f171309fc7e9-A01",
+        "selected_epoch": 28,
+        "selected_checkpoint_sha256": "fa200d6add9c25856b1bdaa4d05961a0d1e4050e1204ab2a3103474b9c4a8ed2",
+    },
+    "R05-MNV4-TEACHER-S3": {
+        "wave": "WAVE1",
+        "source_git_commit": HISTORICAL_PRINCIPAL_SOURCE_SHA,
+        "run_id": "JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01",
+        "selected_epoch": 28,
+        "selected_checkpoint_sha256": "0df653f67fe6a0f6a3c4d47fd8746ab563ef92d7182e36598602eba24b518d56",
+    },
+    "R12-MNV4-LOGITS-S1": {
+        "wave": "WAVE2",
+        "source_git_commit": HISTORICAL_SECONDARY_SOURCE_SHA,
+        "run_id": "JE-R12-MNV4-LOGITS-S1-8904b100d223-A01",
+        "selected_epoch": 30,
+        "selected_checkpoint_sha256": "2377007e4f9ccc35c31ff9583ac6196e183bb03b1aa45ed0b8f58779abbc1827",
+    },
+    "R12-MNV4-FEATURE-S1": {
+        "wave": "WAVE2",
+        "source_git_commit": HISTORICAL_SECONDARY_SOURCE_SHA,
+        "run_id": "JE-R12-MNV4-FEATURE-S1-8904b100d223-A01",
+        "selected_epoch": 30,
+        "selected_checkpoint_sha256": "e5d3b691e9f90602a2785dcdbe4c1c40e482a56c7f72741c708504377eea8950",
+    },
+    "R06-EFFB0-CONTEXT-S1": {
+        "wave": "WAVE2",
+        "source_git_commit": HISTORICAL_SECONDARY_SOURCE_SHA,
+        "run_id": "JE-R06-EFFB0-CONTEXT-S1-8904b100d223-A01",
+        "selected_epoch": 26,
+        "selected_checkpoint_sha256": "882e1e45e1d18a8ed8168aab266ce5a66a9b57a74e2a8d98acf692207d2210c7",
+    },
+    "R07-CNXTT-CONTEXT-S1": {
+        "wave": "WAVE2",
+        "source_git_commit": HISTORICAL_SECONDARY_SOURCE_SHA,
+        "run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01",
+        "selected_epoch": 27,
+        "selected_checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    },
+}
 
 HISTORICAL_SECONDARY_DIRECT_SPECS: dict[str, dict[str, str]] = {
     "R06-EFFB0-CONTEXT-S1": {
@@ -45,11 +121,48 @@ def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def validate_historical_closure_identity(run_record: dict[str, Any]) -> list[str]:
+    """Bind a completed historical run record to the immutable Wave-1/Wave-2 selected checkpoint."""
+    errors: list[str] = []
+    experiment_id = str(run_record.get("experiment_id", ""))
+    spec = HISTORICAL_TRACKA_CLOSURE_SPECS.get(experiment_id)
+    if spec is None:
+        return [f"not a frozen completed historical Track-A state: {experiment_id}"]
+    if run_record.get("status") != "PASS":
+        errors.append("historical run record is not terminal PASS")
+    for field in ("run_id", "source_git_commit"):
+        if run_record.get(field) != spec[field]:
+            errors.append(f"historical {field} mismatch")
+    if run_record.get("authority_id") not in {None, AUTHORITY_ID}:
+        errors.append("historical authority mismatch")
+    if run_record.get("manifest_sha256") not in {None, MANIFEST_SHA256}:
+        errors.append("historical manifest identity mismatch")
+    if run_record.get("class_map_sha256") not in {None, CLASS_MAP_SHA256}:
+        errors.append("historical class-map identity mismatch")
+    if run_record.get("v1_test_accessed") not in {None, False}:
+        errors.append("historical run record indicates V1-test access")
+    if run_record.get("protected_external_surface_accessed") not in {None, False}:
+        errors.append("historical run record indicates protected external-surface access")
+    if run_record.get("continuation_required") not in {None, False}:
+        errors.append("historical run is not terminal")
+
+    expected_selected = str(spec["selected_checkpoint_sha256"])
+    selected_artifact = (run_record.get("artifact_locators") or {}).get("selected_checkpoint") or {}
+    selected_result = (run_record.get("result_summary") or {}).get("selected_checkpoint_sha256")
+    observed = {str(value) for value in (selected_artifact.get("sha256"), selected_result) if value}
+    if not observed or observed != {expected_selected}:
+        errors.append("historical selected checkpoint differs from immutable Wave closure")
+    selected_epoch = (run_record.get("result_summary") or {}).get("selected_epoch")
+    if selected_epoch is not None and int(selected_epoch) != int(spec["selected_epoch"]):
+        errors.append("historical selected epoch differs from immutable Wave closure")
+    return errors
+
+
 def validate_historical_secondary_direct_identity(
     run_record: dict[str, Any],
     config: dict[str, Any],
 ) -> list[str]:
-    errors: list[str] = []
+    errors = validate_historical_closure_identity(run_record)
     experiment_id = str(run_record.get("experiment_id", ""))
     spec = HISTORICAL_SECONDARY_DIRECT_SPECS.get(experiment_id)
     if spec is None:
@@ -88,15 +201,7 @@ def validate_historical_secondary_direct_identity(
 
     if run_record.get("allowed_surfaces") != ["DS-V1-TRAIN", "DS-V1-VAL"]:
         errors.append("historical allowed-surface inventory mismatch")
-    if run_record.get("continuation_required") is not False:
-        errors.append("historical run is not terminal")
-
     selected_artifact = (run_record.get("artifact_locators") or {}).get("selected_checkpoint") or {}
-    selected_result = (run_record.get("result_summary") or {}).get("selected_checkpoint_sha256")
-    if selected_artifact.get("sha256") != spec["selected_checkpoint_sha256"]:
-        errors.append("selected checkpoint artifact SHA mismatch")
-    if selected_result != spec["selected_checkpoint_sha256"]:
-        errors.append("selected checkpoint result SHA mismatch")
     if selected_artifact.get("public_git") is not False:
         errors.append("historical checkpoint unexpectedly marked public")
     return errors
