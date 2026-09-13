@@ -10,9 +10,10 @@ from pathlib import Path
 
 import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
-from cropcop_je.persistence import build_store
+from cropcop_je.persistence import build_store, validate_durable_access_plan
 from cropcop_je.tracka_v12_g1a import R13_PRETRAINED_SHA256, TEACHER_SHA256
 from cropcop_je.tracka_v12_g2a import PROFILE_COVERAGE
+from cropcop_je.tracka_v12_g2a_durability import validate_calibration_durability
 from cropcop_je.tracka_v12_g2a_v122 import validate_calibration_summary_v122
 from run_tracka_v12_training_v121 import execute, parser as training_parser
 
@@ -76,8 +77,20 @@ def main() -> int:
         raise SystemExit("G2A v1.2.2 initial/resume steps must both be positive")
     if not args.durable_required or not args.durable_store_kind or not args.durable_store_locator:
         raise SystemExit("G2A v1.2.2 qualification requires durable storage and --durable-required")
+    if args.durable_store_kind != "kaggle-dataset":
+        raise SystemExit("G2A v1.2.2 qualification requires --durable-store-kind kaggle-dataset")
     if git_credentials_present():
         raise SystemExit("G2A child environment contains Git/publication credentials; launch with sanitized environment")
+
+    durable_preflight = validate_durable_access_plan(
+        "kaggle-dataset",
+        {args.run_id: args.durable_store_locator},
+    )
+    if durable_preflight.get("status") != "PASS":
+        raise SystemExit(
+            "G2A private Kaggle durability preflight failed: "
+            + "; ".join(str(error) for error in durable_preflight.get("errors", []))
+        )
 
     first = execute(args, mode="calibration", max_optimizer_steps=args.initial_steps, resume_mode="never")
     if first.get("status") != "PASS":
@@ -127,6 +140,7 @@ def main() -> int:
         "schema_version": "1.2.2",
         "calibration_id": args.calibration_id,
         "representative_experiment_id": args.experiment_id,
+        "run_id": args.run_id,
         "coverage": sorted(PROFILE_COVERAGE[args.calibration_id]),
         "status": "PASS",
         "calibration_weights_scientific": False,
@@ -134,6 +148,7 @@ def main() -> int:
         "scientific_metric_computed": False,
         "resume_success": True,
         "durable_roundtrip_success": True,
+        "durable_store_kind": args.durable_store_kind,
         "visible_cuda_device_count": int(second.get("hardware_identity", {}).get("visible_cuda_device_count", 0)),
         "visible_gpu_name": second.get("hardware_identity", {}).get("accelerator"),
         "git_credentials_present": False,
@@ -170,6 +185,7 @@ def main() -> int:
             "restore_seconds": restore_seconds,
             "backend": persistence.get("backend"),
             "locator": persistence.get("locator"),
+            "preflight_private_access": durable_preflight,
         },
         "physical_slot_id": second.get("physical_slot_id"),
         "logical_lane_id": second.get("lane_id"),
@@ -181,7 +197,7 @@ def main() -> int:
     if args.calibration_id == "CAL-R13":
         summary["r13_pretrained_sha256"] = R13_PRETRAINED_SHA256
 
-    errors = validate_calibration_summary_v122(summary)
+    errors = validate_calibration_summary_v122(summary) + validate_calibration_durability(summary)
     if errors:
         raise SystemExit("G2A v1.2.2 profile self-validation failed: " + "; ".join(errors))
     atomic_write_json(args.summary_out, summary)
