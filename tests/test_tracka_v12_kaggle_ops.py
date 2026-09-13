@@ -7,8 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OPS = ROOT / "journal_extension" / "kaggle" / "tracka_v12_ops"
 SCIENCE_SHA = "9a72e9466a9a3e7429e0e36a028edac662f83146"
-RUNTIME_SHA = "f606311ec5faa2d4d1a2ea44b279357bfd15fb84"
-RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v3-f606311"
+RUNTIME_SHA = "5654f35fa52c9b6ae6c28f062969c9ebd65af3fa"
+RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v3-fix1-5654f35"
 AUTHORITY = "EAAI-JE-SDL-v2.1-QA"
 NOTEBOOKS = {
     "TRACKA_V12_MASTER_K1.ipynb": "K1",
@@ -24,7 +24,7 @@ def text(path: str) -> str:
 class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
     def test_operator_contract_is_v3_and_exact(self):
         contract = json.loads(text("OPERATOR_CONTRACT.json"))
-        self.assertEqual(contract["schema_version"], "3.0")
+        self.assertEqual(contract["schema_version"], "3.1")
         self.assertEqual(contract["status"], "LOCKED_MASTER_OPERATOR_CONTRACT")
         self.assertEqual(contract["scientific_source_sha"], SCIENCE_SHA)
         self.assertEqual(contract["operator_runtime_sha"], RUNTIME_SHA)
@@ -34,6 +34,8 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
         self.assertEqual(contract["kaggle"]["g2a_distinct_private_dataset_count"], 5)
         self.assertEqual(contract["kaggle"]["scientific_distinct_private_dataset_count"], 11)
         self.assertEqual(contract["kaggle"]["canonical_g1a_private_dataset_count"], 1)
+        self.assertTrue(contract["dataset"]["fail_fast_before_dependency_install"])
+        self.assertTrue(contract["dataset"]["diagnose_mounted_candidate_hashes"])
         self.assertFalse(contract["rules"]["scientific_source_may_follow_operator_head"])
         self.assertFalse(contract["rules"]["notebooks_may_follow_distribution_head"])
         self.assertFalse(contract["rules"]["protected_test_open_before_track_a_closure"])
@@ -55,7 +57,7 @@ class TrackAV12KaggleOperatorDistributionTests(unittest.TestCase):
                 self.assertEqual(nb["nbformat"], 4)
                 self.assertEqual(nb["nbformat_minor"], 5)
                 meta = nb["metadata"]["cropcop_operator"]
-                self.assertEqual(meta["schema_version"], "3.0")
+                self.assertEqual(meta["schema_version"], "3.1")
                 self.assertEqual(meta["account_id"], account)
                 self.assertEqual(meta["science_sha"], SCIENCE_SHA)
                 self.assertEqual(meta["operator_runtime_sha"], RUNTIME_SHA)
