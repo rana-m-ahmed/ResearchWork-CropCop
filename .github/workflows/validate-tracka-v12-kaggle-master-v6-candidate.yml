@@ -1,0 +1,80 @@
+name: Validate Track-A v1.2 Kaggle master v6 candidate
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-v3-20260913
+    paths:
+      - 'journal_extension/kaggle/tracka_v12_ops/master_*v6.py'
+      - 'journal_extension/kaggle/tracka_v12_ops/master_g1a_v6.py'
+      - 'tests/test_tracka_v12_kaggle_master_v6.py'
+      - '.github/workflows/validate-tracka-v12-kaggle-master-v6-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v6-remediation-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12.13'
+
+      - name: Verify frozen science ancestry and sealer fingerprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE_SHA='9a72e9466a9a3e7429e0e36a028edac662f83146'
+          SEALER='journal_extension/scripts/seal_tracka_v12_g1a.py'
+          test "$(git merge-base "$SCIENCE_SHA" HEAD)" = "$SCIENCE_SHA"
+          test "$(git hash-object "$SEALER")" = '90a918fcdf14130b44b9c4ec24b0b60b1706bb2c'
+          git diff --quiet "$SCIENCE_SHA" -- "$SEALER"
+          echo 'frozen science + sealer fingerprint PASS'
+
+      - name: Compile v6 remediation modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            journal_extension/kaggle/tracka_v12_ops/master_g1a_sealer_compat_v6.py \
+            journal_extension/kaggle/tracka_v12_ops/master_g1a_v6.py \
+            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v6.py \
+            journal_extension/kaggle/tracka_v12_ops/master_account_driver_v6.py \
+            tests/test_tracka_v12_kaggle_master_v6.py
+
+      - name: Run full regression plus v6 failure injection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_tracka_v12_kaggle_ops \
+            tests.test_tracka_v12_kaggle_ops_runtime \
+            tests.test_tracka_v12_kaggle_master_v3 \
+            tests.test_tracka_v12_kaggle_publication_v4 \
+            tests.test_tracka_v12_kaggle_master_v5 \
+            tests.test_tracka_v12_kaggle_master_v6
+
+      - name: Verify v6 source hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          files=[root/'master_g1a_sealer_compat_v6.py',root/'master_g1a_v6.py',root/'master_launch_guard_v6.py',root/'master_account_driver_v6.py']
+          text='\n'.join(p.read_text(encoding='utf-8') for p in files)
+          for forbidden in ('github_pat_','ghp_','DS-V1-TEST-CONSUMED'):
+              if forbidden in text:
+                  raise SystemExit(f'forbidden v6 source content: {forbidden}')
+          print('v6 source hygiene PASS')
+          PY
