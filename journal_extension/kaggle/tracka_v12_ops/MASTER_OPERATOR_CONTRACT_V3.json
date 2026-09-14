@@ -1,11 +1,12 @@
 {
-  "schema_version": "3.5",
+  "schema_version": "3.6",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "operator_runtime_sha": "902e7774dda32106a03bfb3f5917946c11ff8e2c",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v5-902e777",
-  "operator_model": "three_account_master_notebooks",
-  "driver": "master_account_driver_v5.py",
+  "operator_runtime_sha": "280743cf619d47b093944de6ea63be62dcb8f7ae",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v6-280743c",
+  "operator_model": "three_account_guarded_master_notebooks",
+  "launcher": "master_launch_guard_v6.py",
+  "driver": "master_account_driver_v6.py",
   "accounts": {
     "K1": {"role": "coordinator_and_worker", "gpus": ["K1/GPU0", "K1/GPU1"], "g2a_profiles": ["CAL-EFFB0", "CAL-CNXTT"], "creates_canonical_g1a": true, "seals_control_plane": true},
     "K2": {"role": "worker", "gpus": ["K2/GPU0", "K2/GPU1"], "g2a_profiles": ["CAL-MNV4-LOGITS", "CAL-MNV4-FEATURE"], "creates_canonical_g1a": false, "seals_control_plane": false},
@@ -26,6 +27,22 @@
     "exact_tensor_match_against_frozen_enum": true,
     "frozen_validator_before_g1a": true
   },
+  "frozen_g1a_sealer_compatibility": {
+    "source_file_modified": false,
+    "required_git_blob": "90a918fcdf14130b44b9c4ec24b0b60b1706bb2c",
+    "verified_missing_global": "TORCHVISION_VERSION",
+    "value_source": "cropcop_je.secondary.TORCHVISION_VERSION",
+    "required_value": "0.27.1",
+    "unexpected_drift_fails_closed": true
+  },
+  "launch_serialization": {
+    "scope": "whole account master orchestration",
+    "one_owner_per_account_session": true,
+    "duplicate_launch_starts_second_master": false,
+    "duplicate_launch_waits_for_owner": true,
+    "owner_terminal_return_code_propagated": true,
+    "owner_release_without_valid_terminal_status_allows_takeover": true
+  },
   "g2a_gpu_utilization": {"qualified_profiles": 5, "available_t4s": 6, "simultaneous_gpus_used": 5, "unused_gpu_reason": "No sixth prospective G2A profile exists; inventing one would alter the frozen design."},
   "science_gpu_utilization": {"available_t4s": 6, "simultaneous_child_workers": 6, "cross_gpu_gradient_synchronization": false, "child_model_per_gpu": 1},
   "canonical_g1a": {"count": 1, "owner": "K1 authenticated Kaggle user", "transport": "private Kaggle dataset", "worker_access": "K2/K3 Can view collaborator access", "public_git_content": "seal/report/hash metadata only; no private binary payloads"},
@@ -36,6 +53,7 @@
     "gpu_child_git_credentials": false
   },
   "normal_execution": [
+    "launch guard elects exactly one canonical owner process for each account session",
     "K1 creates or adopts exact canonical G1A and publishes G1A handoff",
     "K2/K3 consume the exact canonical G1A after private sharing",
     "K1/K2/K3 run five G2A profiles across five T4s and publish summaries",
