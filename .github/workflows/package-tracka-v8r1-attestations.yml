@@ -1,0 +1,86 @@
+name: Package Track-A v8.1 exact-head attestations
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v8r1-f8aea6c-20260915
+    paths:
+      - '.github/workflows/package-tracka-v8r1-attestations.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  package-attestations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout runtime branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download exact-head code attestation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tracka-v12-implementation-qa
+          run-id: 34954679183
+          github-token: ${{ github.token }}
+          path: /tmp/code-attestation
+      - name: Download exact-head lock/runtime attestation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tracka-v12-exact-head-lock-runtime-attestation
+          run-id: 34954679112
+          github-token: ${{ github.token }}
+          path: /tmp/lock-attestation
+      - name: Verify and package exact bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE='f8aea6c2b481f8436653d4c6504f406948a98082'
+          CODE='/tmp/code-attestation/tracka-v12-pre-science-code-attestation.json'
+          LOCK='/tmp/lock-attestation/tracka-v12-exact-head-lock-runtime-attestation.json'
+          python - "$SCIENCE" "$CODE" "$LOCK" <<'PY'
+          import json, pathlib, sys
+          science, code_path, lock_path = sys.argv[1:]
+          code = json.loads(pathlib.Path(code_path).read_text())
+          lock = json.loads(pathlib.Path(lock_path).read_text())
+          assert code['status'] == 'PASS' and code['github_actions'] is True
+          assert code['source_git_commit'] == science and code['pull_request_head_sha'] == science
+          assert (code.get('static_pre_science_gates') or {}).get('kaggle_generation_durability_contract') == 'PASS'
+          assert lock['status'] == 'PASS' and lock['github_actions'] is True
+          assert lock['source_git_commit'] == science and lock['pull_request_head_sha'] == science
+          assert lock['science_authorized'] is False
+          print('exact-head attestation identity PASS')
+          PY
+          DEST='journal_extension/kaggle/tracka_v12_ops/attestations_v8'
+          mkdir -p "$DEST"
+          cp "$CODE" "$DEST/tracka-v12-pre-science-code-attestation.json"
+          cp "$LOCK" "$DEST/tracka-v12-exact-head-lock-runtime-attestation.json"
+          CODE_SHA="$(sha256sum "$DEST/tracka-v12-pre-science-code-attestation.json" | awk '{print $1}')"
+          LOCK_SHA="$(sha256sum "$DEST/tracka-v12-exact-head-lock-runtime-attestation.json" | awk '{print $1}')"
+          python - "$CODE_SHA" "$LOCK_SHA" <<'PY'
+          from pathlib import Path
+          import re, sys
+          code_sha, lock_sha = sys.argv[1:]
+          path = Path('journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py')
+          text = path.read_text(encoding='utf-8')
+          text = re.sub(r'CODE_ATTESTATION_FILE_SHA256 = "[0-9a-f]{64}"', f'CODE_ATTESTATION_FILE_SHA256 = "{code_sha}"', text)
+          text = re.sub(r'LOCK_RUNTIME_ATTESTATION_FILE_SHA256 = "[0-9a-f]{64}"', f'LOCK_RUNTIME_ATTESTATION_FILE_SHA256 = "{lock_sha}"', text)
+          path.write_text(text, encoding='utf-8')
+          print('code file sha', code_sha)
+          print('lock file sha', lock_sha)
+          PY
+      - name: Commit exact attestation package
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add journal_extension/kaggle/tracka_v12_ops/attestations_v8/tracka-v12-pre-science-code-attestation.json \
+                  journal_extension/kaggle/tracka_v12_ops/attestations_v8/tracka-v12-exact-head-lock-runtime-attestation.json \
+                  journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py
+          git diff --cached --quiet && { echo 'No attestation package changes'; exit 0; }
+          git commit -m 'Package repaired exact-head Track-A attestations'
+          git push origin HEAD:ops-tracka-kaggle-master-runtime-v8r1-f8aea6c-20260915
