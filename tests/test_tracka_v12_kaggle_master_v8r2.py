@@ -81,7 +81,7 @@ class TrackAV12KaggleMasterV8R2Tests(unittest.TestCase):
     def test_exact_attestation_materialization_precedes_stack_and_g1a(self):
         text = (OPS / "master_account_driver_v8.py").read_text(encoding="utf-8")
         source_stage = text.index('stage("SCIENCE_SOURCE_GITHUB_AND_ATTESTATION_PREFLIGHT"')
-        materialize = text.index("materialize_verified_attestations")
+        materialize = text.index("lambda: materialize_verified_attestations")
         stack_stage = text.index('stage("EXACT_EXECUTION_STACK"')
         g1a_stage = text.index('stage("CANONICAL_G1A"')
         self.assertLess(source_stage, materialize)
