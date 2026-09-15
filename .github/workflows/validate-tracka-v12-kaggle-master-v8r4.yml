@@ -1,0 +1,137 @@
+name: Validate Track-A v1.2 Kaggle master v8r4
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v8r4-4ced2fd-20260915
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v8r4-runtime-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact runtime candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Verify exact science authority and versioned execution consumers
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE='4ced2fd7c764c07fa47fb57fbea38376d2ce61a4'
+          git fetch --quiet origin "$SCIENCE"
+          git cat-file -e "$SCIENCE^{commit}"
+          git show "$SCIENCE:journal_extension/kaggle/run_tracka_v12_account_v121.py" >/dev/null
+          git show "$SCIENCE:journal_extension/scripts/seal_tracka_v12_g1a_v121.py" >/dev/null
+          git show "$SCIENCE:journal_extension/scripts/seal_tracka_v12_science_go_v124.py" >/dev/null
+          git show "$SCIENCE:journal_extension/scripts/run_tracka_v12_training_v121.py" >/dev/null
+          grep -F "SCIENCE_SHA_V8 = \"$SCIENCE\"" journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py
+
+      - name: Verify exact packaged attestation bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='journal_extension/kaggle/tracka_v12_ops/attestations_v8r3'
+          test "$(sha256sum "$ROOT/RELEASE_ATTESTATION_MANIFEST.json" | awk '{print $1}')" = 'eee2ef3cf5cd3d41332d9b55d833d7381be232bc634958147bdffd81170d1bcb'
+          test "$(sha256sum "$ROOT/tracka-v12-pre-science-code-attestation.json" | awk '{print $1}')" = '5bfb757219996aa7df48e21fd0531124c60a86f6a0c8ad17840a2a3eb88cda2e'
+          test "$(sha256sum "$ROOT/tracka-v12-exact-head-lock-runtime-attestation.json" | awk '{print $1}')" = '49efe43b76423c82c6849d43d3f1bea2ff24503f65564e722d205cdac2a21fea'
+
+      - name: Prove Kaggle attestation path still has no Actions API dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE='journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py'
+          ! grep -F 'urllib.request' "$FILE"
+          ! grep -F 'urllib.error' "$FILE"
+          ! grep -F 'api.github.com' "$FILE"
+          ! grep -F '/actions/artifacts/' "$FILE"
+          ! grep -F '_download_artifact_zip' "$FILE"
+          ! grep -F 'CROPCOP_GITHUB_TOKEN' "$FILE"
+          grep -F 'attestations_v8r3' "$FILE"
+          grep -F 'packaged_exact_bytes' "$FILE"
+
+      - name: Verify G1A exact-generation binding is active
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE='journal_extension/kaggle/tracka_v12_ops/master_g1a_v8.py'
+          grep -F 'wait_for_exact_g1a_generation' "$FILE"
+          grep -F 'expected_seal_sha256=seal["g1a_seal_sha256"]' "$FILE"
+          grep -F 'G1A_EXACT_GENERATION_PENDING' "$FILE"
+          grep -F 'G1A_EXACT_GENERATION_READY' "$FILE"
+
+      - name: Compile active runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_wait_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_g1a_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_g2a_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_control_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_publication_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_science_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_account_driver_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v8.py \
+            tests/test_tracka_v12_kaggle_master_v8r3.py \
+            tests/test_tracka_v12_kaggle_master_v8r4.py
+
+      - name: Run neutral operator regressions plus v8r3 and v8r4 regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_tracka_v12_kaggle_ops_runtime \
+            tests.test_tracka_v12_kaggle_publication_v8 \
+            tests.test_tracka_v12_kaggle_master_v8r3 \
+            tests.test_tracka_v12_kaggle_master_v8r4
+
+      - name: Independently materialize attestations with GitHub token absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          env -u CROPCOP_GITHUB_TOKEN python - <<'PY'
+          import hashlib, sys, tempfile
+          from pathlib import Path
+          ops=Path('journal_extension/kaggle/tracka_v12_ops').resolve()
+          sys.path.insert(0, str(ops))
+          import master_attestations_v8 as a
+          with tempfile.TemporaryDirectory() as td:
+              code, lock = a.materialize_verified_attestations(td)
+              def h(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+              assert h(code) == '5bfb757219996aa7df48e21fd0531124c60a86f6a0c8ad17840a2a3eb88cda2e'
+              assert h(lock) == '49efe43b76423c82c6849d43d3f1bea2ff24503f65564e722d205cdac2a21fea'
+          print('token-independent packaged attestation materialization PASS')
+          PY
+
+      - name: Verify protected surfaces and compatibility paths remain closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          names=[
+              'tracka_v12_kaggle_operator_v8.py','master_attestations_v8.py','master_g1a_v8.py',
+              'master_g2a_v8.py','master_control_v8.py','master_science_v8.py',
+              'master_account_driver_v8.py','master_launch_guard_v8.py',
+          ]
+          text='\n'.join((root/name).read_text(encoding='utf-8') for name in names)
+          for forbidden in ('master_g1a_sealer_compat_v6','init_globals','runpy.run_path','DS-V1-TEST-CONSUMED'):
+              if forbidden in text:
+                  raise SystemExit(f'forbidden active runtime content: {forbidden}')
+          print('v8r4 runtime hygiene PASS')
+          PY
