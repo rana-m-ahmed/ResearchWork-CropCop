@@ -1,7 +1,7 @@
 {
   "account_id": "K2",
   "external_surface_accessed": false,
-  "failure_code": null,
+  "failure_code": "ACCOUNT_G2A_QUALIFICATION_FAILED",
   "g1a_seal_sha256": "5e989ec32852119e7263d7ede3b7cddef74e0ead4098ef8d5f932ca41f5e9d48",
   "operator_runtime_sha": "cced66277881c1617c722793b050dd781a0c7272",
   "protected_test_accessed": false,
@@ -9,5 +9,5 @@
   "science_authorized": false,
   "science_source_sha": "c65a5082809603155fa80a6eb0152fae33dbd9e0",
   "stage": "TRACKA_V12_G2A_ACCOUNT_STATUS",
-  "status": "PREPARING"
+  "status": "FAILED"
 }
