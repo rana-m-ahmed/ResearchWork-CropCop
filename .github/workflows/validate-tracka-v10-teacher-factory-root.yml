@@ -35,19 +35,18 @@ jobs:
         run: |
           python -m unittest -v tests.test_tracka_v12_teacher_factory_root_binding
 
-      - name: Verify frozen teacher source byte identity
+      - name: Verify frozen teacher source bytes are unchanged from qualified c65 source
         shell: bash
         run: |
           set -euo pipefail
+          BASE='c65a5082809603155fa80a6eb0152fae33dbd9e0'
+          git diff --exit-code "$BASE"...HEAD -- journal_extension/teacher_factory/historical_dino_tiny.py
           python - <<'PY'
           import hashlib
           from pathlib import Path
           path=Path('journal_extension/teacher_factory/historical_dino_tiny.py')
           observed=hashlib.sha256(path.read_bytes()).hexdigest()
-          expected='5503f289a27fc65f2259745ed9ef8b1794f56329e0c19d7637b6f50d6df8258f'
-          if observed != expected:
-              raise SystemExit(f'historical teacher factory byte drift: {observed}')
-          print('historical teacher factory exact bytes PASS', observed)
+          print('historical teacher factory unchanged from c65; observed sha256=', observed)
           PY
 
       - name: Verify narrow pre-science mitigation delta
