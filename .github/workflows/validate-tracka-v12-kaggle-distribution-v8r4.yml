@@ -1,0 +1,115 @@
+name: Validate Track-A v1.2 Kaggle distribution v8r4
+
+on:
+  push:
+    branches: [ops-tracka-kaggle-master-v8r4-distribution-20260915]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  distribution-coherence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Verify frozen runtime and exact G1A generation contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUNTIME='99ae5f340bdea1142c8b4e9289956e4387fd494a'
+          BRANCH='ops-tracka-kaggle-master-runtime-v8r4-99ae5f3'
+          SCIENCE='4ced2fd7c764c07fa47fb57fbea38376d2ce61a4'
+          observed="$(git ls-remote origin "refs/heads/$BRANCH" | awk '{print $1}')"
+          test "$observed" = "$RUNTIME"
+          git fetch --quiet origin "$RUNTIME"
+          git show "$RUNTIME:journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py" | grep -F "SCIENCE_SHA_V8 = \"$SCIENCE\""
+          git show "$RUNTIME:journal_extension/kaggle/tracka_v12_ops/master_g1a_v8.py" > /tmp/g1a.py
+          grep -F 'wait_for_exact_g1a_generation' /tmp/g1a.py
+          grep -F 'expected_seal_sha256=seal["g1a_seal_sha256"]' /tmp/g1a.py
+          grep -F 'G1A_EXACT_GENERATION_READY' /tmp/g1a.py
+          git show "$RUNTIME:journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py" > /tmp/attest.py
+          grep -F 'packaged_exact_bytes' /tmp/attest.py
+          ! grep -F 'api.github.com' /tmp/attest.py
+          ! grep -F '/actions/artifacts/' /tmp/attest.py
+          ! grep -F 'CROPCOP_GITHUB_TOKEN' /tmp/attest.py
+
+      - name: Parse exact committed notebook package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          m=json.loads((root/'MASTER_NOTEBOOK_DISTRIBUTION_V8R4.json').read_text())
+          science='4ced2fd7c764c07fa47fb57fbea38376d2ce61a4'
+          runtime='99ae5f340bdea1142c8b4e9289956e4387fd494a'
+          branch='ops-tracka-kaggle-master-runtime-v8r4-99ae5f3'
+          assert m['schema_version']=='4.4' and m['status']=='LOCKED_DISTRIBUTION'
+          assert m['science_source_sha']==science and m['operator_runtime_sha']==runtime and m['operator_runtime_branch']==branch
+          assert m['normal_operator_notebook_count']==3
+          assert m['github_actions_read_permission_required_at_runtime'] is False
+          assert m['attestations_packaged_in_runtime'] is True
+          assert m['g1a_exact_generation_binding'] is True
+          assert m['remaining_scientific_states']==11
+          assert m['distribution_authorizes_science'] is False
+          assert not m['protected_test_opened'] and not m['track_b_opened'] and not m['track_c_opened']
+          assert not m['ddp_allowed'] and not m['dataparallel_allowed'] and not m['fsdp_allowed']
+          paths=sorted(root.glob('TRACKA_V12_MASTER_K*.ipynb'))
+          assert len(paths)==3
+          forbidden=(
+              'v8.3','424e331711498b6e0f769a2afe525ae8d9008d2b','ops-tracka-kaggle-master-runtime-v8r3-424e331',
+              '0278470dcebbaf7a7595f255854e3c4acaeabcd3','9a72e9466a9a3e7429e0e36a028edac662f83146',
+              'master_account_driver_v5.py','master_g1a_sealer_compat_v6','DS-V1-TEST-CONSUMED')
+          for account in ('K1','K2','K3'):
+              spec=m['normal_operator_notebooks'][account]
+              p=Path(spec['path']); data=p.read_bytes()
+              assert hashlib.sha256(data).hexdigest()==spec['sha256']
+              nb=json.loads(data); meta=nb['metadata']['cropcop_operator']
+              assert meta['account_id']==account and meta['schema_version']=='4.4'
+              assert meta['science_sha']==science and meta['operator_runtime_sha']==runtime and meta['operator_runtime_branch']==branch
+              code='\n'.join(''.join(c.get('source',[])) for c in nb['cells'] if c['cell_type']=='code')
+              full=p.read_text()
+              assert f"OPS_RUNTIME_SHA = '{runtime}'" in code
+              assert f"OPS_RUNTIME_BRANCH = '{branch}'" in code
+              assert "master_launch_guard_v8.py" in code and f"str(guard), '{account}'" in code
+              assert 'CROPCOP_EXPECTED_KAGGLE_USERNAME' in code
+              assert 'T4 x2' in full and 'Save & Run All' in full
+              for x in forbidden: assert x not in full,(account,x)
+              if account=='K1':
+                  assert 'CROPCOP_PRINCIPAL_G1' in code and 'cropcop-g1-sealed/G1_PACKAGE' in code
+              else:
+                  assert 'CROPCOP_PRINCIPAL_G1' not in code and 'cropcop-g1-sealed/G1_PACKAGE' not in code
+              for i,c in enumerate(nb['cells']):
+                  if c['cell_type']=='code': compile(''.join(c['source']),f'{p.name}:{i}','exec')
+          print('v8r4 committed three-notebook distribution PASS')
+          PY
+
+      - name: Verify distribution delta contains no secrets or binary artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='34a681e37ed9ac1ce49acca3d026d57962cb0286'
+          python - <<'PY'
+          import re,subprocess
+          base='34a681e37ed9ac1ce49acca3d026d57962cb0286'
+          files=subprocess.check_output(['git','diff','--name-only',base+'...HEAD'],text=True).splitlines()
+          badext=re.compile(r'\.(?:pt|pth|ckpt|pte|safetensors|zip|tar|gz|7z|env)$',re.I)
+          assert not [p for p in files if badext.search(p)]
+          markers=('github'+'_pat_','g'+'hp_')
+          for p in files:
+              if not p.endswith(('.ipynb','.json','.py','.yml','.yaml','.md')): continue
+              text=open(p,encoding='utf-8').read()
+              for marker in markers:
+                  assert marker not in text,(p,marker)
+          print('v8r4 distribution hygiene PASS')
+          PY
