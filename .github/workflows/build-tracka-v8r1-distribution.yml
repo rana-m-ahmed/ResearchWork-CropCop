@@ -1,0 +1,176 @@
+name: Build Track-A v8.1 notebook distribution
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-v8r1-distribution-20260915
+    paths:
+      - '.github/workflows/build-tracka-v8r1-distribution.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-distribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+      - name: Regenerate exact v8.1 notebook package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          root = Path('journal_extension/kaggle/tracka_v12_ops')
+          science = 'f8aea6c2b481f8436653d4c6504f406948a98082'
+          runtime = '31d6224bd4b87c02ac3f4985d11d0a5f7a2b615d'
+          runtime_branch = 'ops-tracka-kaggle-master-runtime-v8r1-f8aea6c-20260915'
+          distribution_branch = 'ops-tracka-kaggle-master-v8r1-distribution-20260915'
+          code_att = 'e3c38aa2de9db070200732e8b67463956476413ee2899c2db462e6bca02a3d7e'
+          lock_att = '1bc81be25b38cd7bf8490858c7d4931b811e993702210d2f856b56a96d7decbe'
+          runtime_qa_run = 34955178356
+
+          old_science = '05ac7084a6be2fecd9c370477340ee0c8c4769bc'
+          old_runtime = '2f127cbb61d752eec22c3bfd3ecd527a3a81c283'
+          old_runtime_branch = 'ops-tracka-kaggle-master-runtime-v8-2f127cb'
+          old_distribution_branch = 'ops-tracka-kaggle-master-v8-distribution-20260915'
+
+          notebooks = [
+              'TRACKA_V12_MASTER_K1.ipynb',
+              'TRACKA_V12_MASTER_K2.ipynb',
+              'TRACKA_V12_MASTER_K3.ipynb',
+          ]
+          replacements = {
+              old_science: science,
+              old_runtime: runtime,
+              old_runtime_branch: runtime_branch,
+              'MASTER K1 (v8)': 'MASTER K1 (v8.1)',
+              'MASTER K2 (v8)': 'MASTER K2 (v8.1)',
+              'MASTER K3 (v8)': 'MASTER K3 (v8.1)',
+              'before running v8.': 'before running v8.1.',
+              'Pinned Track-A v8 runtime:': 'Pinned Track-A v8.1 runtime:',
+              'K1 v8 master:': 'K1 v8.1 master:',
+              'K2 v8 master:': 'K2 v8.1 master:',
+              'K3 v8 master:': 'K3 v8.1 master:',
+              '/kaggle/working/cropcop-tracka-master-runtime-v8': '/kaggle/working/cropcop-tracka-master-runtime-v8r1',
+          }
+          for name in notebooks:
+              path = root / name
+              nb = json.loads(path.read_text(encoding='utf-8'))
+              for cell in nb['cells']:
+                  src = ''.join(cell.get('source') or [])
+                  for old, new in replacements.items():
+                      src = src.replace(old, new)
+                  cell['source'] = src.splitlines(keepends=True)
+                  if cell['cell_type'] == 'code':
+                      cell['execution_count'] = None
+                      cell['outputs'] = []
+              meta = nb['metadata']['cropcop_operator']
+              meta['schema_version'] = '4.1'
+              meta['science_sha'] = science
+              meta['operator_runtime_sha'] = runtime
+              meta['operator_runtime_branch'] = runtime_branch
+              meta['launcher'] = 'master_launch_guard_v8.py'
+              meta['driver'] = 'master_account_driver_v8.py'
+              meta['expected_account_binding_required'] = True
+              path.write_text(json.dumps(nb, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+
+          hashes = {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in notebooks}
+
+          distribution_path = root / 'MASTER_NOTEBOOK_DISTRIBUTION.json'
+          distribution = json.loads(distribution_path.read_text(encoding='utf-8'))
+          distribution.update({
+              'schema_version': '4.1',
+              'distribution_branch': distribution_branch,
+              'science_source_sha': science,
+              'operator_runtime_sha': runtime,
+              'operator_runtime_branch': runtime_branch,
+              'exact_head_code_attestation_sha256': code_att,
+              'exact_head_lock_runtime_attestation_sha256': lock_att,
+              'notebook_sha256': hashes,
+              'g2a_generation_aware_destructive_restore_required': True,
+              'distribution_qa_required': True,
+          })
+          distribution_path.write_text(json.dumps(distribution, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+
+          freeze_path = root / 'MASTER_RUNTIME_FREEZE.json'
+          freeze = json.loads(freeze_path.read_text(encoding='utf-8'))
+          freeze.update({
+              'schema_version': '2.1',
+              'science_source_sha': science,
+              'runtime_candidate_sha': runtime,
+              'runtime_branch': runtime_branch,
+              'code_attestation_file_sha256': code_att,
+              'lock_runtime_attestation_file_sha256': lock_att,
+              'qa_check': 'v8r1-operator-qa',
+              'qa_conclusion': 'success',
+              'qa_workflow_run_id': runtime_qa_run,
+              'f01_generation_restore_regression': 'PASS',
+              'status': 'PASS',
+          })
+          freeze_path.write_text(json.dumps(freeze, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+
+          contract_path = root / 'OPERATOR_CONTRACT.json'
+          contract = json.loads(contract_path.read_text(encoding='utf-8'))
+          contract.update({
+              'schema_version': '4.1',
+              'scientific_source_sha': science,
+              'operator_runtime_sha': runtime,
+              'operator_runtime_branch': runtime_branch,
+          })
+          durability = contract.setdefault('durability', {})
+          durability['kaggle_generation_must_advance_before_sync_success'] = True
+          durability['generation_marker_roundtrip_required'] = True
+          durability['checkpoint_index_hash_bound'] = True
+          durability['g2a_destructive_restore_generation_aware'] = True
+          durability['g2a_restore_contract'] = 'generation_aware_kaggle_v8'
+          contract_path.write_text(json.dumps(contract, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+
+          for name in ('.runtime-freeze-marker', 'RUNTIME_BRANCH_NOTE.md'):
+              path = root / name
+              text = path.read_text(encoding='utf-8')
+              text = text.replace(old_science, science).replace(old_runtime, runtime).replace(old_runtime_branch, runtime_branch).replace(old_distribution_branch, distribution_branch)
+              text = text.replace('v8', 'v8.1') if name == 'RUNTIME_BRANCH_NOTE.md' else text
+              path.write_text(text, encoding='utf-8')
+
+          test = Path('tests/test_tracka_v12_kaggle_distribution_v8.py')
+          text = test.read_text(encoding='utf-8')
+          text = text.replace(old_science, science).replace(old_runtime, runtime).replace(old_runtime_branch, runtime_branch)
+          text = text.replace("self.assertEqual(meta[\"schema_version\"], \"4.0\")", "self.assertEqual(meta[\"schema_version\"], \"4.1\")")
+          text = text.replace("self.assertEqual(self.freeze[\"qa_workflow_run_id\"], 34936176259)", "self.assertEqual(self.freeze[\"qa_workflow_run_id\"], 34955178356)")
+          text = text.replace("self.assertEqual(self.contract[\"status\"], \"LOCKED_MASTER_OPERATOR_CONTRACT\")", "self.assertEqual(self.contract[\"status\"], \"LOCKED_MASTER_OPERATOR_CONTRACT\")\n        self.assertEqual(self.contract[\"schema_version\"], \"4.1\")")
+          text = text.replace("self.assertTrue(self.contract[\"durability\"][\"checkpoint_index_hash_bound\"])", "self.assertTrue(self.contract[\"durability\"][\"checkpoint_index_hash_bound\"])\n        self.assertTrue(self.contract[\"durability\"][\"g2a_destructive_restore_generation_aware\"])\n        self.assertEqual(self.contract[\"durability\"][\"g2a_restore_contract\"], \"generation_aware_kaggle_v8\")")
+          test.write_text(text, encoding='utf-8')
+
+          for name in notebooks:
+              nb = json.loads((root / name).read_text(encoding='utf-8'))
+              source = '\n'.join(''.join(cell.get('source') or []) for cell in nb['cells'])
+              assert science in source and runtime in source and runtime_branch in source
+              assert old_science not in source and old_runtime not in source and old_runtime_branch not in source
+              assert 'master_launch_guard_v8.py' in source
+              for cell in nb['cells']:
+                  if cell['cell_type'] == 'code':
+                      assert cell['execution_count'] is None and cell['outputs'] == []
+                      compile(''.join(cell.get('source') or []), f'{name}:cell', 'exec')
+          print(json.dumps(hashes, indent=2, sort_keys=True))
+          PY
+      - name: Run distribution regression before freeze commit
+        run: python -m unittest -v tests.test_tracka_v12_kaggle_distribution_v8
+      - name: Commit regenerated package
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add journal_extension/kaggle/tracka_v12_ops tests/test_tracka_v12_kaggle_distribution_v8.py
+          git diff --cached --quiet && { echo 'No distribution changes'; exit 0; }
+          git commit -m 'Freeze repaired Track-A v8.1 notebook distribution'
+          git push origin HEAD:ops-tracka-kaggle-master-v8r1-distribution-20260915
