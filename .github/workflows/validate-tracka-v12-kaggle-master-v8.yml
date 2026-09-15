@@ -42,17 +42,20 @@ jobs:
             journal_extension/kaggle/tracka_v12_ops/master_g1a_v8.py \
             journal_extension/kaggle/tracka_v12_ops/master_g2a_v8.py \
             journal_extension/kaggle/tracka_v12_ops/master_control_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_publication_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_science_v8.py \
             journal_extension/kaggle/tracka_v12_ops/master_account_driver_v8.py \
             journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v8.py \
-            tests/test_tracka_v12_kaggle_master_v8.py
-      - name: Run stable inherited regressions and v8 tests
+            tests/test_tracka_v12_kaggle_master_v8.py \
+            tests/test_tracka_v12_kaggle_publication_v8.py
+      - name: Run inherited neutral regressions and complete v8 regressions
         shell: bash
         run: |
           set -euo pipefail
           python -m unittest -v \
             tests.test_tracka_v12_kaggle_ops_runtime \
-            tests.test_tracka_v12_kaggle_publication_v4 \
             tests.test_tracka_v12_kaggle_master_v5 \
+            tests.test_tracka_v12_kaggle_publication_v8 \
             tests.test_tracka_v12_kaggle_master_v8
       - name: Verify exact attestation bytes and v8 source hygiene
         shell: bash
@@ -66,12 +69,19 @@ jobs:
           names=[
               'tracka_v12_kaggle_operator_v8.py','master_attestations_v8.py','master_wait_v8.py',
               'master_g1a_v8.py','master_g2a_v8.py','master_control_v8.py',
+              'master_publication_v8.py','master_science_v8.py',
               'master_account_driver_v8.py','master_launch_guard_v8.py',
           ]
           text='\n'.join((root/name).read_text(encoding='utf-8') for name in names)
           for forbidden in ('github_pat_','ghp_','DS-V1-TEST-CONSUMED','master_g1a_sealer_compat_v6','init_globals','runpy.run_path'):
               if forbidden in text:
                   raise SystemExit(f'forbidden v8 source content: {forbidden}')
+          driver=(root/'master_account_driver_v8.py').read_text(encoding='utf-8')
+          for required in ('master_g1a_v8','master_g2a_v8','master_control_v8','master_publication_v8','master_science_v8'):
+              if required not in driver:
+                  raise SystemExit(f'v8 driver is not bound to {required}')
+          if 'master_publication_v4' in driver or 'master_science_v4' in driver:
+              raise SystemExit('v8 driver still imports stale copied-source publication/science modules')
           if 'seal_tracka_v12_g1a.py' not in (root/'master_g1a_v8.py').read_text(encoding='utf-8'):
               raise SystemExit('v8 G1A path does not directly execute canonical scientific sealer')
           print('v8 operator hygiene PASS')
