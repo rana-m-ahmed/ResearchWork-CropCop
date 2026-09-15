@@ -60,13 +60,10 @@ def science_command(
     control_dir: Path,
     master_root: Path,
 ) -> list[str]:
-    """Invoke the versioned v1.2.1 parent runner; Git publication remains parent-only."""
-    runner = repo / "journal_extension/kaggle/run_tracka_v12_account_v121.py"
-    if not runner.is_file():
-        raise OperatorError("qualified v1.2.1 account runner is missing from frozen science checkout")
+    """Invoke the exact qualified v1.2.1 parent runner; publication remains parent-only."""
     return [
         sys.executable,
-        str(runner),
+        str(repo / "journal_extension/kaggle/run_tracka_v12_account_v121.py"),
         "--account-id", account_id,
         "--repo-root", str(repo),
         "--source-git-commit", SCIENCE_SHA,
