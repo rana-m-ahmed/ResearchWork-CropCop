@@ -1,0 +1,38 @@
+{
+  "account_owners": {
+    "K1": "ranamuhammadahmed6",
+    "K2": "ranaabdulrehmannn",
+    "K3": "sabahatabbas"
+  },
+  "authorized_experiment_count": 11,
+  "control_schema_compatibility": {
+    "authorization_runtime_gate": "v121_runtime_qualification",
+    "code_attestation_extra_static_gate": "teacher_factory_root_binding_contract",
+    "code_attestation_extra_static_gate_status": "PASS",
+    "code_attestation_extra_static_gates": {
+      "g1a_runtime_global_resolution_contract": "PASS",
+      "kaggle_generation_durability_contract": "PASS",
+      "r13_parity_amendment_contract": "PASS",
+      "teacher_factory_root_binding_contract": "PASS"
+    },
+    "lock_runtime_attestation_field": "r13_v121_runtime_qualification",
+    "lock_runtime_attestation_field_status": "PASS",
+    "note": "Runtime-only compatibility bridge for the exact post-authorization attestation hardening gates and the exact R13-prefixed runtime-qualification field. No scientific model, seed, data, objective, selector, G1A, G2A, or protected-surface contract is changed.",
+    "schema_version": "1.1",
+    "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
+    "stage": "TRACKA_V12_CONTROL_SCHEMA_COMPATIBILITY",
+    "status": "PASS"
+  },
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "external_surface_accessed": false,
+  "g1a_seal_sha256": "c7f5ffc84240a79c3201081896df537959313ac8f0cd2d3aba0205a7fe7cfb8d",
+  "g2a_barrier_sha256": "d8141f5c6f4f7c48bc680c6abd4d63c0871f93253a145c96bbb076615d98fdfc",
+  "operator_runtime_sha": "705be6e2ae1b83be6997ae24a83684ff867dcf12",
+  "protected_test_accessed": false,
+  "scheduler_freeze_sha256": "7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787",
+  "schema_version": "1.2.2",
+  "science_authorization_sha256": "58d65a9c9f0c06222c00541feca9b2aaa005ebda850d2261d4df3e0e1fe7fbb7",
+  "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
+  "stage": "TRACKA_V12_MASTER_CONTROL",
+  "status": "PASS"
+}
