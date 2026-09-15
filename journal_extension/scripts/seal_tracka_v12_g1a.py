@@ -19,6 +19,7 @@ from cropcop_je.g1 import (
 from cropcop_je.hashing import require_sha256, sha256_file, sha256_json
 from cropcop_je.secondary import (
     BASELINE_SPECS,
+    TORCHVISION_VERSION,
     create_baseline_from_pretrained,
     save_baseline_initialization,
     validate_torchvision_provenance,
