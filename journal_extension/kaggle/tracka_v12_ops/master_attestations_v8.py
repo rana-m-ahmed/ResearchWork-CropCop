@@ -13,34 +13,34 @@ from tracka_v12_kaggle_operator_v8 import (
     sha256_file,
 )
 
-RELEASE_MANIFEST_FILE_SHA256 = "eee2ef3cf5cd3d41332d9b55d833d7381be232bc634958147bdffd81170d1bcb"
-CODE_ATTESTATION_MEMBER_SHA256 = "5bfb757219996aa7df48e21fd0531124c60a86f6a0c8ad17840a2a3eb88cda2e"
-LOCK_RUNTIME_ATTESTATION_MEMBER_SHA256 = "49efe43b76423c82c6849d43d3f1bea2ff24503f65564e722d205cdac2a21fea"
-ATTESTATION_DIR = Path(__file__).resolve().parent / "attestations_v8r3"
+RELEASE_MANIFEST_FILE_SHA256 = "0777ce9f040ada279dfe31b85ce8a0498926a10c78ef3b7aa6297c64ea9d0c43"
+CODE_ATTESTATION_MEMBER_SHA256 = "4f29548f5ba56c2969fb1b0c7234d66ce15a2747d104e8e27579af08f9be7010"
+LOCK_RUNTIME_ATTESTATION_MEMBER_SHA256 = "d2a1f4303ce73f1f92f2a3835b6300230ab566686da0f3a2e58f743bf1366c4d"
+ATTESTATION_DIR = Path(__file__).resolve().parent / "attestations_v9"
 
 
 def verified_release_attestation_manifest() -> tuple[Path, dict]:
     path = ATTESTATION_DIR / "RELEASE_ATTESTATION_MANIFEST.json"
     if not path.is_file():
-        raise OperatorError("v8r3 release attestation manifest is missing")
+        raise OperatorError("v9 release attestation manifest is missing")
     if sha256_file(path) != RELEASE_MANIFEST_FILE_SHA256:
-        raise OperatorError("v8r3 release attestation manifest bytes changed")
+        raise OperatorError("v9 release attestation manifest bytes changed")
 
     payload = load_json(path)
     if payload.get("schema_version") != "1.1" or payload.get("status") != "LOCKED_PRE_SCIENCE":
-        raise OperatorError("v8r3 release attestation manifest status/schema mismatch")
+        raise OperatorError("v9 release attestation manifest status/schema mismatch")
     if payload.get("science_source_sha") != SCIENCE_SHA:
-        raise OperatorError("v8r3 release attestation manifest science source mismatch")
+        raise OperatorError("v9 release attestation manifest science source mismatch")
     if payload.get("science_authorized") is not False:
-        raise OperatorError("v8r3 release attestation manifest unexpectedly authorizes science")
+        raise OperatorError("v9 release attestation manifest unexpectedly authorizes science")
     if payload.get("protected_test_accessed") is not False or payload.get("external_surface_accessed") is not False:
-        raise OperatorError("v8r3 release attestation manifest reports protected-surface access")
+        raise OperatorError("v9 release attestation manifest reports protected-surface access")
     if int(payload.get("remaining_scientific_states", -1)) != 11:
-        raise OperatorError("v8r3 release attestation manifest does not bind exactly 11 remaining states")
+        raise OperatorError("v9 release attestation manifest does not bind exactly 11 remaining states")
 
     materialization = payload.get("attestation_materialization") or {}
     if materialization.get("mode") != "packaged_exact_bytes":
-        raise OperatorError("v8r3 attestation materialization mode mismatch")
+        raise OperatorError("v9 attestation materialization mode mismatch")
     if materialization.get("runtime_requires_github_actions_api") is not False:
         raise OperatorError("v8r3 unexpectedly requires GitHub Actions API access at runtime")
     if materialization.get("runtime_requires_actions_read_permission") is not False:
@@ -48,20 +48,20 @@ def verified_release_attestation_manifest() -> tuple[Path, dict]:
 
     parity = payload.get("r13_parity_contract") or {}
     if parity.get("contract_id") != R13_PARITY_CONTRACT_ID_V8:
-        raise OperatorError("v8r3 release attestation manifest parity-contract mismatch")
+        raise OperatorError("v9 release attestation manifest parity-contract mismatch")
     if float(parity.get("required_max_abs_difference", -1.0)) != R13_PARITY_REQUIRED_MAX_ABS_V8:
-        raise OperatorError("v8r3 release attestation manifest parity tolerance mismatch")
+        raise OperatorError("v9 release attestation manifest parity tolerance mismatch")
     if float(parity.get("historical_v1_2_required_max_abs_difference", -1.0)) != 1e-5:
-        raise OperatorError("v8r3 release attestation manifest lost historical parity provenance")
+        raise OperatorError("v9 release attestation manifest lost historical parity provenance")
     if parity.get("exact_pretrained_gate_pass") is not True:
-        raise OperatorError("v8r3 release attestation manifest lacks exact-pretrained parity PASS")
+        raise OperatorError("v9 release attestation manifest lacks exact-pretrained parity PASS")
 
     code = payload.get("code_attestation") or {}
     lock = payload.get("lock_runtime_attestation") or {}
     if code.get("status") != "PASS" or code.get("member_sha256") != CODE_ATTESTATION_MEMBER_SHA256:
-        raise OperatorError("v8r3 code-attestation provenance mismatch")
+        raise OperatorError("v9 code-attestation provenance mismatch")
     if lock.get("status") != "PASS" or lock.get("member_sha256") != LOCK_RUNTIME_ATTESTATION_MEMBER_SHA256:
-        raise OperatorError("v8r3 lock/runtime-attestation provenance mismatch")
+        raise OperatorError("v9 lock/runtime-attestation provenance mismatch")
 
     required = set(payload.get("required_static_pre_science_gates") or [])
     expected = {
@@ -77,7 +77,7 @@ def verified_release_attestation_manifest() -> tuple[Path, dict]:
         "training_runner_contract",
     }
     if required != expected:
-        raise OperatorError("v8r3 release attestation manifest required-gate set drifted")
+        raise OperatorError("v9 release attestation manifest required-gate set drifted")
     return path, payload
 
 

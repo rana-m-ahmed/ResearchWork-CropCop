@@ -1,0 +1,49 @@
+{
+  "attestation_materialization": {
+    "mode": "packaged_exact_bytes",
+    "runtime_requires_actions_read_permission": false,
+    "runtime_requires_github_actions_api": false
+  },
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "code_attestation": {
+    "member": "tracka-v12-pre-science-code-attestation.json",
+    "member_sha256": "4f29548f5ba56c2969fb1b0c7234d66ce15a2747d104e8e27579af08f9be7010",
+    "source_artifact_id": 10402816417,
+    "source_artifact_name": "tracka-v12-implementation-qa",
+    "source_workflow_run_id": 34984335949,
+    "status": "PASS"
+  },
+  "external_surface_accessed": false,
+  "lock_runtime_attestation": {
+    "member": "tracka-v12-exact-head-lock-runtime-attestation.json",
+    "member_sha256": "d2a1f4303ce73f1f92f2a3835b6300230ab566686da0f3a2e58f743bf1366c4d",
+    "source_artifact_id": 10403306539,
+    "source_artifact_name": "tracka-v12-exact-head-lock-runtime-attestation",
+    "source_workflow_run_id": 34984335937,
+    "status": "PASS"
+  },
+  "protected_test_accessed": false,
+  "r13_parity_contract": {
+    "contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1",
+    "exact_pretrained_gate_pass": true,
+    "historical_v1_2_required_max_abs_difference": 1e-05,
+    "required_max_abs_difference": 5e-05
+  },
+  "remaining_scientific_states": 11,
+  "required_static_pre_science_gates": [
+    "exact_head_ci",
+    "kaggle_generation_durability_contract",
+    "g1a_runtime_global_resolution_contract",
+    "r13_parity_amendment_contract",
+    "principal_science_diff",
+    "secondary_science_diff",
+    "checkpoint_recovery_contract",
+    "cross_slot_recovery_contract",
+    "six_gpu_parent_orchestration",
+    "training_runner_contract"
+  ],
+  "schema_version": "1.1",
+  "science_authorized": false,
+  "science_source_sha": "c65a5082809603155fa80a6eb0152fae33dbd9e0",
+  "status": "LOCKED_PRE_SCIENCE"
+}
