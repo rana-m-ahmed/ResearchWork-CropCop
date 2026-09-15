@@ -142,6 +142,7 @@ def run_account(account_id: str) -> int:
             kaggle_env=kaggle_env,
             master_root=master_root,
         )
+    assert_clean_science_checkout(repo)
     print(f"{account_id}: canonical G1A PASS {g1a_seal['g1a_seal_sha256']} via {shared_locator}")
 
     stage("ACCOUNT_G2A", account_id)
@@ -158,6 +159,7 @@ def run_account(account_id: str) -> int:
         master_root=master_root,
         global_clock=global_clock,
     )
+    assert_clean_science_checkout(repo)
     print(f"{account_id}: account G2A evidence canonicalized.")
 
     stage("CONTROL_PLANE", account_id)
@@ -175,6 +177,7 @@ def run_account(account_id: str) -> int:
     else:
         control_dir, control = acquire_control_worker(repo, g1a_seal=g1a_seal, master_root=master_root)
         print(f"{account_id}: canonical control plane received and validated.")
+    assert_clean_science_checkout(repo)
 
     stage("SCIENCE_DURABILITY_PREFLIGHT", account_id)
     ensure_science_durability(
