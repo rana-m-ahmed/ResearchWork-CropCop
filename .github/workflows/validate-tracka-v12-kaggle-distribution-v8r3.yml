@@ -97,9 +97,10 @@ jobs:
           files=subprocess.check_output(['git','diff','--name-only',base+'...HEAD'],text=True).splitlines()
           badext=re.compile(r'\.(?:pt|pth|ckpt|pte|safetensors|zip|tar|gz|7z|env)$',re.I)
           assert not [p for p in files if badext.search(p)]
+          markers=('github_'+'pat_','gh'+'p_')
           for p in files:
               if not p.endswith(('.ipynb','.json','.py','.yml','.yaml','.md')): continue
               text=open(p,encoding='utf-8').read()
-              for marker in ('github_pat_','ghp_'):
+              for marker in markers:
                   assert marker not in text,(p,marker)
           PY
