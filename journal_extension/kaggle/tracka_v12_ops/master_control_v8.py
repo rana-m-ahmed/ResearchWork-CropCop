@@ -10,7 +10,7 @@ from tracka_v12_kaggle_operator_v8 import (
     SCIENCE_SHA, OperatorError, control_public_run_id, fetch_public_bundle, load_json,
     operator_runtime_head, publish_public_files, scientific_durable_map, write_json,
 )
-from master_attestations_v8 import verified_attestation_paths
+from master_attestations_v8 import materialize_verified_attestations
 from master_g2a_v8 import REQUIRED_G2A, owner_from_summary
 from master_wait_v8 import POLL_SECONDS, dependency_wait_expired
 
@@ -77,16 +77,17 @@ def build_control_k1(repo: Path, *, g1a_bundle: Path, g1a_seal: dict, summaries:
     if subprocess.run(command, cwd=repo, text=True).returncode != 0:
         raise OperatorError("G2A barrier/scheduler sealer failed")
 
-    code_attestation, lock_attestation = verified_attestation_paths()
+    attestation_dir = master_root / "release-attestations"
+    code_attestation, lock_attestation = materialize_verified_attestations(attestation_dir)
     science_go = control_dir / "TRACKA_V12_SCIENCE_GO.json"
     command = [
-        sys.executable, str(repo / "journal_extension/scripts/seal_tracka_v12_science_go_v123.py"),
+        sys.executable, str(repo / "journal_extension/scripts/seal_tracka_v12_science_go_v124.py"),
         "--repo-root", str(repo), "--code-attestation", str(code_attestation),
         "--lock-runtime-attestation", str(lock_attestation), "--g1a-seal", str(g1a_bundle / "TRACKA_V12_G1A_SEAL.json"),
         "--g2a-barrier", str(barrier), "--scheduler-freeze", str(scheduler), "--output", str(science_go),
     ]
     if subprocess.run(command, cwd=repo, text=True).returncode != 0:
-        raise OperatorError("final durability-bound SCIENCE_GO sealer failed")
+        raise OperatorError("final v1.2.1 durability-bound SCIENCE_GO sealer failed")
 
     owners = {
         "K1": owner_from_summary(summaries["CAL-EFFB0"]),
@@ -103,7 +104,7 @@ def build_control_k1(repo: Path, *, g1a_bundle: Path, g1a_seal: dict, summaries:
     write_json(control_dir / "TRACKA_V12_ACCOUNT_OWNERS.json", owners)
     control = validate_control_bundle(repo, g1a_seal, control_dir)
     report = {
-        "schema_version": "1.1", "stage": "TRACKA_V12_MASTER_CONTROL", "status": "PASS",
+        "schema_version": "1.2.1", "stage": "TRACKA_V12_MASTER_CONTROL", "status": "PASS",
         "science_source_sha": SCIENCE_SHA, "operator_runtime_sha": operator_runtime_head(),
         "dependency_lock_sha256": stack["dependency_lock_sha256"], "g1a_seal_sha256": g1a_seal["g1a_seal_sha256"],
         "g2a_barrier_sha256": control["barrier"]["barrier_sha256"],
