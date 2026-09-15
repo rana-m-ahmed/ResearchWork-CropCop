@@ -1,0 +1,13 @@
+{
+  "R06-EFFB0-CONTEXT-S2": "sabahatabbas/cropcop-r06-effb0-context-s2-3f5983ed-56023042",
+  "R06-EFFB0-CONTEXT-S3": "sabahatabbas/cropcop-r06-effb0-context-s3-a9bf0e72-56023042",
+  "R07-CNXTT-CONTEXT-S2": "sabahatabbas/cropcop-r07-cnxtt-context-s2-abce1197-56023042",
+  "R07-CNXTT-CONTEXT-S3": "sabahatabbas/cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
+  "R12-MNV4-FEATURE-S2": "ranaabdulrehmannn/cropcop-r12-mnv4-feature-s2-6dd42c66-56023042",
+  "R12-MNV4-FEATURE-S3": "ranaabdulrehmannn/cropcop-r12-mnv4-feature-s3-286f2926-56023042",
+  "R12-MNV4-LOGITS-S2": "ranamuhammadahmed6/cropcop-r12-mnv4-logits-s2-f04a6089-56023042",
+  "R12-MNV4-LOGITS-S3": "ranamuhammadahmed6/cropcop-r12-mnv4-logits-s3-0c97a693-56023042",
+  "R13-VIT-DLITTLE-DIFF-CONTEXT-S1": "ranaabdulrehmannn/cropcop-r13-vit-dlittle-diff-con-696948b9-56023042",
+  "R13-VIT-DLITTLE-DIFF-CONTEXT-S2": "ranaabdulrehmannn/cropcop-r13-vit-dlittle-diff-con-e7237dfe-56023042",
+  "R13-VIT-DLITTLE-DIFF-CONTEXT-S3": "ranamuhammadahmed6/cropcop-r13-vit-dlittle-diff-con-c2bd5ef6-56023042"
+}
