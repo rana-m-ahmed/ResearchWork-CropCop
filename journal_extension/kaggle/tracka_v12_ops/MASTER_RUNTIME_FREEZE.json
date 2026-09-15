@@ -1,12 +1,15 @@
 {
-  "schema_version": "1.6",
+  "schema_version": "1.7",
   "status": "PASS",
   "science_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "runtime_candidate_sha": "902e7774dda32106a03bfb3f5917946c11ff8e2c",
-  "runtime_branch": "ops-tracka-kaggle-master-runtime-v5-902e777",
+  "runtime_candidate_sha": "208656f895af5c218a0998b582f2adbb81167eaa",
+  "runtime_branch": "ops-tracka-kaggle-master-runtime-v6-208656f",
   "qa_check": "master-operator-qa",
   "qa_conclusion": "success",
-  "qa_workflow_run_id": 34776870603,
-  "fix": "V5 clean mitigation: restore the frozen two-stage TorchVision preparation plus exact tensor-provenance capture contract before G1A, prevalidate candidate/official tensor identity, retain verified real Kaggle mount paths with fail-closed hash/structure checks, use staged account driver diagnostics, preserve idempotent evidence recovery, and keep scientific execution bound to the immutable science SHA.",
+  "qa_workflow_run_id": 34922319799,
+  "qa_job_id": 104232958184,
+  "targeted_v6_tests": 9,
+  "inherited_regression_tests": 59,
+  "fix": "V6 deep mitigation: retain the verified v5 input/provenance/publication architecture; bridge the single frozen G1A sealer unresolved global TORCHVISION_VERSION from the frozen cropcop_je.secondary module without changing scientific source bytes; serialize each account master with a process lock and terminal marker so duplicate Kaggle execution cannot race pip, G1A, G2A, control, or science; reassert frozen science checkout cleanliness after every pre-science mutation boundary; and require process-isolated notebook runtime checkouts before the driver singleton.",
   "note": "This PASS is operator implementation/CI qualification only. It does not claim a real Kaggle G1A or scientific result; those require runtime artifacts from the actual account executions."
 }
