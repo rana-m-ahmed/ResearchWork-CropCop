@@ -1,0 +1,142 @@
+name: Package Track-A v10 exact attestations
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v10-5602304
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout runtime branch
+        uses: actions/checkout@v4
+        with:
+          ref: ops-tracka-kaggle-master-runtime-v10-5602304
+          fetch-depth: 0
+
+      - name: Download exact source attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/code /tmp/lock
+          mkdir -p /tmp/code /tmp/lock
+          gh run download 34998242036 -n tracka-v12-implementation-qa -D /tmp/code
+          gh run download 34998242024 -n tracka-v12-exact-head-lock-runtime-attestation -D /tmp/lock
+
+      - name: Verify exact bytes and semantic source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          CODE=/tmp/code/tracka-v12-pre-science-code-attestation.json
+          LOCK=/tmp/lock/tracka-v12-exact-head-lock-runtime-attestation.json
+          test "$(sha256sum "$CODE" | awk '{print $1}')" = "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63"
+          test "$(sha256sum "$LOCK" | awk '{print $1}')" = "38b24403c98bdb55649d76e4ab58b362ec307e6665c1bbcb936d58a5bb38b863"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          science='56023042e57758591df9babb3438f191dbe10312'
+          code=json.loads(Path('/tmp/code/tracka-v12-pre-science-code-attestation.json').read_text())
+          lock=json.loads(Path('/tmp/lock/tracka-v12-exact-head-lock-runtime-attestation.json').read_text())
+          for name,p in [('code',code),('lock',lock)]:
+              if p.get('status')!='PASS' or p.get('source_git_commit')!=science or p.get('pull_request_head_sha')!=science:
+                  raise SystemExit(f'{name} exact-head identity mismatch')
+          if (code.get('static_pre_science_gates') or {}).get('teacher_factory_root_binding_contract')!='PASS':
+              raise SystemExit('code attestation lacks teacher factory root PASS')
+          impl=code.get('implementation_sha256') or {}
+          if impl.get('journal_extension/teacher_factory/historical_dino_tiny.py')!='4ec41477264387cde03f7fab8f7df4b9480223b32f8554af5c6198687a568f02':
+              raise SystemExit('teacher factory source hash mismatch in code attestation')
+          if lock.get('science_authorized') is not False:
+              raise SystemExit('lock attestation unexpectedly authorizes science')
+          print('exact source attestation semantics PASS')
+          PY
+
+      - name: Materialize exact attestation package and manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIR=journal_extension/kaggle/tracka_v12_ops/attestations_v10
+          mkdir -p "$DIR"
+          cp /tmp/code/tracka-v12-pre-science-code-attestation.json "$DIR/tracka-v12-pre-science-code-attestation.json"
+          cp /tmp/lock/tracka-v12-exact-head-lock-runtime-attestation.json "$DIR/tracka-v12-exact-head-lock-runtime-attestation.json"
+          python - <<'PY'
+          import json, hashlib
+          from pathlib import Path
+          d=Path('journal_extension/kaggle/tracka_v12_ops/attestations_v10')
+          manifest={
+            'attestation_materialization': {
+              'mode':'packaged_exact_bytes',
+              'runtime_requires_actions_read_permission':False,
+              'runtime_requires_github_actions_api':False,
+            },
+            'authority_id':'EAAI-JE-SDL-v2.1-QA',
+            'code_attestation': {
+              'member':'tracka-v12-pre-science-code-attestation.json',
+              'member_sha256':'d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63',
+              'source_artifact_id':10408342379,
+              'source_artifact_name':'tracka-v12-implementation-qa',
+              'source_workflow_run_id':34998242036,
+              'status':'PASS',
+            },
+            'external_surface_accessed':False,
+            'lock_runtime_attestation': {
+              'member':'tracka-v12-exact-head-lock-runtime-attestation.json',
+              'member_sha256':'38b24403c98bdb55649d76e4ab58b362ec307e6665c1bbcb936d58a5bb38b863',
+              'source_artifact_id':10408458669,
+              'source_artifact_name':'tracka-v12-exact-head-lock-runtime-attestation',
+              'source_workflow_run_id':34998242024,
+              'status':'PASS',
+            },
+            'protected_test_accessed':False,
+            'r13_parity_contract': {
+              'contract_id':'TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1',
+              'exact_pretrained_gate_pass':True,
+              'historical_v1_2_required_max_abs_difference':1e-5,
+              'required_max_abs_difference':5e-5,
+            },
+            'remaining_scientific_states':11,
+            'required_static_pre_science_gates': [
+              'exact_head_ci','kaggle_generation_durability_contract','g1a_runtime_global_resolution_contract',
+              'r13_parity_amendment_contract','principal_science_diff','secondary_science_diff',
+              'checkpoint_recovery_contract','cross_slot_recovery_contract','six_gpu_parent_orchestration',
+              'training_runner_contract','teacher_factory_root_binding_contract',
+            ],
+            'schema_version':'1.2',
+            'science_authorized':False,
+            'science_source_sha':'56023042e57758591df9babb3438f191dbe10312',
+            'status':'LOCKED_PRE_SCIENCE',
+            'teacher_factory_root_contract': {
+              'entrypoint':'historical_dino_tiny:build_teacher',
+              'gate':'PASS',
+              'source_relpath':'journal_extension/teacher_factory/historical_dino_tiny.py',
+              'source_sha256':'4ec41477264387cde03f7fab8f7df4b9480223b32f8554af5c6198687a568f02',
+            },
+          }
+          data=(json.dumps(manifest,indent=2,sort_keys=True)+'\n').encode()
+          (d/'RELEASE_ATTESTATION_MANIFEST.json').write_bytes(data)
+          observed=hashlib.sha256(data).hexdigest()
+          expected='dedf8a3b9ad29222b6bbbee669442012f0171ec14d89dca5f743ac0d7ef4ffd3'
+          if observed!=expected:
+              raise SystemExit(f'manifest hash drift expected={expected} observed={observed}')
+          print('release manifest sha256',observed)
+          PY
+
+      - name: Commit exact package if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "CropCop Release Bot"
+          git config user.email "cropcop-release@localhost.invalid"
+          git add journal_extension/kaggle/tracka_v12_ops/attestations_v10
+          if git diff --cached --quiet; then
+            echo "exact v10 attestation package already committed"
+            exit 0
+          fi
+          git commit -m "Package exact Track-A v10 source attestations"
+          git push origin HEAD:ops-tracka-kaggle-master-runtime-v10-5602304
