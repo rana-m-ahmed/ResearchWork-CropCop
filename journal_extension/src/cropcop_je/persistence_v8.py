@@ -166,12 +166,13 @@ class GenerationAwareKagglePrivateDatasetStore(KagglePrivateDatasetStore):
         with verify_ctx as td:
             verify_root = Path(td)
             self._download_latest(verify_root)
-            verified_marker = self._validate_generation_payload(
+            self._validate_generation_payload(
                 verify_root,
                 run_id=run_id,
                 segment_id=segment_id,
                 expected_nonce=nonce,
             )
+            marker_sha = sha256_file(verify_root / "durable_sync.json")
 
         return GenerationAwareSyncResult(
             backend="kaggle_private_dataset",
@@ -179,7 +180,7 @@ class GenerationAwareKagglePrivateDatasetStore(KagglePrivateDatasetStore):
             files=files,
             previous_version_number=previous_version,
             confirmed_version_number=confirmed_version,
-            generation_marker_sha256=sha256_file(verify_root / "durable_sync.json") if False else None,
+            generation_marker_sha256=marker_sha,
             generation_roundtrip_verified=True,
         )
 
@@ -192,7 +193,7 @@ class GenerationAwareKagglePrivateDatasetStore(KagglePrivateDatasetStore):
                 self._download_latest(staging)
             except Exception as exc:
                 raise PersistenceError(f"Kaggle recovery download failed: {exc}") from exc
-            marker = self._validate_generation_payload(staging, run_id=run_id)
+            self._validate_generation_payload(staging, run_id=run_id)
             destination_dir.mkdir(parents=True, exist_ok=True)
             for path in staging.rglob("*"):
                 if path.is_file() and path.name not in {"dataset-metadata.json", "durable_sync.json"}:
@@ -200,8 +201,6 @@ class GenerationAwareKagglePrivateDatasetStore(KagglePrivateDatasetStore):
                     dst = destination_dir / rel
                     dst.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(path, dst)
-            if marker.get("complete") is not True:
-                raise PersistenceError("Kaggle durable restore marker is not complete")
             return True
 
 
