@@ -1,6 +1,6 @@
 {
   "attestation_kind": "track_a_v12_pre_science_code",
-  "attestation_sha256": "7c19598c90d0fec61d2184cd6f0a6c7ecb0b659fb5180a0bc2c07d753f1439e7",
+  "attestation_sha256": "2ab34f0ffa0c9867286c25b94f795fd327fa77faad76140075809b2fa4a39981",
   "github_actions": true,
   "implementation_sha256": {
     "journal_extension/TRACK_A_V12_EXECUTION_RUNBOOK.md": "cf125d60019c75760cf9a15a899aac9e12f88b1564e176db0730e33ebb1947c7",
@@ -11,7 +11,7 @@
     "journal_extension/kaggle/run_tracka_v12_account.py": "55eb41db6f864adf06d666bcccdb1a5c0962034e04ee39f5aef65e0c3eb5d6ab",
     "journal_extension/scripts/build_tracka_v12_code_attestation.py": "a5f9650f6580e8c9e6aeb22054f91e58e97e50866c04cd3d3e700af9b1ba7e43",
     "journal_extension/scripts/build_tracka_v12_lock_runtime_attestation.py": "7f0ffb73c0bd127e115f40bbbd72a3dd5c8a69bee2dae05c8dfd4ed3db40823c",
-    "journal_extension/scripts/qualify_tracka_v12_profile_v122.py": "19657252b20ce437e6cd196d269963d988a7f19756412fb16fc7e1e94a8cbc1f",
+    "journal_extension/scripts/qualify_tracka_v12_profile_v122.py": "2c3ebe31582db29adb9835e6c5bad797c9134f54d4075d43a597a083e253b4dc",
     "journal_extension/scripts/run_tracka_v12_auxiliary_evidence.py": "5fd159ebbd33bddc1a081f768ca0c3f172b25c68ec4f429b87b69d9b00492bd5",
     "journal_extension/scripts/run_tracka_v12_direct_evidence.py": "f1d740fa81b1a18e7846f825de0b024663ef0793800e5500f38d307fdb4de298",
     "journal_extension/scripts/run_tracka_v12_training_v121.py": "b82208daffaace86e4440b7646f783600e022cb22587044623fb838988351a4c",
@@ -33,7 +33,7 @@
     "journal_extension/src/cropcop_je/tracka_v12_evidence.py": "1518a4915c0edb9ceb758623269a3f441b919aae047ad538a45e347e1557045f",
     "journal_extension/src/cropcop_je/tracka_v12_g1a.py": "243b43ba3871a8c575bddd93dae6df3fbe3512f0ca8e80e06b7439e858284b59",
     "journal_extension/src/cropcop_je/tracka_v12_g2a.py": "405c741df5376562bc3fb48c0019f92c3cc70b86c8c6ee9959e38bee30482f42",
-    "journal_extension/src/cropcop_je/tracka_v12_g2a_durability.py": "ac9e83d64a559fa70c6da4da6e7ff171f492200abdb175fbf556d95b6cea18cf",
+    "journal_extension/src/cropcop_je/tracka_v12_g2a_durability.py": "af7fa093e3ccf0a661ca0a39b524bde3d9412e80b7813c181de054488c25c621",
     "journal_extension/src/cropcop_je/tracka_v12_g2a_v122.py": "31df9c817034a859152ee11dba78f97a4bfc767dd08fbbee1f32aaee3144721e",
     "journal_extension/src/cropcop_je/tracka_v12_historical.py": "ae26e63078268b42ba0651849ac474bf63e416fa5903eeb8cb95551c11c34efc",
     "journal_extension/src/cropcop_je/tracka_v12_orchestration.py": "3b12ca863d7f0429170dd1362e8d4270276ea4516df6607334ea60271db36773",
@@ -43,7 +43,7 @@
     "journal_extension/src/cropcop_je/tracka_v12_xai.py": "fb2feb1ef8f621e86da41a846b346aef1e046441740959581e933bc6c0a7a09f"
   },
   "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, G1A runtime-global checks, generation-aware Kaggle durability tests, historical-lineage tests, analysis-evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the canonical runbook plus G1A/G2A qualification, checkpoint/persistence recovery, six-GPU execution, historical replay, direct/auxiliary analysis, XAI, direct selection and comprehensive 21-state closure implementations, but does not independently authorize scientific execution.",
-  "pull_request_head_sha": "05ac7084a6be2fecd9c370477340ee0c8c4769bc",
+  "pull_request_head_sha": "f8aea6c2b481f8436653d4c6504f406948a98082",
   "schema_version": "1.0",
   "science_diff_reports": {
     "principal": {
@@ -139,7 +139,7 @@
     "principal": "04d68e30d14c13446ea58ac3512bdcf3874ee71cb56cd7ff2eda0e0fcf7d4f69",
     "secondary": "0a8e053927208ff6edae5f41c15078c5988c997ba94ab83a6dde3b6977c4fcde"
   },
-  "source_git_commit": "05ac7084a6be2fecd9c370477340ee0c8c4769bc",
+  "source_git_commit": "f8aea6c2b481f8436653d4c6504f406948a98082",
   "static_pre_science_gates": {
     "analysis_selector_implementation": "PASS",
     "auxiliary_paired_analysis_implementation": "PASS",
@@ -164,5 +164,5 @@
   },
   "status": "PASS",
   "workflow_run_attempt": "1",
-  "workflow_run_id": "34934985320"
+  "workflow_run_id": "34954679183"
 }

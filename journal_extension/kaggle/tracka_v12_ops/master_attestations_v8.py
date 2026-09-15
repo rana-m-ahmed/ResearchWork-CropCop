@@ -4,8 +4,8 @@ from pathlib import Path
 
 from tracka_v12_kaggle_operator_v8 import SCIENCE_SHA, OperatorError, load_json, sha256_file
 
-CODE_ATTESTATION_FILE_SHA256 = "cd8a23ca6a5ebdba18e8466d8578d2646723c349b9428b8d8890aac7c62ab187"
-LOCK_RUNTIME_ATTESTATION_FILE_SHA256 = "046814249b119f6d520df58095bf951b13e35fcc09f995599c36202f8b0bed7f"
+CODE_ATTESTATION_FILE_SHA256 = "e3c38aa2de9db070200732e8b67463956476413ee2899c2db462e6bca02a3d7e"
+LOCK_RUNTIME_ATTESTATION_FILE_SHA256 = "1bc81be25b38cd7bf8490858c7d4931b811e993702210d2f856b56a96d7decbe"
 
 def verified_attestation_paths() -> tuple[Path, Path]:
     root = Path(__file__).resolve().parent / "attestations_v8"

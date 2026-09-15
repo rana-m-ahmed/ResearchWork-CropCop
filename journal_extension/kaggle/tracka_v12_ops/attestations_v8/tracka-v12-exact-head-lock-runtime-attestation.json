@@ -1,6 +1,6 @@
 {
   "attestation_kind": "track_a_v12_exact_head_lock_runtime",
-  "attestation_sha256": "176dffc7d5482bef2c96d77921d538bf028763ca0f76571c023c8792d6b3c198",
+  "attestation_sha256": "4ad553dec2c0bdee6ba864ddc6b5a5b6e1e2497e748168ad7d333d68c761f853",
   "candidate_claim_boundary_lock": "PASS",
   "candidate_claim_boundary_sha256": "949af070a985567d22b1ba8001a755d2c1a1c18a34f9d929d706756c9c1251df",
   "content_lock_report": {
@@ -66,11 +66,11 @@
   "github_actions": true,
   "immutable_v12_lock": "PASS",
   "note": "This exact-head attestation binds the immutable v1.2 content lock, corrected R13 v1.2.1 runtime/XAI interface qualification, candidate-system claim boundary, and frozen XAI operationalization to one Git commit. It does not independently authorize scientific execution.",
-  "pull_request_head_sha": "05ac7084a6be2fecd9c370477340ee0c8c4769bc",
+  "pull_request_head_sha": "f8aea6c2b481f8436653d4c6504f406948a98082",
   "runtime_report": {
     "errors": [],
     "model_id": "vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k",
-    "normalization_equivalence_max_abs_difference": 2.5033950805664062e-06,
+    "normalization_equivalence_max_abs_difference": 2.384185791015625e-06,
     "observed_target_shape": [
       2,
       257,
@@ -87,13 +87,13 @@
       "torchvision": "0.27.1+cu130"
     }
   },
-  "runtime_report_sha256": "f17996d5c4158bb21b60f70c02b710f70cdebc4277f8c95c72a6df3dc0a2147a",
+  "runtime_report_sha256": "c27ed1af845342acf74a5e485f0ce5544ff872734d35b3fdcd4e6f17776d544e",
   "schema_version": "1.0",
   "science_authorized": false,
-  "source_git_commit": "05ac7084a6be2fecd9c370477340ee0c8c4769bc",
+  "source_git_commit": "f8aea6c2b481f8436653d4c6504f406948a98082",
   "status": "PASS",
   "v121_runtime_qualification": "PASS",
   "workflow_run_attempt": "1",
-  "workflow_run_id": "34934985308",
+  "workflow_run_id": "34954679112",
   "xai_operationalization_sha256": "14a2140e1afbb5f3456370e21af53ec33c8b442ce87ad54c7e7cdd70d7cc7691"
 }
