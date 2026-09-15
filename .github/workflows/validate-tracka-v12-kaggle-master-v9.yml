@@ -1,0 +1,124 @@
+name: Validate Track-A v1.2 Kaggle master v9
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v9-c65a508-20260915
+    paths:
+      - '.github/workflows/validate-tracka-v12-kaggle-master-v9.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v9-runtime-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact runtime candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Verify exact successor science and durability remediation
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE='c65a5082809603155fa80a6eb0152fae33dbd9e0'
+          grep -F "SCIENCE_SHA_V8 = \"$SCIENCE\"" journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py
+          git fetch --quiet origin "$SCIENCE"
+          git cat-file -e "$SCIENCE^{commit}"
+          git show "$SCIENCE:journal_extension/src/cropcop_je/persistence_v8.py" | grep -F '_wait_for_exact_downloadable_generation'
+          git show "$SCIENCE:journal_extension/src/cropcop_je/persistence_v8.py" | grep -F 'GenerationNotCurrentError'
+          git show "$SCIENCE:tests/test_tracka_v12_mitigation_v9.py" >/dev/null
+
+      - name: Verify exact packaged v9 evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='journal_extension/kaggle/tracka_v12_ops/attestations_v9'
+          test "$(sha256sum "$ROOT/tracka-v12-pre-science-code-attestation.json" | awk '{print $1}')" = '4f29548f5ba56c2969fb1b0c7234d66ce15a2747d104e8e27579af08f9be7010'
+          test "$(sha256sum "$ROOT/tracka-v12-exact-head-lock-runtime-attestation.json" | awk '{print $1}')" = 'd2a1f4303ce73f1f92f2a3835b6300230ab566686da0f3a2e58f743bf1366c4d'
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops/attestations_v9')
+          manifest=root/'RELEASE_ATTESTATION_MANIFEST.json'
+          p=json.loads(manifest.read_text())
+          science='c65a5082809603155fa80a6eb0152fae33dbd9e0'
+          assert p['status']=='LOCKED_PRE_SCIENCE'
+          assert p['science_source_sha']==science
+          assert p['science_authorized'] is False
+          assert p['protected_test_accessed'] is False
+          assert p['external_surface_accessed'] is False
+          assert p['remaining_scientific_states']==11
+          assert p['code_attestation']['member_sha256']=='4f29548f5ba56c2969fb1b0c7234d66ce15a2747d104e8e27579af08f9be7010'
+          assert p['lock_runtime_attestation']['member_sha256']=='d2a1f4303ce73f1f92f2a3835b6300230ab566686da0f3a2e58f743bf1366c4d'
+          print('manifest sha',hashlib.sha256(manifest.read_bytes()).hexdigest())
+          PY
+
+      - name: Compile active runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_wait_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_g1a_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_g2a_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_control_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_publication_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_science_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_account_driver_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v8.py
+
+      - name: Validate packaged evidence through active runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import sys, tempfile
+          from pathlib import Path
+          ops=Path('journal_extension/kaggle/tracka_v12_ops').resolve()
+          sys.path.insert(0,str(ops))
+          import master_attestations_v8 as a
+          manifest_path, manifest=a.verified_release_attestation_manifest()
+          code, lock=a.verified_attestation_paths()
+          with tempfile.TemporaryDirectory() as td:
+              copied=a.materialize_verified_attestations(td)
+              assert len(copied)==2
+          print('active v9 packaged-evidence validation PASS', manifest_path)
+          PY
+
+      - name: Run retained runtime regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_tracka_v12_kaggle_ops_runtime \
+            tests.test_tracka_v12_kaggle_publication_v8 \
+            tests.test_tracka_v12_kaggle_master_v8r3 \
+            tests.test_tracka_v12_kaggle_master_v8r4
+
+      - name: Verify protected surfaces and compatibility paths remain closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          names=['tracka_v12_kaggle_operator_v8.py','master_attestations_v8.py','master_g1a_v8.py','master_g2a_v8.py','master_control_v8.py','master_science_v8.py','master_account_driver_v8.py','master_launch_guard_v8.py']
+          text='\n'.join((root/name).read_text(encoding='utf-8') for name in names)
+          for forbidden in ('master_g1a_sealer_compat_v6','init_globals','runpy.run_path','DS-V1-TEST-CONSUMED'):
+              if forbidden in text:
+                  raise SystemExit(f'forbidden active runtime content: {forbidden}')
+          print('v9 runtime hygiene PASS')
+          PY
