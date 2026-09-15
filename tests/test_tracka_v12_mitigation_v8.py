@@ -122,6 +122,17 @@ class TrackAV12MitigationV8Tests(unittest.TestCase):
         self.assertIn("from cropcop_je.persistence_v8 import build_store_v8", text)
         self.assertIn("base.build_store = build_store_v8", text)
 
+    def test_v122_qualifier_routes_destructive_restore_through_v8_store(self):
+        text = (ROOT / "journal_extension" / "scripts" / "qualify_tracka_v12_profile_v122.py").read_text(encoding="utf-8")
+        self.assertIn(
+            "from cropcop_je.persistence_v8 import GenerationAwareKagglePrivateDatasetStore, build_store_v8",
+            text,
+        )
+        self.assertIn("store = build_store_v8(args.durable_store_kind, args.durable_store_locator)", text)
+        self.assertIn("isinstance(store, GenerationAwareKagglePrivateDatasetStore)", text)
+        self.assertNotIn("from cropcop_je.persistence import build_store", text)
+        self.assertNotIn("store = build_store(args.durable_store_kind, args.durable_store_locator)", text)
+
 
 if __name__ == "__main__":
     unittest.main()
