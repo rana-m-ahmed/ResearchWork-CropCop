@@ -11,8 +11,8 @@ import tracka_v12_kaggle_operator as _v1
 import tracka_v12_kaggle_operator_v2 as _v2
 import tracka_v12_kaggle_operator_v3 as _v3
 
-SCIENCE_SHA_V8 = "05ac7084a6be2fecd9c370477340ee0c8c4769bc"
-OPERATOR_SCHEMA_VERSION_V8 = "4.0"
+SCIENCE_SHA_V8 = "f8aea6c2b481f8436653d4c6504f406948a98082"
+OPERATOR_SCHEMA_VERSION_V8 = "4.1"
 
 _v1.SCIENCE_SHA = SCIENCE_SHA_V8
 _v2.SCIENCE_SHA = SCIENCE_SHA_V8
