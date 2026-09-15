@@ -1,0 +1,55 @@
+name: Validate Track-A v13 distribution
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-v13-distribution-20260916
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  distribution-v13-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+      - name: Validate exact runtime alias and notebook contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_RUNTIME='1144858173698faf698a962e9296b34ba873456d'
+          git fetch --quiet origin refs/heads/ops-tracka-kaggle-master-runtime-v13-1144858
+          test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_RUNTIME"
+          python - <<'PY'
+          import ast, json
+          from pathlib import Path
+          science='56023042e57758591df9babb3438f191dbe10312'
+          runtime='1144858173698faf698a962e9296b34ba873456d'
+          branch='ops-tracka-kaggle-master-runtime-v13-1144858'
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          for account in ('K1','K2','K3'):
+              path=root/f'TRACKA_V12_MASTER_{account}_v13.ipynb'
+              nb=json.loads(path.read_text(encoding='utf-8'))
+              meta=nb['metadata']['cropcop_operator']
+              assert meta['account_id']==account
+              assert meta['science_sha']==science
+              assert meta['operator_runtime_sha']==runtime
+              assert meta['operator_runtime_branch']==branch
+              assert meta['launcher']=='master_launch_guard_v13.py'
+              assert meta['driver']=='master_account_driver_v13.py'
+              assert meta['pristine_durability_bootstrap'] is True
+              assert meta['failed_child_diagnostics'] is True
+              code='\n'.join(''.join(c.get('source',[])) for c in nb['cells'] if c.get('cell_type')=='code')
+              ast.parse(code)
+              assert runtime in code and branch in code and 'master_launch_guard_v13.py' in code
+              assert 'DS-V1-TEST-CONSUMED' not in code and 'DS-EXT-' not in code
+              print(account, 'v13 notebook PASS')
+          PY
