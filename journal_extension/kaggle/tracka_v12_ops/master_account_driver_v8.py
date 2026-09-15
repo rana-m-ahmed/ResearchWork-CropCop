@@ -24,7 +24,7 @@ from tracka_v12_kaggle_operator_v8 import (
     operator_runtime_head,
     sha256_file,
 )
-from master_attestations_v8 import verified_release_attestation_manifest
+from master_attestations_v8 import materialize_verified_attestations, verified_release_attestation_manifest
 from master_preflight import resolve_master_inputs
 from master_g1a_v8 import acquire_canonical_g1a_worker, ensure_canonical_g1a_k1
 from master_g2a_v8 import collect_all_g2a, ensure_account_g2a
@@ -138,10 +138,20 @@ def main() -> int:
     print("BOUND_MANIFEST=", manifest); print("BOUND_CLASS_MAP=", class_map); print("BOUND_IMAGE_ROOT=", image_root)
     if account_id == "K1": print("BOUND_PRINCIPAL_G1=", os.environ.get("CROPCOP_PRINCIPAL_G1", ""))
 
-    stage("SCIENCE_SOURCE_AND_GITHUB_PREFLIGHT", account_id, guard_token)
+    stage("SCIENCE_SOURCE_GITHUB_AND_ATTESTATION_PREFLIGHT", account_id, guard_token)
     repo = retry_operator_call("Frozen science checkout", ensure_science_checkout)
     assert_clean_science_checkout(repo)
     retry_operator_call("GitHub evidence write preflight", lambda: github_write_preflight(repo))
+    code_attestation, lock_attestation = retry_operator_call(
+        "Exact-head GitHub Actions attestation materialization",
+        lambda: materialize_verified_attestations(master_root / "release-attestations"),
+    )
+    print(
+        "EXACT_HEAD_ATTESTATIONS_PASS",
+        {"code": sha256_file(code_attestation), "lock_runtime": sha256_file(lock_attestation)},
+        flush=True,
+    )
+    assert_clean_science_checkout(repo)
 
     stage("EXACT_EXECUTION_STACK", account_id, guard_token)
     stack = ensure_locked_stack(repo); assert_clean_science_checkout(repo)
