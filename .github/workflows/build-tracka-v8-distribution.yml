@@ -1,0 +1,73 @@
+name: Build Track-A v8 distribution
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-v8-distribution-20260915
+    paths:
+      - 'journal_extension/kaggle/tracka_v12_ops/build_v8_distribution.py'
+      - '.github/workflows/build-tracka-v8-distribution.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops-tracka-kaggle-master-v8-distribution-20260915
+          fetch-depth: 0
+      - name: Verify immutable runtime target
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin ops-tracka-kaggle-master-runtime-v8-2f127cb
+          test "$(git rev-parse origin/ops-tracka-kaggle-master-runtime-v8-2f127cb)" = '2f127cbb61d752eec22c3bfd3ecd527a3a81c283'
+          git cat-file -e '05ac7084a6be2fecd9c370477340ee0c8c4769bc^{commit}' || git fetch --quiet origin 05ac7084a6be2fecd9c370477340ee0c8c4769bc
+          git cat-file -e '05ac7084a6be2fecd9c370477340ee0c8c4769bc^{commit}'
+      - name: Generate exact distribution
+        run: python journal_extension/kaggle/tracka_v12_ops/build_v8_distribution.py
+      - name: Validate generated notebook JSON and inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          notebooks=sorted(root.glob('*.ipynb'))
+          expected=['TRACKA_V12_MASTER_K1.ipynb','TRACKA_V12_MASTER_K2.ipynb','TRACKA_V12_MASTER_K3.ipynb']
+          assert [p.name for p in notebooks]==expected, [p.name for p in notebooks]
+          for path in notebooks:
+              nb=json.loads(path.read_text())
+              assert nb['nbformat']==4 and nb['nbformat_minor']==5
+              for cell in nb['cells']:
+                  if cell['cell_type']=='code':
+                      assert cell['execution_count'] is None and cell['outputs']==[]
+                      compile(''.join(cell.get('source') or []), f'{path.name}:cell', 'exec')
+          print('generated notebook inventory PASS')
+          PY
+      - name: Commit generated distribution if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K1.ipynb \
+            journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K2.ipynb \
+            journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K3.ipynb \
+            journal_extension/kaggle/tracka_v12_ops/MASTER_NOTEBOOK_DISTRIBUTION.json \
+            journal_extension/kaggle/tracka_v12_ops/MASTER_RUNTIME_FREEZE.json \
+            journal_extension/kaggle/tracka_v12_ops/OPERATOR_CONTRACT.json \
+            journal_extension/kaggle/tracka_v12_ops/.runtime-freeze-marker \
+            journal_extension/kaggle/tracka_v12_ops/RUNTIME_BRANCH_NOTE.md
+          if git diff --cached --quiet; then
+            echo 'v8 distribution already canonical.'
+            exit 0
+          fi
+          git commit -m 'Freeze deterministic Track-A v8 distribution'
+          git push origin HEAD:ops-tracka-kaggle-master-v8-distribution-20260915
