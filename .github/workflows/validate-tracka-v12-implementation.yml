@@ -32,7 +32,9 @@ on:
       - 'journal_extension/scripts/build_tracka_v12_lock_runtime_attestation.py'
       - 'journal_extension/scripts/seal_tracka_v12_science_go.py'
       - 'journal_extension/scripts/seal_tracka_v12_science_go_v123.py'
+      - 'journal_extension/scripts/seal_tracka_v12_science_go_v124.py'
       - 'journal_extension/kaggle/run_tracka_v12_account.py'
+      - 'journal_extension/kaggle/run_tracka_v12_account_v121.py'
       - 'journal_extension/locks/track_a_comprehensive_execution_authority_v1_2_1.json'
       - 'journal_extension/amendments/track_a_strengthening_v1/**'
       - 'tests/test_tracka_v12*.py'
@@ -100,12 +102,15 @@ jobs:
             journal_extension/scripts/build_tracka_v12_lock_runtime_attestation.py \
             journal_extension/scripts/seal_tracka_v12_science_go.py \
             journal_extension/scripts/seal_tracka_v12_science_go_v123.py \
+            journal_extension/scripts/seal_tracka_v12_science_go_v124.py \
             journal_extension/amendments/track_a_strengthening_v1/validate_r13_parity_amendment_v1_2_1.py \
             journal_extension/amendments/track_a_strengthening_v1/validate_r13_pretrained_parity_v1_2_1.py \
             journal_extension/kaggle/run_tracka_v12_account.py \
+            journal_extension/kaggle/run_tracka_v12_account_v121.py \
             tests/test_tracka_v12_contract.py \
             tests/test_tracka_v12_g1a_contract.py \
             tests/test_tracka_v12_r13_parity_amendment_v121.py \
+            tests/test_tracka_v12_v121_consumer_binding.py \
             tests/test_tracka_v12_g2a.py \
             tests/test_tracka_v12_g2a_v122.py \
             tests/test_tracka_v12_g2a_durability.py \
@@ -119,7 +124,7 @@ jobs:
             tests/test_tracka_v12_science_go.py \
             tests/test_tracka_v12_science_go_v123.py \
             tests/test_tracka_v12_comprehensive_closure.py
-      - name: Validate contracts, parity amendment, failure injection, orchestration, evidence and closure composition
+      - name: Validate contracts, parity amendment, consumer binding, failure injection, orchestration, evidence and closure composition
         run: |
           python journal_extension/amendments/track_a_strengthening_v1/validate_r13_parity_amendment_v1_2_1.py \
             --report r13-parity-amendment-v121-static-report.json
@@ -127,6 +132,7 @@ jobs:
             tests.test_tracka_v12_contract \
             tests.test_tracka_v12_g1a_contract \
             tests.test_tracka_v12_r13_parity_amendment_v121 \
+            tests.test_tracka_v12_v121_consumer_binding \
             tests.test_tracka_v12_g2a \
             tests.test_tracka_v12_g2a_v122 \
             tests.test_tracka_v12_g2a_durability \
