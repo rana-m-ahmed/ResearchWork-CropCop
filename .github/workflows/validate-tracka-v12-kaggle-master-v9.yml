@@ -64,7 +64,7 @@ jobs:
           print('manifest sha',hashlib.sha256(manifest.read_bytes()).hexdigest())
           PY
 
-      - name: Compile active runtime
+      - name: Compile active runtime and v9 release regression suite
         shell: bash
         run: |
           set -euo pipefail
@@ -78,7 +78,8 @@ jobs:
             journal_extension/kaggle/tracka_v12_ops/master_publication_v8.py \
             journal_extension/kaggle/tracka_v12_ops/master_science_v8.py \
             journal_extension/kaggle/tracka_v12_ops/master_account_driver_v8.py \
-            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v8.py
+            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v8.py \
+            tests/test_tracka_v12_kaggle_master_v9.py
 
       - name: Validate packaged evidence through active runtime
         shell: bash
@@ -98,15 +99,30 @@ jobs:
           print('active v9 packaged-evidence validation PASS', manifest_path)
           PY
 
-      - name: Run retained runtime regressions
+      - name: Run active neutral and v9 release regressions
         shell: bash
         run: |
           set -euo pipefail
           python -m unittest -v \
             tests.test_tracka_v12_kaggle_ops_runtime \
             tests.test_tracka_v12_kaggle_publication_v8 \
-            tests.test_tracka_v12_kaggle_master_v8r3 \
-            tests.test_tracka_v12_kaggle_master_v8r4
+            tests.test_tracka_v12_kaggle_master_v9
+
+      - name: Re-run historical v8r3 and v8r4 release suites on frozen v8r4 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          HIST='99ae5f340bdea1142c8b4e9289956e4387fd494a'
+          rm -rf /tmp/tracka-v8r4-history
+          git worktree add --detach /tmp/tracka-v8r4-history "$HIST"
+          (
+            cd /tmp/tracka-v8r4-history
+            python -m unittest -v \
+              tests.test_tracka_v12_kaggle_master_v8r3 \
+              tests.test_tracka_v12_kaggle_master_v8r4
+          )
+          git worktree remove /tmp/tracka-v8r4-history --force
+          echo 'historical v8r3/v8r4 regression preservation PASS'
 
       - name: Verify protected surfaces and compatibility paths remain closed
         shell: bash
