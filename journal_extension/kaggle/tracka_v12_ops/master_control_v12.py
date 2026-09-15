@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -9,10 +10,17 @@ from typing import Any
 import master_control_v8 as legacy
 from tracka_v12_kaggle_operator_v8 import SCIENCE_SHA, OperatorError
 
-CODE_EXTRA_STATIC_GATE = "teacher_factory_root_binding_contract"
+CODE_EXTRA_STATIC_GATES = frozenset(
+    {
+        "g1a_runtime_global_resolution_contract",
+        "kaggle_generation_durability_contract",
+        "r13_parity_amendment_contract",
+        "teacher_factory_root_binding_contract",
+    }
+)
 LOCK_RUNTIME_QUALIFICATION_FIELD = "r13_v121_runtime_qualification"
 AUTH_RUNTIME_QUALIFICATION_GATE = "v121_runtime_qualification"
-COMPAT_SCHEMA = "1.0"
+COMPAT_SCHEMA = "1.1"
 
 
 def _ensure_science_src(repo: Path) -> None:
@@ -28,12 +36,19 @@ def _valid_actions_run_id(value: Any) -> bool:
 
 def _verify_embedded_hash(payload: dict[str, Any], field: str) -> bool:
     from cropcop_je.hashing import sha256_json
+
     clean = dict(payload)
     observed = clean.pop(field, None)
     return isinstance(observed, str) and len(observed) == 64 and observed == sha256_json(clean)
 
 
-def _validate_attestation_provenance(payload: dict[str, Any], *, expected_kind: str, source_git_commit: str, label: str) -> list[str]:
+def _validate_attestation_provenance(
+    payload: dict[str, Any],
+    *,
+    expected_kind: str,
+    source_git_commit: str,
+    label: str,
+) -> list[str]:
     errors: list[str] = []
     if payload.get("schema_version") != "1.1":
         errors.append(f"{label} schema version mismatch")
@@ -66,8 +81,8 @@ def compose_gate_inputs_v12(
     _ensure_science_src(repo)
     from cropcop_je.tracka_v12_authorization import REQUIRED_PRE_SCIENCE_GATES
     from cropcop_je.tracka_v12_g1a_v121 import validate_g1a_seal_object
-    from cropcop_je.tracka_v12_g2a_v122 import validate_g2a_v122_barrier, validate_scheduler_freeze_v122
     from cropcop_je.tracka_v12_g2a_durability import validate_g2a_durability_contract
+    from cropcop_je.tracka_v12_g2a_v122 import validate_g2a_v122_barrier, validate_scheduler_freeze_v122
 
     dynamic_gates = {
         "immutable_v12_lock",
@@ -78,26 +93,34 @@ def compose_gate_inputs_v12(
         "scheduler_freeze",
     }
     static_authorization_gates = set(REQUIRED_PRE_SCIENCE_GATES) - dynamic_gates
-    expected_code_inventory = static_authorization_gates | {CODE_EXTRA_STATIC_GATE}
+    expected_code_inventory = static_authorization_gates | set(CODE_EXTRA_STATIC_GATES)
     errors: list[str] = []
 
-    errors.extend(_validate_attestation_provenance(
-        code_attestation,
-        expected_kind="track_a_v12_pre_science_code",
-        source_git_commit=source_git_commit,
-        label="code attestation",
-    ))
+    errors.extend(
+        _validate_attestation_provenance(
+            code_attestation,
+            expected_kind="track_a_v12_pre_science_code",
+            source_git_commit=source_git_commit,
+            label="code attestation",
+        )
+    )
     if code_attestation.get("status") != "PASS":
         errors.append("code attestation is not PASS")
     if not _verify_embedded_hash(code_attestation, "attestation_sha256"):
         errors.append("code attestation self-hash mismatch")
     static = code_attestation.get("static_pre_science_gates") or {}
     if set(static) != expected_code_inventory:
-        errors.append("code attestation static gate inventory mismatch after exact teacher-root hardening")
+        missing = sorted(expected_code_inventory - set(static))
+        unexpected = sorted(set(static) - expected_code_inventory)
+        errors.append(
+            "code attestation static gate inventory mismatch after exact hardening "
+            f"missing={missing} unexpected={unexpected}"
+        )
     else:
         nonpass = sorted(name for name in expected_code_inventory if static.get(name) != "PASS")
         if nonpass:
             errors.append("code attestation contains non-PASS static gates: " + ", ".join(nonpass))
+
     science_diff_reports = code_attestation.get("science_diff_reports") or {}
     if set(science_diff_reports) != {"principal", "secondary"}:
         errors.append("code attestation science-diff report inventory mismatch")
@@ -111,12 +134,14 @@ def compose_gate_inputs_v12(
     ):
         errors.append("code attestation science-diff SHA inventory invalid")
 
-    errors.extend(_validate_attestation_provenance(
-        lock_runtime_attestation,
-        expected_kind="track_a_v12_exact_head_lock_runtime",
-        source_git_commit=source_git_commit,
-        label="lock/runtime attestation",
-    ))
+    errors.extend(
+        _validate_attestation_provenance(
+            lock_runtime_attestation,
+            expected_kind="track_a_v12_exact_head_lock_runtime",
+            source_git_commit=source_git_commit,
+            label="lock/runtime attestation",
+        )
+    )
     if lock_runtime_attestation.get("status") != "PASS":
         errors.append("lock/runtime attestation is not PASS")
     if not _verify_embedded_hash(lock_runtime_attestation, "attestation_sha256"):
@@ -165,7 +190,10 @@ def compose_gate_inputs_v12(
     if scheduler.get("g1a_seal_sha256") != g1a.get("g1a_seal_sha256"):
         errors.append("scheduler/G1A binding mismatch")
 
-    dependency_values = {str(g1a.get("dependency_lock_sha256", "")), str(g2a.get("dependency_lock_sha256", ""))}
+    dependency_values = {
+        str(g1a.get("dependency_lock_sha256", "")),
+        str(g2a.get("dependency_lock_sha256", "")),
+    }
     if len(dependency_values) != 1 or any(len(value) != 64 for value in dependency_values):
         errors.append("G1A/G2A dependency-lock identity mismatch")
 
@@ -243,14 +271,16 @@ def compose_gate_inputs_v12(
         "stage": "TRACKA_V12_CONTROL_SCHEMA_COMPATIBILITY",
         "status": "PASS",
         "science_source_sha": source_git_commit,
-        "code_attestation_extra_static_gate": CODE_EXTRA_STATIC_GATE,
-        "code_attestation_extra_static_gate_status": static[CODE_EXTRA_STATIC_GATE],
+        "code_attestation_extra_static_gates": {
+            name: static[name] for name in sorted(CODE_EXTRA_STATIC_GATES)
+        },
         "authorization_runtime_gate": AUTH_RUNTIME_QUALIFICATION_GATE,
         "lock_runtime_attestation_field": LOCK_RUNTIME_QUALIFICATION_FIELD,
         "lock_runtime_attestation_field_status": lock_runtime_attestation[LOCK_RUNTIME_QUALIFICATION_FIELD],
         "note": (
-            "Runtime-only compatibility bridge for two exact attestation-schema hardening deltas. "
-            "No scientific model, seed, data, objective, selector, G1A, G2A, or protected-surface contract is changed."
+            "Runtime-only compatibility bridge for the exact post-authorization attestation hardening gates "
+            "and the exact R13-prefixed runtime-qualification field. No scientific model, seed, data, objective, "
+            "selector, G1A, G2A, or protected-surface contract is changed."
         ),
     }
     return gates, bindings, compatibility
@@ -285,7 +315,9 @@ def seal_science_go_v12(
     missing = [name for name, path in paths.items() if not Path(path).is_file()]
     if missing:
         raise OperatorError("required GO artifact missing: " + ", ".join(missing))
-    payloads = {name: json.loads(Path(path).read_text(encoding="utf-8")) for name, path in paths.items()}
+    payloads = {
+        name: json.loads(Path(path).read_text(encoding="utf-8")) for name, path in paths.items()
+    }
     file_hashes = {name: sha256_file(path) for name, path in paths.items()}
     try:
         gates, bindings, compatibility = compose_gate_inputs_v12(
@@ -300,6 +332,7 @@ def seal_science_go_v12(
         )
     except ValueError as exc:
         raise OperatorError(str(exc)) from exc
+
     authorization = build_science_authorization(
         source_git_commit=source,
         g1a_seal_sha256=payloads["g1a"]["g1a_seal_sha256"],
@@ -316,12 +349,15 @@ def seal_science_go_v12(
         expected_scheduler_freeze_sha256=payloads["scheduler"]["scheduler_freeze_sha256"],
     )
     if validation_errors:
-        raise OperatorError("constructed Track-A science GO failed self-validation: " + "; ".join(validation_errors))
+        raise OperatorError(
+            "constructed Track-A science GO failed self-validation: " + "; ".join(validation_errors)
+        )
     atomic_write_json(output_path, authorization)
     atomic_write_json(compatibility_path, compatibility)
     print(
         "CONTROL_SCHEMA_COMPATIBILITY_V12_PASS "
-        f"extra_gate={CODE_EXTRA_STATIC_GATE} runtime_field={LOCK_RUNTIME_QUALIFICATION_FIELD}",
+        f"extra_gates={','.join(sorted(CODE_EXTRA_STATIC_GATES))} "
+        f"runtime_field={LOCK_RUNTIME_QUALIFICATION_FIELD}",
         flush=True,
     )
     return compatibility
@@ -350,7 +386,6 @@ def build_control_k1(
         print("Reusing already-published canonical Track-A control plane.")
         return control_dir, control
 
-    import shutil
     shutil.rmtree(control_dir, ignore_errors=True)
     control_dir.mkdir(parents=True, exist_ok=True)
     barrier = control_dir / "TRACKA_V12_G2A_BARRIER.json"
