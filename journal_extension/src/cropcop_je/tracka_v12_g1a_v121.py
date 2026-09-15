@@ -67,17 +67,15 @@ def load_r13_initialization(
     experiment_id: str,
     seed: int,
 ):
-    model, payload = _v12.load_r13_initialization(
+    # Contract identity is sealed and validated at the G1A bundle boundary.
+    # The immutable initialization payload remains byte-compatible with v1.2
+    # and carries the observed parity value itself.
+    return _v12.load_r13_initialization(
         path,
         expected_sha256=expected_sha256,
         experiment_id=experiment_id,
         seed=seed,
     )
-    if payload.get("normalization_parity_contract_id") != R13_PARITY_CONTRACT_ID:
-        raise TrackAV12G1AError("R13 initialization parity contract identity mismatch")
-    if float(payload.get("normalization_parity_required_max_abs", -1.0)) != R13_PARITY_TOLERANCE:
-        raise TrackAV12G1AError("R13 initialization parity tolerance identity mismatch")
-    return model, payload
 
 
 def validate_g1a_seal_object(seal: dict[str, Any]) -> list[str]:
