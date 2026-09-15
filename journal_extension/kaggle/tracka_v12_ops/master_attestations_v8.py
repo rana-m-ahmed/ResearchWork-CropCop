@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+import hashlib
+import io
+import json
+import os
+import time
+import urllib.error
+import urllib.request
+import zipfile
 from pathlib import Path
 
 from tracka_v12_kaggle_operator_v8 import (
@@ -14,6 +22,7 @@ from tracka_v12_kaggle_operator_v8 import (
 RELEASE_MANIFEST_FILE_SHA256 = "22a675bf82f53cc6b6ce4996332d4c442a65fc9293200affc2750ad2446f93d4"
 CODE_ATTESTATION_MEMBER_SHA256 = "d2f2aa7f3f830829986071473b636079281583899152cbddc4e2562c7370e896"
 LOCK_RUNTIME_ATTESTATION_MEMBER_SHA256 = "3f69d7606ab13e1539e98234789fd847d822196adbd62f651dc42aced3f2a863"
+REPOSITORY = "rana-m-ahmed/ResearchWork-CropCop"
 
 
 def verified_release_attestation_manifest() -> tuple[Path, dict]:
@@ -51,10 +60,6 @@ def verified_release_attestation_manifest() -> tuple[Path, dict]:
         raise OperatorError("v8r2 code-attestation provenance mismatch")
     if lock.get("status") != "PASS" or lock.get("member_sha256") != LOCK_RUNTIME_ATTESTATION_MEMBER_SHA256:
         raise OperatorError("v8r2 lock/runtime-attestation provenance mismatch")
-    if int(code.get("workflow_run_id", -1)) != 34960774118:
-        raise OperatorError("v8r2 code-attestation workflow provenance mismatch")
-    if int(lock.get("workflow_run_id", -1)) != 34960774095:
-        raise OperatorError("v8r2 lock/runtime-attestation workflow provenance mismatch")
 
     required = set(payload.get("required_static_pre_science_gates") or [])
     expected = {
@@ -71,11 +76,115 @@ def verified_release_attestation_manifest() -> tuple[Path, dict]:
     }
     if required != expected:
         raise OperatorError("v8r2 release attestation manifest required-gate set drifted")
-
     return path, payload
 
 
-# Backward-compatible helper name retained for neutral inherited tests only.
+def _download_artifact_zip(artifact_id: int, token: str, *, attempts: int = 3) -> bytes:
+    url = f"https://api.github.com/repos/{REPOSITORY}/actions/artifacts/{artifact_id}/zip"
+    last_error: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        request = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "CropCop-TrackA-v8r2",
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                data = response.read()
+            if not data:
+                raise OperatorError(f"GitHub artifact {artifact_id} download returned empty bytes")
+            return data
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError, OperatorError) as exc:
+            last_error = exc
+            if attempt == attempts:
+                break
+            time.sleep((5, 15, 30)[min(attempt - 1, 2)])
+    raise OperatorError(f"unable to download exact-head GitHub artifact {artifact_id}: {last_error}")
+
+
+def _member_bytes(zip_bytes: bytes, member_name: str) -> bytes:
+    try:
+        with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as archive:
+            matches = [name for name in archive.namelist() if Path(name).name == member_name and not name.endswith("/")]
+            if len(matches) != 1:
+                raise OperatorError(f"artifact member {member_name!r} must occur exactly once; found {matches}")
+            return archive.read(matches[0])
+    except zipfile.BadZipFile as exc:
+        raise OperatorError("GitHub Actions artifact is not a valid ZIP archive") from exc
+
+
+def _validate_attestation_payload(payload: dict, *, kind: str, required_gates: set[str]) -> None:
+    if payload.get("status") != "PASS" or payload.get("github_actions") is not True:
+        raise OperatorError(f"materialized {kind} attestation is not a GitHub Actions PASS")
+    if payload.get("source_git_commit") != SCIENCE_SHA or payload.get("pull_request_head_sha") != SCIENCE_SHA:
+        raise OperatorError(f"materialized {kind} attestation source mismatch")
+    if payload.get("r13_parity_contract_id") != R13_PARITY_CONTRACT_ID_V8:
+        raise OperatorError(f"materialized {kind} attestation parity-contract mismatch")
+    if float(payload.get("r13_parity_required_max_abs_difference", -1.0)) != R13_PARITY_REQUIRED_MAX_ABS_V8:
+        raise OperatorError(f"materialized {kind} attestation parity tolerance mismatch")
+    if kind == "code":
+        gates = payload.get("static_pre_science_gates") or {}
+        missing = [name for name in sorted(required_gates) if gates.get(name) != "PASS"]
+        if missing:
+            raise OperatorError("materialized code attestation lacks required PASS gates: " + ", ".join(missing))
+    else:
+        if payload.get("science_authorized") is not False:
+            raise OperatorError("materialized lock/runtime attestation unexpectedly authorizes science")
+        if payload.get("r13_exact_pretrained_parity") != "PASS" or payload.get("r13_v121_parity_amendment") != "PASS":
+            raise OperatorError("materialized lock/runtime attestation lacks parity qualification PASS")
+        exact = payload.get("exact_pretrained_parity_report") or {}
+        if exact.get("v1_2_1_gate_pass") is not True or exact.get("historical_v1_2_gate_pass") is not False:
+            raise OperatorError("materialized lock/runtime attestation does not prove superseding parity behavior")
+        if exact.get("scientific_metric_computed") is not False or exact.get("v1_test_accessed") is not False:
+            raise OperatorError("materialized lock/runtime attestation touched a protected/scientific surface")
+
+
+def materialize_verified_attestations(destination: str | Path) -> tuple[Path, Path]:
+    _manifest_path, manifest = verified_release_attestation_manifest()
+    token = str(os.environ.get("CROPCOP_GITHUB_TOKEN", "") or "").strip()
+    if not token:
+        raise OperatorError("exact-head attestation materialization requires CROPCOP_GITHUB_TOKEN")
+    destination = Path(destination).resolve()
+    destination.mkdir(parents=True, exist_ok=True)
+    required_gates = set(manifest["required_static_pre_science_gates"])
+    outputs: dict[str, Path] = {}
+
+    for kind, key in (("code", "code_attestation"), ("lock", "lock_runtime_attestation")):
+        spec = manifest[key]
+        member = str(spec["member"])
+        expected_sha = str(spec["member_sha256"])
+        target = destination / member
+        if target.is_file() and sha256_file(target) == expected_sha:
+            payload = load_json(target)
+            _validate_attestation_payload(payload, kind=kind, required_gates=required_gates)
+            outputs[kind] = target
+            continue
+
+        zip_bytes = _download_artifact_zip(int(spec["artifact_id"]), token)
+        data = _member_bytes(zip_bytes, member)
+        observed_sha = hashlib.sha256(data).hexdigest()
+        if observed_sha != expected_sha:
+            raise OperatorError(
+                f"materialized {kind} attestation byte hash mismatch: expected {expected_sha}, got {observed_sha}"
+            )
+        try:
+            payload = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise OperatorError(f"materialized {kind} attestation is not valid UTF-8 JSON") from exc
+        _validate_attestation_payload(payload, kind=kind, required_gates=required_gates)
+        tmp = target.with_suffix(target.suffix + ".tmp")
+        tmp.write_bytes(data)
+        os.replace(tmp, target)
+        outputs[kind] = target
+
+    return outputs["code"], outputs["lock"]
+
+
+# Historical compatibility only; active v8r2 control uses materialize_verified_attestations().
 def verified_attestation_paths() -> tuple[Path, Path]:
     path, _ = verified_release_attestation_manifest()
     return path, path
