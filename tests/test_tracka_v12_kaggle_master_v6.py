@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import builtins
 import json
 import os
 import subprocess
+import symtable
 import sys
 import tempfile
 import time
@@ -21,6 +23,29 @@ import master_g1a_v6 as g1a_v6
 import master_singleton_v6 as singleton
 
 
+def unresolved_function_globals(source: str) -> set[str]:
+    table = symtable.symtable(source, "seal_tracka_v12_g1a.py", "exec")
+    module_bound = {
+        symbol.get_name()
+        for symbol in table.get_symbols()
+        if symbol.is_assigned() or symbol.is_imported() or symbol.is_namespace()
+    }
+    builtins_set = set(dir(builtins))
+    unresolved: set[str] = set()
+
+    def visit(scope):
+        for symbol in scope.get_symbols():
+            name = symbol.get_name()
+            if symbol.is_referenced() and symbol.is_global() and name not in module_bound and name not in builtins_set:
+                unresolved.add(name)
+        for child in scope.get_children():
+            visit(child)
+
+    for child in table.get_children():
+        visit(child)
+    return unresolved
+
+
 class TrackAV12MasterV6Tests(unittest.TestCase):
     def test_frozen_sealer_defect_is_explicitly_bridged_without_source_edit(self):
         sealer = (ROOT / "journal_extension" / "scripts" / "seal_tracka_v12_g1a.py").read_text(encoding="utf-8")
@@ -31,6 +56,10 @@ class TrackAV12MasterV6Tests(unittest.TestCase):
         self.assertIn("from cropcop_je.secondary import TORCHVISION_VERSION", launcher)
         self.assertIn("init_globals={'TORCHVISION_VERSION': TORCHVISION_VERSION}", launcher)
         self.assertNotIn("write_text", launcher)
+
+    def test_frozen_sealer_has_exactly_one_unresolved_global(self):
+        sealer = (ROOT / "journal_extension" / "scripts" / "seal_tracka_v12_g1a.py").read_text(encoding="utf-8")
+        self.assertEqual(unresolved_function_globals(sealer), {"TORCHVISION_VERSION"})
 
     def test_frozen_sealer_command_uses_runpy_compat_not_direct_script_execution(self):
         with tempfile.TemporaryDirectory() as td:
@@ -43,6 +72,25 @@ class TrackAV12MasterV6Tests(unittest.TestCase):
             self.assertEqual(cmd[1], "-c")
             self.assertIn(str(script), cmd)
             self.assertEqual(cmd[-2:], ["--x", "y"])
+
+    def test_compat_launcher_really_injects_frozen_torchvision_version(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            script = repo / "journal_extension" / "scripts" / "seal_tracka_v12_g1a.py"
+            script.parent.mkdir(parents=True)
+            (script.parent / "_bootstrap.py").write_text("# synthetic bootstrap\n", encoding="utf-8")
+            script.write_text(
+                "import sys\n"
+                "assert TORCHVISION_VERSION == '0.27.1'\n"
+                "print('INJECTED='+TORCHVISION_VERSION)\n",
+                encoding="utf-8",
+            )
+            cmd = g1a_v6.frozen_sealer_command(repo, [])
+            env = dict(os.environ)
+            env["PYTHONPATH"] = os.pathsep.join([str(SRC), env.get("PYTHONPATH", "")])
+            cp = subprocess.run(cmd, cwd=repo, env=env, text=True, capture_output=True)
+            self.assertEqual(cp.returncode, 0, msg=cp.stdout + cp.stderr)
+            self.assertIn("INJECTED=0.27.1", cp.stdout)
 
     def test_singleton_terminal_marker_prevents_second_execution_in_same_session(self):
         with tempfile.TemporaryDirectory() as td:
@@ -85,6 +133,15 @@ class TrackAV12MasterV6Tests(unittest.TestCase):
         self.assertLess(source.index("acquire_master_execution(account_id)"), source.index("run_account(account_id)"))
         self.assertIn("from master_g1a_v6 import", source)
         self.assertNotIn("from master_g1a import acquire_canonical_g1a_worker, ensure_canonical_g1a_k1", source)
+
+    def test_v6_driver_rechecks_clean_science_after_pre_science_mutation_boundaries(self):
+        source = (OPS / "master_account_driver_v6.py").read_text(encoding="utf-8")
+        g1a_end = source.index("print(f\"{account_id}: canonical G1A PASS")
+        g2a_end = source.index("print(f\"{account_id}: account G2A evidence canonicalized.\")")
+        control_end = source.index('stage("SCIENCE_DURABILITY_PREFLIGHT"')
+        self.assertIn("assert_clean_science_checkout(repo)", source[g1a_end - 160:g1a_end])
+        self.assertIn("assert_clean_science_checkout(repo)", source[g2a_end - 160:g2a_end])
+        self.assertIn("assert_clean_science_checkout(repo)", source[control_end - 220:control_end])
 
     def test_failed_primary_is_terminal_and_not_automatically_reexecuted(self):
         with tempfile.TemporaryDirectory() as td:
