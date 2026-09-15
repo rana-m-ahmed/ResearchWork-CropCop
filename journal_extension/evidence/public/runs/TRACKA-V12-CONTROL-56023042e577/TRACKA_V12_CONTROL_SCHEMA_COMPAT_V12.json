@@ -1,0 +1,18 @@
+{
+  "authorization_runtime_gate": "v121_runtime_qualification",
+  "code_attestation_extra_static_gate": "teacher_factory_root_binding_contract",
+  "code_attestation_extra_static_gate_status": "PASS",
+  "code_attestation_extra_static_gates": {
+    "g1a_runtime_global_resolution_contract": "PASS",
+    "kaggle_generation_durability_contract": "PASS",
+    "r13_parity_amendment_contract": "PASS",
+    "teacher_factory_root_binding_contract": "PASS"
+  },
+  "lock_runtime_attestation_field": "r13_v121_runtime_qualification",
+  "lock_runtime_attestation_field_status": "PASS",
+  "note": "Runtime-only compatibility bridge for the exact post-authorization attestation hardening gates and the exact R13-prefixed runtime-qualification field. No scientific model, seed, data, objective, selector, G1A, G2A, or protected-surface contract is changed.",
+  "schema_version": "1.1",
+  "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
+  "stage": "TRACKA_V12_CONTROL_SCHEMA_COMPATIBILITY",
+  "status": "PASS"
+}
