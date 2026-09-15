@@ -1,0 +1,158 @@
+name: Validate Track-A v12 distribution
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-v12-distribution-20260916
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  distribution-v12-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact distribution head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Verify immutable runtime alias
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED='705be6e2ae1b83be6997ae24a83684ff867dcf12'
+          ACTUAL="$(git ls-remote origin 'refs/heads/ops-tracka-kaggle-master-runtime-v12-705be6e' | awk '{print $1}')"
+          test "$ACTUAL" = "$EXPECTED"
+          echo "immutable v12 runtime alias PASS $ACTUAL"
+
+      - name: Validate manifest and exact notebook bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          m=json.loads((root/'MASTER_NOTEBOOK_DISTRIBUTION_V12.json').read_text())
+          assert m['schema_version']=='4.8'
+          assert m['status']=='LOCKED_DISTRIBUTION'
+          assert m['science_source_sha']=='56023042e57758591df9babb3438f191dbe10312'
+          assert m['operator_runtime_sha']=='705be6e2ae1b83be6997ae24a83684ff867dcf12'
+          assert m['operator_runtime_branch']=='ops-tracka-kaggle-master-runtime-v12-705be6e'
+          assert m['launcher']=='master_launch_guard_v12.py'
+          assert m['driver']=='master_account_driver_v12.py'
+          assert m['g1a_seal_sha256']=='c7f5ffc84240a79c3201081896df537959313ac8f0cd2d3aba0205a7fe7cfb8d'
+          assert m['exact_live_replay']=={
+              'g2a_barrier_sha256':'d8141f5c6f4f7c48bc680c6abd4d63c0871f93253a145c96bbb076615d98fdfc',
+              'scheduler_freeze_sha256':'7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787',
+              'science_authorization_sha256':'58d65a9c9f0c06222c00541feca9b2aaa005ebda850d2261d4df3e0e1fe7fbb7',
+              'status':'PASS',
+          }
+          assert m['science_authorized'] is False
+          assert m['protected_test_accessed'] is False
+          assert m['external_surface_accessed'] is False
+          assert m['ddp'] is False and m['dataparallel'] is False and m['fsdp'] is False
+          assert m['remaining_scientific_states']==11
+          for account in ('K1','K2','K3'):
+              p=root/f'TRACKA_V12_MASTER_{account}.ipynb'
+              observed=hashlib.sha256(p.read_bytes()).hexdigest()
+              assert observed==m['notebook_sha256'][account], (account, observed, m['notebook_sha256'][account])
+          print('manifest and notebook SHA256 PASS')
+          PY
+
+      - name: Validate notebook code cells and account contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          science='56023042e57758591df9babb3438f191dbe10312'
+          runtime='705be6e2ae1b83be6997ae24a83684ff867dcf12'
+          alias='ops-tracka-kaggle-master-runtime-v12-705be6e'
+          for account in ('K1','K2','K3'):
+              p=root/f'TRACKA_V12_MASTER_{account}.ipynb'
+              nb=json.loads(p.read_text())
+              meta=nb['metadata']['cropcop_operator']
+              assert meta['account_id']==account
+              assert meta['science_sha']==science
+              assert meta['operator_runtime_sha']==runtime
+              assert meta['operator_runtime_branch']==alias
+              assert meta['schema_version']=='4.8'
+              assert meta['launcher']=='master_launch_guard_v12.py'
+              assert meta['driver']=='master_account_driver_v12.py'
+              assert meta['stdout_streaming']=='parent_pipe_restream'
+              assert meta['heartbeat_seconds']==60
+              alltext='\n'.join(''.join(c.get('source',[])) for c in nb['cells'])
+              for cell in nb['cells']:
+                  if cell.get('cell_type')=='code':
+                      compile(''.join(cell.get('source',[])), f'{account}-cell', 'exec')
+              assert runtime in alltext and alias in alltext
+              assert 'master_launch_guard_v12.py' in alltext
+              assert 'stdout=subprocess.PIPE' in alltext
+              assert 'stderr=subprocess.STDOUT' in alltext
+              assert 'bufsize=1' in alltext
+              assert 'PYTHONUNBUFFERED' in alltext
+              assert '56023042e57758591df9babb3438f191dbe10312' in alltext
+              assert '0963f81ec54b4ac121097856741616ac04530797' not in alltext
+              assert 'ops-tracka-kaggle-master-runtime-v11' not in alltext
+              assert 'master_launch_guard_v11.py' not in alltext
+              assert 'c65a50828096' not in alltext
+              principal='/kaggle/input/datasets/ranamuhammadahmed6/cropcop-g1-sealed/G1_PACKAGE'
+              if account=='K1':
+                  assert principal in alltext
+                  assert meta['worker_g1a_prerequisite_fail_fast'] is False
+              else:
+                  assert principal not in alltext
+                  assert meta['worker_g1a_prerequisite_fail_fast'] is True
+          print('all notebook execution/account contracts PASS')
+          PY
+
+      - name: Validate runtime control files at immutable SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA='705be6e2ae1b83be6997ae24a83684ff867dcf12'
+          rm -rf /tmp/tracka-v12-runtime
+          git worktree add --detach /tmp/tracka-v12-runtime "$SHA"
+          (
+            cd /tmp/tracka-v12-runtime
+            python -m py_compile \
+              journal_extension/kaggle/tracka_v12_ops/master_control_v12.py \
+              journal_extension/kaggle/tracka_v12_ops/master_account_driver_v12.py \
+              journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v12.py \
+              tests/test_tracka_v12_kaggle_master_v12.py
+            python -m unittest -v tests.test_tracka_v12_kaggle_master_v12
+          )
+          git worktree remove /tmp/tracka-v12-runtime --force
+          echo 'immutable runtime executable contract PASS'
+
+      - name: Verify protected surfaces remain closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          text='\n'.join((root/f'TRACKA_V12_MASTER_{a}.ipynb').read_text() for a in ('K1','K2','K3'))
+          for forbidden in ('DS-V1-TEST-CONSUMED','DS-EXT-*-SEALED','external_predictions_open','track_c_candidate_runtime_open'):
+              assert forbidden not in text, forbidden
+          m=json.loads((root/'MASTER_NOTEBOOK_DISTRIBUTION_V12.json').read_text())
+          assert m['science_authorized'] is False
+          assert m['protected_test_accessed'] is False
+          assert m['external_surface_accessed'] is False
+          print('protected surfaces closed PASS')
+          PY
