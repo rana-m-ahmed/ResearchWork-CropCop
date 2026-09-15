@@ -1,0 +1,132 @@
+name: Validate Track-A v11 distribution
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-v11-distribution-20260915
+    paths:
+      - '.github/workflows/validate-tracka-v11-distribution.yml'
+      - 'journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K1.ipynb'
+      - 'journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K2.ipynb'
+      - 'journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K3.ipynb'
+      - 'journal_extension/kaggle/tracka_v12_ops/MASTER_NOTEBOOK_DISTRIBUTION_V11.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  distribution-v11-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Verify immutable runtime alias
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED='0963f81ec54b4ac121097856741616ac04530797'
+          git fetch --quiet origin refs/heads/ops-tracka-kaggle-master-runtime-v11-0963f81:refs/remotes/origin/ops-tracka-kaggle-master-runtime-v11-0963f81
+          OBSERVED="$(git rev-parse refs/remotes/origin/ops-tracka-kaggle-master-runtime-v11-0963f81)"
+          test "$OBSERVED" = "$EXPECTED"
+          git show "$EXPECTED:journal_extension/kaggle/tracka_v12_ops/master_account_driver_v11.py" | grep -F 'MASTER_HEARTBEAT_V11'
+          git show "$EXPECTED:journal_extension/kaggle/tracka_v12_ops/master_account_driver_v11.py" | grep -F 'WORKER_G1A_PREREQUISITE_PROBE'
+          git show "$EXPECTED:journal_extension/kaggle/tracka_v12_ops/master_continuation_v11.py" | grep -F 'probe_current_g1a_handoff'
+          echo 'immutable v11 runtime alias PASS'
+
+      - name: Validate manifest and notebook bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          m=json.loads((root/'MASTER_NOTEBOOK_DISTRIBUTION_V11.json').read_text())
+          assert m['schema_version']=='4.7'
+          assert m['status']=='LOCKED_DISTRIBUTION'
+          assert m['science_source_sha']=='56023042e57758591df9babb3438f191dbe10312'
+          assert m['operator_runtime_sha']=='0963f81ec54b4ac121097856741616ac04530797'
+          assert m['operator_runtime_branch']=='ops-tracka-kaggle-master-runtime-v11-0963f81'
+          assert m['parent_pipe_restream'] is True
+          assert m['heartbeat_seconds']==60
+          assert m['worker_g1a_prerequisite_fail_fast'] is True
+          assert m['peer_g2a_nonblocking'] is True
+          assert m['worker_control_nonblocking'] is True
+          assert m['science_authorized'] is False
+          assert m['protected_test_accessed'] is False
+          assert m['external_surface_accessed'] is False
+          assert m['remaining_scientific_states']==11
+          assert m['ddp'] is False and m['dataparallel'] is False and m['fsdp'] is False
+          for account in ('K1','K2','K3'):
+              p=root/f'TRACKA_V12_MASTER_{account}.ipynb'
+              got=hashlib.sha256(p.read_bytes()).hexdigest()
+              assert got==m['notebook_sha256'][account], (account,got,m['notebook_sha256'][account])
+          print('manifest + notebook byte binding PASS')
+          PY
+
+      - name: Validate notebook execution cells and reliability contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          science='56023042e57758591df9babb3438f191dbe10312'
+          runtime='0963f81ec54b4ac121097856741616ac04530797'
+          alias='ops-tracka-kaggle-master-runtime-v11-0963f81'
+          for account in ('K1','K2','K3'):
+              p=root/f'TRACKA_V12_MASTER_{account}.ipynb'
+              nb=json.loads(p.read_text())
+              meta=nb['metadata']['cropcop_operator']
+              assert meta['account_id']==account
+              assert meta['science_sha']==science
+              assert meta['operator_runtime_sha']==runtime
+              assert meta['operator_runtime_branch']==alias
+              assert meta['driver']=='master_account_driver_v11.py'
+              assert meta['launcher']=='master_launch_guard_v11.py'
+              assert meta['schema_version']=='4.7'
+              assert meta['stdout_streaming']=='parent_pipe_restream'
+              assert meta['heartbeat_seconds']==60
+              assert meta['worker_g1a_prerequisite_fail_fast'] is (account!='K1')
+              code='\n'.join(''.join(c.get('source',[])) for c in nb['cells'] if c['cell_type']=='code')
+              for c in nb['cells']:
+                  if c['cell_type']=='code':
+                      compile(''.join(c['source']),str(p),'exec')
+              assert 'subprocess.Popen(' in code
+              assert 'stdout=subprocess.PIPE' in code
+              assert 'stderr=subprocess.STDOUT' in code
+              assert 'bufsize=1' in code
+              assert "print(line, end='', flush=True)" in code
+              assert 'master_launch_guard_v11.py' in code
+              assert "subprocess.run([sys.executable, '-u', str(guard)" not in code
+              assert 'CROPCOP_EXPECTED_KAGGLE_USERNAME' in code
+              if account=='K1':
+                  assert 'cropcop-g1-sealed/G1_PACKAGE' in code
+              else:
+                  assert 'cropcop-g1-sealed/G1_PACKAGE' not in code
+          print('notebook reliability + code compilation PASS')
+          PY
+
+      - name: Verify protected surfaces remain closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          text='\n'.join((root/f'TRACKA_V12_MASTER_{a}.ipynb').read_text() for a in ('K1','K2','K3'))
+          for forbidden in ('DS-V1-TEST-CONSUMED','DS-EXT-*-SEALED','DataParallel(','DistributedDataParallel(','FSDP('):
+              if forbidden in text:
+                  raise SystemExit(f'forbidden distribution content: {forbidden}')
+          print('protected surfaces and no-distributed-training contract PASS')
+          PY
