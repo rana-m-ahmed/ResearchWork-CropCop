@@ -18,6 +18,14 @@ import master_launch_guard_v12 as guard
 
 SCIENCE_SHA = "56023042e57758591df9babb3438f191dbe10312"
 ATTEST = OPS / "attestations_v10"
+EXPECTED_EXTRA_GATES = frozenset(
+    {
+        "g1a_runtime_global_resolution_contract",
+        "kaggle_generation_durability_contract",
+        "r13_parity_amendment_contract",
+        "teacher_factory_root_binding_contract",
+    }
+)
 
 
 class TrackAV12KaggleMasterV12Tests(unittest.TestCase):
@@ -35,7 +43,9 @@ class TrackAV12KaggleMasterV12Tests(unittest.TestCase):
         self.assertEqual(self.code["source_git_commit"], SCIENCE_SHA)
         self.assertEqual(self.code["status"], "PASS")
         static = self.code["static_pre_science_gates"]
-        self.assertEqual(static[control.CODE_EXTRA_STATIC_GATE], "PASS")
+        self.assertEqual(control.CODE_EXTRA_STATIC_GATES, EXPECTED_EXTRA_GATES)
+        for gate in EXPECTED_EXTRA_GATES:
+            self.assertEqual(static[gate], "PASS")
         self.assertTrue(control._verify_embedded_hash(self.code, "attestation_sha256"))
 
     def test_exact_lock_runtime_attestation_uses_r13_prefixed_gate(self):
@@ -47,7 +57,7 @@ class TrackAV12KaggleMasterV12Tests(unittest.TestCase):
         self.assertTrue(control._verify_embedded_hash(self.lock, "attestation_sha256"))
 
     def test_compatibility_mapping_is_exact_and_narrow(self):
-        self.assertEqual(control.CODE_EXTRA_STATIC_GATE, "teacher_factory_root_binding_contract")
+        self.assertEqual(control.CODE_EXTRA_STATIC_GATES, EXPECTED_EXTRA_GATES)
         self.assertEqual(control.LOCK_RUNTIME_QUALIFICATION_FIELD, "r13_v121_runtime_qualification")
         self.assertEqual(control.AUTH_RUNTIME_QUALIFICATION_GATE, "v121_runtime_qualification")
         self.assertNotEqual(control.LOCK_RUNTIME_QUALIFICATION_FIELD, control.AUTH_RUNTIME_QUALIFICATION_GATE)
@@ -86,7 +96,8 @@ class TrackAV12KaggleMasterV12Tests(unittest.TestCase):
     def test_runtime_compatibility_report_explicitly_disclaims_science_change(self):
         text = (OPS / "master_control_v12.py").read_text(encoding="utf-8")
         self.assertIn("Runtime-only compatibility bridge", text)
-        self.assertIn("No scientific model, seed, data, objective, selector, G1A, G2A", text)
+        self.assertIn("No scientific model, seed, data, objective", text)
+        self.assertIn("selector, G1A, G2A, or protected-surface contract is changed", text)
 
 
 if __name__ == "__main__":
