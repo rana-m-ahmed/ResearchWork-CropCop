@@ -13,10 +13,21 @@ if str(SRC) not in sys.path:
 from cropcop_je.hashing import sha256_json  # noqa: E402
 from cropcop_je.tracka_v12_g2a import REQUIRED_PROFILES  # noqa: E402
 from cropcop_je.tracka_v12_g2a_durability import (  # noqa: E402
+    G2A_RESTORE_CONTRACT,
+    G2A_RESTORE_STORE_CLASS,
     build_g2a_durability_contract,
     validate_calibration_durability,
     validate_g2a_durability_contract,
 )
+
+
+def generation(previous: int, confirmed: int, marker: str) -> dict:
+    return {
+        "previous_version_number": previous,
+        "confirmed_version_number": confirmed,
+        "generation_marker_sha256": marker,
+        "generation_roundtrip_verified": True,
+    }
 
 
 def summary(calibration_id: str, index: int) -> dict:
@@ -32,6 +43,11 @@ def summary(calibration_id: str, index: int) -> dict:
         "durability": {
             "backend": "kaggle_private_dataset",
             "locator": locator,
+            "restore_status": "PASS",
+            "restore_contract": G2A_RESTORE_CONTRACT,
+            "restore_store_class": G2A_RESTORE_STORE_CLASS,
+            "initial_sync_generation": generation(index, index + 1, f"{index:064x}"),
+            "resumed_sync_generation": generation(index + 1, index + 2, f"{index + 100:064x}"),
             "preflight_private_access": {
                 "schema_version": "1.0",
                 "status": "PASS",
@@ -64,6 +80,7 @@ class TrackAV12G2ADurabilityTests(unittest.TestCase):
         contract = build_g2a_durability_contract(rows)
         expected = {row["calibration_id"]: sha256_json(row) for row in rows}
         self.assertEqual(contract["status"], "PASS")
+        self.assertEqual(contract["required_restore_contract"], G2A_RESTORE_CONTRACT)
         self.assertEqual(validate_g2a_durability_contract(contract, expected_input_summary_sha256=expected), [])
 
     def test_filesystem_backend_is_rejected(self):
@@ -91,6 +108,29 @@ class TrackAV12G2ADurabilityTests(unittest.TestCase):
         self.assertTrue(any("authoritative_is_private" in error for error in errors))
         self.assertTrue(any("authenticated_read" in error for error in errors))
 
+    def test_legacy_restore_contract_is_rejected(self):
+        row = self.summaries()[0]
+        row["durability"]["restore_contract"] = "legacy_kaggle_restore"
+        row["durability"]["restore_store_class"] = "KagglePrivateDatasetStore"
+        errors = validate_calibration_durability(row)
+        self.assertTrue(any("generation-aware v8 contract" in error for error in errors))
+        self.assertTrue(any("store class" in error for error in errors))
+
+    def test_nonadvancing_or_unverified_generation_is_rejected(self):
+        row = self.summaries()[0]
+        generation_row = row["durability"]["initial_sync_generation"]
+        generation_row["confirmed_version_number"] = generation_row["previous_version_number"]
+        generation_row["generation_roundtrip_verified"] = False
+        errors = validate_calibration_durability(row)
+        self.assertTrue(any("did not strictly advance" in error for error in errors))
+        self.assertTrue(any("roundtrip is not verified" in error for error in errors))
+
+    def test_invalid_generation_marker_hash_is_rejected(self):
+        row = self.summaries()[0]
+        row["durability"]["resumed_sync_generation"]["generation_marker_sha256"] = "not-a-sha"
+        errors = validate_calibration_durability(row)
+        self.assertTrue(any("marker SHA-256" in error for error in errors))
+
     def test_contract_must_bind_exact_input_summary_hashes(self):
         rows = self.summaries()
         contract = build_g2a_durability_contract(rows)
@@ -103,6 +143,12 @@ class TrackAV12G2ADurabilityTests(unittest.TestCase):
         contract = build_g2a_durability_contract(self.summaries())
         contract["profile_locators"][REQUIRED_PROFILES[0]] = "other/locator"
         self.assertTrue(any("self-hash" in error for error in validate_g2a_durability_contract(contract)))
+
+    def test_restore_contract_drift_is_rejected(self):
+        contract = build_g2a_durability_contract(self.summaries())
+        contract["required_restore_contract"] = "legacy"
+        errors = validate_g2a_durability_contract(contract)
+        self.assertTrue(any("restore requirement drift" in error for error in errors))
 
 
 if __name__ == "__main__":
