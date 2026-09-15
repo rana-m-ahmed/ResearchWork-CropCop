@@ -30,7 +30,7 @@ from master_wait_v8 import POLL_SECONDS, dependency_wait_expired
 from master_verified_pretrained_v5 import prepare_verified_torchvision
 
 G1A_HANDOFF_FILE = "TRACKA_V12_G1A_HANDOFF.json"
-HANDOFF_SCHEMA_VERSION = "1.2"
+HANDOFF_SCHEMA_VERSION = "1.2.1"
 G1A_FAILURE_CODE = "K1_G1A_PIPELINE_FAILED"
 
 
@@ -87,12 +87,14 @@ def write_handoff(path: Path, *, status: str, locator: str, seal: dict | None = 
 
 def g1a_public_report(path: Path, seal: dict, locator: str, stack: dict) -> dict:
     payload = {
-        "schema_version": "1.1",
+        "schema_version": "1.2.1",
         "stage": "TRACKA_V12_G1A_MASTER",
         "status": "PASS",
         "science_source_sha": SCIENCE_SHA,
         "operator_runtime_sha": operator_runtime_head(),
         "g1a_seal_sha256": seal["g1a_seal_sha256"],
+        "r13_parity_contract_id": (seal.get("r13") or {}).get("parity_contract_id"),
+        "r13_parity_required_max_abs_difference": (seal.get("r13") or {}).get("required_max_abs_difference"),
         "dependency_lock_sha256": stack["dependency_lock_sha256"],
         "private_handoff_locator": locator,
         "science_authorized": False,
@@ -118,7 +120,7 @@ def build_g1a_once(repo: Path, *, manifest: Path, class_map: Path, image_root: P
         lambda: prepare_r13(upstream_root / "r13"),
     )
     command = [
-        sys.executable, str(repo / "journal_extension/scripts/seal_tracka_v12_g1a.py"),
+        sys.executable, str(repo / "journal_extension/scripts/seal_tracka_v12_g1a_v121.py"),
         "--repo-root", str(repo), "--authorized-source-sha", SCIENCE_SHA,
         "--manifest", str(manifest), "--class-map", str(class_map), "--image-root", str(image_root),
         "--principal-g1-bundle", str(principal),
@@ -130,7 +132,7 @@ def build_g1a_once(repo: Path, *, manifest: Path, class_map: Path, image_root: P
     ]
     cp = subprocess.run(command, cwd=repo, text=True)
     if cp.returncode != 0:
-        raise OperatorError(f"G1A sealer failed with rc={cp.returncode}")
+        raise OperatorError(f"G1A v1.2.1 sealer failed with rc={cp.returncode}")
     return validate_g1a_bundle_with_science(repo, output_bundle)
 
 
@@ -149,14 +151,14 @@ def ensure_canonical_g1a_k1(
     locator = os.environ.get("CROPCOP_G1A_SHARED_DATASET", "").strip() or shared_g1a_locator(username)
     if locator.split("/", 1)[0].casefold() != username.casefold():
         raise OperatorError("K1 canonical G1A shared dataset must be owned by authenticated K1")
-    ensure_private_dataset(locator, title="CropCop Track-A v1.2 canonical G1A", env=kaggle_env)
+    ensure_private_dataset(locator, title="CropCop Track-A v1.2.1 canonical G1A", env=kaggle_env)
     handoff = master_root / G1A_HANDOFF_FILE
     print(f"Canonical private G1A dataset: {locator}")
     print("Before K2/K3 launch, grant both worker accounts Can view access to this private Kaggle dataset.")
     adopted = adopt_g1a_if_present(repo, locator, master_root / "g1a-shared-download", env=kaggle_env)
     if adopted is not None:
         bundle, seal = adopted
-        print("Reusing already-valid canonical G1A bundle.")
+        print("Reusing already-valid canonical v1.2.1 G1A bundle.")
     else:
         write_handoff(handoff, status="PREPARING", locator=locator)
         publish_json(repo, g1a_handoff_run_id(), handoff)
@@ -164,7 +166,7 @@ def ensure_canonical_g1a_k1(
         shutil.rmtree(bundle, ignore_errors=True)
         try:
             seal = build_g1a_once(repo, manifest=manifest, class_map=class_map, image_root=image_root, output_bundle=bundle)
-            version_private_dataset(locator, bundle, message=f"Canonical Track-A v1.2 G1A {SCIENCE_SHA[:12]}", env=kaggle_env)
+            version_private_dataset(locator, bundle, message=f"Canonical Track-A v1.2.1 G1A {SCIENCE_SHA[:12]}", env=kaggle_env)
             wait_kaggle_dataset_ready(locator, env=kaggle_env)
             roundtrip_bundle, roundtrip_seal = download_and_validate_g1a_dataset(repo, locator, master_root / "g1a-roundtrip", env=kaggle_env)
             if roundtrip_seal["g1a_seal_sha256"] != seal["g1a_seal_sha256"]:
