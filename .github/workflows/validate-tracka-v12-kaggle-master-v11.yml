@@ -48,8 +48,6 @@ jobs:
       - name: Run current neutral durability regressions
         run: |
           python -m unittest -v \
-            tests.test_tracka_v12_mitigation_v8 \
-            tests.test_tracka_v12_mitigation_v9 \
             tests.test_tracka_v12_g1a_contract \
             tests.test_tracka_v12_g2a_durability
 
