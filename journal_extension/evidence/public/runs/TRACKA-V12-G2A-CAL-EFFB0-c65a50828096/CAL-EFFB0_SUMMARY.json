@@ -1,0 +1,89 @@
+{
+  "allowed_surfaces": [
+    "DS-V1-TRAIN",
+    "DS-V1-VAL"
+  ],
+  "calibration_id": "CAL-EFFB0",
+  "calibration_weights_scientific": false,
+  "coverage": [
+    "R06-EFFB0-CONTEXT-S2",
+    "R06-EFFB0-CONTEXT-S3"
+  ],
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "durability": {
+    "backend": "kaggle_private_dataset",
+    "initial_sync_generation": {
+      "confirmed_version_number": 2,
+      "generation_marker_sha256": "7febcf463c2a301c58a1fd8af9ff38a882b3dfe72f6b5c937749bcdeacc17d20",
+      "generation_roundtrip_verified": true,
+      "previous_version_number": 1
+    },
+    "locator": "ranamuhammadahmed6/cropcop-g2a-cal-effb0-fe6a1527-c65a5082",
+    "preflight_private_access": {
+      "checks": {
+        "TRACKA-V12-CAL-EFFB0-c65a50828096-A01": {
+          "authenticated_read": true,
+          "authoritative_is_private": true,
+          "current_version_number": 1,
+          "locator": "ranamuhammadahmed6/cropcop-g2a-cal-effb0-fe6a1527-c65a5082",
+          "owner_matches_authenticated_user": true,
+          "private_metadata_verified": true,
+          "write_authorization_basis": "private dataset owner identity",
+          "write_generation_mutated_by_preflight": false
+        }
+      },
+      "errors": [],
+      "kind": "kaggle-dataset",
+      "note": "Kaggle write authorization is bound to authenticated dataset ownership; the first real calibration/scientific sync is the non-fabricated write exercise.",
+      "resolved_locator_count": 1,
+      "schema_version": "1.0",
+      "status": "PASS"
+    },
+    "restore_contract": "generation_aware_kaggle_v8",
+    "restore_seconds": 2.096773412999937,
+    "restore_status": "PASS",
+    "restore_store_class": "GenerationAwareKagglePrivateDatasetStore",
+    "resumed_sync_generation": {
+      "confirmed_version_number": 3,
+      "generation_marker_sha256": "33944569fc8bdd601e741def64fdd468f46b18b4121fbed4aaa546723462b6cc",
+      "generation_roundtrip_verified": true,
+      "previous_version_number": 2
+    },
+    "sync_seconds": 28.923040122999964,
+    "sync_status": "PASS"
+  },
+  "durable_roundtrip_success": true,
+  "durable_store_kind": "kaggle-dataset",
+  "external_protected_surface_accessed": false,
+  "first_segment_result_sha256": "3fceff79c18c0eb2990d31eb67883f9aa2bffc272af943e319ef12555cdfeb63",
+  "g1a_seal_sha256": "5e989ec32852119e7263d7ede3b7cddef74e0ead4098ef8d5f932ca41f5e9d48",
+  "git_credentials_present": false,
+  "logical_lane_id": "TRACKA-V12:R06-EFFB0-CONTEXT-S2",
+  "measured": {
+    "checkpoint_load_seconds": 0.20953849500006072,
+    "checkpoint_save_seconds": 2.2441694480000933,
+    "checkpoint_save_seconds_per_event": 1.1220847240000467,
+    "durable_sync_seconds_per_segment": 24.600768276500048,
+    "examples_per_second": 64.85264701037946,
+    "initial_segment_optimizer_steps": 24,
+    "peak_gpu_memory_bytes": 1038557184,
+    "resumed_segment_optimizer_steps": 8,
+    "sec_per_optimizer_step": 1.1136180121249928,
+    "steady_sec_per_optimizer_step": 1.0220771991458215,
+    "validation_end_to_end_examples_per_second": 227.69008602187478
+  },
+  "physical_slot_id": "K1/GPU0",
+  "representative_experiment_id": "R06-EFFB0-CONTEXT-S2",
+  "resume_success": true,
+  "run_id": "TRACKA-V12-CAL-EFFB0-c65a50828096-A01",
+  "schema_version": "1.2.2",
+  "scientific_metric_computed": false,
+  "second_segment_result_sha256": "533aa6000d3c5f01ded6c55d72f82ee8e59e04810f07bc752f4a8fe2d27cc6d4",
+  "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
+  "source_git_commit": "c65a5082809603155fa80a6eb0152fae33dbd9e0",
+  "status": "PASS",
+  "v1_test_accessed": false,
+  "validation_enabled": false,
+  "visible_cuda_device_count": 1,
+  "visible_gpu_name": "Tesla T4"
+}
