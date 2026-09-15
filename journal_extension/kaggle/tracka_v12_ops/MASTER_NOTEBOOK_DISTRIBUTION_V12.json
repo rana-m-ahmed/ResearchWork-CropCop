@@ -1,0 +1,48 @@
+{
+  "accelerator": "T4x2",
+  "authority": "EAAI-JE-SDL-v2.1-QA",
+  "batch_required": true,
+  "dataparallel": false,
+  "ddp": false,
+  "driver": "master_account_driver_v12.py",
+  "exact_live_replay": {
+    "g2a_barrier_sha256": "d8141f5c6f4f7c48bc680c6abd4d63c0871f93253a145c96bbb076615d98fdfc",
+    "scheduler_freeze_sha256": "7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787",
+    "science_authorization_sha256": "58d65a9c9f0c06222c00541feca9b2aaa005ebda850d2261d4df3e0e1fe7fbb7",
+    "status": "PASS"
+  },
+  "external_surface_accessed": false,
+  "fsdp": false,
+  "g1a_seal_sha256": "c7f5ffc84240a79c3201081896df537959313ac8f0cd2d3aba0205a7fe7cfb8d",
+  "heartbeat_seconds": 60,
+  "internet_required": true,
+  "launcher": "master_launch_guard_v12.py",
+  "notebook_sha256": {
+    "K1": "8536797501fcae5c76601b78153507828c3d184de46d9bbcb68dc34f2da246d7",
+    "K2": "c6ba612356f092654eb7817c8b71ece590943c14e3c48e9b0bf4b49fb1e442ea",
+    "K3": "5908baa071f4a61aa8e28460f8cf01bf1d2bdeaf3fc22d7e7c954c10afe15ace"
+  },
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v12-705be6e",
+  "operator_runtime_sha": "705be6e2ae1b83be6997ae24a83684ff867dcf12",
+  "parent_pipe_restream": true,
+  "peer_g2a_nonblocking": true,
+  "protected_test_accessed": false,
+  "protocol": [
+    "Run K1 v12 first; it reuses exact qualified G1A/G2A evidence, seals SCIENCE_GO, then enters its frozen scientific queue.",
+    "After K1 publishes the v12 control plane, run K2 and K3 v12 on their separate Kaggle accounts; they reuse exact qualification evidence and enter their frozen queues.",
+    "Use fresh Batch sessions for controlled rc=2 continuations; never alter scientific settings."
+  ],
+  "remaining_scientific_states": 11,
+  "schema_version": "4.8",
+  "science_authorized": false,
+  "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
+  "secrets": [
+    "KAGGLE_USERNAME",
+    "KAGGLE_KEY",
+    "CROPCOP_GITHUB_TOKEN",
+    "CROPCOP_EXPECTED_KAGGLE_USERNAME"
+  ],
+  "status": "LOCKED_DISTRIBUTION",
+  "worker_control_nonblocking": true,
+  "worker_g1a_prerequisite_fail_fast": true
+}
