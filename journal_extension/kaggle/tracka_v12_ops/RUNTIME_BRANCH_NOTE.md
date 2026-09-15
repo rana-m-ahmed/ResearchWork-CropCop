@@ -1,5 +1,19 @@
-Immutable runtime target: `ops-tracka-kaggle-master-runtime-v3-fix3-e8ea268` at `e8ea268729663a921db461b337a6cfe50e03630f`.
+# Track-A v1.2/v1.2.1 Kaggle Runtime v8.2
 
-Distribution notebooks must clone that branch and verify the exact SHA before invoking `master_account_driver.py`.
+This branch is the **runtime-only** line for the repaired Track-A continuation infrastructure.
 
-This runtime supersedes `9fdbba6...` for new execution. It resolves the real Kaggle V1 packaging rather than assuming the image root is an ancestor of `audit/final_manifest.csv`: candidate roots are shallow directories containing direct `train/` and `val/` children, qualification uses only frozen TRAIN/VAL manifest paths, byte-identical manifest/class-map duplicates are ranked by dataset structural affinity, and genuinely conflicting roots remain fail-closed. The exact resolved manifest/class-map/image-root/principal-G1 paths are then bound for all downstream helpers. Git write authorization is checked before dependency repair, and deterministic pre-science clone/TorchVision/R13 network operations have bounded retry. Frozen science remains unchanged at `9a72e9466a9a3e7429e0e36a028edac662f83146`.
+- Science authority: `4ced2fd7c764c07fa47fb57fbea38376d2ce61a4`
+- Runtime branch: `ops-tracka-kaggle-master-runtime-v8r2-4ced2fd-20260915`
+- Active launcher: `master_launch_guard_v8.py`
+- Active driver: `master_account_driver_v8.py`
+- R13 parity contract: `TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1`
+- R13 parity maximum: `5e-5` (historical v1.2 provenance remains `1e-5`)
+- Remaining scientific states: exactly 11
+
+The runtime branch intentionally contains **no canonical K1/K2/K3 notebooks and no distribution freeze file**. A separate distribution branch is created only after runtime QA passes; that branch pins the exact runtime commit SHA and contains exactly three execution notebooks. This avoids stale notebooks and circular self-references.
+
+Active G1A execution uses `seal_tracka_v12_g1a_v121.py`. Scientific account execution uses `run_tracka_v12_account_v121.py`. SCIENCE_GO uses `seal_tracka_v12_science_go_v124.py`. Exact-head GitHub Actions attestations are downloaded, byte-hash checked, semantically checked, and bound before dependency installation or G1A work.
+
+Historical runtime/operator files remain for audit history only. They are not canonical execution entry points.
+
+This branch and its CI qualify operator implementation/release integrity only. They do not claim a real Kaggle G1A, G2A, SCIENCE_GO, or scientific-result PASS.
