@@ -16,6 +16,7 @@ STATIC_GATES = (
     "principal_science_diff",
     "secondary_science_diff",
     "training_runner_contract",
+    "teacher_factory_root_binding_contract",
     "checkpoint_recovery_contract",
     "cross_slot_recovery_contract",
     "kaggle_generation_durability_contract",
@@ -55,6 +56,7 @@ IMPLEMENTATION_FILES = (
     "journal_extension/src/cropcop_je/tracka_v12_posttraining.py",
     "journal_extension/src/cropcop_je/tracka_v12_runtime.py",
     "journal_extension/src/cropcop_je/tracka_v12_xai.py",
+    "journal_extension/teacher_factory/historical_dino_tiny.py",
     "journal_extension/scripts/seal_tracka_v12_g1a.py",
     "journal_extension/scripts/seal_tracka_v12_g1a_v121.py",
     "journal_extension/scripts/qualify_tracka_v12_profile_v122.py",
@@ -83,6 +85,7 @@ IMPLEMENTATION_FILES = (
     "journal_extension/amendments/track_a_strengthening_v1/AMENDMENT_V1_2_1_PARITY_CONTENT_LOCK.json",
     "journal_extension/amendments/track_a_strengthening_v1/validate_r13_parity_amendment_v1_2_1.py",
     "journal_extension/amendments/track_a_strengthening_v1/validate_r13_pretrained_parity_v1_2_1.py",
+    "tests/test_tracka_v12_teacher_factory_root_binding.py",
 )
 
 
@@ -136,7 +139,7 @@ def main() -> int:
         },
         "r13_parity_contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1",
         "r13_parity_required_max_abs_difference": 5e-5,
-        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, G1A runtime-global checks, generation-aware Kaggle durability tests, versioned R13 parity-amendment validation, versioned G1A consumer-binding tests, historical-lineage tests, analysis-evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the canonical runbook plus G1A/G2A qualification, parent account preflight, durability-bound SCIENCE_GO construction, checkpoint/persistence recovery, six-GPU execution, historical replay, direct/auxiliary analysis, XAI, direct selection and comprehensive 21-state closure implementations. The separate exact-head lock/runtime attestation additionally binds the exact-pretrained R13 parity proof. Neither attestation independently authorizes scientific execution.",
+        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, G1A runtime-global checks, generation-aware Kaggle durability tests, the historical-teacher factory source-root binding regression, versioned R13 parity-amendment validation, versioned G1A consumer-binding tests, historical-lineage tests, analysis-evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the canonical runbook plus G1A/G2A qualification, the exact historical teacher factory source bytes, parent account preflight, durability-bound SCIENCE_GO construction, checkpoint/persistence recovery, six-GPU execution, historical replay, direct/auxiliary analysis, XAI, direct selection and comprehensive 21-state closure implementations. The separate exact-head lock/runtime attestation additionally binds the exact-pretrained R13 parity proof. Neither attestation independently authorizes scientific execution.",
     }
     payload["attestation_sha256"] = sha256_json(payload)
     atomic_write_json(args.output, payload)
