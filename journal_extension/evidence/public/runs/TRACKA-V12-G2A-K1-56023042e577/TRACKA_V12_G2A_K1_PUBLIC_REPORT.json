@@ -1,0 +1,20 @@
+{
+  "account_id": "K1",
+  "calibrations": {
+    "CAL-CNXTT": {
+      "public_evidence_run_id": "TRACKA-V12-G2A-CAL-CNXTT-56023042e577",
+      "summary_sha256": "b84888f94b281d9509b2ae88bbac76f5b957c9e1a19bf46d336e179166bf8412"
+    },
+    "CAL-EFFB0": {
+      "public_evidence_run_id": "TRACKA-V12-G2A-CAL-EFFB0-56023042e577",
+      "summary_sha256": "3b3e7b818c8a3e7c8e1e608f67e5b9531763560b80c402cb208944def332b592"
+    }
+  },
+  "g1a_seal_sha256": "c7f5ffc84240a79c3201081896df537959313ac8f0cd2d3aba0205a7fe7cfb8d",
+  "operator_runtime_sha": "0963f81ec54b4ac121097856741616ac04530797",
+  "schema_version": "1.1",
+  "science_authorized": false,
+  "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
+  "stage": "TRACKA_V12_G2A_ACCOUNT_MASTER",
+  "status": "PASS"
+}
