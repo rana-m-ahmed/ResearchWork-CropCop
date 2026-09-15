@@ -1,0 +1,228 @@
+name: Validate Track-A v12 control compatibility
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v12-5602304
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  control-v12-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact v12 runtime candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Compile and run v12 regressions
+        run: |
+          python -m py_compile \
+            journal_extension/kaggle/tracka_v12_ops/master_control_v12.py \
+            journal_extension/kaggle/tracka_v12_ops/master_account_driver_v12.py \
+            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v12.py \
+            tests/test_tracka_v12_kaggle_master_v12.py
+          python -m unittest -v tests.test_tracka_v12_kaggle_master_v12
+
+      - name: Preserve frozen v11 reliability behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          HIST='0963f81ec54b4ac121097856741616ac04530797'
+          rm -rf /tmp/tracka-v11-history
+          git worktree add --detach /tmp/tracka-v11-history "$HIST"
+          (
+            cd /tmp/tracka-v11-history
+            python -m unittest -v tests.test_tracka_v12_kaggle_master_v11
+          )
+          git worktree remove /tmp/tracka-v11-history --force
+          echo 'frozen v11 reliability preservation PASS'
+
+      - name: Verify runtime-only delta and frozen science identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE='56023042e57758591df9babb3438f191dbe10312'
+          BASE='0963f81ec54b4ac121097856741616ac04530797'
+          grep -F "SCIENCE_SHA_V8 = \"$SCIENCE\"" journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py
+          CHANGED="$(git diff --name-only "$BASE"...HEAD)"
+          printf '%s\n' "$CHANGED"
+          while IFS= read -r path; do
+            [ -z "$path" ] && continue
+            case "$path" in
+              journal_extension/kaggle/tracka_v12_ops/master_control_v12.py|\
+              journal_extension/kaggle/tracka_v12_ops/master_account_driver_v12.py|\
+              journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v12.py|\
+              tests/test_tracka_v12_kaggle_master_v12.py|\
+              .github/workflows/validate-tracka-v12-control-compat-v12.yml) ;;
+              *) echo "unexpected v12 delta: $path" >&2; exit 1 ;;
+            esac
+          done <<< "$CHANGED"
+          echo 'runtime-only delta PASS'
+
+      - name: Materialize exact live G1A and five G2A evidence blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tracka-v12-live
+          fetch_exact() {
+            branch="$1"; path="$2"; expected_blob="$3"; out="$4"
+            git fetch --quiet origin "refs/heads/$branch"
+            actual="$(git rev-parse "FETCH_HEAD:$path")"
+            if [ "$actual" != "$expected_blob" ]; then
+              echo "evidence blob mismatch for $branch:$path expected=$expected_blob observed=$actual" >&2
+              exit 1
+            fi
+            git show "FETCH_HEAD:$path" > "$out"
+          }
+          fetch_exact \
+            'run-evidence/TRACKA-V12-G1A-56023042e577' \
+            'journal_extension/evidence/public/runs/TRACKA-V12-G1A-56023042e577/TRACKA_V12_G1A_SEAL.json' \
+            '34d67eed7e13dc282716e742205dfdf31b19b78d' \
+            '/tmp/tracka-v12-live/g1a.json'
+          fetch_exact \
+            'run-evidence/TRACKA-V12-G2A-CAL-EFFB0-56023042e577' \
+            'journal_extension/evidence/public/runs/TRACKA-V12-G2A-CAL-EFFB0-56023042e577/CAL-EFFB0_SUMMARY.json' \
+            'ecd5a3b0cea8d4f6d9190317c52e7740b176ca24' \
+            '/tmp/tracka-v12-live/CAL-EFFB0.json'
+          fetch_exact \
+            'run-evidence/TRACKA-V12-G2A-CAL-CNXTT-56023042e577' \
+            'journal_extension/evidence/public/runs/TRACKA-V12-G2A-CAL-CNXTT-56023042e577/CAL-CNXTT_SUMMARY.json' \
+            'a0ed00cf946198bd4a10488b7e6a887666c496b0' \
+            '/tmp/tracka-v12-live/CAL-CNXTT.json'
+          fetch_exact \
+            'run-evidence/TRACKA-V12-G2A-CAL-MNV4-LOGITS-56023042e577' \
+            'journal_extension/evidence/public/runs/TRACKA-V12-G2A-CAL-MNV4-LOGITS-56023042e577/CAL-MNV4-LOGITS_SUMMARY.json' \
+            'b20263ba967acd3cb10d417d3f574fd2011bdbca' \
+            '/tmp/tracka-v12-live/CAL-MNV4-LOGITS.json'
+          fetch_exact \
+            'run-evidence/TRACKA-V12-G2A-CAL-MNV4-FEATURE-56023042e577' \
+            'journal_extension/evidence/public/runs/TRACKA-V12-G2A-CAL-MNV4-FEATURE-56023042e577/CAL-MNV4-FEATURE_SUMMARY.json' \
+            'cfad70c6fa08ff0f3245f76cf7eba31dafe55f76' \
+            '/tmp/tracka-v12-live/CAL-MNV4-FEATURE.json'
+          fetch_exact \
+            'run-evidence/TRACKA-V12-G2A-CAL-R13-56023042e577' \
+            'journal_extension/evidence/public/runs/TRACKA-V12-G2A-CAL-R13-56023042e577/CAL-R13_SUMMARY.json' \
+            '0f1d3f9e080b275efaa08c142e493d5580ef9bfc' \
+            '/tmp/tracka-v12-live/CAL-R13.json'
+          echo 'exact live evidence blob materialization PASS'
+
+      - name: Replay exact live evidence through v12 SCIENCE_GO compatibility bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE='56023042e57758591df9babb3438f191dbe10312'
+          rm -rf /tmp/tracka-v12-science
+          git worktree add --detach /tmp/tracka-v12-science "$SCIENCE"
+          RUNTIME_ROOT="$GITHUB_WORKSPACE" SCIENCE_ROOT=/tmp/tracka-v12-science EVIDENCE_ROOT=/tmp/tracka-v12-live python - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          runtime = Path(os.environ['RUNTIME_ROOT'])
+          science = Path(os.environ['SCIENCE_ROOT'])
+          evidence = Path(os.environ['EVIDENCE_ROOT'])
+          sys.path.insert(0, str(runtime / 'journal_extension/kaggle/tracka_v12_ops'))
+          sys.path.insert(0, str(science / 'journal_extension/src'))
+
+          from cropcop_je.atomic_io import atomic_write_json
+          from cropcop_je.tracka_v12_authorization import validate_science_authorization
+          from cropcop_je.tracka_v12_g2a_durability import build_g2a_durability_contract, validate_g2a_durability_contract
+          from cropcop_je.tracka_v12_g2a_v122 import (
+              barrier_hash,
+              build_g2a_v122_barrier,
+              build_scheduler_freeze_v122,
+              validate_g2a_v122_barrier,
+              validate_scheduler_freeze_v122,
+          )
+          from master_control_v12 import seal_science_go_v12
+
+          ids = ['CAL-EFFB0','CAL-CNXTT','CAL-MNV4-LOGITS','CAL-MNV4-FEATURE','CAL-R13']
+          summaries = [json.loads((evidence / f'{cid}.json').read_text()) for cid in ids]
+          probe = {
+              'status': 'PASS',
+              'selected_checkpoint_verified': True,
+              'identity_mismatch_rejected': True,
+              'corrupt_checkpoint_rejected': True,
+              'scientific_result_produced': False,
+              'protected_data_accessed': False,
+              'checkpoint_identity_is_physical_slot_independent': True,
+          }
+          durability = build_g2a_durability_contract(summaries)
+          assert not validate_g2a_durability_contract(durability)
+          barrier = build_g2a_v122_barrier(summaries, checkpoint_contract_probe=probe)
+          barrier['durability_contract'] = durability
+          barrier['barrier_sha256'] = barrier_hash(barrier)
+          assert not validate_g2a_v122_barrier(barrier)
+          scheduler = build_scheduler_freeze_v122(barrier)
+          assert not validate_scheduler_freeze_v122(scheduler, expected_g2a_barrier_sha256=barrier['barrier_sha256'])
+          barrier_path = evidence / 'TRACKA_V12_G2A_BARRIER.json'
+          scheduler_path = evidence / 'TRACKA_V12_SCHEDULER_FREEZE.json'
+          atomic_write_json(barrier_path, barrier)
+          atomic_write_json(scheduler_path, scheduler)
+
+          att = runtime / 'journal_extension/kaggle/tracka_v12_ops/attestations_v10'
+          go_path = evidence / 'TRACKA_V12_SCIENCE_GO.json'
+          compat_path = evidence / 'TRACKA_V12_CONTROL_SCHEMA_COMPAT_V12.json'
+          compat = seal_science_go_v12(
+              science,
+              code_attestation_path=att / 'tracka-v12-pre-science-code-attestation.json',
+              lock_attestation_path=att / 'tracka-v12-exact-head-lock-runtime-attestation.json',
+              g1a_path=evidence / 'g1a.json',
+              g2a_path=barrier_path,
+              scheduler_path=scheduler_path,
+              output_path=go_path,
+              compatibility_path=compat_path,
+          )
+          go = json.loads(go_path.read_text())
+          errors = validate_science_authorization(
+              go,
+              expected_source_sha='56023042e57758591df9babb3438f191dbe10312',
+              expected_g1a_seal_sha256=json.loads((evidence/'g1a.json').read_text())['g1a_seal_sha256'],
+              expected_g2a_barrier_sha256=barrier['barrier_sha256'],
+              expected_scheduler_freeze_sha256=scheduler['scheduler_freeze_sha256'],
+          )
+          assert not errors, errors
+          assert go['status'] == 'GO'
+          assert len(go['authorized_experiment_ids']) == 11
+          assert go['v1_test_closed'] is True
+          assert go['external_predictions_closed'] is True
+          assert go['track_c_candidate_runtime_closed'] is True
+          assert compat['status'] == 'PASS'
+          assert compat['code_attestation_extra_static_gate'] == 'teacher_factory_root_binding_contract'
+          assert compat['code_attestation_extra_static_gate_status'] == 'PASS'
+          assert compat['authorization_runtime_gate'] == 'v121_runtime_qualification'
+          assert compat['lock_runtime_attestation_field'] == 'r13_v121_runtime_qualification'
+          assert compat['lock_runtime_attestation_field_status'] == 'PASS'
+          print('EXACT_LIVE_EVIDENCE_SCIENCE_GO_REPLAY_PASS')
+          print('authorization_sha256=', go['authorization_sha256'])
+          print('barrier_sha256=', barrier['barrier_sha256'])
+          print('scheduler_freeze_sha256=', scheduler['scheduler_freeze_sha256'])
+          PY
+          git worktree remove /tmp/tracka-v12-science --force
+
+      - name: Verify protected surfaces remain closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          files=['master_control_v12.py','master_account_driver_v12.py','master_launch_guard_v12.py']
+          text='\n'.join((root/f).read_text() for f in files)
+          for forbidden in ('DS-V1-TEST-CONSUMED','DS-EXT-*-SEALED','external_predictions_open','track_c_candidate_runtime_open'):
+              if forbidden in text:
+                  raise SystemExit(f'forbidden v12 runtime content: {forbidden}')
+          print('protected surfaces closed PASS')
+          PY
