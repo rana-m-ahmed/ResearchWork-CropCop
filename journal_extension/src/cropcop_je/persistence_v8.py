@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 import tempfile
 import time
 import uuid
@@ -28,6 +29,10 @@ class GenerationAwareSyncResult(SyncResult):
     confirmed_version_number: int | None = None
     generation_marker_sha256: str | None = None
     generation_roundtrip_verified: bool = False
+
+
+class GenerationNotCurrentError(PersistenceError):
+    """The downloaded Kaggle archive is validly readable but not the requested generation yet."""
 
 
 def _version_number(payload: dict[str, Any]) -> int:
@@ -85,7 +90,7 @@ class GenerationAwareKagglePrivateDatasetStore(KagglePrivateDatasetStore):
         marker_path = root / "durable_sync.json"
         index_path = root / "checkpoint_index.json"
         if not marker_path.is_file() or not index_path.is_file():
-            raise PersistenceError("Kaggle durable generation is missing marker or checkpoint index")
+            raise GenerationNotCurrentError("Kaggle durable generation is missing marker or checkpoint index")
         try:
             marker = json.loads(marker_path.read_text(encoding="utf-8"))
         except Exception as exc:
@@ -93,11 +98,11 @@ class GenerationAwareKagglePrivateDatasetStore(KagglePrivateDatasetStore):
         if marker.get("schema_version") != "2.0" or marker.get("complete") is not True:
             raise PersistenceError("Kaggle durable generation marker is incomplete or unsupported")
         if marker.get("run_id") != run_id:
-            raise PersistenceError("Kaggle durable generation run identity mismatch")
+            raise GenerationNotCurrentError("Kaggle durable generation run identity mismatch")
         if segment_id is not None and marker.get("segment_id") != segment_id:
-            raise PersistenceError("Kaggle durable generation segment identity mismatch")
+            raise GenerationNotCurrentError("Kaggle durable generation segment identity mismatch")
         if expected_nonce is not None and marker.get("sync_nonce") != expected_nonce:
-            raise PersistenceError("Kaggle durable generation nonce mismatch")
+            raise GenerationNotCurrentError("Kaggle durable generation nonce mismatch")
         if marker.get("checkpoint_index_sha256") != sha256_file(index_path):
             raise PersistenceError("Kaggle durable generation checkpoint-index hash mismatch")
         return marker
@@ -115,6 +120,49 @@ class GenerationAwareKagglePrivateDatasetStore(KagglePrivateDatasetStore):
                 "--unzip",
                 "-q",
             ]
+        )
+
+    def _wait_for_exact_downloadable_generation(
+        self,
+        destination: Path,
+        *,
+        run_id: str,
+        segment_id: str | None = None,
+        expected_nonce: str | None = None,
+        timeout_seconds: float = 900.0,
+        poll_interval_seconds: float = 5.0,
+    ) -> dict[str, Any]:
+        """Wait until Kaggle serves the exact requested generation, not merely newer metadata."""
+        deadline = time.monotonic() + timeout_seconds
+        last_transient: Exception | None = None
+        attempts = 0
+        while time.monotonic() < deadline:
+            attempts += 1
+            if destination.exists():
+                shutil.rmtree(destination)
+            destination.mkdir(parents=True, exist_ok=False)
+            try:
+                self._download_latest(destination)
+            except (subprocess.SubprocessError, OSError, RuntimeError) as exc:
+                last_transient = exc
+            else:
+                try:
+                    return self._validate_generation_payload(
+                        destination,
+                        run_id=run_id,
+                        segment_id=segment_id,
+                        expected_nonce=expected_nonce,
+                    )
+                except GenerationNotCurrentError as exc:
+                    last_transient = exc
+                except PersistenceError:
+                    raise
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(poll_interval_seconds)
+        raise PersistenceError(
+            "Kaggle durable generation metadata advanced but the exact generation never became "
+            f"downloadable/valid before timeout after {attempts} attempts; last_transient={last_transient}"
         )
 
     def sync(self, source_dir: Path, *, run_id: str, segment_id: str) -> SyncResult:
@@ -165,8 +213,7 @@ class GenerationAwareKagglePrivateDatasetStore(KagglePrivateDatasetStore):
         verify_ctx = tempfile.TemporaryDirectory(dir=self.work_root) if self.work_root else tempfile.TemporaryDirectory()
         with verify_ctx as td:
             verify_root = Path(td)
-            self._download_latest(verify_root)
-            self._validate_generation_payload(
+            self._wait_for_exact_downloadable_generation(
                 verify_root,
                 run_id=run_id,
                 segment_id=segment_id,
@@ -189,11 +236,7 @@ class GenerationAwareKagglePrivateDatasetStore(KagglePrivateDatasetStore):
         root_ctx = tempfile.TemporaryDirectory(dir=self.work_root) if self.work_root else tempfile.TemporaryDirectory()
         with root_ctx as td:
             staging = Path(td)
-            try:
-                self._download_latest(staging)
-            except Exception as exc:
-                raise PersistenceError(f"Kaggle recovery download failed: {exc}") from exc
-            self._validate_generation_payload(staging, run_id=run_id)
+            self._wait_for_exact_downloadable_generation(staging, run_id=run_id)
             destination_dir.mkdir(parents=True, exist_ok=True)
             for path in staging.rglob("*"):
                 if path.is_file() and path.name not in {"dataset-metadata.json", "durable_sync.json"}:
