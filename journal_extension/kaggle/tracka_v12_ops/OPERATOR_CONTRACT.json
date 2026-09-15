@@ -1,14 +1,21 @@
 {
-  "schema_version": "4.2",
+  "schema_version": "4.3",
   "status": "QUALIFIED_RUNTIME_CONTRACT",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "4ced2fd7c764c07fa47fb57fbea38376d2ce61a4",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v8r2-4ced2fd-20260915",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v8r3-4ced2fd-20260915",
   "operator_runtime_sha_policy": "distribution must pin the exact observed Git HEAD after runtime QA; runtime source does not self-embed its own commit SHA",
   "driver": "master_account_driver_v8.py",
   "launcher": "master_launch_guard_v8.py",
-  "release_attestation_manifest": "attestations_v8r2/RELEASE_ATTESTATION_MANIFEST.json",
-  "release_attestation_manifest_sha256": "a89ad7368eaf6f685087cffe4e428dfb5295d0909dc60d448b871946f3e2b61f",
+  "release_attestation_manifest": "attestations_v8r3/RELEASE_ATTESTATION_MANIFEST.json",
+  "release_attestation_manifest_sha256": "eee2ef3cf5cd3d41332d9b55d833d7381be232bc634958147bdffd81170d1bcb",
+  "release_attestation_materialization": {
+    "mode": "packaged_exact_bytes",
+    "runtime_requires_github_actions_api": false,
+    "runtime_requires_actions_read_permission": false,
+    "code_attestation_sha256": "5bfb757219996aa7df48e21fd0531124c60a86f6a0c8ad17840a2a3eb88cda2e",
+    "lock_runtime_attestation_sha256": "49efe43b76423c82c6849d43d3f1bea2ff24503f65564e722d205cdac2a21fea"
+  },
   "r13_parity_contract": {
     "contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1",
     "historical_v1_2_required_max_abs_difference": 1e-05,
@@ -40,7 +47,7 @@
     "training_runner": "journal_extension/scripts/run_tracka_v12_training_v121.py",
     "science_go_sealer": "journal_extension/scripts/seal_tracka_v12_science_go_v124.py",
     "generation_aware_kaggle_persistence": true,
-    "exact_head_attestations_materialized_before_stack_and_g1a": true
+    "exact_head_attestations_packaged_and_verified_before_stack_and_g1a": true
   },
   "distribution": {
     "runtime_branch_contains_executable_notebooks": false,
