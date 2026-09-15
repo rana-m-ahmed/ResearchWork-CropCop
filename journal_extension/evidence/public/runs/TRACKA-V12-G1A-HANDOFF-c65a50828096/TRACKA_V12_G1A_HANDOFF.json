@@ -1,0 +1,13 @@
+{
+  "external_surface_accessed": false,
+  "failure_code": null,
+  "g1a_seal_sha256": null,
+  "operator_runtime_sha": "cced66277881c1617c722793b050dd781a0c7272",
+  "private_kaggle_dataset_locator": "ranamuhammadahmed6/cropcop-g1a-shared-canonical-692be594-c65a5082",
+  "protected_test_accessed": false,
+  "schema_version": "1.2.1",
+  "science_authorized": false,
+  "science_source_sha": "c65a5082809603155fa80a6eb0152fae33dbd9e0",
+  "stage": "TRACKA_V12_G1A_SHARED_HANDOFF",
+  "status": "PREPARING"
+}
