@@ -1,0 +1,48 @@
+{
+  "account_id": "K1",
+  "child_git_credentials_removed": true,
+  "cross_gpu_gradient_synchronization": false,
+  "execution_errors": [
+    "K1/GPU0:R12-MNV4-LOGITS-S2:nonterminal_run",
+    "K1/GPU0:R12-MNV4-LOGITS-S2:nonzero_return_code",
+    "K1/GPU0:R12-MNV4-LOGITS-S2:slot_not_terminal",
+    "K1/GPU0:incomplete_queue",
+    "K1/GPU1:R12-MNV4-LOGITS-S3:nonterminal_run",
+    "K1/GPU1:R12-MNV4-LOGITS-S3:nonzero_return_code",
+    "K1/GPU1:R12-MNV4-LOGITS-S3:slot_not_terminal"
+  ],
+  "operator_publication_count": 0,
+  "operator_runtime_sha": "705be6e2ae1b83be6997ae24a83684ff867dcf12",
+  "scheduler_freeze_sha256": "7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787",
+  "schema_version": "1.2.1",
+  "science_authorization_sha256": "58d65a9c9f0c06222c00541feca9b2aaa005ebda850d2261d4df3e0e1fe7fbb7",
+  "science_complete": false,
+  "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
+  "scientific_runner_git_publication_requested": false,
+  "slot_results": {
+    "K1/GPU0": [
+      {
+        "continuation_required": null,
+        "experiment_id": "R12-MNV4-LOGITS-S2",
+        "operator_publication": null,
+        "return_code": 1,
+        "run_id": "JE-R12-MNV4-LOGITS-S2-56023042e577-A01",
+        "run_status": null,
+        "selected_checkpoint_sha256": null
+      }
+    ],
+    "K1/GPU1": [
+      {
+        "continuation_required": null,
+        "experiment_id": "R12-MNV4-LOGITS-S3",
+        "operator_publication": null,
+        "return_code": 1,
+        "run_id": "JE-R12-MNV4-LOGITS-S3-56023042e577-A01",
+        "run_status": null,
+        "selected_checkpoint_sha256": null
+      }
+    ]
+  },
+  "stage": "TRACKA_V12_MASTER_ACCOUNT",
+  "status": "ATTENTION_REQUIRED"
+}
