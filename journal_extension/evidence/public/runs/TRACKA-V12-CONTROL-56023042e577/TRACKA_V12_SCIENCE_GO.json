@@ -1,0 +1,224 @@
+{
+  "authorization_kind": "track_a_v12_science_go",
+  "authorization_sha256": "58d65a9c9f0c06222c00541feca9b2aaa005ebda850d2261d4df3e0e1fe7fbb7",
+  "authorized_experiment_ids": [
+    "R06-EFFB0-CONTEXT-S2",
+    "R06-EFFB0-CONTEXT-S3",
+    "R07-CNXTT-CONTEXT-S2",
+    "R07-CNXTT-CONTEXT-S3",
+    "R12-MNV4-FEATURE-S2",
+    "R12-MNV4-FEATURE-S3",
+    "R12-MNV4-LOGITS-S2",
+    "R12-MNV4-LOGITS-S3",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3"
+  ],
+  "evidence_bindings": {
+    "analysis_selector_implementation": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "auxiliary_paired_analysis_implementation": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "auxiliary_replay_implementation": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "candidate_claim_boundary_lock": {
+      "attestation_sha256": "39eb431351d358bcc701594958e1f8267f001c695146f880eea964936dc46929",
+      "candidate_claim_boundary_sha256": "949af070a985567d22b1ba8001a755d2c1a1c18a34f9d929d706756c9c1251df",
+      "kind": "exact_head_lock_runtime_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242024",
+      "xai_operationalization_sha256": "14a2140e1afbb5f3456370e21af53ec33c8b442ce87ad54c7e7cdd70d7cc7691"
+    },
+    "checkpoint_recovery_contract": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "classwise_confusion_implementation": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "comprehensive_21_state_closure_implementation": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "config_contract_and_failure_injection": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "cross_slot_recovery_contract": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "direct_selection_closure_implementation": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "efficiency_profiler_implementation": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "exact_head_ci": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "g1a": {
+      "artifact_file_sha256": "d9343178824dd6abbfd26e62b136bd6279915ba0bc5b8a3e5e34ea8b7c2ce61f",
+      "g1a_seal_sha256": "c7f5ffc84240a79c3201081896df537959313ac8f0cd2d3aba0205a7fe7cfb8d",
+      "kind": "track_a_v12_g1a",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312"
+    },
+    "g2a": {
+      "artifact_file_sha256": "d9515cc2471d5ddd4ffe1a964dd8ddb9fe1cd80ce1771e4def663d49bbf8f369",
+      "barrier_sha256": "d8141f5c6f4f7c48bc680c6abd4d63c0871f93253a145c96bbb076615d98fdfc",
+      "durability_contract_sha256": "1286a3f395cb628d8e0f4ab87ec061726f0331a03e03c7ca737c060384d41642",
+      "kind": "track_a_v12_g2a_full_run_forecast",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312"
+    },
+    "immutable_v12_lock": {
+      "artifact_file_sha256": "38b24403c98bdb55649d76e4ab58b362ec307e6665c1bbcb936d58a5bb38b863",
+      "attestation_sha256": "39eb431351d358bcc701594958e1f8267f001c695146f880eea964936dc46929",
+      "content_lock_report_sha256": "e342c0876a4213bebf8bb885d093b2603bf066b354243cb0a4909bb86ed39c4d",
+      "kind": "exact_head_lock_runtime_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242024"
+    },
+    "principal_science_diff": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "robustness_executor_implementation": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "scheduler_freeze": {
+      "artifact_file_sha256": "455475c1983c9f617d97d58eae783955092cac35753ecf5532900e7ef1c266b1",
+      "kind": "track_a_v12_pre_science_scheduler_full_run",
+      "scheduler_freeze_sha256": "7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312"
+    },
+    "secondary_science_diff": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "selected_checkpoint_replay_implementation": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "six_gpu_parent_orchestration": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "training_runner_contract": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    },
+    "v121_runtime_qualification": {
+      "artifact_file_sha256": "38b24403c98bdb55649d76e4ab58b362ec307e6665c1bbcb936d58a5bb38b863",
+      "attestation_sha256": "39eb431351d358bcc701594958e1f8267f001c695146f880eea964936dc46929",
+      "kind": "exact_head_lock_runtime_attestation",
+      "runtime_report_sha256": "f17996d5c4158bb21b60f70c02b710f70cdebc4277f8c95c72a6df3dc0a2147a",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242024"
+    },
+    "xai_gradcampp_implementation": {
+      "artifact_file_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+      "attestation_sha256": "074e42f8258f6217025320268defe6978c87ba84ba0f7f125c79803fcb94e7f1",
+      "kind": "exact_head_code_attestation",
+      "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "workflow_run_id": "34998242036"
+    }
+  },
+  "external_predictions_closed": true,
+  "g1a_seal_sha256": "c7f5ffc84240a79c3201081896df537959313ac8f0cd2d3aba0205a7fe7cfb8d",
+  "g2a_barrier_sha256": "d8141f5c6f4f7c48bc680c6abd4d63c0871f93253a145c96bbb076615d98fdfc",
+  "note": "This GO authorizes only the frozen eleven Track-A v1.2 continuation training states, including R13 S1/S2/S3. It is valid only after the candidate-comparison claim boundary and the complete training, recovery, six-GPU orchestration, direct selected-checkpoint replay/robustness/XAI, auxiliary R05/R12 replay and paired-analysis, and comprehensive 21-state closure implementations are already frozen and qualified. It also requires the G2A barrier to bind five isolated private Kaggle durability targets. It does not authorize new models, seeds, hyperparameters, V1-test access, external prediction opening or Track-C candidate result opening.",
+  "pre_science_gates": {
+    "analysis_selector_implementation": "PASS",
+    "auxiliary_paired_analysis_implementation": "PASS",
+    "auxiliary_replay_implementation": "PASS",
+    "candidate_claim_boundary_lock": "PASS",
+    "checkpoint_recovery_contract": "PASS",
+    "classwise_confusion_implementation": "PASS",
+    "comprehensive_21_state_closure_implementation": "PASS",
+    "config_contract_and_failure_injection": "PASS",
+    "cross_slot_recovery_contract": "PASS",
+    "direct_selection_closure_implementation": "PASS",
+    "efficiency_profiler_implementation": "PASS",
+    "exact_head_ci": "PASS",
+    "g1a": "PASS",
+    "g2a": "PASS",
+    "immutable_v12_lock": "PASS",
+    "principal_science_diff": "PASS",
+    "robustness_executor_implementation": "PASS",
+    "scheduler_freeze": "PASS",
+    "secondary_science_diff": "PASS",
+    "selected_checkpoint_replay_implementation": "PASS",
+    "six_gpu_parent_orchestration": "PASS",
+    "training_runner_contract": "PASS",
+    "v121_runtime_qualification": "PASS",
+    "xai_gradcampp_implementation": "PASS"
+  },
+  "scheduler_freeze_sha256": "7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787",
+  "schema_version": "1.1",
+  "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "status": "GO",
+  "track_c_candidate_runtime_closed": true,
+  "v1_test_closed": true
+}
