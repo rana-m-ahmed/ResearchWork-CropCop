@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import copy
 import sys
 import unittest
@@ -115,6 +116,17 @@ class TrackAV12G1AContractTests(unittest.TestCase):
         seal = valid_seal()
         seal["g1a_seal_sha256"] = "0" * 64
         self.assertTrue(any("self-hash" in x for x in validate_g1a_seal_object(seal)))
+
+    def test_g1a_sealer_imports_frozen_torchvision_version(self):
+        path = ROOT / "journal_extension" / "scripts" / "seal_tracka_v12_g1a.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        imports = {
+            alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.module == "cropcop_je.secondary"
+            for alias in node.names
+        }
+        self.assertIn("TORCHVISION_VERSION", imports)
 
 
 if __name__ == "__main__":

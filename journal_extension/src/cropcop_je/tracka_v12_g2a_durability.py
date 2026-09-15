@@ -9,6 +9,8 @@ G2A_DURABILITY_SCHEMA_VERSION = "1.0"
 G2A_DURABILITY_KIND = "track_a_v12_g2a_kaggle_private_durability"
 G2A_DURABLE_STORE_KIND = "kaggle-dataset"
 G2A_DURABLE_BACKEND = "kaggle_private_dataset"
+G2A_RESTORE_CONTRACT = "generation_aware_kaggle_v8"
+G2A_RESTORE_STORE_CLASS = "GenerationAwareKagglePrivateDatasetStore"
 
 
 class TrackAV12G2ADurabilityError(RuntimeError):
@@ -25,6 +27,30 @@ def _valid_kaggle_locator(locator: Any) -> bool:
     text = str(locator or "").strip()
     parts = text.split("/")
     return len(parts) == 2 and all(part and part == part.strip() for part in parts)
+
+
+def _valid_sha256(value: Any) -> bool:
+    text = str(value or "")
+    return len(text) == 64 and all(ch in "0123456789abcdef" for ch in text.lower())
+
+
+def _validate_generation_evidence(row: Any, *, label: str) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(row, dict):
+        return [f"G2A durability missing {label} generation evidence"]
+    if row.get("generation_roundtrip_verified") is not True:
+        errors.append(f"G2A durability {label} generation roundtrip is not verified")
+    try:
+        previous = int(row.get("previous_version_number"))
+        confirmed = int(row.get("confirmed_version_number"))
+    except (TypeError, ValueError):
+        errors.append(f"G2A durability {label} generation numbers are invalid")
+    else:
+        if previous < 0 or confirmed <= previous:
+            errors.append(f"G2A durability {label} generation did not strictly advance")
+    if not _valid_sha256(row.get("generation_marker_sha256")):
+        errors.append(f"G2A durability {label} generation marker SHA-256 is invalid")
+    return errors
 
 
 def validate_calibration_durability(summary: dict[str, Any]) -> list[str]:
@@ -49,6 +75,14 @@ def validate_calibration_durability(summary: dict[str, Any]) -> list[str]:
     locator = durability.get("locator")
     if not _valid_kaggle_locator(locator):
         errors.append("G2A durability locator is not a valid owner/dataset slug")
+    if durability.get("restore_contract") != G2A_RESTORE_CONTRACT:
+        errors.append("G2A destructive restore is not bound to the generation-aware v8 contract")
+    if durability.get("restore_store_class") != G2A_RESTORE_STORE_CLASS:
+        errors.append("G2A destructive restore store class is not the generation-aware Kaggle implementation")
+    if durability.get("restore_status") != "PASS":
+        errors.append("G2A destructive restore did not PASS")
+    errors.extend(_validate_generation_evidence(durability.get("initial_sync_generation"), label="initial-sync"))
+    errors.extend(_validate_generation_evidence(durability.get("resumed_sync_generation"), label="resumed-sync"))
 
     preflight = durability.get("preflight_private_access") or {}
     if preflight.get("status") != "PASS" or preflight.get("errors"):
@@ -104,6 +138,7 @@ def build_g2a_durability_contract(summaries: list[dict[str, Any]]) -> dict[str, 
         "required_profiles": list(REQUIRED_PROFILES),
         "required_store_kind": G2A_DURABLE_STORE_KIND,
         "required_backend": G2A_DURABLE_BACKEND,
+        "required_restore_contract": G2A_RESTORE_CONTRACT,
         "profile_locators": locators,
         "unique_locator_count": len(set(locators.values())),
         "input_summary_sha256": input_hashes,
@@ -127,6 +162,8 @@ def validate_g2a_durability_contract(
         errors.append("G2A durability contract may not authorize science")
     if contract.get("required_store_kind") != G2A_DURABLE_STORE_KIND or contract.get("required_backend") != G2A_DURABLE_BACKEND:
         errors.append("G2A durability contract backend requirement drift")
+    if contract.get("required_restore_contract") != G2A_RESTORE_CONTRACT:
+        errors.append("G2A durability contract restore requirement drift")
     if contract.get("durability_contract_sha256") != durability_contract_hash(contract):
         errors.append("G2A durability contract self-hash mismatch")
 

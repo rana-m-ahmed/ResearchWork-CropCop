@@ -18,6 +18,9 @@ STATIC_GATES = (
     "training_runner_contract",
     "checkpoint_recovery_contract",
     "cross_slot_recovery_contract",
+    "kaggle_generation_durability_contract",
+    "g1a_runtime_global_resolution_contract",
+    "r13_parity_amendment_contract",
     "six_gpu_parent_orchestration",
     "selected_checkpoint_replay_implementation",
     "classwise_confusion_implementation",
@@ -35,12 +38,14 @@ IMPLEMENTATION_FILES = (
     "journal_extension/TRACK_A_V12_EXECUTION_RUNBOOK.md",
     "journal_extension/src/cropcop_je/checkpointing.py",
     "journal_extension/src/cropcop_je/persistence.py",
+    "journal_extension/src/cropcop_je/persistence_v8.py",
     "journal_extension/src/cropcop_je/secondary.py",
     "journal_extension/src/cropcop_je/tracka_v12.py",
     "journal_extension/src/cropcop_je/tracka_v12_analysis.py",
     "journal_extension/src/cropcop_je/tracka_v12_authorization.py",
     "journal_extension/src/cropcop_je/tracka_v12_evidence.py",
     "journal_extension/src/cropcop_je/tracka_v12_g1a.py",
+    "journal_extension/src/cropcop_je/tracka_v12_g1a_v121.py",
     "journal_extension/src/cropcop_je/tracka_v12_g2a.py",
     "journal_extension/src/cropcop_je/tracka_v12_g2a_durability.py",
     "journal_extension/src/cropcop_je/tracka_v12_g2a_v122.py",
@@ -51,6 +56,7 @@ IMPLEMENTATION_FILES = (
     "journal_extension/src/cropcop_je/tracka_v12_runtime.py",
     "journal_extension/src/cropcop_je/tracka_v12_xai.py",
     "journal_extension/scripts/seal_tracka_v12_g1a.py",
+    "journal_extension/scripts/seal_tracka_v12_g1a_v121.py",
     "journal_extension/scripts/qualify_tracka_v12_profile_v122.py",
     "journal_extension/scripts/seal_tracka_v12_g2a.py",
     "journal_extension/scripts/run_tracka_v12_training_v121.py",
@@ -64,11 +70,19 @@ IMPLEMENTATION_FILES = (
     "journal_extension/scripts/build_tracka_v12_lock_runtime_attestation.py",
     "journal_extension/scripts/seal_tracka_v12_science_go.py",
     "journal_extension/scripts/seal_tracka_v12_science_go_v123.py",
+    "journal_extension/scripts/seal_tracka_v12_science_go_v124.py",
     "journal_extension/kaggle/run_tracka_v12_account.py",
+    "journal_extension/kaggle/run_tracka_v12_account_v121.py",
     "journal_extension/amendments/track_a_strengthening_v1/model_selection_operationalization_v1_2_1.json",
     "journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2_2.json",
     "journal_extension/amendments/track_a_strengthening_v1/candidate_comparison_claim_boundary_v1_2_1.json",
     "journal_extension/amendments/track_a_strengthening_v1/xai_operationalization_v1_2_2.json",
+    "journal_extension/amendments/track_a_strengthening_v1/R13_PARITY_PREEXECUTION_AMENDMENT_v1_2_1.md",
+    "journal_extension/amendments/track_a_strengthening_v1/r13_parity_preexecution_evidence_v1_2_1.json",
+    "journal_extension/amendments/track_a_strengthening_v1/r13_pretrained_identity_and_normalization_contract_v1_2_1.json",
+    "journal_extension/amendments/track_a_strengthening_v1/AMENDMENT_V1_2_1_PARITY_CONTENT_LOCK.json",
+    "journal_extension/amendments/track_a_strengthening_v1/validate_r13_parity_amendment_v1_2_1.py",
+    "journal_extension/amendments/track_a_strengthening_v1/validate_r13_pretrained_parity_v1_2_1.py",
 )
 
 
@@ -102,7 +116,7 @@ def main() -> int:
             raise SystemExit(f"required implementation file missing: {path}")
 
     payload = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "attestation_kind": "track_a_v12_pre_science_code",
         "status": "PASS",
         "source_git_commit": head,
@@ -120,7 +134,9 @@ def main() -> int:
             "principal": json.loads(principal.read_text(encoding="utf-8")),
             "secondary": json.loads(secondary.read_text(encoding="utf-8")),
         },
-        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, historical-lineage tests, G2A private-durability tests, analysis-evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the canonical runbook plus G1A/G2A qualification, checkpoint/persistence recovery, six-GPU execution, historical replay, direct/auxiliary analysis, XAI, direct selection and comprehensive 21-state closure implementations, but does not independently authorize scientific execution.",
+        "r13_parity_contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1",
+        "r13_parity_required_max_abs_difference": 5e-5,
+        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, G1A runtime-global checks, generation-aware Kaggle durability tests, versioned R13 parity-amendment validation, versioned G1A consumer-binding tests, historical-lineage tests, analysis-evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the canonical runbook plus G1A/G2A qualification, parent account preflight, durability-bound SCIENCE_GO construction, checkpoint/persistence recovery, six-GPU execution, historical replay, direct/auxiliary analysis, XAI, direct selection and comprehensive 21-state closure implementations. The separate exact-head lock/runtime attestation additionally binds the exact-pretrained R13 parity proof. Neither attestation independently authorizes scientific execution.",
     }
     payload["attestation_sha256"] = sha256_json(payload)
     atomic_write_json(args.output, payload)

@@ -43,18 +43,28 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED"
-      - name: Validate immutable v1.2 content lock
+      - name: Validate immutable historical v1.2 content lock
         run: |
           python journal_extension/amendments/track_a_strengthening_v1/validate_v1_2_lock.py \
             --report tracka-amendment-v12-content-report.json
+      - name: Validate pre-science R13 parity v1.2.1 amendment lock
+        run: |
+          python journal_extension/amendments/track_a_strengthening_v1/validate_r13_parity_amendment_v1_2_1.py \
+            --report r13-parity-amendment-v121-report.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: tracka-amendment-v12-content-report
           path: tracka-amendment-v12-content-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r13-parity-amendment-v121-report
+          path: r13-parity-amendment-v121-report.json
 
   r13-runtime-contract:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,6 +91,20 @@ jobs:
         run: |
           python journal_extension/amendments/track_a_strengthening_v1/validate_v1_2_1_runtime.py \
             --report tracka-amendment-v121-runtime-report.json
+      - name: Download and verify exact pinned R13 pretrained artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 \
+            'https://huggingface.co/timm/vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k/resolve/10143029df1b2df4c63623de6b740ecccb2b8ea2/model.safetensors?download=true' \
+            --output r13-exact-pretrained.safetensors
+          test "$(stat -c %s r13-exact-pretrained.safetensors)" = '90095744'
+          test "$(sha256sum r13-exact-pretrained.safetensors | awk '{print $1}')" = '92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed'
+      - name: Validate exact pretrained normalization parity under superseding v1.2.1 gate
+        run: |
+          python journal_extension/amendments/track_a_strengthening_v1/validate_r13_pretrained_parity_v1_2_1.py \
+            --pretrained r13-exact-pretrained.safetensors \
+            --report r13-exact-pretrained-parity-v121-report.json
       - name: Validate exact-stack robustness and Grad-CAM++ runtime semantics
         run: python -m unittest tests.test_tracka_v12_runtime_analysis -v
       - uses: actions/upload-artifact@v4
@@ -93,6 +117,11 @@ jobs:
         with:
           name: tracka-amendment-v121-runtime-report
           path: tracka-amendment-v121-runtime-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r13-exact-pretrained-parity-v121-report
+          path: r13-exact-pretrained-parity-v121-report.json
 
   exact-head-lock-runtime-attestation:
     needs: [content-lock, r13-runtime-contract]
@@ -112,7 +141,15 @@ jobs:
         with:
           name: tracka-amendment-v121-runtime-report
           path: attestation-inputs/runtime
-      - name: Bind immutable lock and R13 runtime qualification to exact PR head
+      - uses: actions/download-artifact@v4
+        with:
+          name: r13-parity-amendment-v121-report
+          path: attestation-inputs/parity-amendment
+      - uses: actions/download-artifact@v4
+        with:
+          name: r13-exact-pretrained-parity-v121-report
+          path: attestation-inputs/exact-pretrained-parity
+      - name: Bind immutable lock, parity amendment and exact-pretrained proof to exact PR head
         env:
           EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
@@ -121,6 +158,8 @@ jobs:
             --expected-source-sha "$EXPECTED_SOURCE_SHA" \
             --content-lock-report attestation-inputs/content/tracka-amendment-v12-content-report.json \
             --runtime-report attestation-inputs/runtime/tracka-amendment-v121-runtime-report.json \
+            --parity-amendment-report attestation-inputs/parity-amendment/r13-parity-amendment-v121-report.json \
+            --exact-pretrained-parity-report attestation-inputs/exact-pretrained-parity/r13-exact-pretrained-parity-v121-report.json \
             --output tracka-v12-exact-head-lock-runtime-attestation.json
       - uses: actions/upload-artifact@v4
         with:

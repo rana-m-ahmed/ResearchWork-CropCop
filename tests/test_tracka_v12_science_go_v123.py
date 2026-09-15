@@ -14,8 +14,21 @@ for path in (SRC, SCRIPTS):
 
 from cropcop_je.hashing import sha256_json  # noqa: E402
 from cropcop_je.tracka_v12_g2a import REQUIRED_PROFILES  # noqa: E402
-from cropcop_je.tracka_v12_g2a_durability import build_g2a_durability_contract  # noqa: E402
+from cropcop_je.tracka_v12_g2a_durability import (  # noqa: E402
+    G2A_RESTORE_CONTRACT,
+    G2A_RESTORE_STORE_CLASS,
+    build_g2a_durability_contract,
+)
 import seal_tracka_v12_science_go_v123 as go123  # noqa: E402
+
+
+def generation(previous: int, confirmed: int, marker: str) -> dict:
+    return {
+        "previous_version_number": previous,
+        "confirmed_version_number": confirmed,
+        "generation_marker_sha256": marker,
+        "generation_roundtrip_verified": True,
+    }
 
 
 def calibration(calibration_id: str, index: int) -> dict:
@@ -30,6 +43,11 @@ def calibration(calibration_id: str, index: int) -> dict:
         "durability": {
             "backend": "kaggle_private_dataset",
             "locator": locator,
+            "restore_status": "PASS",
+            "restore_contract": G2A_RESTORE_CONTRACT,
+            "restore_store_class": G2A_RESTORE_STORE_CLASS,
+            "initial_sync_generation": generation(index, index + 1, f"{index:064x}"),
+            "resumed_sync_generation": generation(index + 1, index + 2, f"{index + 100:064x}"),
             "preflight_private_access": {
                 "status": "PASS",
                 "kind": "kaggle-dataset",
