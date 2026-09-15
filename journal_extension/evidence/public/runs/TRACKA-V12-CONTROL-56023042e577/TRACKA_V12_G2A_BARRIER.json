@@ -1,0 +1,154 @@
+{
+  "barrier_kind": "track_a_v12_g2a_full_run_forecast",
+  "barrier_sha256": "d8141f5c6f4f7c48bc680c6abd4d63c0871f93253a145c96bbb076615d98fdfc",
+  "checkpoint_contract_probe": {
+    "checkpoint_identity_is_physical_slot_independent": true,
+    "corrupt_checkpoint_rejected": true,
+    "identity_mismatch_rejected": true,
+    "protected_data_accessed": false,
+    "scientific_result_produced": false,
+    "selected_checkpoint_verified": true,
+    "status": "PASS"
+  },
+  "covered_experiment_ids": [
+    "R06-EFFB0-CONTEXT-S2",
+    "R06-EFFB0-CONTEXT-S3",
+    "R07-CNXTT-CONTEXT-S2",
+    "R07-CNXTT-CONTEXT-S3",
+    "R12-MNV4-FEATURE-S2",
+    "R12-MNV4-FEATURE-S3",
+    "R12-MNV4-LOGITS-S2",
+    "R12-MNV4-LOGITS-S3",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3"
+  ],
+  "dependency_lock_sha256": "6ea5fb51a0cc39c7940e4aaeb136d0f05214f5c558edd3c47b4cb61c6b516f37",
+  "durability_contract": {
+    "contract_kind": "track_a_v12_g2a_kaggle_private_durability",
+    "durability_contract_sha256": "1286a3f395cb628d8e0f4ab87ec061726f0331a03e03c7ca737c060384d41642",
+    "errors": [],
+    "input_summary_sha256": {
+      "CAL-CNXTT": "4db70c02838eed0ed1dc8d1da06b23d17229e1650f1e755c8aa5ccbd765d1811",
+      "CAL-EFFB0": "41f1137540bac93a4128dd301b0f1dba3aec0a442ef4b7d15b81871170bc2d34",
+      "CAL-MNV4-FEATURE": "c22b34e3d7a4106c354ddb7f072ea67410758a7b735072bcfa76107a63af9567",
+      "CAL-MNV4-LOGITS": "21ec411e1f8504780f90a25c61ba4a882f9e8d863f96baf85490619b1b2ad130",
+      "CAL-R13": "36f767f4d72f8e256032df822932b1eed7913dc58443a2dcdf649a8536719e86"
+    },
+    "profile_locators": {
+      "CAL-CNXTT": "ranamuhammadahmed6/cropcop-g2a-cal-cnxtt-6cfc5176-56023042",
+      "CAL-EFFB0": "ranamuhammadahmed6/cropcop-g2a-cal-effb0-fe6a1527-56023042",
+      "CAL-MNV4-FEATURE": "ranaabdulrehmannn/cropcop-g2a-cal-mnv4-feature-acaa3df8-56023042",
+      "CAL-MNV4-LOGITS": "ranaabdulrehmannn/cropcop-g2a-cal-mnv4-logits-0a49268f-56023042",
+      "CAL-R13": "sabahatabbas/cropcop-g2a-cal-r13-d55c2b9b-56023042"
+    },
+    "required_backend": "kaggle_private_dataset",
+    "required_profiles": [
+      "CAL-EFFB0",
+      "CAL-CNXTT",
+      "CAL-MNV4-LOGITS",
+      "CAL-MNV4-FEATURE",
+      "CAL-R13"
+    ],
+    "required_restore_contract": "generation_aware_kaggle_v8",
+    "required_store_kind": "kaggle-dataset",
+    "schema_version": "1.0",
+    "science_authorized": false,
+    "status": "PASS",
+    "unique_locator_count": 5
+  },
+  "errors": [],
+  "forecast_contract": {
+    "checkpoint_event_upper_bound": 203,
+    "checkpoint_every_steps": 250,
+    "epochs": 30,
+    "gradient_accumulation": 4,
+    "micro_batch_size": 16,
+    "optimizer_step_attempts_total": 35820,
+    "train_rows": 76376,
+    "validation_examples_total": 491040,
+    "validation_rows": 16368
+  },
+  "g1a_seal_sha256": "c7f5ffc84240a79c3201081896df537959313ac8f0cd2d3aba0205a7fe7cfb8d",
+  "input_summary_sha256": {
+    "CAL-CNXTT": "4db70c02838eed0ed1dc8d1da06b23d17229e1650f1e755c8aa5ccbd765d1811",
+    "CAL-EFFB0": "41f1137540bac93a4128dd301b0f1dba3aec0a442ef4b7d15b81871170bc2d34",
+    "CAL-MNV4-FEATURE": "c22b34e3d7a4106c354ddb7f072ea67410758a7b735072bcfa76107a63af9567",
+    "CAL-MNV4-LOGITS": "21ec411e1f8504780f90a25c61ba4a882f9e8d863f96baf85490619b1b2ad130",
+    "CAL-R13": "36f767f4d72f8e256032df822932b1eed7913dc58443a2dcdf649a8536719e86"
+  },
+  "profile_forecasts": {
+    "CAL-CNXTT": {
+      "checkpoint_event_upper_bound": 203,
+      "estimated_checkpoint_seconds_upper_bound": 869.2482958285071,
+      "estimated_durable_sync_seconds": 162.69740820250001,
+      "estimated_full_run_seconds_upper_bound": 33411.59983518715,
+      "estimated_train_seconds": 28041.333728981306,
+      "estimated_validation_seconds": 4338.320402174842,
+      "forecast_role": "pre-science scheduling only",
+      "optimizer_step_attempts": 35820,
+      "profile": "CAL-CNXTT",
+      "validation_examples_total": 491040
+    },
+    "CAL-EFFB0": {
+      "checkpoint_event_upper_bound": 203,
+      "estimated_checkpoint_seconds_upper_bound": 145.41435664002245,
+      "estimated_durable_sync_seconds": 44.21076257900006,
+      "estimated_full_run_seconds_upper_bound": 37383.807371953066,
+      "estimated_train_seconds": 35605.27136461856,
+      "estimated_validation_seconds": 1588.9108881154802,
+      "forecast_role": "pre-science scheduling only",
+      "optimizer_step_attempts": 35820,
+      "profile": "CAL-EFFB0",
+      "validation_examples_total": 491040
+    },
+    "CAL-MNV4-FEATURE": {
+      "checkpoint_event_upper_bound": 203,
+      "estimated_checkpoint_seconds_upper_bound": 336.19972270851196,
+      "estimated_durable_sync_seconds": 48.26650920149996,
+      "estimated_full_run_seconds_upper_bound": 56804.81462615849,
+      "estimated_train_seconds": 53690.302402912384,
+      "estimated_validation_seconds": 2730.0459913360987,
+      "forecast_role": "pre-science scheduling only",
+      "optimizer_step_attempts": 35820,
+      "profile": "CAL-MNV4-FEATURE",
+      "validation_examples_total": 491040
+    },
+    "CAL-MNV4-LOGITS": {
+      "checkpoint_event_upper_bound": 203,
+      "estimated_checkpoint_seconds_upper_bound": 343.0677187874958,
+      "estimated_durable_sync_seconds": 45.43034785100002,
+      "estimated_full_run_seconds_upper_bound": 60351.78281251079,
+      "estimated_train_seconds": 55811.46620458102,
+      "estimated_validation_seconds": 4151.818541291276,
+      "forecast_role": "pre-science scheduling only",
+      "optimizer_step_attempts": 35820,
+      "profile": "CAL-MNV4-LOGITS",
+      "validation_examples_total": 491040
+    },
+    "CAL-R13": {
+      "checkpoint_event_upper_bound": 203,
+      "estimated_checkpoint_seconds_upper_bound": 543.8778261420046,
+      "estimated_durable_sync_seconds": 95.5737119,
+      "estimated_full_run_seconds_upper_bound": 26866.560148392015,
+      "estimated_train_seconds": 23063.001151601282,
+      "estimated_validation_seconds": 3164.107458748727,
+      "forecast_role": "pre-science scheduling only",
+      "optimizer_step_attempts": 35820,
+      "profile": "CAL-R13",
+      "validation_examples_total": 491040
+    }
+  },
+  "required_profiles": [
+    "CAL-EFFB0",
+    "CAL-CNXTT",
+    "CAL-MNV4-LOGITS",
+    "CAL-MNV4-FEATURE",
+    "CAL-R13"
+  ],
+  "schema_version": "1.2.2",
+  "science_authorized": false,
+  "software_stack_sha256": "d54153fcdb7887941aeaec6978335e737a2cd630326a2604d4c25b7a2ead63b0",
+  "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "status": "PASS"
+}
