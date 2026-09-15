@@ -12,12 +12,11 @@ from cropcop_je.tracka_v12_g1a_v121 import (
     R13_PARITY_HISTORICAL_V12_TOLERANCE,
     R13_PARITY_TOLERANCE,
     g1a_seal_hash,
+    save_r13_initialization,
     validate_g1a_seal_object,
+    validate_v12_g1a_seal_with_v121_tolerance,
 )
 
-# Import only after tracka_v12_g1a_v121 has installed the versioned tolerance
-# into the historical implementation module. This reuses the frozen model/data
-# construction logic without rewriting v1.2 history.
 import seal_tracka_v12_g1a as base  # noqa: E402
 
 CONTRACT_REL = "journal_extension/amendments/track_a_strengthening_v1/r13_pretrained_identity_and_normalization_contract_v1_2_1.json"
@@ -104,7 +103,12 @@ def _version_bundle() -> dict:
 
 
 def main() -> int:
-    # base globals imported the already-patched module tolerance.
+    # The historical sealer remains untouched. Only this versioned wrapper
+    # overrides its imported threshold/function references for the duration of
+    # the v1.2.1 build.
+    base.R13_PARITY_TOLERANCE = R13_PARITY_TOLERANCE
+    base.save_r13_initialization = save_r13_initialization
+    base.validate_g1a_seal_object = validate_v12_g1a_seal_with_v121_tolerance
     rc = base.main()
     if rc != 0:
         return int(rc)
