@@ -10,7 +10,8 @@ from pathlib import Path
 
 import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
-from cropcop_je.persistence import build_store, validate_durable_access_plan
+from cropcop_je.persistence import validate_durable_access_plan
+from cropcop_je.persistence_v8 import GenerationAwareKagglePrivateDatasetStore, build_store_v8
 from cropcop_je.tracka_v12_g1a import R13_PRETRAINED_SHA256, TEACHER_SHA256
 from cropcop_je.tracka_v12_g2a import PROFILE_COVERAGE
 from cropcop_je.tracka_v12_g2a_durability import validate_calibration_durability
@@ -58,6 +59,31 @@ def _validation_rate(result: dict) -> float:
     return value
 
 
+def _generation_proof(persistence: dict, *, label: str) -> dict:
+    if persistence.get("backend") != "kaggle_private_dataset":
+        raise RuntimeError(f"{label} G2A persistence backend is not Kaggle private dataset")
+    if persistence.get("generation_roundtrip_verified") is not True:
+        raise RuntimeError(f"{label} G2A durable sync did not prove generation-aware round-trip")
+    try:
+        previous = int(persistence["previous_version_number"])
+        confirmed = int(persistence["confirmed_version_number"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError(f"{label} G2A durable sync lacks generation numbers") from exc
+    if confirmed <= previous:
+        raise RuntimeError(
+            f"{label} G2A durable sync did not advance Kaggle generation: previous={previous}, confirmed={confirmed}"
+        )
+    marker_sha = str(persistence.get("generation_marker_sha256", ""))
+    if len(marker_sha) != 64 or any(ch not in "0123456789abcdef" for ch in marker_sha.lower()):
+        raise RuntimeError(f"{label} G2A durable sync marker SHA-256 is invalid")
+    return {
+        "previous_version_number": previous,
+        "confirmed_version_number": confirmed,
+        "generation_marker_sha256": marker_sha,
+        "generation_roundtrip_verified": True,
+    }
+
+
 def main() -> int:
     ap = training_parser()
     ap.add_argument("--calibration-id", choices=tuple(REPRESENTATIVE_EXPERIMENT), required=True)
@@ -98,12 +124,15 @@ def main() -> int:
     first_result = first.get("result_summary", {})
     if first.get("validation_enabled") is not False or first.get("scientific_metric_computed") is not False:
         raise SystemExit("initial G2A v1.2.2 segment violated non-scientific boundary")
+    first_generation = _generation_proof(first.get("persistence_status") or {}, label="initial")
 
     output = Path(args.output_dir)
     checkpoints = output / "private_checkpoints"
     if not checkpoints.exists():
         raise SystemExit("initial G2A v1.2.2 segment did not produce checkpoint state")
-    store = build_store(args.durable_store_kind, args.durable_store_locator)
+    store = build_store_v8(args.durable_store_kind, args.durable_store_locator)
+    if not isinstance(store, GenerationAwareKagglePrivateDatasetStore):
+        raise SystemExit("G2A v1.2.2 destructive restore is not bound to generation-aware Kaggle durability")
     shutil.rmtree(checkpoints)
     restore_started = time.perf_counter()
     restored = store.restore(checkpoints, run_id=args.run_id)
@@ -119,6 +148,8 @@ def main() -> int:
         raise SystemExit("G2A v1.2.2 resumed segment did not advance optimizer state")
     if float(second_result.get("checkpoint_load_seconds", 0.0) or 0.0) <= 0:
         raise SystemExit("G2A v1.2.2 resumed segment did not demonstrate checkpoint load")
+    persistence = second.get("persistence_status") or {}
+    second_generation = _generation_proof(persistence, label="resumed")
 
     steady_costs = [_steady_seconds_per_step(first_result), _steady_seconds_per_step(second_result)]
     validation_rates = [_validation_rate(first_result), _validation_rate(second_result)]
@@ -135,7 +166,6 @@ def main() -> int:
     if any(value <= 0 for value in syncs):
         raise SystemExit("G2A v1.2.2 durable sync timing missing")
 
-    persistence = second.get("persistence_status") or {}
     summary = {
         "schema_version": "1.2.2",
         "calibration_id": args.calibration_id,
@@ -181,10 +211,14 @@ def main() -> int:
         "durability": {
             "sync_status": persistence.get("status"),
             "restore_status": "PASS",
+            "restore_contract": "generation_aware_kaggle_v8",
+            "restore_store_class": type(store).__name__,
             "sync_seconds": float(second_result.get("durable_sync_seconds", 0.0) or 0.0),
             "restore_seconds": restore_seconds,
             "backend": persistence.get("backend"),
             "locator": persistence.get("locator"),
+            "initial_sync_generation": first_generation,
+            "resumed_sync_generation": second_generation,
             "preflight_private_access": durable_preflight,
         },
         "physical_slot_id": second.get("physical_slot_id"),

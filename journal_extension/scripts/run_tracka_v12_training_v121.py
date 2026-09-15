@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import _bootstrap  # noqa: F401
+from cropcop_je.persistence_v8 import build_store_v8
 from cropcop_je.runlog import write_run_record
 from cropcop_je.segments import append_segment_event, utc_now
 from cropcop_je.tracka_v12_g2a import (
@@ -17,6 +18,11 @@ from cropcop_je.tracka_v12_g2a_v122 import (
 )
 from cropcop_je.tracka_v12_placement import SLOT_IDS, logical_lane_id
 import run_tracka_v12_training as base
+
+
+# Track-A v1.2 uses a generation-aware Kaggle durable store. This changes only
+# persistence/restore transport semantics; frozen training/scientific semantics remain in base.
+base.build_store = build_store_v8
 
 
 def validate_g2a_compatible(
