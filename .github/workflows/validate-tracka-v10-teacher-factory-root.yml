@@ -25,10 +25,11 @@ jobs:
         with:
           python-version: '3.12.13'
 
-      - name: Compile versioned wrapper and regression
+      - name: Compile versioned wrapper, attestation builder and regression
         run: |
           python -m py_compile \
             journal_extension/scripts/run_tracka_v12_training_v121.py \
+            journal_extension/scripts/build_tracka_v12_code_attestation.py \
             tests/test_tracka_v12_teacher_factory_root_binding.py
 
       - name: Reproduce old root failure and prove corrected frozen root
@@ -49,7 +50,7 @@ jobs:
           print('historical teacher factory unchanged from c65; observed sha256=', observed)
           PY
 
-      - name: Verify narrow pre-science mitigation delta
+      - name: Verify narrow pre-science mitigation and attestation-hardening delta
         shell: bash
         run: |
           set -euo pipefail
@@ -60,13 +61,35 @@ jobs:
           from pathlib import Path
           allowed={
               '.github/workflows/validate-tracka-v10-teacher-factory-root.yml',
+              '.github/workflows/validate-tracka-v12-implementation.yml',
+              'journal_extension/scripts/build_tracka_v12_code_attestation.py',
               'journal_extension/scripts/run_tracka_v12_training_v121.py',
               'tests/test_tracka_v12_teacher_factory_root_binding.py',
           }
           changed={x.strip() for x in Path('/tmp/changed.txt').read_text().splitlines() if x.strip()}
           if changed != allowed:
               raise SystemExit(f'unexpected teacher-root mitigation delta: {sorted(changed)}')
-          print('narrow teacher-root mitigation delta PASS')
+          print('narrow teacher-root mitigation + attestation delta PASS')
+          PY
+
+      - name: Verify teacher-root contract is itself attested
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          builder=Path('journal_extension/scripts/build_tracka_v12_code_attestation.py').read_text(encoding='utf-8')
+          workflow=Path('.github/workflows/validate-tracka-v12-implementation.yml').read_text(encoding='utf-8')
+          for token in (
+              'teacher_factory_root_binding_contract',
+              'journal_extension/teacher_factory/historical_dino_tiny.py',
+              'tests/test_tracka_v12_teacher_factory_root_binding.py',
+          ):
+              if token not in builder:
+                  raise SystemExit(f'code attestation does not bind teacher-root control: {token}')
+          if 'tests.test_tracka_v12_teacher_factory_root_binding' not in workflow:
+              raise SystemExit('main exact-head workflow does not execute teacher-root regression')
+          print('teacher factory root contract attestation coverage PASS')
           PY
 
       - name: Verify no scientific configuration or protected-surface mutation
