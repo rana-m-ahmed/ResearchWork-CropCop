@@ -1,0 +1,137 @@
+name: Validate Track-A v1.2 Kaggle master v10
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v10-5602304
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  runtime-v10-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact runtime head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Verify exact qualified science object and teacher-root fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE='56023042e57758591df9babb3438f191dbe10312'
+          git cat-file -e "$SCIENCE^{commit}"
+          git show "$SCIENCE:journal_extension/scripts/run_tracka_v12_training_v121.py" > /tmp/run_v121.py
+          git show "$SCIENCE:journal_extension/teacher_factory/historical_dino_tiny.py" > /tmp/historical_dino_tiny.py
+          git show "$SCIENCE:tests/test_tracka_v12_teacher_factory_root_binding.py" > /tmp/teacher_root_test.py
+          grep -F 'repo / "journal_extension" / "teacher_factory"' /tmp/run_v121.py
+          grep -F 'factory_source_root=source_root' /tmp/run_v121.py
+          test "$(sha256sum /tmp/historical_dino_tiny.py | awk '{print $1}')" = '4ec41477264387cde03f7fab8f7df4b9480223b32f8554af5c6198687a568f02'
+          python -m py_compile /tmp/run_v121.py /tmp/teacher_root_test.py
+          echo 'exact qualified science teacher-root fix PASS'
+
+      - name: Compile active v10 runtime
+        run: |
+          python -m py_compile \
+            journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_continuation_v10.py \
+            journal_extension/kaggle/tracka_v12_ops/master_account_driver_v10.py \
+            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v10.py \
+            tests/test_tracka_v12_kaggle_master_v10.py
+
+      - name: Run v10 runtime regressions
+        run: python -m unittest -v tests.test_tracka_v12_kaggle_master_v10
+
+      - name: Run retained neutral durability and G1A regressions
+        run: |
+          python -m unittest -v \
+            tests.test_tracka_v12_mitigation_v8 \
+            tests.test_tracka_v12_mitigation_v9 \
+            tests.test_tracka_v12_g1a_contract \
+            tests.test_tracka_v12_g2a_durability
+
+      - name: Independently verify packaged exact source artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/exact-code /tmp/exact-lock
+          mkdir -p /tmp/exact-code /tmp/exact-lock
+          gh run download 34998242036 -n tracka-v12-implementation-qa -D /tmp/exact-code
+          gh run download 34998242024 -n tracka-v12-exact-head-lock-runtime-attestation -D /tmp/exact-lock
+          cmp /tmp/exact-code/tracka-v12-pre-science-code-attestation.json journal_extension/kaggle/tracka_v12_ops/attestations_v10/tracka-v12-pre-science-code-attestation.json
+          cmp /tmp/exact-lock/tracka-v12-exact-head-lock-runtime-attestation.json journal_extension/kaggle/tracka_v12_ops/attestations_v10/tracka-v12-exact-head-lock-runtime-attestation.json
+          test "$(sha256sum /tmp/exact-code/tracka-v12-pre-science-code-attestation.json | awk '{print $1}')" = 'd07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63'
+          test "$(sha256sum /tmp/exact-lock/tracka-v12-exact-head-lock-runtime-attestation.json | awk '{print $1}')" = '38b24403c98bdb55649d76e4ab58b362ec307e6665c1bbcb936d58a5bb38b863'
+
+      - name: Verify release manifest and no Actions-runtime dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          MAN=journal_extension/kaggle/tracka_v12_ops/attestations_v10/RELEASE_ATTESTATION_MANIFEST.json
+          test "$(sha256sum "$MAN" | awk '{print $1}')" = 'dedf8a3b9ad29222b6bbbee669442012f0171ec14d89dca5f743ac0d7ef4ffd3'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path('journal_extension/kaggle/tracka_v12_ops/attestations_v10/RELEASE_ATTESTATION_MANIFEST.json').read_text())
+          assert m['science_source_sha']=='56023042e57758591df9babb3438f191dbe10312'
+          assert m['teacher_factory_root_contract']['gate']=='PASS'
+          assert m['teacher_factory_root_contract']['source_sha256']=='4ec41477264387cde03f7fab8f7df4b9480223b32f8554af5c6198687a568f02'
+          assert 'teacher_factory_root_binding_contract' in m['required_static_pre_science_gates']
+          assert m['science_authorized'] is False
+          assert m['protected_test_accessed'] is False
+          assert m['external_surface_accessed'] is False
+          PY
+          FILE=journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py
+          ! grep -F 'urllib.request' "$FILE"
+          ! grep -F '/actions/artifacts/' "$FILE"
+          ! grep -F 'CROPCOP_GITHUB_TOKEN' "$FILE"
+
+      - name: Verify nonblocking continuation replaces cross-account idle waits
+        shell: bash
+        run: |
+          set -euo pipefail
+          DRIVER=journal_extension/kaggle/tracka_v12_ops/master_account_driver_v10.py
+          grep -F 'try_collect_all_g2a' "$DRIVER"
+          grep -F 'try_acquire_control_worker' "$DRIVER"
+          grep -F 'controlled_dependency_continuation' "$DRIVER"
+          ! grep -F 'collect_all_g2a(' "$DRIVER"
+          ! grep -F 'acquire_control_worker(' "$DRIVER"
+          python - <<'PY'
+          from pathlib import Path
+          text=Path('journal_extension/kaggle/tracka_v12_ops/master_continuation_v10.py').read_text()
+          for forbidden in ('while True:', 'time.sleep(', 'dependency_wait_expired'):
+              if forbidden in text:
+                  raise SystemExit(f'nonblocking continuation helper contains wait behavior: {forbidden}')
+          print('cross-account nonblocking continuation PASS')
+          PY
+
+      - name: Verify active launch route and protected-surface closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'master_account_driver_v10.py' journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v10.py
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          files=['tracka_v12_kaggle_operator_v8.py','master_attestations_v8.py','master_continuation_v10.py','master_account_driver_v10.py','master_launch_guard_v10.py']
+          text='\n'.join((root/f).read_text() for f in files)
+          assert '56023042e57758591df9babb3438f191dbe10312' in text
+          for forbidden in ('DS-V1-TEST-CONSUMED','DS-EXT-*-SEALED','master_g1a_sealer_compat_v6'):
+              if forbidden in text:
+                  raise SystemExit(f'forbidden active-runtime content: {forbidden}')
+          print('protected surfaces closed PASS')
+          PY
