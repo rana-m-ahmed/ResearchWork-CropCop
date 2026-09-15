@@ -1,0 +1,20 @@
+{
+  "account_id": "K2",
+  "calibrations": {
+    "CAL-MNV4-FEATURE": {
+      "public_evidence_run_id": "TRACKA-V12-G2A-CAL-MNV4-FEATURE-56023042e577",
+      "summary_sha256": "53fab9c403d8d8ef383e690cc5a845e33145cf039eb2e9b1d0419bcef8d6fc27"
+    },
+    "CAL-MNV4-LOGITS": {
+      "public_evidence_run_id": "TRACKA-V12-G2A-CAL-MNV4-LOGITS-56023042e577",
+      "summary_sha256": "edd00f92eacfe2c17e111210d994ae8a843ff72c3d8f057e179ff8c93bd0ad0a"
+    }
+  },
+  "g1a_seal_sha256": "c7f5ffc84240a79c3201081896df537959313ac8f0cd2d3aba0205a7fe7cfb8d",
+  "operator_runtime_sha": "0963f81ec54b4ac121097856741616ac04530797",
+  "schema_version": "1.1",
+  "science_authorized": false,
+  "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
+  "stage": "TRACKA_V12_G2A_ACCOUNT_MASTER",
+  "status": "PASS"
+}
