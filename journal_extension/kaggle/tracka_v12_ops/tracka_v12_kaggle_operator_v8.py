@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-"""Track-A v1.2 v8 operator authority.
+"""Track-A v1.2 active operator authority.
 
-Historical v1/v2/v3 operator files remain untouched. This v8 authority rebinding
+Historical v1/v2/v3 operator files remain untouched. This authority rebinding
 pins the active Kaggle operator to the fully qualified science source and scopes
 the superseding R13 v1.2.1 G1A validator to this release only.
 """
@@ -14,8 +14,8 @@ import tracka_v12_kaggle_operator as _v1
 import tracka_v12_kaggle_operator_v2 as _v2
 import tracka_v12_kaggle_operator_v3 as _v3
 
-SCIENCE_SHA_V8 = "c65a5082809603155fa80a6eb0152fae33dbd9e0"
-OPERATOR_SCHEMA_VERSION_V8 = "4.3"
+SCIENCE_SHA_V8 = "56023042e57758591df9babb3438f191dbe10312"
+OPERATOR_SCHEMA_VERSION_V8 = "4.6"
 R13_PARITY_CONTRACT_ID_V8 = "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1"
 R13_PARITY_REQUIRED_MAX_ABS_V8 = 5e-5
 
@@ -30,12 +30,7 @@ OPERATOR_SCHEMA_VERSION = OPERATOR_SCHEMA_VERSION_V8
 
 
 def validate_g1a_bundle_with_science(repo: str | Path, bundle: str | Path) -> dict:
-    """Validate a canonical G1A bundle against the versioned v1.2.1 contract.
-
-    The historical runtime validator is temporarily rebound only for this call,
-    so legacy v1.2 semantics stay immutable while the active release accepts
-    only a G1A seal that carries the superseding parity contract identity.
-    """
+    """Validate a canonical G1A bundle against the versioned v1.2.1 contract."""
     src = Path(repo).resolve() / "journal_extension" / "src"
     if str(src) not in sys.path:
         sys.path.insert(0, str(src))
@@ -65,15 +60,11 @@ def validate_g1a_bundle_with_science(repo: str | Path, bundle: str | Path) -> di
     return payload
 
 
-# Inherited helpers such as adopt_g1a_if_present() and
-# download_and_validate_g1a_dataset() resolve this symbol in their defining
-# module. Rebind those module globals explicitly so no hidden historical v1.2
-# validator remains reachable from the active v8 release.
 _v1.validate_g1a_bundle_with_science = validate_g1a_bundle_with_science
 _v2.validate_g1a_bundle_with_science = validate_g1a_bundle_with_science
 _v3.validate_g1a_bundle_with_science = validate_g1a_bundle_with_science
 
 if _v1.SCIENCE_SHA != SCIENCE_SHA or _v2.SCIENCE_SHA != SCIENCE_SHA or _v3.SCIENCE_SHA != SCIENCE_SHA:
-    raise RuntimeError("v8 process-local science authority rebinding failed")
+    raise RuntimeError("active process-local science authority rebinding failed")
 if _v3.validate_g1a_bundle_with_science is not validate_g1a_bundle_with_science:
-    raise RuntimeError("v8 G1A validator rebinding failed")
+    raise RuntimeError("active G1A validator rebinding failed")
