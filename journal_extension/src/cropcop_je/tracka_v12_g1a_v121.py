@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -8,12 +9,6 @@ from . import tracka_v12_g1a as _v12
 R13_PARITY_CONTRACT_ID = "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1"
 R13_PARITY_TOLERANCE = 5e-5
 R13_PARITY_HISTORICAL_V12_TOLERANCE = 1e-5
-
-# The v1.2.1 execution layer intentionally supersedes only the pre-science
-# numerical acceptance bound. Existing v1.2 functions reference the module
-# global at call time, so patching this value preserves every formula/model
-# operation while applying the versioned bound.
-_v12.R13_PARITY_TOLERANCE = R13_PARITY_TOLERANCE
 
 G1A_SCHEMA_VERSION = _v12.G1A_SCHEMA_VERSION
 R13_PRETRAINED_SHA256 = _v12.R13_PRETRAINED_SHA256
@@ -41,6 +36,27 @@ r13_patch_parity_max_abs = _v12.r13_patch_parity_max_abs
 deterministic_r13_reset_classifier = _v12.deterministic_r13_reset_classifier
 
 
+@contextmanager
+def _superseding_tolerance():
+    """Apply the v1.2.1 bound only for a versioned operation.
+
+    Historical v1.2 module state is restored even if the wrapped operation fails,
+    preventing cross-test/process contamination of the immutable 1e-5 contract.
+    """
+    previous = _v12.R13_PARITY_TOLERANCE
+    _v12.R13_PARITY_TOLERANCE = R13_PARITY_TOLERANCE
+    try:
+        yield
+    finally:
+        _v12.R13_PARITY_TOLERANCE = previous
+
+
+def validate_v12_g1a_seal_with_v121_tolerance(seal: dict[str, Any]) -> list[str]:
+    """Run historical structural validation under the superseding numeric bound only."""
+    with _superseding_tolerance():
+        return _v12.validate_g1a_seal_object(seal)
+
+
 def save_r13_initialization(
     model,
     path: str | Path,
@@ -49,15 +65,14 @@ def save_r13_initialization(
     seed: int,
     parity_max_abs: float,
 ) -> str:
-    # _v12 reads its module-global tolerance at call time; it has been patched
-    # above to the evidence-backed v1.2.1 value.
-    return _v12.save_r13_initialization(
-        model,
-        path,
-        experiment_id=experiment_id,
-        seed=seed,
-        parity_max_abs=parity_max_abs,
-    )
+    with _superseding_tolerance():
+        return _v12.save_r13_initialization(
+            model,
+            path,
+            experiment_id=experiment_id,
+            seed=seed,
+            parity_max_abs=parity_max_abs,
+        )
 
 
 def load_r13_initialization(
@@ -70,16 +85,17 @@ def load_r13_initialization(
     # Contract identity is sealed and validated at the G1A bundle boundary.
     # The immutable initialization payload remains byte-compatible with v1.2
     # and carries the observed parity value itself.
-    return _v12.load_r13_initialization(
-        path,
-        expected_sha256=expected_sha256,
-        experiment_id=experiment_id,
-        seed=seed,
-    )
+    with _superseding_tolerance():
+        return _v12.load_r13_initialization(
+            path,
+            expected_sha256=expected_sha256,
+            experiment_id=experiment_id,
+            seed=seed,
+        )
 
 
 def validate_g1a_seal_object(seal: dict[str, Any]) -> list[str]:
-    errors = _v12.validate_g1a_seal_object(seal)
+    errors = validate_v12_g1a_seal_with_v121_tolerance(seal)
     r13 = seal.get("r13", {})
     if r13.get("parity_contract_id") != R13_PARITY_CONTRACT_ID:
         errors.append("G1A R13 parity contract identity mismatch")
