@@ -108,8 +108,9 @@ jobs:
           grep -F 'try_collect_all_g2a' "$DRIVER"
           grep -F 'try_acquire_control_worker' "$DRIVER"
           grep -F 'controlled_dependency_continuation' "$DRIVER"
-          ! grep -F 'collect_all_g2a(' "$DRIVER"
-          ! grep -F 'acquire_control_worker(' "$DRIVER"
+          ! grep -F 'summaries = collect_all_g2a(' "$DRIVER"
+          ! grep -F 'control_dir, control = acquire_control_worker(' "$DRIVER"
+          ! grep -F 'from master_g2a_v8 import collect_all_g2a' "$DRIVER"
           python - <<'PY'
           from pathlib import Path
           text=Path('journal_extension/kaggle/tracka_v12_ops/master_continuation_v10.py').read_text()
