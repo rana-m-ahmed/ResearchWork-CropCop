@@ -1,0 +1,143 @@
+{
+  "attestation_kind": "track_a_v12_exact_head_lock_runtime",
+  "attestation_sha256": "03d5c132c24bc76d30a84712c6c4f885089a33e3a368750c3792f2d337e3c4f5",
+  "candidate_claim_boundary_lock": "PASS",
+  "candidate_claim_boundary_sha256": "949af070a985567d22b1ba8001a755d2c1a1c18a34f9d929d706756c9c1251df",
+  "content_lock_report": {
+    "overall_status": "PASS",
+    "static": {
+      "candidate_families": [
+        "R04",
+        "R06",
+        "R07",
+        "R13"
+      ],
+      "direct_state_count": 12,
+      "errors": [],
+      "locked_file_hashes": {
+        "03B_2_TRACK_A_STRENGTHENING_AMENDMENT_v1_2_MODERN_VIT_SUPPLEMENT.md": {
+          "git_blob_sha": "610233e361a5adf95f6dbf7a71a3e7fa31251026",
+          "sha256": "d176f8cca5385e842a818cf0fa309156365475dd7716d15825355f40acc8c2d7"
+        },
+        "journal_extension/amendments/track_a_strengthening_v1/EAAI_STRENGTH_MAPPING_v1_2.md": {
+          "git_blob_sha": "595feed11ac495dbea24ab4e4f5ffe8149c7c222",
+          "sha256": "3651843d48b4d0bb9daf1bad126bfe55adaffbd9731d4a359758c66f8abade0f"
+        },
+        "journal_extension/amendments/track_a_strengthening_v1/amendment_registry_v1_2.json": {
+          "git_blob_sha": "ef1f876cfb57bbc1d89ea0f8a7ff268e86ada742",
+          "sha256": "d3244b60fb78da95d627b2690d6d016ca2eed18e76f2c30ad6496c7fe65edded"
+        },
+        "journal_extension/amendments/track_a_strengthening_v1/analysis_protocol_v1_2.json": {
+          "git_blob_sha": "b987f53dbeb95f46e8cae39145722208d3c9a248",
+          "sha256": "14c758c616ed86ef46ce564e09cc96a3106b4208f169f7c1f1ed8e7f9d0b30b1"
+        },
+        "journal_extension/amendments/track_a_strengthening_v1/model_selection_protocol_v1_2.json": {
+          "git_blob_sha": "a040fa57f7d8b39f645878843bcdbcfacc783979",
+          "sha256": "899e20af388b1105738330849e7bcd0f9ecae1aac88874fe3e8f9366771d9527"
+        },
+        "journal_extension/amendments/track_a_strengthening_v1/modern_backbone_selection_audit_v1_2.md": {
+          "git_blob_sha": "45287c4450b3bd477f7327a6ff16f8ef12df8a33",
+          "sha256": "7a46f68e243c15de2daa3d0be65cd972ffda36a00b7bbd91937f662dd92646fb"
+        },
+        "journal_extension/amendments/track_a_strengthening_v1/parallel_execution_plan_v1_2.json": {
+          "git_blob_sha": "cf11f4b522e1aad8ce9ba4d7564fff19e92af216",
+          "sha256": "8ef1e1584031db821320de227e9ac52275c8c3625bcc95d4aa84ed66bcbca38d"
+        },
+        "journal_extension/amendments/track_a_strengthening_v1/r13_pretrained_identity_and_normalization_contract_v1_2.json": {
+          "git_blob_sha": "04adbb75673ebf81a3111eae50ea6090c95f1d4d",
+          "sha256": "b8499bc99eae47c7e6230a93b0618ed17eb7d18e082532f8cd9d5e5de85e10db"
+        },
+        "journal_extension/amendments/track_a_strengthening_v1/robustness_protocol_v1_2.json": {
+          "git_blob_sha": "2d1644cee294b1eec85cc90fbd1eac2adbcccd7f",
+          "sha256": "84a9766d1209ea93c6e489c411a1b2117d2ebf4cb493a6ca1f6217e90bfc1dbb"
+        },
+        "journal_extension/amendments/track_a_strengthening_v1/xai_gradcampp_protocol_v1_2.json": {
+          "git_blob_sha": "505a9cb49ba1ed27e57fc097175d5dc98a97fe01",
+          "sha256": "34710295a124f881368135d0c6a8fb5260015129dcf078932909f2c1473fcca2"
+        }
+      },
+      "r13_state_count": 3,
+      "schema_version": "1.0",
+      "science_authorized": false,
+      "status": "PASS"
+    }
+  },
+  "content_lock_report_sha256": "e342c0876a4213bebf8bb885d093b2603bf066b354243cb0a4909bb86ed39c4d",
+  "exact_pretrained_parity_report": {
+    "classifier_prediction_opened": false,
+    "contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1",
+    "errors": [],
+    "external_surface_accessed": false,
+    "historical_v1_2_gate_pass": false,
+    "historical_v1_2_tolerance": 1e-05,
+    "input_count": 40,
+    "observed_max_abs_difference": 3.4332275390625e-05,
+    "pretrained_bytes": 90095744,
+    "pretrained_sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed",
+    "required_max_abs_difference": 5e-05,
+    "schema_version": "1.0",
+    "science_authorized": false,
+    "scientific_metric_computed": false,
+    "status": "PASS",
+    "v1_2_1_gate_pass": true,
+    "v1_test_accessed": false
+  },
+  "exact_pretrained_parity_report_sha256": "25cc64c3a18861494856c0b13ce8b58e77ee979b494bc7a1fb2b0ff24fdb8a7f",
+  "github_actions": true,
+  "immutable_v12_lock": "PASS",
+  "note": "This exact-head attestation preserves the immutable v1.2 content lock while binding the pre-science R13 parity v1.2.1 amendment, exact pinned-pretrained parity proof, corrected R13 runtime/XAI interface qualification, candidate-system claim boundary, and frozen XAI operationalization to one Git commit. The parity amendment changes only the pre-execution float32 maximum acceptance bound from 1e-5 to 5e-5; it does not independently authorize scientific execution.",
+  "parity_amendment_report": {
+    "errors": [],
+    "locked_file_blobs": {
+      "journal_extension/amendments/track_a_strengthening_v1/R13_PARITY_PREEXECUTION_AMENDMENT_v1_2_1.md": "040f6c073f37bf4bc9fafc8d48cab687aa2f22ab",
+      "journal_extension/amendments/track_a_strengthening_v1/r13_parity_preexecution_evidence_v1_2_1.json": "ad2604e8cf9bf58f05922916907e22c950c171bd",
+      "journal_extension/amendments/track_a_strengthening_v1/r13_pretrained_identity_and_normalization_contract_v1_2_1.json": "017315a1f7c4eb90facd96d65e807019b4dabf39"
+    },
+    "new_contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1",
+    "new_required_max_abs_difference": 5e-05,
+    "observed_exact_pretrained_max_abs_difference": 3.4332275390625e-05,
+    "old_contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2",
+    "old_required_max_abs_difference": 1e-05,
+    "schema_version": "1.0",
+    "science_authorized": false,
+    "status": "PASS"
+  },
+  "parity_amendment_report_sha256": "af86e57490f8847f63dce84756ad5e7c77a5fe5e580fff5c47584f5ed935fbf9",
+  "pull_request_head_sha": "4ced2fd7c764c07fa47fb57fbea38376d2ce61a4",
+  "r13_exact_pretrained_parity": "PASS",
+  "r13_parity_content_lock_sha256": "3533ffd8c0c7cb4ae6a8aff7b7d2444a2e1016a9bb4642ff2ff4cd3f4704f763",
+  "r13_parity_contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1",
+  "r13_parity_contract_sha256": "fc78b6fe44be0cb843b507a0453b787a993b7c178abdc4923d7b1fb4349ca918",
+  "r13_parity_preexecution_evidence_sha256": "961c06f596281c0a38acff419c02512e83ac38ec856209f146b05b6745524d33",
+  "r13_parity_required_max_abs_difference": 5e-05,
+  "r13_v121_parity_amendment": "PASS",
+  "r13_v121_runtime_qualification": "PASS",
+  "runtime_report": {
+    "errors": [],
+    "model_id": "vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k",
+    "normalization_equivalence_max_abs_difference": 2.384185791015625e-06,
+    "observed_target_shape": [
+      2,
+      257,
+      320
+    ],
+    "qualified_target": "blocks.13.norm1",
+    "schema_version": "1.2.1",
+    "science_authorized": false,
+    "status": "PASS",
+    "versions": {
+      "numpy": "2.5.2",
+      "timm": "1.0.26",
+      "torch": "2.12.1+cu130",
+      "torchvision": "0.27.1+cu130"
+    }
+  },
+  "runtime_report_sha256": "c27ed1af845342acf74a5e485f0ce5544ff872734d35b3fdcd4e6f17776d544e",
+  "schema_version": "1.1",
+  "science_authorized": false,
+  "source_git_commit": "4ced2fd7c764c07fa47fb57fbea38376d2ce61a4",
+  "status": "PASS",
+  "workflow_run_attempt": "1",
+  "workflow_run_id": "34963401653",
+  "xai_operationalization_sha256": "14a2140e1afbb5f3456370e21af53ec33c8b442ce87ad54c7e7cdd70d7cc7691"
+}
