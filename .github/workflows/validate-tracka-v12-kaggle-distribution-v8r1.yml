@@ -1,0 +1,153 @@
+name: Validate Track-A v8.1 final notebook distribution
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-v8r1-distribution-20260915
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  distribution-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact final distribution head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+      - name: Run committed distribution regression
+        run: python -m unittest -v tests.test_tracka_v12_kaggle_distribution_v8
+      - name: Independently verify final notebook package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          ROOT = Path('journal_extension/kaggle/tracka_v12_ops')
+          SCIENCE = 'f8aea6c2b481f8436653d4c6504f406948a98082'
+          RUNTIME = '31d6224bd4b87c02ac3f4985d11d0a5f7a2b615d'
+          RUNTIME_BRANCH = 'ops-tracka-kaggle-master-runtime-v8r1-f8aea6c-20260915'
+          DISTRIBUTION_BRANCH = 'ops-tracka-kaggle-master-v8r1-distribution-20260915'
+          CODE_ATTESTATION = 'e3c38aa2de9db070200732e8b67463956476413ee2899c2db462e6bca02a3d7e'
+          LOCK_ATTESTATION = '1bc81be25b38cd7bf8490858c7d4931b811e993702210d2f856b56a96d7decbe'
+          RUNTIME_QA_RUN = 34955178356
+          NOTEBOOKS = [
+              ('K1', 'TRACKA_V12_MASTER_K1.ipynb'),
+              ('K2', 'TRACKA_V12_MASTER_K2.ipynb'),
+              ('K3', 'TRACKA_V12_MASTER_K3.ipynb'),
+          ]
+
+          dist = json.loads((ROOT/'MASTER_NOTEBOOK_DISTRIBUTION.json').read_text(encoding='utf-8'))
+          freeze = json.loads((ROOT/'MASTER_RUNTIME_FREEZE.json').read_text(encoding='utf-8'))
+          contract = json.loads((ROOT/'OPERATOR_CONTRACT.json').read_text(encoding='utf-8'))
+
+          assert dist['status'] == 'LOCKED_DISTRIBUTION'
+          assert dist['schema_version'] == '4.1'
+          assert dist['science_source_sha'] == SCIENCE
+          assert dist['operator_runtime_sha'] == RUNTIME
+          assert dist['operator_runtime_branch'] == RUNTIME_BRANCH
+          assert dist['distribution_branch'] == DISTRIBUTION_BRANCH
+          assert dist['exact_head_code_attestation_sha256'] == CODE_ATTESTATION
+          assert dist['exact_head_lock_runtime_attestation_sha256'] == LOCK_ATTESTATION
+          assert dist['normal_operator_notebook_count'] == 3
+          assert dist['distribution_qa_required'] is True
+          assert dist['g2a_generation_aware_destructive_restore_required'] is True
+          assert dist['protected_test_open_before_track_a_closure'] is False
+          assert dist['external_prediction_open_before_track_a_closure'] is False
+
+          assert freeze['status'] == 'PASS'
+          assert freeze['schema_version'] == '2.1'
+          assert freeze['science_source_sha'] == SCIENCE
+          assert freeze['runtime_candidate_sha'] == RUNTIME
+          assert freeze['runtime_branch'] == RUNTIME_BRANCH
+          assert freeze['code_attestation_file_sha256'] == CODE_ATTESTATION
+          assert freeze['lock_runtime_attestation_file_sha256'] == LOCK_ATTESTATION
+          assert freeze['qa_workflow_run_id'] == RUNTIME_QA_RUN
+          assert freeze['qa_conclusion'] == 'success'
+          assert freeze['f01_generation_restore_regression'] == 'PASS'
+
+          assert contract['status'] == 'LOCKED_MASTER_OPERATOR_CONTRACT'
+          assert contract['schema_version'] == '4.1'
+          assert contract['scientific_source_sha'] == SCIENCE
+          assert contract['operator_runtime_sha'] == RUNTIME
+          assert contract['operator_runtime_branch'] == RUNTIME_BRANCH
+          d = contract['durability']
+          assert d['kaggle_generation_must_advance_before_sync_success'] is True
+          assert d['generation_marker_roundtrip_required'] is True
+          assert d['checkpoint_index_hash_bound'] is True
+          assert d['g2a_destructive_restore_generation_aware'] is True
+          assert d['g2a_restore_contract'] == 'generation_aware_kaggle_v8'
+          rules = contract['rules']
+          assert rules['ddp_allowed'] is False
+          assert rules['dataparallel_allowed'] is False
+          assert rules['fsdp_allowed'] is False
+          assert rules['protected_test_open_before_track_a_closure'] is False
+          assert rules['external_prediction_open_before_track_a_closure'] is False
+
+          actual_notebooks = sorted(p.name for p in ROOT.glob('*.ipynb'))
+          expected_names = sorted(name for _, name in NOTEBOOKS)
+          assert actual_notebooks == expected_names
+          assert set(dist['notebook_sha256']) == set(expected_names)
+
+          all_sources = {}
+          for account, name in NOTEBOOKS:
+              path = ROOT/name
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              assert digest == dist['notebook_sha256'][name]
+              nb = json.loads(path.read_text(encoding='utf-8'))
+              meta = nb['metadata']['cropcop_operator']
+              assert meta['schema_version'] == '4.1'
+              assert meta['account_id'] == account
+              assert meta['science_sha'] == SCIENCE
+              assert meta['operator_runtime_sha'] == RUNTIME
+              assert meta['operator_runtime_branch'] == RUNTIME_BRANCH
+              assert meta['launcher'] == 'master_launch_guard_v8.py'
+              assert meta['driver'] == 'master_account_driver_v8.py'
+              assert meta['expected_account_binding_required'] is True
+              source = '\n'.join(''.join(cell.get('source') or []) for cell in nb['cells'])
+              all_sources[account] = source
+              assert SCIENCE in source and RUNTIME in source and RUNTIME_BRANCH in source
+              assert 'CROPCOP_EXPECTED_KAGGLE_USERNAME' in source
+              assert 'master_launch_guard_v8.py' in source
+              for forbidden in (
+                  '05ac7084a6be2fecd9c370477340ee0c8c4769bc',
+                  '2f127cbb61d752eec22c3bfd3ecd527a3a81c283',
+                  'ops-tracka-kaggle-master-runtime-v8-2f127cb',
+                  'master_account_driver_v5.py', 'master_account_driver_v6.py',
+                  'master_account_driver_v7.py', 'master_g1a_sealer_compat_v6',
+                  'master_launch_guard_v8.1.py', 'DS-V1-TEST-CONSUMED',
+              ):
+                  assert forbidden not in source, (name, forbidden)
+              for cell in nb['cells']:
+                  if cell['cell_type'] == 'code':
+                      assert cell['execution_count'] is None
+                      assert cell['outputs'] == []
+                      compile(''.join(cell.get('source') or []), f'{name}:cell', 'exec')
+
+          assert 'CROPCOP_PRINCIPAL_G1' in all_sources['K1']
+          assert 'CROPCOP_PRINCIPAL_G1' not in all_sources['K2']
+          assert 'CROPCOP_PRINCIPAL_G1' not in all_sources['K3']
+          print('Independent v8.1 distribution QA PASS')
+          PY
+      - name: Verify frozen source and runtime refs remain reachable and exact
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE='f8aea6c2b481f8436653d4c6504f406948a98082'
+          RUNTIME='31d6224bd4b87c02ac3f4985d11d0a5f7a2b615d'
+          RUNTIME_BRANCH='ops-tracka-kaggle-master-runtime-v8r1-f8aea6c-20260915'
+          git cat-file -e "$SCIENCE^{commit}"
+          git cat-file -e "$RUNTIME^{commit}"
+          git fetch --quiet origin "refs/heads/$RUNTIME_BRANCH:refs/remotes/origin/$RUNTIME_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/$RUNTIME_BRANCH)" = "$RUNTIME"
+          echo 'Frozen source/runtime refs PASS'
