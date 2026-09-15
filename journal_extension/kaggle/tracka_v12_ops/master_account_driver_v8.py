@@ -29,8 +29,8 @@ from master_preflight import resolve_master_inputs
 from master_g1a_v8 import acquire_canonical_g1a_worker, ensure_canonical_g1a_k1
 from master_g2a_v8 import collect_all_g2a, ensure_account_g2a
 from master_control_v8 import acquire_control_worker, build_control_k1
-from master_publication_v4 import install_stage_publication_hooks
-from master_science_v4 import ensure_science_durability, run_science
+from master_publication_v8 import install_stage_publication_hooks
+from master_science_v8 import ensure_science_durability, run_science
 
 
 def guard_identity(account_id: str) -> str:
