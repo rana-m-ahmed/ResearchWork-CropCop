@@ -54,13 +54,34 @@ jobs:
       - name: Run v10 runtime regressions
         run: python -m unittest -v tests.test_tracka_v12_kaggle_master_v10
 
-      - name: Run retained neutral durability and G1A regressions
+      - name: Run current neutral durability and G1A regressions
         run: |
           python -m unittest -v \
-            tests.test_tracka_v12_mitigation_v8 \
-            tests.test_tracka_v12_mitigation_v9 \
             tests.test_tracka_v12_g1a_contract \
             tests.test_tracka_v12_g2a_durability
+
+      - name: Re-run frozen v9 and historical v8r3/v8r4 release suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          V9='cced66277881c1617c722793b050dd781a0c7272'
+          V8R4='99ae5f340bdea1142c8b4e9289956e4387fd494a'
+          rm -rf /tmp/tracka-v9-history /tmp/tracka-v8r4-history
+          git worktree add --detach /tmp/tracka-v9-history "$V9"
+          (
+            cd /tmp/tracka-v9-history
+            python -m unittest -v tests.test_tracka_v12_kaggle_master_v9
+          )
+          git worktree remove /tmp/tracka-v9-history --force
+          git worktree add --detach /tmp/tracka-v8r4-history "$V8R4"
+          (
+            cd /tmp/tracka-v8r4-history
+            python -m unittest -v \
+              tests.test_tracka_v12_kaggle_master_v8r3 \
+              tests.test_tracka_v12_kaggle_master_v8r4
+          )
+          git worktree remove /tmp/tracka-v8r4-history --force
+          echo 'frozen v9 + historical v8r3/v8r4 regression preservation PASS'
 
       - name: Independently verify packaged exact source artifacts
         env:
