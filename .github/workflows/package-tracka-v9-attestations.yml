@@ -1,0 +1,163 @@
+name: Package Track-A v9 attestations
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v9-c65a508-20260915
+    paths:
+      - '.github/workflows/package-tracka-v9-attestations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops-tracka-kaggle-master-runtime-v9-c65a508-20260915
+          fetch-depth: 0
+
+      - name: Download exact-head artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/tracka-v9-attestations
+          mkdir -p /tmp/tracka-v9-attestations/code /tmp/tracka-v9-attestations/lock
+          gh api repos/rana-m-ahmed/ResearchWork-CropCop/actions/artifacts/10402816417/zip > /tmp/tracka-v9-attestations/code.zip
+          gh api repos/rana-m-ahmed/ResearchWork-CropCop/actions/artifacts/10403306539/zip > /tmp/tracka-v9-attestations/lock.zip
+          unzip -q /tmp/tracka-v9-attestations/code.zip -d /tmp/tracka-v9-attestations/code
+          unzip -q /tmp/tracka-v9-attestations/lock.zip -d /tmp/tracka-v9-attestations/lock
+
+      - name: Verify and install exact science evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE='c65a5082809603155fa80a6eb0152fae33dbd9e0'
+          CODE=$(find /tmp/tracka-v9-attestations/code -type f -name 'tracka-v12-pre-science-code-attestation.json')
+          LOCK=$(find /tmp/tracka-v9-attestations/lock -type f -name 'tracka-v12-exact-head-lock-runtime-attestation.json')
+          test -n "$CODE" && test -n "$LOCK"
+          test "$(sha256sum "$CODE" | awk '{print $1}')" = '4f29548f5ba56c2969fb1b0c7234d66ce15a2747d104e8e27579af08f9be7010'
+          test "$(sha256sum "$LOCK" | awk '{print $1}')" = 'd2a1f4303ce73f1f92f2a3835b6300230ab566686da0f3a2e58f743bf1366c4d'
+          python - "$SCIENCE" "$CODE" "$LOCK" <<'PY'
+          import json, sys
+          science, code_path, lock_path = sys.argv[1:]
+          for path in (code_path, lock_path):
+              payload=json.load(open(path, encoding='utf-8'))
+              assert payload['status']=='PASS'
+              assert payload['github_actions'] is True
+              assert payload['source_git_commit']==science
+              assert payload['pull_request_head_sha']==science
+              assert payload['r13_parity_contract_id']=='TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1'
+              assert float(payload['r13_parity_required_max_abs_difference'])==5e-5
+          gates=json.load(open(code_path, encoding='utf-8')).get('static_pre_science_gates') or {}
+          assert gates.get('kaggle_generation_durability_contract')=='PASS'
+          print('v9 exact-head evidence identity PASS')
+          PY
+          OUT='journal_extension/kaggle/tracka_v12_ops/attestations_v9'
+          mkdir -p "$OUT"
+          cp "$CODE" "$OUT/tracka-v12-pre-science-code-attestation.json"
+          cp "$LOCK" "$OUT/tracka-v12-exact-head-lock-runtime-attestation.json"
+
+      - name: Build deterministic release manifest and repin runtime authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, re
+          from pathlib import Path
+          science='c65a5082809603155fa80a6eb0152fae33dbd9e0'
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          out=root/'attestations_v9'
+          code=out/'tracka-v12-pre-science-code-attestation.json'
+          lock=out/'tracka-v12-exact-head-lock-runtime-attestation.json'
+          h=lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          code_sha=h(code); lock_sha=h(lock)
+          manifest={
+              'attestation_materialization':{
+                  'mode':'packaged_exact_bytes',
+                  'runtime_requires_actions_read_permission':False,
+                  'runtime_requires_github_actions_api':False,
+              },
+              'authority_id':'EAAI-JE-SDL-v2.1-QA',
+              'code_attestation':{
+                  'member':code.name,
+                  'member_sha256':code_sha,
+                  'source_artifact_id':10402816417,
+                  'source_artifact_name':'tracka-v12-implementation-qa',
+                  'source_workflow_run_id':34984335949,
+                  'status':'PASS',
+              },
+              'external_surface_accessed':False,
+              'lock_runtime_attestation':{
+                  'member':lock.name,
+                  'member_sha256':lock_sha,
+                  'source_artifact_id':10403306539,
+                  'source_artifact_name':'tracka-v12-exact-head-lock-runtime-attestation',
+                  'source_workflow_run_id':34984335937,
+                  'status':'PASS',
+              },
+              'protected_test_accessed':False,
+              'r13_parity_contract':{
+                  'contract_id':'TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1',
+                  'exact_pretrained_gate_pass':True,
+                  'historical_v1_2_required_max_abs_difference':1e-5,
+                  'required_max_abs_difference':5e-5,
+              },
+              'remaining_scientific_states':11,
+              'required_static_pre_science_gates':[
+                  'exact_head_ci','kaggle_generation_durability_contract','g1a_runtime_global_resolution_contract',
+                  'r13_parity_amendment_contract','principal_science_diff','secondary_science_diff',
+                  'checkpoint_recovery_contract','cross_slot_recovery_contract','six_gpu_parent_orchestration',
+                  'training_runner_contract',
+              ],
+              'schema_version':'1.1',
+              'science_authorized':False,
+              'science_source_sha':science,
+              'status':'LOCKED_PRE_SCIENCE',
+          }
+          manifest_path=out/'RELEASE_ATTESTATION_MANIFEST.json'
+          manifest_path.write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          manifest_sha=h(manifest_path)
+
+          operator=root/'tracka_v12_kaggle_operator_v8.py'
+          text=operator.read_text(encoding='utf-8')
+          text=re.sub(r'SCIENCE_SHA_V8 = "[0-9a-f]{40}"', f'SCIENCE_SHA_V8 = "{science}"', text)
+          text=re.sub(r'OPERATOR_SCHEMA_VERSION_V8 = "[^"]+"', 'OPERATOR_SCHEMA_VERSION_V8 = "4.3"', text)
+          operator.write_text(text,encoding='utf-8')
+
+          att=root/'master_attestations_v8.py'
+          text=att.read_text(encoding='utf-8')
+          text=re.sub(r'RELEASE_MANIFEST_FILE_SHA256 = "[0-9a-f]{64}"', f'RELEASE_MANIFEST_FILE_SHA256 = "{manifest_sha}"', text)
+          text=re.sub(r'CODE_ATTESTATION_MEMBER_SHA256 = "[0-9a-f]{64}"', f'CODE_ATTESTATION_MEMBER_SHA256 = "{code_sha}"', text)
+          text=re.sub(r'LOCK_RUNTIME_ATTESTATION_MEMBER_SHA256 = "[0-9a-f]{64}"', f'LOCK_RUNTIME_ATTESTATION_MEMBER_SHA256 = "{lock_sha}"', text)
+          text=re.sub(r'ATTESTATION_DIR = Path\(__file__\)\.resolve\(\)\.parent / "[^"]+"', 'ATTESTATION_DIR = Path(__file__).resolve().parent / "attestations_v9"', text)
+          text=text.replace('v8r3 release attestation', 'v9 release attestation')
+          text=text.replace('v8r3 attestation', 'v9 attestation')
+          text=text.replace('v8r3 code-attestation', 'v9 code-attestation')
+          text=text.replace('v8r3 lock/runtime-attestation', 'v9 lock/runtime-attestation')
+          att.write_text(text,encoding='utf-8')
+          print('science',science)
+          print('manifest sha',manifest_sha)
+          print('code sha',code_sha)
+          print('lock sha',lock_sha)
+          PY
+
+      - name: Commit v9 science repin and exact evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py \
+                  journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py \
+                  journal_extension/kaggle/tracka_v12_ops/attestations_v9/
+          git diff --cached --quiet && { echo 'No v9 package changes'; exit 0; }
+          git commit -m 'Repin Track-A runtime to exact v9 science evidence'
+          git push origin HEAD:ops-tracka-kaggle-master-runtime-v9-c65a508-20260915
