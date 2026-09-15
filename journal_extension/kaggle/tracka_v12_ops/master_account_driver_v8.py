@@ -24,7 +24,7 @@ from tracka_v12_kaggle_operator_v8 import (
     operator_runtime_head,
     sha256_file,
 )
-from master_attestations_v8 import verified_attestation_paths
+from master_attestations_v8 import verified_release_attestation_manifest
 from master_preflight import resolve_master_inputs
 from master_g1a_v8 import acquire_canonical_g1a_worker, ensure_canonical_g1a_k1
 from master_g2a_v8 import collect_all_g2a, ensure_account_g2a
@@ -76,12 +76,16 @@ def assert_expected_account(account_id: str, username: str) -> None:
 
 
 def verify_release_integrity() -> dict:
-    code, lock = verified_attestation_paths()
+    manifest_path, manifest = verified_release_attestation_manifest()
     return {
         "science_sha": SCIENCE_SHA,
         "operator_runtime_sha": operator_runtime_head(),
-        "code_attestation_file_sha256": sha256_file(code),
-        "lock_runtime_attestation_file_sha256": sha256_file(lock),
+        "release_attestation_manifest_sha256": sha256_file(manifest_path),
+        "code_attestation_member_sha256": manifest["code_attestation"]["member_sha256"],
+        "lock_runtime_attestation_member_sha256": manifest["lock_runtime_attestation"]["member_sha256"],
+        "r13_parity_contract_id": manifest["r13_parity_contract"]["contract_id"],
+        "r13_parity_required_max_abs_difference": manifest["r13_parity_contract"]["required_max_abs_difference"],
+        "remaining_scientific_states": manifest["remaining_scientific_states"],
     }
 
 
