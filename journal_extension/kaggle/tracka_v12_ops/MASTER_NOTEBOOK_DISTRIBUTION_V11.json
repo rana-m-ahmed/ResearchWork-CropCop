@@ -1,0 +1,41 @@
+{
+  "accelerator": "T4x2",
+  "authority": "EAAI-JE-SDL-v2.1-QA",
+  "batch_required": true,
+  "dataparallel": false,
+  "ddp": false,
+  "external_surface_accessed": false,
+  "fsdp": false,
+  "heartbeat_seconds": 60,
+  "internet_required": true,
+  "notebook_sha256": {
+    "K1": "52d176e69fa1ddc329efbc79a2238ef5b49c7321f2e7a9c3a3bdbbaaabf95bbd",
+    "K2": "e1735b9d00dba26219db5973455513b075959b07d78e133d03061a51b32311b0",
+    "K3": "8514dcd842be702d5508f847f7095d78d7d7dd4301d0d43b8d4f3b5d4e325e15"
+  },
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v11-0963f81",
+  "operator_runtime_sha": "0963f81ec54b4ac121097856741616ac04530797",
+  "parent_pipe_restream": true,
+  "peer_g2a_nonblocking": true,
+  "protected_test_accessed": false,
+  "protocol": [
+    "Run K1 first until exact v11 G1A READY is published.",
+    "Grant K2 and K3 Can view on the exact private G1A dataset.",
+    "Run K2 and K3; early worker launch returns rc=2 before stack installation.",
+    "After all five G2A profiles are READY, rerun K1 to publish SCIENCE_GO.",
+    "Rerun K2/K3 after SCIENCE_GO; reuse the same account notebook for controlled continuations."
+  ],
+  "remaining_scientific_states": 11,
+  "schema_version": "4.7",
+  "science_authorized": false,
+  "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
+  "secrets": [
+    "KAGGLE_USERNAME",
+    "KAGGLE_KEY",
+    "CROPCOP_GITHUB_TOKEN",
+    "CROPCOP_EXPECTED_KAGGLE_USERNAME"
+  ],
+  "status": "LOCKED_DISTRIBUTION",
+  "worker_control_nonblocking": true,
+  "worker_g1a_prerequisite_fail_fast": true
+}
