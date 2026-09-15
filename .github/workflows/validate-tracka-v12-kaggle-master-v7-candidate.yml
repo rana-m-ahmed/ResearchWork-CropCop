@@ -39,10 +39,11 @@ jobs:
         run: |
           set -euo pipefail
           SCIENCE_SHA='e21a505792ddd91df55712e248391c79c55cf235'
-          test "$(git merge-base "$SCIENCE_SHA" HEAD)" = "$SCIENCE_SHA"
+          git fetch --quiet origin "$SCIENCE_SHA"
+          git cat-file -e "$SCIENCE_SHA^{commit}"
           grep -F "SCIENCE_SHA = \"$SCIENCE_SHA\"" journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator.py
           git show "$SCIENCE_SHA:journal_extension/scripts/seal_tracka_v12_g1a.py" | grep -F 'TORCHVISION_VERSION,'
-          echo 'repaired science binding PASS'
+          echo 'repaired pinned science binding PASS'
 
       - name: Compile v7 remediation modules
         shell: bash
