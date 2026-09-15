@@ -42,6 +42,8 @@ jobs:
           old_runtime = '2f127cbb61d752eec22c3bfd3ecd527a3a81c283'
           old_runtime_branch = 'ops-tracka-kaggle-master-runtime-v8-2f127cb'
           old_distribution_branch = 'ops-tracka-kaggle-master-v8-distribution-20260915'
+          old_code_att = 'cd8a23ca6a5ebdba18e8466d8578d2646723c349b9428b8d8890aac7c62ab187'
+          old_lock_att = '046814249b119f6d520df58095bf951b13e35fcc09f995599c36202f8b0bed7f'
 
           notebooks = [
               'TRACKA_V12_MASTER_K1.ipynb',
@@ -74,13 +76,15 @@ jobs:
                       cell['execution_count'] = None
                       cell['outputs'] = []
               meta = nb['metadata']['cropcop_operator']
-              meta['schema_version'] = '4.1'
-              meta['science_sha'] = science
-              meta['operator_runtime_sha'] = runtime
-              meta['operator_runtime_branch'] = runtime_branch
-              meta['launcher'] = 'master_launch_guard_v8.py'
-              meta['driver'] = 'master_account_driver_v8.py'
-              meta['expected_account_binding_required'] = True
+              meta.update({
+                  'schema_version': '4.1',
+                  'science_sha': science,
+                  'operator_runtime_sha': runtime,
+                  'operator_runtime_branch': runtime_branch,
+                  'launcher': 'master_launch_guard_v8.py',
+                  'driver': 'master_account_driver_v8.py',
+                  'expected_account_binding_required': True,
+              })
               path.write_text(json.dumps(nb, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
 
           hashes = {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in notebooks}
@@ -127,23 +131,30 @@ jobs:
               'operator_runtime_branch': runtime_branch,
           })
           durability = contract.setdefault('durability', {})
-          durability['kaggle_generation_must_advance_before_sync_success'] = True
-          durability['generation_marker_roundtrip_required'] = True
-          durability['checkpoint_index_hash_bound'] = True
-          durability['g2a_destructive_restore_generation_aware'] = True
-          durability['g2a_restore_contract'] = 'generation_aware_kaggle_v8'
+          durability.update({
+              'kaggle_generation_must_advance_before_sync_success': True,
+              'generation_marker_roundtrip_required': True,
+              'checkpoint_index_hash_bound': True,
+              'g2a_destructive_restore_generation_aware': True,
+              'g2a_restore_contract': 'generation_aware_kaggle_v8',
+          })
           contract_path.write_text(json.dumps(contract, indent=2, sort_keys=True) + '\n', encoding='utf-8')
 
-          for name in ('.runtime-freeze-marker', 'RUNTIME_BRANCH_NOTE.md'):
-              path = root / name
-              text = path.read_text(encoding='utf-8')
-              text = text.replace(old_science, science).replace(old_runtime, runtime).replace(old_runtime_branch, runtime_branch).replace(old_distribution_branch, distribution_branch)
-              text = text.replace('v8', 'v8.1') if name == 'RUNTIME_BRANCH_NOTE.md' else text
-              path.write_text(text, encoding='utf-8')
+          marker = root / '.runtime-freeze-marker'
+          marker_text = marker.read_text(encoding='utf-8')
+          marker_text = marker_text.replace(old_science, science).replace(old_runtime, runtime).replace(old_runtime_branch, runtime_branch).replace(old_distribution_branch, distribution_branch)
+          marker.write_text(marker_text, encoding='utf-8')
+
+          note = root / 'RUNTIME_BRANCH_NOTE.md'
+          note_text = note.read_text(encoding='utf-8')
+          note_text = note_text.replace(old_science, science).replace(old_runtime, runtime).replace(old_runtime_branch, runtime_branch).replace(old_distribution_branch, distribution_branch)
+          note_text = note_text.replace('# Track-A v1.2 v8 Runtime Freeze', '# Track-A v1.2 v8.1 Runtime Freeze')
+          note.write_text(note_text, encoding='utf-8')
 
           test = Path('tests/test_tracka_v12_kaggle_distribution_v8.py')
           text = test.read_text(encoding='utf-8')
           text = text.replace(old_science, science).replace(old_runtime, runtime).replace(old_runtime_branch, runtime_branch)
+          text = text.replace(old_code_att, code_att).replace(old_lock_att, lock_att)
           text = text.replace("self.assertEqual(meta[\"schema_version\"], \"4.0\")", "self.assertEqual(meta[\"schema_version\"], \"4.1\")")
           text = text.replace("self.assertEqual(self.freeze[\"qa_workflow_run_id\"], 34936176259)", "self.assertEqual(self.freeze[\"qa_workflow_run_id\"], 34955178356)")
           text = text.replace("self.assertEqual(self.contract[\"status\"], \"LOCKED_MASTER_OPERATOR_CONTRACT\")", "self.assertEqual(self.contract[\"status\"], \"LOCKED_MASTER_OPERATOR_CONTRACT\")\n        self.assertEqual(self.contract[\"schema_version\"], \"4.1\")")
@@ -156,10 +167,13 @@ jobs:
               assert science in source and runtime in source and runtime_branch in source
               assert old_science not in source and old_runtime not in source and old_runtime_branch not in source
               assert 'master_launch_guard_v8.py' in source
+              assert 'master_launch_guard_v8.1.py' not in source
               for cell in nb['cells']:
                   if cell['cell_type'] == 'code':
                       assert cell['execution_count'] is None and cell['outputs'] == []
                       compile(''.join(cell.get('source') or []), f'{name}:cell', 'exec')
+          assert runtime_branch in note.read_text(encoding='utf-8')
+          assert 'master_launch_guard_v8.py' in note.read_text(encoding='utf-8')
           print(json.dumps(hashes, indent=2, sort_keys=True))
           PY
       - name: Run distribution regression before freeze commit
