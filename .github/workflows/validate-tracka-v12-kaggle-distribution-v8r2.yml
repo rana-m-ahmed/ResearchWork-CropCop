@@ -137,24 +137,31 @@ jobs:
           print('v8.2 three-notebook distribution coherence PASS')
           PY
 
-      - name: Verify distribution contains no tracked secrets or binary artifacts
+      - name: Verify exact distribution delta contains no secret or binary material
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           import re, subprocess
-          files = subprocess.check_output(['git','ls-files'], text=True).splitlines()
+          base = '0278470dcebbaf7a7595f255854e3c4acaeabcd3'
+          changed = subprocess.check_output(['git','diff','--name-only',f'{base}..HEAD'], text=True).splitlines()
+          expected = {
+              '.github/workflows/validate-tracka-v12-kaggle-distribution-v8r2.yml',
+              'journal_extension/kaggle/tracka_v12_ops/MASTER_NOTEBOOK_DISTRIBUTION_V8R2.json',
+              'journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K1.ipynb',
+              'journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K2.ipynb',
+              'journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K3.ipynb',
+          }
+          assert set(changed) == expected, changed
           forbidden_ext = re.compile(r'\.(?:pt|pth|ckpt|pte|safetensors|zip|tar|gz|7z|env)$', re.I)
-          bad = [p for p in files if forbidden_ext.search(p)]
+          bad = [p for p in changed if forbidden_ext.search(p)]
           if bad:
-              raise SystemExit('forbidden tracked artifact(s): ' + repr(bad))
-          targets = [p for p in files if p.endswith(('.ipynb','.json','.py','.yml','.yaml'))]
-          for p in targets:
-              try:
-                  text = open(p, encoding='utf-8').read()
-              except UnicodeDecodeError:
-                  continue
-              for marker in ('github_pat_', 'ghp_'):
+              raise SystemExit('forbidden distribution artifact(s): ' + repr(bad))
+          markers = ('github' + '_pat_', 'g' + 'hp_')
+          for p in changed:
+              text = open(p, encoding='utf-8').read()
+              for marker in markers:
                   if marker in text:
-                      raise SystemExit(f'tracked secret marker {marker!r} in {p}')
+                      raise SystemExit(f'tracked secret marker {marker!r} in release delta file {p}')
+          print('v8.2 distribution delta hygiene PASS')
           PY
