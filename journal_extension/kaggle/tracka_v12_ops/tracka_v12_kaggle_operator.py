@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 from typing import Iterable
 
-SCIENCE_SHA = "9a72e9466a9a3e7429e0e36a028edac662f83146"
+SCIENCE_SHA = "e21a505792ddd91df55712e248391c79c55cf235"
 REPOSITORY_URL = "https://github.com/rana-m-ahmed/ResearchWork-CropCop.git"
 AUTHORITY_ID = "EAAI-JE-SDL-v2.1-QA"
 MANIFEST_SHA256 = "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2"
