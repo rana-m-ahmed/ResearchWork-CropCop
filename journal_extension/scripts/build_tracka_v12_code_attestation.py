@@ -18,6 +18,8 @@ STATIC_GATES = (
     "training_runner_contract",
     "checkpoint_recovery_contract",
     "cross_slot_recovery_contract",
+    "kaggle_generation_durability_contract",
+    "g1a_runtime_global_resolution_contract",
     "six_gpu_parent_orchestration",
     "selected_checkpoint_replay_implementation",
     "classwise_confusion_implementation",
@@ -35,6 +37,7 @@ IMPLEMENTATION_FILES = (
     "journal_extension/TRACK_A_V12_EXECUTION_RUNBOOK.md",
     "journal_extension/src/cropcop_je/checkpointing.py",
     "journal_extension/src/cropcop_je/persistence.py",
+    "journal_extension/src/cropcop_je/persistence_v8.py",
     "journal_extension/src/cropcop_je/secondary.py",
     "journal_extension/src/cropcop_je/tracka_v12.py",
     "journal_extension/src/cropcop_je/tracka_v12_analysis.py",
@@ -120,7 +123,7 @@ def main() -> int:
             "principal": json.loads(principal.read_text(encoding="utf-8")),
             "secondary": json.loads(secondary.read_text(encoding="utf-8")),
         },
-        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, historical-lineage tests, G2A private-durability tests, analysis-evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the canonical runbook plus G1A/G2A qualification, checkpoint/persistence recovery, six-GPU execution, historical replay, direct/auxiliary analysis, XAI, direct selection and comprehensive 21-state closure implementations, but does not independently authorize scientific execution.",
+        "note": "This attestation is emitted only after exact-head contract tests, failure injection, orchestration/placement tests, G1A runtime-global checks, generation-aware Kaggle durability tests, historical-lineage tests, analysis-evidence tests and both historical science-diff sentinels pass in GitHub Actions. It binds the canonical runbook plus G1A/G2A qualification, checkpoint/persistence recovery, six-GPU execution, historical replay, direct/auxiliary analysis, XAI, direct selection and comprehensive 21-state closure implementations, but does not independently authorize scientific execution.",
     }
     payload["attestation_sha256"] = sha256_json(payload)
     atomic_write_json(args.output, payload)
