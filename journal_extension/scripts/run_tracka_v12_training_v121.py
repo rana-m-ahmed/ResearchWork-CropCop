@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 
 import _bootstrap  # noqa: F401
+from cropcop_je import tracka_v12_g1a_v121 as g1a_v121
+from cropcop_je import tracka_v12_runtime as tracka_runtime
 from cropcop_je.persistence_v8 import build_store_v8
 from cropcop_je.runlog import write_run_record
 from cropcop_je.segments import append_segment_event, utc_now
@@ -20,9 +22,15 @@ from cropcop_je.tracka_v12_placement import SLOT_IDS, logical_lane_id
 import run_tracka_v12_training as base
 
 
-# Track-A v1.2 uses a generation-aware Kaggle durable store. This changes only
+# Track-A v1.2.1 uses a generation-aware Kaggle durable store. This changes only
 # persistence/restore transport semantics; frozen training/scientific semantics remain in base.
 base.build_store = build_store_v8
+
+# R13 parity-contract v1.2.1 supersedes only the pre-science numerical acceptance
+# bound. The runtime bundle validator and R13 initialization loader must use the
+# versioned contract identity/tolerance rather than historical v1.2 defaults.
+tracka_runtime.validate_g1a_seal_object = g1a_v121.validate_g1a_seal_object
+tracka_runtime.load_r13_initialization = g1a_v121.load_r13_initialization
 
 
 def validate_g2a_compatible(

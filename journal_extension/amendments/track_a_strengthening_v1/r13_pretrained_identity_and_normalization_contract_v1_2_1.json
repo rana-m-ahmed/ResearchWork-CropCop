@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.2.1",
+  "contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1",
+  "supersedes_contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2",
+  "supersedes_path": "journal_extension/amendments/track_a_strengthening_v1/r13_pretrained_identity_and_normalization_contract_v1_2.json",
+  "status": "PRE_EXECUTION_LOCK",
+  "science_authorized": false,
+  "scientific_outputs_observed_before_amendment": false,
+  "ctc_input": {
+    "mean": [0.485, 0.456, 0.406],
+    "std": [0.229, 0.224, 0.225]
+  },
+  "expected_model_structure": {
+    "classifier": "head",
+    "input_size": [3, 256, 256],
+    "num_features": 320,
+    "patch_embed": "patch_embed.proj",
+    "patch_size": 16,
+    "pretrained_num_classes": 1000
+  },
+  "g1a_requirements": [
+    "download or otherwise materialize the exact model.safetensors bytes bound below",
+    "verify SHA-256 and byte count before deserialization",
+    "instantiate the exact model under timm==1.0.26 with pretrained=False and load the verified upstream state strictly",
+    "apply the normalization-equivalence patch-embedding transform before classifier reset",
+    "prove numerical parity against the unmodified upstream model fed its native-normalized input under the v1.2.1 evidence-backed float32 gate",
+    "reset only the 1000-way classifier to 120 classes under the frozen S1/S2/S3 seed",
+    "persist and hash a separate deterministic initialization object for each seed"
+  ],
+  "model": {
+    "hf_repository": "timm/vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k",
+    "hf_model_add_commit": "10143029df1b2df4c63623de6b740ecccb2b8ea2",
+    "license": "apache-2.0",
+    "model_id": "vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k",
+    "model_safetensors_bytes": 90095744,
+    "model_safetensors_sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed",
+    "pretraining_dataset": "ImageNet-1K",
+    "reported_gmacs": 6.3,
+    "reported_params_m": 22.5,
+    "reported_top1_imagenet1k_pct": 83.24,
+    "required_timm_version": "1.0.26",
+    "upstream_native_mean": [0.5, 0.5, 0.5],
+    "upstream_native_std": [0.5, 0.5, 0.5]
+  },
+  "normalization_equivalence": {
+    "bias_formula": "b_ctc[o] = b_native[o] + sum_c(sum_kernel(W_native[o,c,:,:]) * ((mu_ctc[c] - mu_native[c]) / sigma_native[c]))",
+    "purpose": "Preserve the pretrained model's initial patch-embedding function up to expected float32 convolution/normalization rounding while all CropCop candidates receive the common CTC-v2 normalized tensor.",
+    "scope": "patch_embed.proj only, before seeded classifier reset",
+    "weight_formula": "W_ctc[o,c,:,:] = W_native[o,c,:,:] * (sigma_ctc[c] / sigma_native[c])",
+    "zero_or_absent_bias_rule": "If patch_embed.proj has no bias, an equivalent bias parameter must not be invented silently. Qualification must fail closed and the amendment must be revised before science."
+  },
+  "parity_gate": {
+    "inputs": "at least 32 deterministic RGB tensors spanning constant colors, gradients, seeded random values and 8 prediction-blind DS-V1-VAL images",
+    "metric": "max absolute difference between native-normalization patch-embedding outputs and CTC-normalization/equivalence-transformed patch-embedding outputs in float32",
+    "original_v1_2_required_max_abs_difference": 1e-05,
+    "required_max_abs_difference": 5e-05,
+    "result_must_be_sealed_before_science": true,
+    "calibration_evidence_path": "journal_extension/amendments/track_a_strengthening_v1/r13_parity_preexecution_evidence_v1_2_1.json",
+    "calibration_rule": "The new bound must remain above the independently reproduced exact-pretrained maximum 3.4332275390625e-05 and may not be changed after science starts without a new versioned amendment."
+  },
+  "unchanged_scientific_semantics": {
+    "candidate_pool": true,
+    "model_identity": true,
+    "pretrained_artifact_identity": true,
+    "normalization_formulas": true,
+    "dataset_identity": true,
+    "train_val_test_surface_policy": true,
+    "seeds": true,
+    "objectives": true,
+    "training_hyperparameters": true,
+    "selection_protocol": true,
+    "analysis_protocol": true
+  },
+  "training_or_validation_metrics_may_not_be_opened_before_parity_pass": true
+}
