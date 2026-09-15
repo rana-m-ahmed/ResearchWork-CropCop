@@ -1,0 +1,103 @@
+name: Validate Track-A v1.2 Kaggle master v11
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v11-5602304
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-v11-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact v11 candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Verify science and packaged attestations remain unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE='56023042e57758591df9babb3438f191dbe10312'
+          grep -F "SCIENCE_SHA_V8 = \"$SCIENCE\"" journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py
+          test "$(sha256sum journal_extension/kaggle/tracka_v12_ops/attestations_v10/RELEASE_ATTESTATION_MANIFEST.json | awk '{print $1}')" = 'dedf8a3b9ad29222b6bbbee669442012f0171ec14d89dca5f743ac0d7ef4ffd3'
+          echo 'science identity and source attestations unchanged PASS'
+
+      - name: Compile active v11 runtime
+        run: |
+          python -m py_compile \
+            journal_extension/kaggle/tracka_v12_ops/master_continuation_v11.py \
+            journal_extension/kaggle/tracka_v12_ops/master_account_driver_v11.py \
+            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v11.py \
+            tests/test_tracka_v12_kaggle_master_v11.py
+
+      - name: Run v11 fail-fast and heartbeat regressions
+        run: python -m unittest -v tests.test_tracka_v12_kaggle_master_v11
+
+      - name: Run current neutral durability regressions
+        run: |
+          python -m unittest -v \
+            tests.test_tracka_v12_mitigation_v8 \
+            tests.test_tracka_v12_mitigation_v9 \
+            tests.test_tracka_v12_g1a_contract \
+            tests.test_tracka_v12_g2a_durability
+
+      - name: Preserve exact v10 runtime behavior on frozen v10 head
+        shell: bash
+        run: |
+          set -euo pipefail
+          HIST='a363ce0be4b75b11bac3cc29f37f15feccfe40b5'
+          rm -rf /tmp/tracka-v10-history
+          git worktree add --detach /tmp/tracka-v10-history "$HIST"
+          (
+            cd /tmp/tracka-v10-history
+            python -m unittest -v tests.test_tracka_v12_kaggle_master_v10
+          )
+          git worktree remove /tmp/tracka-v10-history --force
+          echo 'frozen v10 preservation PASS'
+
+      - name: Verify worker prerequisite is nonblocking and before stack repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          DRIVER=journal_extension/kaggle/tracka_v12_ops/master_account_driver_v11.py
+          CONT=journal_extension/kaggle/tracka_v12_ops/master_continuation_v11.py
+          grep -F 'WORKER_G1A_PREREQUISITE_PROBE' "$DRIVER"
+          grep -F 'skipping expensive stack installation' "$DRIVER"
+          grep -F 'MASTER_HEARTBEAT_V11' "$DRIVER"
+          grep -F 'kaggle_dataset_exists(expected_locator' "$DRIVER"
+          ! grep -F 'while True' "$CONT"
+          ! grep -F 'time.sleep' "$CONT"
+          python - <<'PY'
+          from pathlib import Path
+          t=Path('journal_extension/kaggle/tracka_v12_ops/master_account_driver_v11.py').read_text()
+          assert t.index('stage("WORKER_G1A_PREREQUISITE_PROBE"') < t.index('stage("EXACT_EXECUTION_STACK"')
+          assert t.index('if not kaggle_dataset_exists(expected_locator') < t.index('g1a_bundle, g1a_seal, shared_locator = acquire_canonical_g1a_worker')
+          print('v11 ordering PASS')
+          PY
+
+      - name: Verify protected surfaces remain closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          files=['master_continuation_v11.py','master_account_driver_v11.py','master_launch_guard_v11.py']
+          text='\n'.join((root/f).read_text() for f in files)
+          for forbidden in ('DS-V1-TEST-CONSUMED','DS-EXT-*-SEALED','master_g1a_sealer_compat_v6'):
+              if forbidden in text:
+                  raise SystemExit(f'forbidden active-runtime content: {forbidden}')
+          print('protected surfaces closed PASS')
+          PY
