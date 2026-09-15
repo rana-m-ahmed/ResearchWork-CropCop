@@ -8,7 +8,9 @@ on:
       - 'journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator.py'
       - 'journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v3.py'
       - 'journal_extension/kaggle/tracka_v12_ops/attestations/**'
-      - 'journal_extension/kaggle/tracka_v12_ops/master_g1a.py'
+      - 'journal_extension/kaggle/tracka_v12_ops/master_attestations.py'
+      - 'journal_extension/kaggle/tracka_v12_ops/master_g1a_v7.py'
+      - 'journal_extension/kaggle/tracka_v12_ops/master_g2a_v7.py'
       - 'journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v7.py'
       - 'journal_extension/kaggle/tracka_v12_ops/master_account_driver_v7.py'
       - 'tests/test_tracka_v12_kaggle_master_v7.py'
@@ -24,7 +26,7 @@ jobs:
     timeout-minutes: 12
     steps:
       - name: Checkout candidate branch
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1c
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -50,7 +52,9 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile \
-            journal_extension/kaggle/tracka_v12_ops/master_g1a.py \
+            journal_extension/kaggle/tracka_v12_ops/master_attestations.py \
+            journal_extension/kaggle/tracka_v12_ops/master_g1a_v7.py \
+            journal_extension/kaggle/tracka_v12_ops/master_g2a_v7.py \
             journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v7.py \
             journal_extension/kaggle/tracka_v12_ops/master_account_driver_v7.py \
             tests/test_tracka_v12_kaggle_master_v7.py
@@ -67,20 +71,28 @@ jobs:
             tests.test_tracka_v12_kaggle_master_v5 \
             tests.test_tracka_v12_kaggle_master_v7
 
-      - name: Verify v7 source hygiene and direct sealer path
+      - name: Verify v7 source hygiene and direct source execution
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
           root=Path('journal_extension/kaggle/tracka_v12_ops')
-          files=[root/'master_launch_guard_v7.py',root/'master_account_driver_v7.py']
+          files=[
+              root/'master_launch_guard_v7.py',
+              root/'master_account_driver_v7.py',
+              root/'master_g1a_v7.py',
+              root/'master_g2a_v7.py',
+          ]
           text='\n'.join(p.read_text(encoding='utf-8') for p in files)
           for forbidden in ('github_pat_','ghp_','DS-V1-TEST-CONSUMED','master_g1a_sealer_compat_v6','init_globals','runpy.run_path'):
               if forbidden in text:
                   raise SystemExit(f'forbidden v7 source content: {forbidden}')
           driver=(root/'master_account_driver_v7.py').read_text(encoding='utf-8')
-          if 'from master_g1a import' not in driver:
-              raise SystemExit('v7 driver is not bound to direct canonical G1A path')
-          print('v7 source hygiene + direct G1A path PASS')
+          if 'from master_g1a_v7 import' not in driver or 'from master_g2a_v7 import' not in driver:
+              raise SystemExit('v7 driver is not bound to the fail-fast canonical G1A/G2A paths')
+          g1a=(root/'master_g1a_v7.py').read_text(encoding='utf-8')
+          if 'seal_tracka_v12_g1a.py' not in g1a:
+              raise SystemExit('v7 G1A wrapper does not execute the canonical scientific sealer directly')
+          print('v7 source hygiene + direct repaired-source execution PASS')
           PY
