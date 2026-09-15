@@ -1,13 +1,14 @@
 {
-  "code_attestation_file_sha256": "cd8a23ca6a5ebdba18e8466d8578d2646723c349b9428b8d8890aac7c62ab187",
-  "lock_runtime_attestation_file_sha256": "046814249b119f6d520df58095bf951b13e35fcc09f995599c36202f8b0bed7f",
+  "code_attestation_file_sha256": "e3c38aa2de9db070200732e8b67463956476413ee2899c2db462e6bca02a3d7e",
+  "f01_generation_restore_regression": "PASS",
+  "lock_runtime_attestation_file_sha256": "1bc81be25b38cd7bf8490858c7d4931b811e993702210d2f856b56a96d7decbe",
   "note": "Operator implementation/CI qualification only. Real Kaggle G1A/G2A and scientific-result PASS require actual account execution evidence.",
-  "qa_check": "v8-operator-qa",
+  "qa_check": "v8r1-operator-qa",
   "qa_conclusion": "success",
-  "qa_workflow_run_id": 34936176259,
-  "runtime_branch": "ops-tracka-kaggle-master-runtime-v8-2f127cb",
-  "runtime_candidate_sha": "2f127cbb61d752eec22c3bfd3ecd527a3a81c283",
-  "schema_version": "2.0",
-  "science_source_sha": "05ac7084a6be2fecd9c370477340ee0c8c4769bc",
+  "qa_workflow_run_id": 34955178356,
+  "runtime_branch": "ops-tracka-kaggle-master-runtime-v8r1-f8aea6c-20260915",
+  "runtime_candidate_sha": "31d6224bd4b87c02ac3f4985d11d0a5f7a2b615d",
+  "schema_version": "2.1",
+  "science_source_sha": "f8aea6c2b481f8436653d4c6504f406948a98082",
   "status": "PASS"
 }

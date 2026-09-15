@@ -9,6 +9,8 @@
   "durability": {
     "checkpoint_index_hash_bound": true,
     "checkpoint_scientific_identity_validation_preserved": true,
+    "g2a_destructive_restore_generation_aware": true,
+    "g2a_restore_contract": "generation_aware_kaggle_v8",
     "generation_marker_roundtrip_required": true,
     "kaggle_generation_must_advance_before_sync_success": true
   },
@@ -26,8 +28,8 @@
     "TRACKA_V12_MASTER_K2.ipynb",
     "TRACKA_V12_MASTER_K3.ipynb"
   ],
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v8-2f127cb",
-  "operator_runtime_sha": "2f127cbb61d752eec22c3bfd3ecd527a3a81c283",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v8r1-f8aea6c-20260915",
+  "operator_runtime_sha": "31d6224bd4b87c02ac3f4985d11d0a5f7a2b615d",
   "publication": {
     "idempotent_roundtrip_required": true,
     "scientific_evidence_published_by_master_parent": true,
@@ -44,7 +46,7 @@
     "science_requires_durability_bound_go": true,
     "scientific_source_may_follow_operator_head": false
   },
-  "schema_version": "4.0",
-  "scientific_source_sha": "05ac7084a6be2fecd9c370477340ee0c8c4769bc",
+  "schema_version": "4.1",
+  "scientific_source_sha": "f8aea6c2b481f8436653d4c6504f406948a98082",
   "status": "LOCKED_MASTER_OPERATOR_CONTRACT"
 }

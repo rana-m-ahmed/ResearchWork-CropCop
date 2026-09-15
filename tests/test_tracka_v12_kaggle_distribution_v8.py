@@ -7,9 +7,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OPS = ROOT / "journal_extension" / "kaggle" / "tracka_v12_ops"
-SCIENCE = "05ac7084a6be2fecd9c370477340ee0c8c4769bc"
-RUNTIME = "2f127cbb61d752eec22c3bfd3ecd527a3a81c283"
-RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v8-2f127cb"
+SCIENCE = "f8aea6c2b481f8436653d4c6504f406948a98082"
+RUNTIME = "31d6224bd4b87c02ac3f4985d11d0a5f7a2b615d"
+RUNTIME_BRANCH = "ops-tracka-kaggle-master-runtime-v8r1-f8aea6c-20260915"
 NOTEBOOKS = [
     "TRACKA_V12_MASTER_K1.ipynb",
     "TRACKA_V12_MASTER_K2.ipynb",
@@ -38,7 +38,7 @@ class TrackAV12DistributionV8Tests(unittest.TestCase):
             path = OPS / name
             nb = json.loads(path.read_text(encoding="utf-8"))
             meta = nb["metadata"]["cropcop_operator"]
-            self.assertEqual(meta["schema_version"], "4.0")
+            self.assertEqual(meta["schema_version"], "4.1")
             self.assertEqual(meta["account_id"], account_id)
             self.assertEqual(meta["science_sha"], SCIENCE)
             self.assertEqual(meta["operator_runtime_sha"], RUNTIME)
@@ -87,8 +87,9 @@ class TrackAV12DistributionV8Tests(unittest.TestCase):
             self.assertEqual(payload[branch_key], RUNTIME_BRANCH)
         self.assertEqual(self.freeze["status"], "PASS")
         self.assertEqual(self.freeze["qa_conclusion"], "success")
-        self.assertEqual(self.freeze["qa_workflow_run_id"], 34936176259)
+        self.assertEqual(self.freeze["qa_workflow_run_id"], 34955178356)
         self.assertEqual(self.contract["status"], "LOCKED_MASTER_OPERATOR_CONTRACT")
+        self.assertEqual(self.contract["schema_version"], "4.1")
 
     def test_release_integrity_and_durability_controls_are_frozen(self):
         self.assertTrue(self.distribution["release_integrity_before_expensive_work"])
@@ -96,11 +97,13 @@ class TrackAV12DistributionV8Tests(unittest.TestCase):
         self.assertTrue(self.distribution["session_aware_dependency_deadline"])
         self.assertTrue(self.distribution["g1a_failed_handoff_fail_fast"])
         self.assertTrue(self.distribution["g2a_account_failed_status_fail_fast"])
-        self.assertEqual(self.distribution["exact_head_code_attestation_sha256"], "cd8a23ca6a5ebdba18e8466d8578d2646723c349b9428b8d8890aac7c62ab187")
-        self.assertEqual(self.distribution["exact_head_lock_runtime_attestation_sha256"], "046814249b119f6d520df58095bf951b13e35fcc09f995599c36202f8b0bed7f")
+        self.assertEqual(self.distribution["exact_head_code_attestation_sha256"], "e3c38aa2de9db070200732e8b67463956476413ee2899c2db462e6bca02a3d7e")
+        self.assertEqual(self.distribution["exact_head_lock_runtime_attestation_sha256"], "1bc81be25b38cd7bf8490858c7d4931b811e993702210d2f856b56a96d7decbe")
         self.assertTrue(self.contract["durability"]["kaggle_generation_must_advance_before_sync_success"])
         self.assertTrue(self.contract["durability"]["generation_marker_roundtrip_required"])
         self.assertTrue(self.contract["durability"]["checkpoint_index_hash_bound"])
+        self.assertTrue(self.contract["durability"]["g2a_destructive_restore_generation_aware"])
+        self.assertEqual(self.contract["durability"]["g2a_restore_contract"], "generation_aware_kaggle_v8")
 
     def test_protected_surfaces_and_parallelism_remain_closed(self):
         self.assertFalse(self.distribution["protected_test_open_before_track_a_closure"])
