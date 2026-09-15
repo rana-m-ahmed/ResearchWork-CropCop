@@ -1,0 +1,56 @@
+{
+  "attestation_materialization": {
+    "mode": "packaged_exact_bytes",
+    "runtime_requires_actions_read_permission": false,
+    "runtime_requires_github_actions_api": false
+  },
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "code_attestation": {
+    "member": "tracka-v12-pre-science-code-attestation.json",
+    "member_sha256": "d07244284d0ca77b8f96412c11ef2a5d58ca960657ddff089bba61c7a6e43e63",
+    "source_artifact_id": 10408342379,
+    "source_artifact_name": "tracka-v12-implementation-qa",
+    "source_workflow_run_id": 34998242036,
+    "status": "PASS"
+  },
+  "external_surface_accessed": false,
+  "lock_runtime_attestation": {
+    "member": "tracka-v12-exact-head-lock-runtime-attestation.json",
+    "member_sha256": "38b24403c98bdb55649d76e4ab58b362ec307e6665c1bbcb936d58a5bb38b863",
+    "source_artifact_id": 10408458669,
+    "source_artifact_name": "tracka-v12-exact-head-lock-runtime-attestation",
+    "source_workflow_run_id": 34998242024,
+    "status": "PASS"
+  },
+  "protected_test_accessed": false,
+  "r13_parity_contract": {
+    "contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1",
+    "exact_pretrained_gate_pass": true,
+    "historical_v1_2_required_max_abs_difference": 1e-05,
+    "required_max_abs_difference": 5e-05
+  },
+  "remaining_scientific_states": 11,
+  "required_static_pre_science_gates": [
+    "exact_head_ci",
+    "kaggle_generation_durability_contract",
+    "g1a_runtime_global_resolution_contract",
+    "r13_parity_amendment_contract",
+    "principal_science_diff",
+    "secondary_science_diff",
+    "checkpoint_recovery_contract",
+    "cross_slot_recovery_contract",
+    "six_gpu_parent_orchestration",
+    "training_runner_contract",
+    "teacher_factory_root_binding_contract"
+  ],
+  "schema_version": "1.2",
+  "science_authorized": false,
+  "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
+  "status": "LOCKED_PRE_SCIENCE",
+  "teacher_factory_root_contract": {
+    "entrypoint": "historical_dino_tiny:build_teacher",
+    "gate": "PASS",
+    "source_relpath": "journal_extension/teacher_factory/historical_dino_tiny.py",
+    "source_sha256": "4ec41477264387cde03f7fab8f7df4b9480223b32f8554af5c6198687a568f02"
+  }
+}
