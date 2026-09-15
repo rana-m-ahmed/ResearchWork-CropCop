@@ -19,9 +19,9 @@ from tracka_v12_kaggle_operator_v8 import (
     sha256_file,
 )
 
-RELEASE_MANIFEST_FILE_SHA256 = "22a675bf82f53cc6b6ce4996332d4c442a65fc9293200affc2750ad2446f93d4"
-CODE_ATTESTATION_MEMBER_SHA256 = "d2f2aa7f3f830829986071473b636079281583899152cbddc4e2562c7370e896"
-LOCK_RUNTIME_ATTESTATION_MEMBER_SHA256 = "3f69d7606ab13e1539e98234789fd847d822196adbd62f651dc42aced3f2a863"
+RELEASE_MANIFEST_FILE_SHA256 = "a89ad7368eaf6f685087cffe4e428dfb5295d0909dc60d448b871946f3e2b61f"
+CODE_ATTESTATION_MEMBER_SHA256 = "5bfb757219996aa7df48e21fd0531124c60a86f6a0c8ad17840a2a3eb88cda2e"
+LOCK_RUNTIME_ATTESTATION_MEMBER_SHA256 = "49efe43b76423c82c6849d43d3f1bea2ff24503f65564e722d205cdac2a21fea"
 REPOSITORY = "rana-m-ahmed/ResearchWork-CropCop"
 
 
@@ -131,6 +131,16 @@ def _validate_attestation_payload(payload: dict, *, kind: str, required_gates: s
         missing = [name for name in sorted(required_gates) if gates.get(name) != "PASS"]
         if missing:
             raise OperatorError("materialized code attestation lacks required PASS gates: " + ", ".join(missing))
+        implementation = payload.get("implementation_sha256") or {}
+        for required_path in (
+            "journal_extension/kaggle/run_tracka_v12_account_v121.py",
+            "journal_extension/scripts/seal_tracka_v12_science_go_v124.py",
+            "journal_extension/scripts/seal_tracka_v12_g1a_v121.py",
+            "journal_extension/scripts/run_tracka_v12_training_v121.py",
+        ):
+            value = str(implementation.get(required_path, ""))
+            if len(value) != 64:
+                raise OperatorError(f"materialized code attestation does not bind {required_path}")
     else:
         if payload.get("science_authorized") is not False:
             raise OperatorError("materialized lock/runtime attestation unexpectedly authorizes science")
