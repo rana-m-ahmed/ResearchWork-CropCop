@@ -119,7 +119,12 @@ def launch_or_follow(account_id: str) -> int:
         raise OperatorError(f"unknown master account: {account_id}")
 
     runtime_sha = operator_runtime_head()
-    guard_root = Path("/kaggle/working/.cropcop_tracka_master_guard_v7")
+    guard_root = Path(
+        os.environ.get(
+            "CROPCOP_MASTER_GUARD_ROOT",
+            "/kaggle/working/.cropcop_tracka_master_guard_v7",
+        )
+    )
     guard_root.mkdir(parents=True, exist_ok=True)
     lock_path = guard_root / f"{account_id}.lock"
     status_path = guard_root / f"{account_id}.status.json"
