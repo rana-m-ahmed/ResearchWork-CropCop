@@ -11,7 +11,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from cropcop_je.hashing import sha256_file
-from cropcop_je.tracka_v12_g1a import (
+from cropcop_je.tracka_v12_g1a_v121 import (
     R13_PARITY_CONTRACT_ID,
     R13_PARITY_TOLERANCE,
     R13_PRETRAINED_BYTES,
@@ -84,8 +84,6 @@ def validate(pretrained_path: Path) -> dict:
 
     if observed > EXPECTED_TOLERANCE:
         errors.append(f"exact pretrained parity exceeds v1.2.1 tolerance: {observed} > {EXPECTED_TOLERANCE}")
-    # This validates the provenance claim that motivated the amendment. If future numerical
-    # behavior unexpectedly falls under the historical threshold, a new review is required.
     if observed <= OLD_TOLERANCE:
         errors.append(f"exact pretrained diagnostic no longer reproduces the v1.2 calibration defect: {observed} <= {OLD_TOLERANCE}")
 
