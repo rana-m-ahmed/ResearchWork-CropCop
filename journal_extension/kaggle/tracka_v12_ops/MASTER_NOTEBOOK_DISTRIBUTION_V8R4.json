@@ -7,6 +7,7 @@
   "driver": "master_account_driver_v8.py",
   "expected_account_binding_required": true,
   "fsdp_allowed": false,
+  "g1a_exact_generation_binding": true,
   "github_actions_read_permission_required_at_runtime": false,
   "kaggle": {
     "accelerator": "T4 x2",
@@ -27,24 +28,24 @@
       "coordinator": true,
       "path": "journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K1.ipynb",
       "requires_historical_principal_g1": true,
-      "sha256": "98f1d8e54f5e499ba4a05276dde2b4aee16821fa471d264a8a08b6a88acd8784"
+      "sha256": "f829b413419d3c9aa7b445c7292723c1e3e7c48f2d5e850f64cf015af99a0003"
     },
     "K2": {
       "coordinator": false,
       "path": "journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K2.ipynb",
       "requires_historical_principal_g1": false,
-      "sha256": "b8854fac8fa12b4c11084e1b3f1ee56b1bc3bb6b1f0105ab99e50cc12bf4a1d0"
+      "sha256": "3fa80ed681f80f89d117ea02220fd995438764d7c7e02c8eb6f3fb5e09691519"
     },
     "K3": {
       "coordinator": false,
       "path": "journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K3.ipynb",
       "requires_historical_principal_g1": false,
-      "sha256": "967a1a026eccd0039c6faa2db5d6bb739fd3f174bd6f9715be5dc2580fbbd9fe"
+      "sha256": "2c2369265098433037d465f3b4648e153a6e4464089e6945138a4426e6f6c101"
     }
   },
-  "note": "v8r3 packages exact-head attestations into the frozen runtime; Kaggle does not download GitHub Actions artifacts.",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v8r3-424e331",
-  "operator_runtime_sha": "424e331711498b6e0f769a2afe525ae8d9008d2b",
+  "note": "v8r4 preserves packaged exact-head attestations and additionally waits for the exact newly-versioned canonical G1A seal before accepting Kaggle round-trip readiness.",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v8r4-99ae5f3",
+  "operator_runtime_sha": "99ae5f340bdea1142c8b4e9289956e4387fd494a",
   "protected_test_opened": false,
   "remaining_scientific_states": 11,
   "required_kaggle_secrets": [
@@ -53,7 +54,7 @@
     "CROPCOP_GITHUB_TOKEN",
     "CROPCOP_EXPECTED_KAGGLE_USERNAME"
   ],
-  "schema_version": "4.3",
+  "schema_version": "4.4",
   "science_source_sha": "4ced2fd7c764c07fa47fb57fbea38376d2ce61a4",
   "status": "LOCKED_DISTRIBUTION",
   "track_b_opened": false,
