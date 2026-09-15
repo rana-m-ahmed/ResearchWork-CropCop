@@ -1,5 +1,7 @@
-Immutable runtime target: `ops-tracka-kaggle-master-runtime-v3-fix3-e8ea268` at `e8ea268729663a921db461b337a6cfe50e03630f`.
+# Track-A v1.2 v8 Runtime Freeze
 
-Distribution notebooks must clone that branch and verify the exact SHA before invoking `master_account_driver.py`.
+Immutable runtime target: `ops-tracka-kaggle-master-runtime-v8-2f127cb` at `2f127cbb61d752eec22c3bfd3ecd527a3a81c283`.
 
-This runtime supersedes `9fdbba6...` for new execution. It resolves the real Kaggle V1 packaging rather than assuming the image root is an ancestor of `audit/final_manifest.csv`: candidate roots are shallow directories containing direct `train/` and `val/` children, qualification uses only frozen TRAIN/VAL manifest paths, byte-identical manifest/class-map duplicates are ranked by dataset structural affinity, and genuinely conflicting roots remain fail-closed. The exact resolved manifest/class-map/image-root/principal-G1 paths are then bound for all downstream helpers. Git write authorization is checked before dependency repair, and deterministic pre-science clone/TorchVision/R13 network operations have bounded retry. Frozen science remains unchanged at `9a72e9466a9a3e7429e0e36a028edac662f83146`.
+Qualified science source: `05ac7084a6be2fecd9c370477340ee0c8c4769bc`.
+
+The three distributed notebooks must clone that branch and verify the exact SHA before invoking `master_launch_guard_v8.py`. The runtime packages exact-head source attestations, performs release-integrity validation before expensive work, uses generation-aware Kaggle durability, source/runtime/G1A-bound failure signaling, a shared session dependency deadline, and parent-only Git evidence publication. Protected Track-A test/external surfaces remain closed.

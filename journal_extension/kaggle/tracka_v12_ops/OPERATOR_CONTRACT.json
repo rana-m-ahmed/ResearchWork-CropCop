@@ -1,104 +1,50 @@
 {
-  "schema_version": "3.5",
-  "status": "LOCKED_MASTER_OPERATOR_CONTRACT",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
-  "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "operator_runtime_sha": "902e7774dda32106a03bfb3f5917946c11ff8e2c",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v5-902e777",
-  "driver": "master_account_driver_v5.py",
-  "dataset": {
-    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
-    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
-    "preferred_verified_v1_root": "/kaggle/input/datasets/ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1",
-    "preferred_manifest_relative": "audit/final_manifest.csv",
-    "preferred_class_map_relative": "audit/class_to_idx.json",
-    "preferred_image_root_relative": "dataset",
-    "preferred_principal_g1": "/kaggle/input/datasets/ranamuhammadahmed6/cropcop-g1-sealed/G1_PACKAGE",
-    "preferred_paths_are_trusted_without_verification": false,
-    "fail_fast_before_dependency_install": true,
-    "diagnose_mounted_candidate_hashes": true,
-    "byte_identical_duplicate_metadata_allowed": true,
-    "nested_split_root_discovery": true,
-    "root_qualification_surfaces": ["train", "val"],
-    "protected_test_opened_for_root_qualification": false,
-    "duplicate_manifest_selection": "strongest_dataset_structural_affinity",
-    "conflicting_image_roots_fail_closed": true,
-    "bounded_shallow_metadata_discovery": true,
-    "resolved_paths_bound_for_downstream_reuse": true
+  "coordination": {
+    "failure_statuses_are_source_runtime_g1a_bound": true,
+    "fixed_30_minute_cross_account_wait": false,
+    "session_deadline_shared_across_dependency_waits": true
   },
-  "principal_g1_seal_sha256": "442d9e7708749efedcb82ef9f4fd131211549770eecad985177eaaf4117052cd",
-  "torchvision_provenance": {
-    "download_script": "journal_extension/scripts/prepare_torchvision_pretrained.py",
-    "capture_script": "journal_extension/scripts/capture_torchvision_pretrained_provenance.py",
-    "download_receipt_is_scientific_provenance": false,
-    "exact_tensor_match_required": true,
-    "candidate_and_official_tensor_identity_must_match": true,
-    "frozen_validator_required_before_g1a_seal": true
-  },
-  "r13": {
-    "sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed",
-    "bytes": 90095744,
-    "hf_commit": "10143029df1b2df4c63623de6b740ecccb2b8ea2"
-  },
-  "notebooks": ["TRACKA_V12_MASTER_K1.ipynb", "TRACKA_V12_MASTER_K2.ipynb", "TRACKA_V12_MASTER_K3.ipynb"],
-  "accounts": {
-    "K1": {"g2a": ["CAL-EFFB0", "CAL-CNXTT"], "coordinator": true, "requires_historical_principal_g1_input": true},
-    "K2": {"g2a": ["CAL-MNV4-LOGITS", "CAL-MNV4-FEATURE"], "coordinator": false, "requires_historical_principal_g1_input": false},
-    "K3": {"g2a": ["CAL-R13"], "coordinator": false, "requires_historical_principal_g1_input": false}
+  "driver": "master_account_driver_v8.py",
+  "durability": {
+    "checkpoint_index_hash_bound": true,
+    "checkpoint_scientific_identity_validation_preserved": true,
+    "generation_marker_roundtrip_required": true,
+    "kaggle_generation_must_advance_before_sync_success": true
   },
   "kaggle": {
-    "accelerator": "T4 x2",
-    "internet_required": true,
-    "batch_required": true,
-    "optional_expected_username_gate": true,
-    "dataset_slug_max_length": 50,
+    "canonical_g1a_private_dataset_count": 1,
+    "g1a_worker_access_required_before_k2_k3_launch": true,
     "g2a_distinct_private_dataset_count": 5,
-    "scientific_distinct_private_dataset_count": 11,
-    "canonical_g1a_private_dataset_count": 1
+    "required_accelerator": "T4 x2",
+    "required_account_identity_binding": true,
+    "scientific_distinct_private_dataset_count": 11
   },
+  "launcher": "master_launch_guard_v8.py",
+  "notebooks": [
+    "TRACKA_V12_MASTER_K1.ipynb",
+    "TRACKA_V12_MASTER_K2.ipynb",
+    "TRACKA_V12_MASTER_K3.ipynb"
+  ],
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v8-2f127cb",
+  "operator_runtime_sha": "2f127cbb61d752eec22c3bfd3ecd527a3a81c283",
   "publication": {
-    "github_evidence_branches": true,
-    "parent_only": true,
-    "serialized": true,
-    "bounded_retry": true,
-    "byte_identical_remote_is_successful_noop": true,
-    "partial_bundle_incremental_publication": true,
-    "changed_file_only_update": true,
-    "final_full_bundle_roundtrip_required": true,
-    "remote_branch_must_descend_from_science_sha": true,
-    "post_error_remote_roundtrip_recovery": true,
-    "write_preflight_before_stack_repair": true,
-    "public_safe_text_only": true,
-    "scientific_child_git_credentials": false,
-    "frozen_scientific_runner_git_publication_enabled": false,
+    "idempotent_roundtrip_required": true,
     "scientific_evidence_published_by_master_parent": true,
-    "publication_failure_invalidates_science": false
-  },
-  "pre_science_io": {
-    "science_checkout_bounded_retry": true,
-    "torchvision_upstream_bounded_retry": true,
-    "r13_upstream_bounded_retry": true,
-    "scientific_result_steps_auto_retried": false
-  },
-  "recovery": {
-    "same_notebook_rerun": true,
-    "scientific_resume_mode": "auto",
-    "empty_g1a_placeholder_is_recoverable": true,
-    "stale_or_invalid_g1a_seal_is_recoverable_without_investigation": false,
-    "dependency_timeout_is_science_failure": false,
-    "explicit_continuation_required": true,
-    "malformed_summary_is_resumable": false
+    "scientific_runner_git_publication_enabled": false,
+    "v8_source_ancestry_required": true
   },
   "rules": {
-    "scientific_source_may_follow_operator_head": false,
+    "dataparallel_allowed": false,
+    "ddp_allowed": false,
+    "external_prediction_open_before_track_a_closure": false,
+    "fsdp_allowed": false,
     "notebooks_may_follow_distribution_head": false,
     "protected_test_open_before_track_a_closure": false,
-    "external_prediction_open_before_track_a_closure": false,
-    "g2a_validation_metrics_enabled": false,
     "science_requires_durability_bound_go": true,
-    "scientific_children_per_gpu": 1,
-    "ddp_allowed": false,
-    "dataparallel_allowed": false,
-    "fsdp_allowed": false
-  }
+    "scientific_source_may_follow_operator_head": false
+  },
+  "schema_version": "4.0",
+  "scientific_source_sha": "05ac7084a6be2fecd9c370477340ee0c8c4769bc",
+  "status": "LOCKED_MASTER_OPERATOR_CONTRACT"
 }
