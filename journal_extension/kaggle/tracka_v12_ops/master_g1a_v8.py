@@ -32,6 +32,7 @@ from master_verified_pretrained_v5 import prepare_verified_torchvision
 G1A_HANDOFF_FILE = "TRACKA_V12_G1A_HANDOFF.json"
 HANDOFF_SCHEMA_VERSION = "1.2.1"
 G1A_FAILURE_CODE = "K1_G1A_PIPELINE_FAILED"
+G1A_GENERATION_POLL_SECONDS = 15.0
 
 
 def _retry_pre_science_io(label: str, fn, *, attempts: int = 3):
@@ -136,6 +137,48 @@ def build_g1a_once(repo: Path, *, manifest: Path, class_map: Path, image_root: P
     return validate_g1a_bundle_with_science(repo, output_bundle)
 
 
+def wait_for_exact_g1a_generation(
+    repo: Path,
+    locator: str,
+    destination: Path,
+    *,
+    env: dict[str, str],
+    expected_seal_sha256: str,
+) -> tuple[Path, dict]:
+    """Wait until Kaggle serves the exact newly-versioned G1A generation, not an older READY version."""
+    expected = str(expected_seal_sha256 or "").strip()
+    if len(expected) != 64:
+        raise OperatorError("exact G1A generation wait requires one 64-character expected seal hash")
+    attempt = 0
+    last_detail = "not attempted"
+    while True:
+        attempt += 1
+        try:
+            bundle, seal = download_and_validate_g1a_dataset(repo, locator, destination, env=env)
+            observed = str(seal.get("g1a_seal_sha256", "") or "")
+            if observed == expected:
+                print(
+                    f"G1A_EXACT_GENERATION_READY locator={locator} seal={expected[:12]} attempts={attempt}",
+                    flush=True,
+                )
+                return bundle, seal
+            last_detail = f"stale-valid-seal={observed[:12] if observed else '<missing>'}"
+        except (OperatorError, subprocess.SubprocessError, OSError, RuntimeError) as exc:
+            last_detail = f"{type(exc).__name__}: {exc}"
+
+        if dependency_wait_expired():
+            raise TimeoutError(
+                "session dependency budget exhausted waiting for the exact canonical G1A Kaggle generation; "
+                f"expected_seal={expected[:12]} last={last_detail}"
+            )
+        print(
+            f"G1A_EXACT_GENERATION_PENDING locator={locator} expected={expected[:12]} "
+            f"attempt={attempt} last={last_detail}",
+            flush=True,
+        )
+        time.sleep(G1A_GENERATION_POLL_SECONDS)
+
+
 def _publish_failed_handoff_best_effort(repo: Path, handoff: Path, locator: str) -> None:
     write_handoff(handoff, status="FAILED", locator=locator, failure_code=G1A_FAILURE_CODE)
     try:
@@ -168,9 +211,13 @@ def ensure_canonical_g1a_k1(
             seal = build_g1a_once(repo, manifest=manifest, class_map=class_map, image_root=image_root, output_bundle=bundle)
             version_private_dataset(locator, bundle, message=f"Canonical Track-A v1.2.1 G1A {SCIENCE_SHA[:12]}", env=kaggle_env)
             wait_kaggle_dataset_ready(locator, env=kaggle_env)
-            roundtrip_bundle, roundtrip_seal = download_and_validate_g1a_dataset(repo, locator, master_root / "g1a-roundtrip", env=kaggle_env)
-            if roundtrip_seal["g1a_seal_sha256"] != seal["g1a_seal_sha256"]:
-                raise OperatorError("private G1A round-trip changed canonical seal")
+            roundtrip_bundle, roundtrip_seal = wait_for_exact_g1a_generation(
+                repo,
+                locator,
+                master_root / "g1a-roundtrip",
+                env=kaggle_env,
+                expected_seal_sha256=seal["g1a_seal_sha256"],
+            )
             bundle, seal = roundtrip_bundle, roundtrip_seal
         except BaseException:
             shutil.rmtree(bundle, ignore_errors=True)
