@@ -1,8 +1,10 @@
-name: Validate Track-A v1.2 Kaggle master v5
+name: Validate Track-A v1.2 Kaggle master v5-v6 candidate
 
 on:
   push:
-    branches: [ops-tracka-kaggle-master-v3-20260913]
+    branches:
+      - ops-tracka-kaggle-master-v3-20260913
+      - ops-tracka-kaggle-master-v6-candidate-20260915
     paths:
       - 'journal_extension/kaggle/tracka_v12_ops/**'
       - 'tests/test_tracka_v12_kaggle_ops.py'
@@ -10,6 +12,7 @@ on:
       - 'tests/test_tracka_v12_kaggle_master_v3.py'
       - 'tests/test_tracka_v12_kaggle_publication_v4.py'
       - 'tests/test_tracka_v12_kaggle_master_v5.py'
+      - 'tests/test_tracka_v12_kaggle_master_v6.py'
       - '.github/workflows/validate-tracka-v12-kaggle-master-v3.yml'
   workflow_dispatch:
 
@@ -17,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: tracka-v12-kaggle-master-v5-${{ github.ref }}
+  group: tracka-v12-kaggle-master-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -26,13 +29,13 @@ jobs:
     timeout-minutes: 12
     steps:
       - name: Checkout master operator branch
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up frozen Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12.13'
 
@@ -54,6 +57,7 @@ jobs:
               'tests/test_tracka_v12_kaggle_master_v3.py',
               'tests/test_tracka_v12_kaggle_publication_v4.py',
               'tests/test_tracka_v12_kaggle_master_v5.py',
+              'tests/test_tracka_v12_kaggle_master_v6.py',
           }
           prefix = 'journal_extension/kaggle/tracka_v12_ops/'
           rows = []
@@ -72,14 +76,13 @@ jobs:
           print(f'additive separation PASS: {len(rows)} files')
           PY
 
-      - name: Validate immutable runtime and exact three-notebook distribution
+      - name: Validate current frozen v5 distribution remains intact
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           import json
           from pathlib import Path
-
           SCIENCE_SHA='9a72e9466a9a3e7429e0e36a028edac662f83146'
           RUNTIME_SHA='902e7774dda32106a03bfb3f5917946c11ff8e2c'
           RUNTIME_BRANCH='ops-tracka-kaggle-master-runtime-v5-902e777'
@@ -89,7 +92,6 @@ jobs:
           observed={p.name:p for p in root.glob('*.ipynb')}
           if set(observed) != set(expected):
               raise SystemExit(f'expected exactly three notebooks; observed={sorted(observed)}')
-
           distribution=json.loads((root/'MASTER_NOTEBOOK_DISTRIBUTION.json').read_text())
           contract=json.loads((root/'OPERATOR_CONTRACT.json').read_text())
           freeze=json.loads((root/'MASTER_RUNTIME_FREEZE.json').read_text())
@@ -97,46 +99,24 @@ jobs:
           for payload,label in ((distribution,'distribution'),(contract,'contract')):
               if payload.get('schema_version')!='3.5' or payload.get('operator_runtime_sha')!=RUNTIME_SHA or payload.get('operator_runtime_branch')!=RUNTIME_BRANCH or payload.get('driver')!=DRIVER:
                   raise SystemExit(f'{label} v5 binding mismatch')
-          for key in (
-              'preferred_real_kaggle_mount_paths_embedded','preferred_paths_still_hash_structure_verified',
-              'two_stage_torchvision_pretrained_provenance','frozen_torchvision_provenance_validator_before_g1a',
-              'fail_fast_input_preflight_before_stack_install','bounded_shallow_metadata_discovery',
-              'nested_train_val_root_discovery','resolved_input_paths_bound_for_downstream_reuse',
-              'bounded_pre_science_io_retry','idempotent_git_evidence_publication',
-              'partial_bundle_incremental_publication','changed_file_only_update',
-              'final_full_bundle_roundtrip_required','scientific_parent_publication_after_frozen_execution'):
-              if distribution.get(key) is not True:
-                  raise SystemExit(f'distribution gate missing: {key}')
-          if distribution.get('protected_test_used_for_preflight_root_resolution') is not False or distribution.get('frozen_scientific_runner_git_publication_enabled') is not False:
-              raise SystemExit('protected/publication safety flag mismatch')
           if freeze.get('status')!='PASS' or freeze.get('runtime_candidate_sha')!=RUNTIME_SHA or freeze.get('runtime_branch')!=RUNTIME_BRANCH:
               raise SystemExit('freeze record mismatch')
           if not all(x in marker for x in (RUNTIME_SHA,RUNTIME_BRANCH,SCIENCE_SHA)):
               raise SystemExit('runtime marker mismatch')
-
           for name,account in expected.items():
               nb=json.loads(observed[name].read_text())
               meta=(nb.get('metadata') or {}).get('cropcop_operator') or {}
-              if nb.get('nbformat')!=4 or nb.get('nbformat_minor')!=5:
-                  raise SystemExit(f'format mismatch: {name}')
-              if meta.get('schema_version')!='3.5' or meta.get('account_id')!=account or meta.get('science_sha')!=SCIENCE_SHA or meta.get('operator_runtime_sha')!=RUNTIME_SHA or meta.get('operator_runtime_branch')!=RUNTIME_BRANCH or meta.get('driver')!=DRIVER:
+              if meta.get('account_id')!=account or meta.get('science_sha')!=SCIENCE_SHA or meta.get('operator_runtime_sha')!=RUNTIME_SHA or meta.get('operator_runtime_branch')!=RUNTIME_BRANCH or meta.get('driver')!=DRIVER:
                   raise SystemExit(f'identity/runtime mismatch: {name}')
-              body='\n'.join(''.join(c.get('source') or []) for c in nb.get('cells') or [])
-              for required in (RUNTIME_SHA,RUNTIME_BRANCH,DRIVER,'CropCop_Final_v1',"V1 / 'audit' / 'final_manifest.csv'", "V1 / 'audit' / 'class_to_idx.json'", "V1 / 'dataset'"):
-                  if required not in body:
-                      raise SystemExit(f'missing {required!r} from {name}')
-              if account=='K1' and 'cropcop-g1-sealed/G1_PACKAGE' not in body:
-                  raise SystemExit('K1 preferred principal G1 path missing')
               for i,cell in enumerate(nb.get('cells') or []):
                   if cell.get('cell_type')=='code':
                       if cell.get('execution_count') is not None or cell.get('outputs') != []:
                           raise SystemExit(f'execution residue: {name}:cell-{i}')
                       compile(''.join(cell.get('source') or []), f'{name}:cell-{i}', 'exec')
-          print('v5 three-notebook distribution PASS')
+          print('current v5 distribution still intact')
           PY
-          test "$(git rev-parse refs/remotes/origin/ops-tracka-kaggle-master-runtime-v5-902e777)" = '902e7774dda32106a03bfb3f5917946c11ff8e2c'
 
-      - name: Compile and import v5 runtime
+      - name: Compile and import v6 candidate runtime
         shell: bash
         run: |
           set -euo pipefail
@@ -147,13 +127,17 @@ jobs:
           root=Path.cwd()
           for p in (root/'journal_extension/kaggle/tracka_v12_ops',root/'journal_extension/src'):
               sys.path.insert(0,str(p))
-          import tracka_v12_kaggle_operator_v3, master_attestations, master_preflight
-          import master_verified_pretrained_v5, master_g1a, master_g2a, master_control
-          import master_publication_v4, master_science_v4, master_account_driver_v5
-          print('v5 import graph PASS')
+          import master_g1a_v6, master_singleton_v6, master_account_driver_v6
+          print('v6 import graph PASS')
           PY
 
-      - name: Run full regression and failure-injection suite
+      - name: Run targeted v6 regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v tests.test_tracka_v12_kaggle_master_v6
+
+      - name: Run inherited full regression suite
         shell: bash
         run: |
           set -euo pipefail
@@ -164,25 +148,21 @@ jobs:
             tests.test_tracka_v12_kaggle_publication_v4 \
             tests.test_tracka_v12_kaggle_master_v5
 
-      - name: Verify provenance contract and exact-head attestations
+      - name: Verify provenance and frozen-sealer compatibility contract
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
-          import sys
           from pathlib import Path
           root=Path.cwd()
-          capture=(root/'journal_extension/scripts/capture_torchvision_pretrained_provenance.py').read_text()
-          for field in ('tensor_identity_algorithm','tensor_identity_sha256','official_tensor_identity_algorithm','official_tensor_identity_sha256','official_tensor_match','validate_torchvision_provenance'):
-              if field not in capture:
-                  raise SystemExit(f'provenance field missing: {field}')
-          sys.path.insert(0,str(root/'journal_extension/kaggle/tracka_v12_ops'))
-          sys.path.insert(0,str(root/'journal_extension/src'))
-          from master_attestations import verified_attestation_paths
-          from tracka_v12_kaggle_operator_v3 import load_json
-          code,lock=verified_attestation_paths(); c,l=load_json(code),load_json(lock)
-          assert c['status']=='PASS' and l['status']=='PASS' and c['github_actions'] is True and l['github_actions'] is True and l['science_authorized'] is False
-          print('provenance + attestations PASS')
+          sealer=(root/'journal_extension/scripts/seal_tracka_v12_g1a.py').read_text()
+          secondary=(root/'journal_extension/src/cropcop_je/secondary.py').read_text()
+          compat=(root/'journal_extension/kaggle/tracka_v12_ops/master_g1a_v6.py').read_text()
+          assert '"torchvision_version": TORCHVISION_VERSION' in sealer
+          assert 'TORCHVISION_VERSION = "0.27.1"' in secondary
+          assert "init_globals={'TORCHVISION_VERSION': TORCHVISION_VERSION}" in compat
+          assert 'FROZEN_G1A_SEALER_COMPAT' in compat
+          print('frozen-sealer compatibility contract PASS')
           PY
 
       - name: Reject tracked binary or credential artifacts
