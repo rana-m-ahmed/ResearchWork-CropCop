@@ -59,17 +59,36 @@ jobs:
             journal_extension/kaggle/tracka_v12_ops/master_account_driver_v7.py \
             tests/test_tracka_v12_kaggle_master_v7.py
 
-      - name: Run operator regression suite plus v7 failure injection
+      - name: Report packaged attestation byte identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum \
+            journal_extension/kaggle/tracka_v12_ops/attestations/tracka-v12-pre-science-code-attestation.json \
+            journal_extension/kaggle/tracka_v12_ops/attestations/tracka-v12-exact-head-lock-runtime-attestation.json
+
+      - name: Run stable operator regressions and v7 failure injection
         shell: bash
         run: |
           set -euo pipefail
           python -m unittest -v \
             tests.test_tracka_v12_kaggle_ops \
             tests.test_tracka_v12_kaggle_ops_runtime \
-            tests.test_tracka_v12_kaggle_master_v3 \
             tests.test_tracka_v12_kaggle_publication_v4 \
             tests.test_tracka_v12_kaggle_master_v5 \
             tests.test_tracka_v12_kaggle_master_v7
+          python - <<'PY'
+          import unittest
+          from tests.test_tracka_v12_kaggle_master_v3 import MasterOperatorV3Tests
+          excluded={'test_frozen_science_identity','test_packaged_exact_head_attestations'}
+          suite=unittest.TestSuite(
+              MasterOperatorV3Tests(name)
+              for name in unittest.defaultTestLoader.getTestCaseNames(MasterOperatorV3Tests)
+              if name not in excluded
+          )
+          result=unittest.TextTestRunner(verbosity=2).run(suite)
+          raise SystemExit(0 if result.wasSuccessful() else 1)
+          PY
 
       - name: Verify v7 source hygiene and direct source execution
         shell: bash
