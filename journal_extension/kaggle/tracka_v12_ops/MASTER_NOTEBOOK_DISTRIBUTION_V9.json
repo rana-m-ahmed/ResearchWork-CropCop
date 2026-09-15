@@ -8,6 +8,7 @@
   "expected_account_binding_required": true,
   "fsdp_allowed": false,
   "g1a_exact_generation_binding": true,
+  "g2a_exact_downloadable_generation_binding": true,
   "github_actions_read_permission_required_at_runtime": false,
   "kaggle": {
     "accelerator": "T4 x2",
@@ -28,24 +29,24 @@
       "coordinator": true,
       "path": "journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K1.ipynb",
       "requires_historical_principal_g1": true,
-      "sha256": "f829b413419d3c9aa7b445c7292723c1e3e7c48f2d5e850f64cf015af99a0003"
+      "sha256": "d043297d22cd7684ba9e6138926970b3bca8f71dd2fd5e6c7799a3ea7a6d914b"
     },
     "K2": {
       "coordinator": false,
       "path": "journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K2.ipynb",
       "requires_historical_principal_g1": false,
-      "sha256": "3fa80ed681f80f89d117ea02220fd995438764d7c7e02c8eb6f3fb5e09691519"
+      "sha256": "d8404e2ee77ed57c557c1198ee305b864fe79f58324e8761720861c0671b046d"
     },
     "K3": {
       "coordinator": false,
       "path": "journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K3.ipynb",
       "requires_historical_principal_g1": false,
-      "sha256": "2c2369265098433037d465f3b4648e153a6e4464089e6945138a4426e6f6c101"
+      "sha256": "702d77749aa0e252a56626af9d2d3bad1a1b199bc6016c572037064a1d51f02a"
     }
   },
-  "note": "v8r4 preserves packaged exact-head attestations and additionally waits for the exact newly-versioned canonical G1A seal before accepting Kaggle round-trip readiness.",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v8r4-99ae5f3",
-  "operator_runtime_sha": "99ae5f340bdea1142c8b4e9289956e4387fd494a",
+  "note": "v9 preserves v8r4 G1A exact-generation qualification and adds bounded exact downloadable-generation settlement for G2A durability before destructive checkpoint restore.",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v9-cced662",
+  "operator_runtime_sha": "cced66277881c1617c722793b050dd781a0c7272",
   "protected_test_opened": false,
   "remaining_scientific_states": 11,
   "required_kaggle_secrets": [
@@ -54,8 +55,8 @@
     "CROPCOP_GITHUB_TOKEN",
     "CROPCOP_EXPECTED_KAGGLE_USERNAME"
   ],
-  "schema_version": "4.4",
-  "science_source_sha": "4ced2fd7c764c07fa47fb57fbea38376d2ce61a4",
+  "schema_version": "4.5",
+  "science_source_sha": "c65a5082809603155fa80a6eb0152fae33dbd9e0",
   "status": "LOCKED_DISTRIBUTION",
   "track_b_opened": false,
   "track_c_opened": false
