@@ -1,0 +1,176 @@
+name: Build Track-A v11 distribution
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-v11-distribution-20260915
+    paths:
+      - '.github/workflows/build-tracka-v11-distribution.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops-tracka-kaggle-master-v11-distribution-20260915
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Generate exact v11 notebooks and manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          ROOT=Path('journal_extension/kaggle/tracka_v12_ops')
+          ROOT.mkdir(parents=True, exist_ok=True)
+          SCIENCE='56023042e57758591df9babb3438f191dbe10312'
+          RUNTIME='0963f81ec54b4ac121097856741616ac04530797'
+          RUNTIME_BRANCH='ops-tracka-kaggle-master-runtime-v11-0963f81'
+          OPS_ROOT='/kaggle/working/cropcop-tracka-master-runtime-v11'
+
+          def notebook(account):
+              is_k1=account=='K1'
+              header=[
+                  f'# Track-A v1.2 — MASTER {account} (v11)\n','\n',
+                  f'Exact qualified science: `{SCIENCE}`  \n',
+                  f'Immutable operator runtime: `{RUNTIME}`  \n',
+                  f'Runtime branch: `{RUNTIME_BRANCH}`\n','\n',
+                  'Use Kaggle **T4 x2**, **Internet ON**, and **Save Version → Save & Run All / Batch**. Do not edit scientific settings.\n',
+                  'Required Kaggle secrets: `KAGGLE_USERNAME`, `KAGGLE_KEY`, `CROPCOP_GITHUB_TOKEN`, and `CROPCOP_EXPECTED_KAGGLE_USERNAME`. The expected-username secret must equal this Kaggle account.\n',
+              ]
+              if is_k1:
+                  header.append('K1 additionally requires the historical principal G1 bundle mounted read-only. Run K1 first. v11 emits a heartbeat every 60 seconds during long stages and exits with controlled `rc=2` when peer G2A evidence is not ready.\n')
+              else:
+                  header.append('Recommended: launch only after K1 publishes the exact v11 G1A READY handoff and this account has `Can view` access to the private G1A dataset. If launched early, v11 exits cleanly with `rc=2` before expensive stack installation instead of waiting.\n')
+
+              setup=[
+                  'from pathlib import Path\n','import os\n','\n',"os.environ['PYTHONUNBUFFERED'] = '1'\n",
+                  "V1 = Path('/kaggle/input/datasets/ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1')\n",
+                  'if V1.is_dir():\n','    preferred = {\n',
+                  "        'CROPCOP_MANIFEST': V1 / 'audit' / 'final_manifest.csv',\n",
+                  "        'CROPCOP_CLASS_MAP': V1 / 'audit' / 'class_to_idx.json',\n",
+                  "        'CROPCOP_IMAGE_ROOT': V1 / 'dataset',\n",'    }\n',
+                  '    for name, path in preferred.items():\n','        if path.exists():\n','            os.environ.setdefault(name, str(path))\n','\n',
+              ]
+              if is_k1:
+                  setup += [
+                      "PRINCIPAL_G1 = Path('/kaggle/input/datasets/ranamuhammadahmed6/cropcop-g1-sealed/G1_PACKAGE')\n",
+                      'if PRINCIPAL_G1.is_dir():\n',"    os.environ.setdefault('CROPCOP_PRINCIPAL_G1', str(PRINCIPAL_G1))\n",'\n',
+                  ]
+              setup += [
+                  "expected = os.environ.get('CROPCOP_EXPECTED_KAGGLE_USERNAME', '').strip()\n",
+                  'if not expected:\n','    try:\n','        from kaggle_secrets import UserSecretsClient\n',
+                  "        expected = UserSecretsClient().get_secret('CROPCOP_EXPECTED_KAGGLE_USERNAME').strip()\n",
+                  '    except Exception as exc:\n',
+                  "        raise RuntimeError('Add Kaggle secret CROPCOP_EXPECTED_KAGGLE_USERNAME with this account username before running v11.') from exc\n",
+                  'if not expected:\n',"    raise RuntimeError('CROPCOP_EXPECTED_KAGGLE_USERNAME is empty.')\n",
+                  "os.environ['CROPCOP_EXPECTED_KAGGLE_USERNAME'] = expected\n",
+                  f"print('Expected account binding loaded for {account}.', flush=True)\n",
+              ]
+
+              clone=[
+                  'from pathlib import Path\n','import shutil, subprocess, sys\n','\n',
+                  f"OPS_RUNTIME_SHA = '{RUNTIME}'\n",f"OPS_RUNTIME_BRANCH = '{RUNTIME_BRANCH}'\n",f"OPS_ROOT = Path('{OPS_ROOT}')\n",
+                  'if OPS_ROOT.exists():\n','    shutil.rmtree(OPS_ROOT)\n','subprocess.run([\n',
+                  "    'git', 'clone', '--quiet', '--depth', '1', '--branch', OPS_RUNTIME_BRANCH,\n",
+                  "    'https://github.com/rana-m-ahmed/ResearchWork-CropCop.git', str(OPS_ROOT)\n",'], check=True)\n',
+                  "head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=OPS_ROOT, text=True).strip()\n",
+                  "dirty = subprocess.check_output(['git', 'status', '--porcelain'], cwd=OPS_ROOT, text=True).strip()\n",
+                  'if head != OPS_RUNTIME_SHA:\n',"    raise RuntimeError(f'operator runtime SHA mismatch: expected {OPS_RUNTIME_SHA}, got {head}')\n",
+                  'if dirty:\n',"    raise RuntimeError(f'operator runtime checkout is dirty: {dirty}')\n",
+                  "print('Pinned Track-A v11 runtime:', head, flush=True)\n",
+              ]
+
+              launch=[
+                  "guard = OPS_ROOT / 'journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v11.py'\n",
+                  'env = dict(os.environ)\n',"env['PYTHONUNBUFFERED'] = '1'\n",'proc = subprocess.Popen(\n',
+                  f"    [sys.executable, '-u', str(guard), '{account}'],\n",'    cwd=guard.parent,\n','    env=env,\n',
+                  '    stdout=subprocess.PIPE,\n','    stderr=subprocess.STDOUT,\n','    text=True,\n','    bufsize=1,\n',')\n',
+                  'assert proc.stdout is not None\n','for line in proc.stdout:\n',"    print(line, end='', flush=True)\n",'rc = proc.wait()\n',
+                  'if rc == 0:\n',f"    print('{account} v11 master: TERMINAL PASS for this account queue.', flush=True)\n",
+                  'elif rc == 2:\n',f"    print('{account} v11 master: controlled continuation. End this Batch and rerun this SAME v11 notebook after the stated prerequisite is ready.', flush=True)\n",
+                  'else:\n',f"    raise RuntimeError('{account} v11 master requires investigation; rc=' + str(rc))\n",
+              ]
+
+              meta={
+                  'cropcop_operator':{
+                      'account_id':account,'authority':'EAAI-JE-SDL-v2.1-QA','driver':'master_account_driver_v11.py',
+                      'expected_account_binding_required':True,'launcher':'master_launch_guard_v11.py',
+                      'operator_runtime_branch':RUNTIME_BRANCH,'operator_runtime_sha':RUNTIME,'schema_version':'4.7',
+                      'science_sha':SCIENCE,'stdout_streaming':'parent_pipe_restream','heartbeat_seconds':60,
+                      'worker_g1a_prerequisite_fail_fast':not is_k1,
+                  },
+                  'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},
+                  'language_info':{'name':'python','version':'3.12.13'},
+              }
+              return {
+                  'cells':[
+                      {'cell_type':'markdown','metadata':{},'source':header},
+                      {'cell_type':'code','execution_count':None,'metadata':{},'outputs':[],'source':setup},
+                      {'cell_type':'code','execution_count':None,'metadata':{},'outputs':[],'source':clone},
+                      {'cell_type':'code','execution_count':None,'metadata':{},'outputs':[],'source':launch},
+                      {'cell_type':'markdown','metadata':{},'source':['v11 reliability contract: a `MASTER_HEARTBEAT_V11` line is emitted every ~60 seconds during long driver stages. `rc=2` means safely published work or an unmet prerequisite; rerun this same notebook later in a fresh Batch session. Any other non-zero return code is fail-closed and requires investigation.\n']},
+                  ],
+                  'metadata':meta,'nbformat':4,'nbformat_minor':5,
+              }
+
+          hashes={}
+          for account in ('K1','K2','K3'):
+              obj=notebook(account)
+              for cell in obj['cells']:
+                  if cell['cell_type']=='code':
+                      compile(''.join(cell['source']),f'<{account}-v11>','exec')
+              raw=(json.dumps(obj,indent=2,sort_keys=True)+'\n').encode()
+              path=ROOT/f'TRACKA_V12_MASTER_{account}.ipynb'
+              path.write_bytes(raw)
+              hashes[account]=hashlib.sha256(raw).hexdigest()
+
+          manifest={
+              'schema_version':'4.7','status':'LOCKED_DISTRIBUTION','authority':'EAAI-JE-SDL-v2.1-QA',
+              'science_source_sha':SCIENCE,'operator_runtime_sha':RUNTIME,'operator_runtime_branch':RUNTIME_BRANCH,
+              'notebook_sha256':hashes,
+              'accelerator':'T4x2','internet_required':True,'batch_required':True,
+              'secrets':['KAGGLE_USERNAME','KAGGLE_KEY','CROPCOP_GITHUB_TOKEN','CROPCOP_EXPECTED_KAGGLE_USERNAME'],
+              'parent_pipe_restream':True,'heartbeat_seconds':60,'worker_g1a_prerequisite_fail_fast':True,
+              'peer_g2a_nonblocking':True,'worker_control_nonblocking':True,
+              'science_authorized':False,'protected_test_accessed':False,'external_surface_accessed':False,
+              'remaining_scientific_states':11,'ddp':False,'dataparallel':False,'fsdp':False,
+              'protocol':[
+                  'Run K1 first until exact v11 G1A READY is published.',
+                  'Grant K2 and K3 Can view on the exact private G1A dataset.',
+                  'Run K2 and K3; early worker launch returns rc=2 before stack installation.',
+                  'After all five G2A profiles are READY, rerun K1 to publish SCIENCE_GO.',
+                  'Rerun K2/K3 after SCIENCE_GO; reuse the same account notebook for controlled continuations.',
+              ],
+          }
+          (ROOT/'MASTER_NOTEBOOK_DISTRIBUTION_V11.json').write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(manifest,indent=2,sort_keys=True))
+          PY
+
+      - name: Commit distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'CropCop Track-A Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K1.ipynb \
+                  journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K2.ipynb \
+                  journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K3.ipynb \
+                  journal_extension/kaggle/tracka_v12_ops/MASTER_NOTEBOOK_DISTRIBUTION_V11.json
+          if git diff --cached --quiet; then
+            echo 'distribution already deterministic and current'
+          else
+            git commit -m 'Build locked Track-A v11 Kaggle distribution'
+            git push origin HEAD:ops-tracka-kaggle-master-v11-distribution-20260915
+          fi
