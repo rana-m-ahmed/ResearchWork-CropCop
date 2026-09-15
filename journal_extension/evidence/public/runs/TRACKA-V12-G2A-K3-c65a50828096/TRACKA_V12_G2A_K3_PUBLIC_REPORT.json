@@ -1,0 +1,16 @@
+{
+  "account_id": "K3",
+  "calibrations": {
+    "CAL-R13": {
+      "public_evidence_run_id": "TRACKA-V12-G2A-CAL-R13-c65a50828096",
+      "summary_sha256": "69bdba6d4b933a27c4292153f9e65a4dd08a07ebe64ca6876db3bd2028b5e1c9"
+    }
+  },
+  "g1a_seal_sha256": "5e989ec32852119e7263d7ede3b7cddef74e0ead4098ef8d5f932ca41f5e9d48",
+  "operator_runtime_sha": "cced66277881c1617c722793b050dd781a0c7272",
+  "schema_version": "1.1",
+  "science_authorized": false,
+  "science_source_sha": "c65a5082809603155fa80a6eb0152fae33dbd9e0",
+  "stage": "TRACKA_V12_G2A_ACCOUNT_MASTER",
+  "status": "PASS"
+}
