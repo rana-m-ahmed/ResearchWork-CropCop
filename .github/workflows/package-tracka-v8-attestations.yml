@@ -1,0 +1,82 @@
+name: Package Track-A v8 exact attestations
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v8-05ac708
+    paths:
+      - '.github/workflows/package-tracka-v8-attestations.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops-tracka-kaggle-master-runtime-v8-05ac708
+          fetch-depth: 0
+      - name: Download exact qualified source artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/tracka-code /tmp/tracka-lock
+          mkdir -p /tmp/tracka-code /tmp/tracka-lock
+          gh run download 34934985320 -R "$GITHUB_REPOSITORY" -n tracka-v12-implementation-qa -D /tmp/tracka-code
+          gh run download 34934985308 -R "$GITHUB_REPOSITORY" -n tracka-v12-exact-head-lock-runtime-attestation -D /tmp/tracka-lock
+          test -f /tmp/tracka-code/tracka-v12-pre-science-code-attestation.json
+          test -f /tmp/tracka-lock/tracka-v12-exact-head-lock-runtime-attestation.json
+      - name: Verify exact source bindings and package bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, pathlib, shutil
+          source='05ac7084a6be2fecd9c370477340ee0c8c4769bc'
+          code=pathlib.Path('/tmp/tracka-code/tracka-v12-pre-science-code-attestation.json')
+          lock=pathlib.Path('/tmp/tracka-lock/tracka-v12-exact-head-lock-runtime-attestation.json')
+          cp=json.loads(code.read_text())
+          lp=json.loads(lock.read_text())
+          for name,p in [('code',cp),('lock',lp)]:
+              assert p['status']=='PASS', (name,p.get('status'))
+              assert p['source_git_commit']==source, (name,p.get('source_git_commit'))
+              assert p['pull_request_head_sha']==source, (name,p.get('pull_request_head_sha'))
+          assert cp['github_actions'] is True
+          assert cp['static_pre_science_gates']['kaggle_generation_durability_contract']=='PASS'
+          assert cp['static_pre_science_gates']['g1a_runtime_global_resolution_contract']=='PASS'
+          assert 'journal_extension/src/cropcop_je/persistence_v8.py' in cp['implementation_sha256']
+          assert lp['github_actions'] is True and lp['science_authorized'] is False
+          dest=pathlib.Path('journal_extension/kaggle/tracka_v12_ops/attestations_v8')
+          dest.mkdir(parents=True,exist_ok=True)
+          shutil.copyfile(code,dest/'tracka-v12-pre-science-code-attestation.json')
+          shutil.copyfile(lock,dest/'tracka-v12-exact-head-lock-runtime-attestation.json')
+          def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          code_sha=sha(code); lock_sha=sha(lock)
+          expected_code='cd8a23ca6a5ebdba18e8466d8578d2646723c349b9428b8d8890aac7c62ab187'
+          expected_lock='046814249b119f6d520df58095bf951b13e35fcc09f995599c36202f8b0bed7f'
+          assert code_sha==expected_code, (code_sha,expected_code)
+          assert lock_sha==expected_lock, (lock_sha,expected_lock)
+          module=f'''from __future__ import annotations\n\nfrom pathlib import Path\n\nfrom tracka_v12_kaggle_operator_v8 import SCIENCE_SHA, OperatorError, load_json, sha256_file\n\nCODE_ATTESTATION_FILE_SHA256 = "{code_sha}"\nLOCK_RUNTIME_ATTESTATION_FILE_SHA256 = "{lock_sha}"\n\ndef verified_attestation_paths() -> tuple[Path, Path]:\n    root = Path(__file__).resolve().parent / "attestations_v8"\n    code = root / "tracka-v12-pre-science-code-attestation.json"\n    lock = root / "tracka-v12-exact-head-lock-runtime-attestation.json"\n    if sha256_file(code) != CODE_ATTESTATION_FILE_SHA256:\n        raise OperatorError("v8 packaged code-attestation bytes changed")\n    if sha256_file(lock) != LOCK_RUNTIME_ATTESTATION_FILE_SHA256:\n        raise OperatorError("v8 packaged lock/runtime-attestation bytes changed")\n    cp = load_json(code); lp = load_json(lock)\n    for label, payload in (("code", cp), ("lock", lp)):\n        if payload.get("status") != "PASS" or payload.get("github_actions") is not True:\n            raise OperatorError(f"v8 packaged {{label}} attestation is not a GitHub Actions PASS")\n        if payload.get("source_git_commit") != SCIENCE_SHA or payload.get("pull_request_head_sha") != SCIENCE_SHA:\n            raise OperatorError(f"v8 packaged {{label}} attestation source mismatch")\n    gates = cp.get("static_pre_science_gates") or {{}}\n    if gates.get("kaggle_generation_durability_contract") != "PASS" or gates.get("g1a_runtime_global_resolution_contract") != "PASS":\n        raise OperatorError("v8 source mitigation gates are absent from code attestation")\n    if lp.get("science_authorized") is not False:\n        raise OperatorError("v8 lock/runtime attestation unexpectedly authorizes science")\n    return code, lock\n'''
+          pathlib.Path('journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py').write_text(module)
+          print('code_sha',code_sha)
+          print('lock_sha',lock_sha)
+          PY
+      - name: Commit exact package if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add journal_extension/kaggle/tracka_v12_ops/attestations_v8 journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py
+          if git diff --cached --quiet; then
+            echo 'Exact attestation package already canonical.'
+            exit 0
+          fi
+          git commit -m 'Package exact-head Track-A v8 attestations'
+          git push origin HEAD:ops-tracka-kaggle-master-runtime-v8-05ac708
