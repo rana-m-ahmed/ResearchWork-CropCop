@@ -14,7 +14,7 @@ import tracka_v12_kaggle_operator as _v1
 import tracka_v12_kaggle_operator_v2 as _v2
 import tracka_v12_kaggle_operator_v3 as _v3
 
-SCIENCE_SHA_V8 = "15d311df82f632a46fa420e257da8c82d0d01590"
+SCIENCE_SHA_V8 = "4ced2fd7c764c07fa47fb57fbea38376d2ce61a4"
 OPERATOR_SCHEMA_VERSION_V8 = "4.2"
 R13_PARITY_CONTRACT_ID_V8 = "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1"
 R13_PARITY_REQUIRED_MAX_ABS_V8 = 5e-5
