@@ -1,0 +1,168 @@
+name: Build Track-A v12 distribution
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-v12-distribution-20260916
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+      - name: Generate deterministic v12 notebooks and manifest
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          SCIENCE='56023042e57758591df9babb3438f191dbe10312'
+          RUNTIME='705be6e2ae1b83be6997ae24a83684ff867dcf12'
+          BRANCH='ops-tracka-kaggle-master-runtime-v12-705be6e'
+          OPS_ROOT='/kaggle/working/cropcop-tracka-master-runtime-v12'
+          OUT=Path('journal_extension/kaggle/tracka_v12_ops')
+          OUT.mkdir(parents=True, exist_ok=True)
+
+          def nb(account):
+              k1=account=='K1'
+              header=[
+                  f'# Track-A v1.2 — MASTER {account} (v12)\n','\n',
+                  f'Exact frozen science: `{SCIENCE}`  \n',
+                  f'Immutable operator runtime: `{RUNTIME}`  \n',
+                  f'Runtime branch: `{BRANCH}`\n','\n',
+                  'Use Kaggle **T4 x2**, **Internet ON**, and **Save Version → Save & Run All / Batch**. Do not edit scientific settings.\n',
+                  'Required Kaggle secrets: `KAGGLE_USERNAME`, `KAGGLE_KEY`, `CROPCOP_GITHUB_TOKEN`, and `CROPCOP_EXPECTED_KAGGLE_USERNAME`. The expected-username secret must equal this Kaggle account.\n',
+              ]
+              if k1:
+                  header.append('K1 requires the frozen V1 dataset and historical principal G1 input. v12 reuses the already-qualified G1A/G2A evidence, seals the control plane with the exact attestation-compatibility bridge, and then enters the frozen K1 scientific queue after SCIENCE_GO.\n')
+              else:
+                  header.append('Attach frozen V1 plus the exact shared canonical G1A dataset. Run after K1 v12 has republished the current-runtime G1A handoff and SCIENCE_GO; v12 otherwise exits cleanly with controlled `rc=2`.\n')
+
+              setup=[
+                  'from pathlib import Path\n','import os\n','\n',
+                  "os.environ['PYTHONUNBUFFERED'] = '1'\n",
+                  "V1 = Path('/kaggle/input/datasets/ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1')\n",
+                  'if V1.is_dir():\n',
+                  '    preferred = {\n',
+                  "        'CROPCOP_MANIFEST': V1 / 'audit' / 'final_manifest.csv',\n",
+                  "        'CROPCOP_CLASS_MAP': V1 / 'audit' / 'class_to_idx.json',\n",
+                  "        'CROPCOP_IMAGE_ROOT': V1 / 'dataset',\n",
+                  '    }\n',
+                  '    for name, path in preferred.items():\n',
+                  '        if path.exists():\n',
+                  '            os.environ.setdefault(name, str(path))\n','\n',
+              ]
+              if k1:
+                  setup += [
+                      "PRINCIPAL_G1 = Path('/kaggle/input/datasets/ranamuhammadahmed6/cropcop-g1-sealed/G1_PACKAGE')\n",
+                      'if PRINCIPAL_G1.is_dir():\n',
+                      "    os.environ.setdefault('CROPCOP_PRINCIPAL_G1', str(PRINCIPAL_G1))\n",'\n',
+                  ]
+              setup += [
+                  "expected = os.environ.get('CROPCOP_EXPECTED_KAGGLE_USERNAME', '').strip()\n",
+                  'if not expected:\n','    try:\n','        from kaggle_secrets import UserSecretsClient\n',
+                  "        expected = UserSecretsClient().get_secret('CROPCOP_EXPECTED_KAGGLE_USERNAME').strip()\n",
+                  '    except Exception as exc:\n',
+                  "        raise RuntimeError('Add Kaggle secret CROPCOP_EXPECTED_KAGGLE_USERNAME with this account username before running v12.') from exc\n",
+                  'if not expected:\n',"    raise RuntimeError('CROPCOP_EXPECTED_KAGGLE_USERNAME is empty.')\n",
+                  "os.environ['CROPCOP_EXPECTED_KAGGLE_USERNAME'] = expected\n",
+                  f"print('Expected account binding loaded for {account}.', flush=True)\n",
+              ]
+              clone=[
+                  'from pathlib import Path\n','import shutil, subprocess, sys\n','\n',
+                  f"OPS_RUNTIME_SHA = '{RUNTIME}'\n",f"OPS_RUNTIME_BRANCH = '{BRANCH}'\n",f"OPS_ROOT = Path('{OPS_ROOT}')\n",
+                  'if OPS_ROOT.exists():\n','    shutil.rmtree(OPS_ROOT)\n',
+                  "subprocess.run(['git','clone','--quiet','--depth','1','--branch',OPS_RUNTIME_BRANCH,'https://github.com/rana-m-ahmed/ResearchWork-CropCop.git',str(OPS_ROOT)], check=True)\n",
+                  "head = subprocess.check_output(['git','rev-parse','HEAD'], cwd=OPS_ROOT, text=True).strip()\n",
+                  "dirty = subprocess.check_output(['git','status','--porcelain'], cwd=OPS_ROOT, text=True).strip()\n",
+                  "if head != OPS_RUNTIME_SHA:\n    raise RuntimeError(f'operator runtime SHA mismatch: expected {OPS_RUNTIME_SHA}, got {head}')\n",
+                  "if dirty:\n    raise RuntimeError(f'operator runtime checkout is dirty: {dirty}')\n",
+                  "print('Pinned Track-A v12 runtime:', head, flush=True)\n",
+              ]
+              launch=[
+                  "guard = OPS_ROOT / 'journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v12.py'\n",
+                  'env = dict(os.environ)\n',"env['PYTHONUNBUFFERED'] = '1'\n",
+                  "proc = subprocess.Popen([sys.executable,'-u',str(guard),'"+account+"'], cwd=guard.parent, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)\n",
+                  'assert proc.stdout is not None\n','for line in proc.stdout:\n','    print(line, end="", flush=True)\n','rc = proc.wait()\n',
+                  "if rc == 0:\n    print('"+account+" v12 master: TERMINAL PASS for this account queue.', flush=True)\n",
+                  "elif rc == 2:\n    print('"+account+" v12 master: controlled continuation. End this Batch and rerun this SAME v12 notebook after the stated prerequisite is ready.', flush=True)\n",
+                  "else:\n    raise RuntimeError('"+account+" v12 master requires investigation; rc=' + str(rc))\n",
+              ]
+              return {
+                  'cells':[
+                      {'cell_type':'markdown','metadata':{},'source':header},
+                      {'cell_type':'code','execution_count':None,'metadata':{},'outputs':[],'source':setup},
+                      {'cell_type':'code','execution_count':None,'metadata':{},'outputs':[],'source':clone},
+                      {'cell_type':'code','execution_count':None,'metadata':{},'outputs':[],'source':launch},
+                      {'cell_type':'markdown','metadata':{},'source':['v12 reliability contract: `MASTER_HEARTBEAT_V11` continues every ~60 seconds because the green v11 driver is retained underneath the v12 control bridge. `rc=2` is a controlled continuation; other non-zero codes fail closed.\n']},
+                  ],
+                  'metadata':{
+                      'cropcop_operator':{
+                          'account_id':account,'authority':'EAAI-JE-SDL-v2.1-QA','driver':'master_account_driver_v12.py',
+                          'expected_account_binding_required':True,'heartbeat_seconds':60,'launcher':'master_launch_guard_v12.py',
+                          'operator_runtime_branch':BRANCH,'operator_runtime_sha':RUNTIME,'schema_version':'4.8','science_sha':SCIENCE,
+                          'stdout_streaming':'parent_pipe_restream','worker_g1a_prerequisite_fail_fast':not k1,
+                          'control_schema_compatibility':'v12-exact-hardened-attestation-bridge',
+                      },
+                      'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},
+                      'language_info':{'name':'python','version':'3.12.13'},
+                  },
+                  'nbformat':4,'nbformat_minor':5,
+              }
+
+          hashes={}
+          for account in ('K1','K2','K3'):
+              raw=(json.dumps(nb(account), indent=2, sort_keys=True)+'\n').encode()
+              path=OUT/f'TRACKA_V12_MASTER_{account}.ipynb'
+              path.write_bytes(raw)
+              hashes[account]=hashlib.sha256(raw).hexdigest()
+
+          manifest={
+              'schema_version':'4.8','status':'LOCKED_DISTRIBUTION','authority':'EAAI-JE-SDL-v2.1-QA',
+              'science_source_sha':SCIENCE,'operator_runtime_sha':RUNTIME,'operator_runtime_branch':BRANCH,
+              'launcher':'master_launch_guard_v12.py','driver':'master_account_driver_v12.py','notebook_sha256':hashes,
+              'accelerator':'T4x2','internet_required':True,'batch_required':True,'heartbeat_seconds':60,
+              'parent_pipe_restream':True,'worker_g1a_prerequisite_fail_fast':True,'peer_g2a_nonblocking':True,'worker_control_nonblocking':True,
+              'g1a_seal_sha256':'c7f5ffc84240a79c3201081896df537959313ac8f0cd2d3aba0205a7fe7cfb8d',
+              'exact_live_replay':{
+                  'g2a_barrier_sha256':'d8141f5c6f4f7c48bc680c6abd4d63c0871f93253a145c96bbb076615d98fdfc',
+                  'scheduler_freeze_sha256':'7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787',
+                  'science_authorization_sha256':'58d65a9c9f0c06222c00541feca9b2aaa005ebda850d2261d4df3e0e1fe7fbb7',
+                  'status':'PASS',
+              },
+              'remaining_scientific_states':11,'science_authorized':False,'protected_test_accessed':False,'external_surface_accessed':False,
+              'ddp':False,'dataparallel':False,'fsdp':False,
+              'secrets':['KAGGLE_USERNAME','KAGGLE_KEY','CROPCOP_GITHUB_TOKEN','CROPCOP_EXPECTED_KAGGLE_USERNAME'],
+              'protocol':[
+                  'Run K1 v12 first; it reuses exact qualified G1A/G2A evidence, seals SCIENCE_GO, then enters its frozen scientific queue.',
+                  'After K1 publishes the v12 control plane, run K2 and K3 v12 on their separate Kaggle accounts; they reuse exact qualification evidence and enter their frozen queues.',
+                  'Use fresh Batch sessions for controlled rc=2 continuations; never alter scientific settings.',
+              ],
+          }
+          (OUT/'MASTER_NOTEBOOK_DISTRIBUTION_V12.json').write_text(json.dumps(manifest, indent=2, sort_keys=True)+'\n')
+          print(json.dumps(manifest, indent=2, sort_keys=True))
+          PY
+      - name: Commit locked distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'CropCop Track-A Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K1.ipynb \
+                  journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K2.ipynb \
+                  journal_extension/kaggle/tracka_v12_ops/TRACKA_V12_MASTER_K3.ipynb \
+                  journal_extension/kaggle/tracka_v12_ops/MASTER_NOTEBOOK_DISTRIBUTION_V12.json
+          if git diff --cached --quiet; then
+            echo 'distribution already deterministic and current'
+          else
+            git commit -m 'Build locked Track-A v12 Kaggle distribution'
+            git push origin HEAD:ops-tracka-kaggle-master-v12-distribution-20260916
+          fi
