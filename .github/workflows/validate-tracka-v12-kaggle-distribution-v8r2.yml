@@ -37,8 +37,10 @@ jobs:
           git fetch --quiet origin "$RUNTIME_SHA"
           git cat-file -e "$RUNTIME_SHA:journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v8.py"
           git cat-file -e "$RUNTIME_SHA:journal_extension/kaggle/tracka_v12_ops/master_account_driver_v8.py"
-          git show "$RUNTIME_SHA:journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py" | grep -F "SCIENCE_SHA_V8 = \"$SCIENCE_SHA\""
-          git show "$RUNTIME_SHA:journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py" | grep -F 'OPERATOR_SCHEMA_VERSION = "4.2"'
+          git show "$RUNTIME_SHA:journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py" > /tmp/operator_v8.py
+          grep -F "SCIENCE_SHA_V8 = \"$SCIENCE_SHA\"" /tmp/operator_v8.py
+          grep -F 'OPERATOR_SCHEMA_VERSION_V8 = "4.2"' /tmp/operator_v8.py
+          grep -F 'OPERATOR_SCHEMA_VERSION = OPERATOR_SCHEMA_VERSION_V8' /tmp/operator_v8.py
 
       - name: Parse and prove all three notebooks and manifest are coherent
         shell: bash
@@ -49,8 +51,7 @@ jobs:
           from pathlib import Path
 
           root = Path('journal_extension/kaggle/tracka_v12_ops')
-          manifest_path = root / 'MASTER_NOTEBOOK_DISTRIBUTION_V8R2.json'
-          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          manifest = json.loads((root / 'MASTER_NOTEBOOK_DISTRIBUTION_V8R2.json').read_text(encoding='utf-8'))
           science = '4ced2fd7c764c07fa47fb57fbea38376d2ce61a4'
           runtime = '0278470dcebbaf7a7595f255854e3c4acaeabcd3'
           runtime_branch = 'ops-tracka-kaggle-master-runtime-v8r2-4ced2fd-20260915'
@@ -112,19 +113,15 @@ jobs:
                   'science_sha': science,
               }, (account, meta)
               assert nb['metadata']['language_info']['version'] == '3.12.13'
-              code = '\n'.join(
-                  ''.join(cell.get('source', []))
-                  for cell in nb['cells']
-                  if cell.get('cell_type') == 'code'
-              )
+              code = '\n'.join(''.join(cell.get('source', [])) for cell in nb['cells'] if cell.get('cell_type') == 'code')
               full = path.read_text(encoding='utf-8')
               assert f"OPS_RUNTIME_SHA = '{runtime}'" in code
               assert f"OPS_RUNTIME_BRANCH = '{runtime_branch}'" in code
-              assert "master_launch_guard_v8.py" in code
+              assert 'master_launch_guard_v8.py' in code
               assert f"str(guard), '{account}'" in code
-              assert "CROPCOP_EXPECTED_KAGGLE_USERNAME" in code
-              assert "Save & Run All" in full
-              assert "T4 x2" in full
+              assert 'CROPCOP_EXPECTED_KAGGLE_USERNAME' in code
+              assert 'Save & Run All' in full
+              assert 'T4 x2' in full
               for token in forbidden:
                   assert token not in full, (account, token)
               if account == 'K1':
@@ -151,14 +148,13 @@ jobs:
           bad = [p for p in files if forbidden_ext.search(p)]
           if bad:
               raise SystemExit('forbidden tracked artifact(s): ' + repr(bad))
-          targets = [p for p in files if p.endswith('.ipynb') or p.endswith('.json') or p.endswith('.py') or p.endswith('.yml') or p.endswith('.yaml')]
-          secret_markers = ('github_pat_', 'ghp_')
+          targets = [p for p in files if p.endswith(('.ipynb','.json','.py','.yml','.yaml'))]
           for p in targets:
               try:
                   text = open(p, encoding='utf-8').read()
               except UnicodeDecodeError:
                   continue
-              for marker in secret_markers:
+              for marker in ('github_pat_', 'ghp_'):
                   if marker in text:
                       raise SystemExit(f'tracked secret marker {marker!r} in {p}')
           PY
