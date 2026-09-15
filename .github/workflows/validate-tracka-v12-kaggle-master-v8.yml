@@ -1,0 +1,78 @@
+name: Validate Track-A v1.2 Kaggle master v8
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v8-05ac708
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v8-operator-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact v8 runtime candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+      - name: Verify frozen science source exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCIENCE='05ac7084a6be2fecd9c370477340ee0c8c4769bc'
+          git fetch --quiet origin "$SCIENCE"
+          git cat-file -e "$SCIENCE^{commit}"
+          grep -F "SCIENCE_SHA_V8 = \"$SCIENCE\"" journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py
+      - name: Compile v8 operator modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_attestations_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_wait_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_g1a_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_g2a_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_control_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_account_driver_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v8.py \
+            tests/test_tracka_v12_kaggle_master_v8.py
+      - name: Run stable inherited regressions and v8 tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_tracka_v12_kaggle_ops_runtime \
+            tests.test_tracka_v12_kaggle_publication_v4 \
+            tests.test_tracka_v12_kaggle_master_v5 \
+            tests.test_tracka_v12_kaggle_master_v8
+      - name: Verify exact attestation bytes and v8 source hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum journal_extension/kaggle/tracka_v12_ops/attestations_v8/tracka-v12-pre-science-code-attestation.json | awk '{print $1}')" = 'cd8a23ca6a5ebdba18e8466d8578d2646723c349b9428b8d8890aac7c62ab187'
+          test "$(sha256sum journal_extension/kaggle/tracka_v12_ops/attestations_v8/tracka-v12-exact-head-lock-runtime-attestation.json | awk '{print $1}')" = '046814249b119f6d520df58095bf951b13e35fcc09f995599c36202f8b0bed7f'
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          names=[
+              'tracka_v12_kaggle_operator_v8.py','master_attestations_v8.py','master_wait_v8.py',
+              'master_g1a_v8.py','master_g2a_v8.py','master_control_v8.py',
+              'master_account_driver_v8.py','master_launch_guard_v8.py',
+          ]
+          text='\n'.join((root/name).read_text(encoding='utf-8') for name in names)
+          for forbidden in ('github_pat_','ghp_','DS-V1-TEST-CONSUMED','master_g1a_sealer_compat_v6','init_globals','runpy.run_path'):
+              if forbidden in text:
+                  raise SystemExit(f'forbidden v8 source content: {forbidden}')
+          if 'seal_tracka_v12_g1a.py' not in (root/'master_g1a_v8.py').read_text(encoding='utf-8'):
+              raise SystemExit('v8 G1A path does not directly execute canonical scientific sealer')
+          print('v8 operator hygiene PASS')
+          PY
