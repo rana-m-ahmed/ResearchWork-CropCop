@@ -32,6 +32,37 @@ base.build_store = build_store_v8
 tracka_runtime.validate_g1a_seal_object = g1a_v121.validate_g1a_seal_object
 tracka_runtime.load_r13_initialization = g1a_v121.load_r13_initialization
 
+# The sealed historical DINO teacher factory manifest stores paths relative to
+# journal_extension/teacher_factory, not relative to the repository root. The
+# generic v1.2 runtime passes repo_root as factory_source_root; bind the v1.2.1
+# execution wrapper to the exact frozen factory bundle directory so manifest
+# byte validation and module import resolve the same trusted source tree.
+_historical_load_exact_teacher = tracka_runtime.load_exact_teacher
+
+
+def load_exact_teacher_v121(
+    checkpoint_path,
+    *,
+    factory_spec: str,
+    factory_bundle_manifest=None,
+    repo_root=".",
+    factory_source_root=None,
+):
+    repo = Path(repo_root).resolve()
+    source_root = repo / "journal_extension" / "teacher_factory"
+    if not source_root.is_dir():
+        raise RuntimeError(f"frozen teacher factory source root missing: {source_root}")
+    return _historical_load_exact_teacher(
+        checkpoint_path,
+        factory_spec=factory_spec,
+        factory_bundle_manifest=factory_bundle_manifest,
+        repo_root=repo,
+        factory_source_root=source_root,
+    )
+
+
+tracka_runtime.load_exact_teacher = load_exact_teacher_v121
+
 
 def validate_g2a_compatible(
     barrier: dict,
