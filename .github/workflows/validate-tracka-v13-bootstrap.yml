@@ -1,0 +1,116 @@
+name: Validate Track-A v13 durability bootstrap
+
+on:
+  push:
+    branches:
+      - ops-tracka-kaggle-master-runtime-v13-bootstrap-20260916
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v13-bootstrap-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact v13 runtime candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Compile v13 runtime wrappers
+        run: |
+          python -m py_compile \
+            journal_extension/kaggle/tracka_v12_ops/science_account_runner_v13.py \
+            journal_extension/kaggle/tracka_v12_ops/master_science_v13.py \
+            journal_extension/kaggle/tracka_v12_ops/master_account_driver_v13.py \
+            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v13.py \
+            tests/test_tracka_v12_kaggle_master_v13.py
+
+      - name: Run v13 bootstrap regressions
+        run: python -m unittest -v tests.test_tracka_v12_kaggle_master_v13
+
+      - name: Preserve frozen v12 runtime behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='705be6e2ae1b83be6997ae24a83684ff867dcf12'
+          git cat-file -e "$BASE^{commit}"
+          git diff --exit-code "$BASE" -- \
+            journal_extension/kaggle/tracka_v12_ops/master_science_v8.py \
+            journal_extension/kaggle/tracka_v12_ops/master_account_driver_v12.py \
+            journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v12.py \
+            journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py
+          echo 'v12 runtime files unchanged PASS'
+
+      - name: Verify runtime-only delta and frozen science SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='705be6e2ae1b83be6997ae24a83684ff867dcf12'
+          SCIENCE='56023042e57758591df9babb3438f191dbe10312'
+          grep -F "SCIENCE_SHA_V8 = \"$SCIENCE\"" journal_extension/kaggle/tracka_v12_ops/tracka_v12_kaggle_operator_v8.py
+          CHANGED="$(git diff --name-only "$BASE"...HEAD)"
+          printf '%s\n' "$CHANGED"
+          while IFS= read -r path; do
+            [ -z "$path" ] && continue
+            case "$path" in
+              journal_extension/kaggle/tracka_v12_ops/science_account_runner_v13.py|\
+              journal_extension/kaggle/tracka_v12_ops/master_science_v13.py|\
+              journal_extension/kaggle/tracka_v12_ops/master_account_driver_v13.py|\
+              journal_extension/kaggle/tracka_v12_ops/master_launch_guard_v13.py|\
+              tests/test_tracka_v12_kaggle_master_v13.py|\
+              .github/workflows/validate-tracka-v13-bootstrap.yml) ;;
+              *) echo "unexpected v13 delta: $path" >&2; exit 1 ;;
+            esac
+          done <<< "$CHANGED"
+          echo 'runtime-only delta PASS'
+
+      - name: Verify bootstrap decision is fail-closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          text=(Path('journal_extension/kaggle/tracka_v12_ops/master_science_v13.py').read_text())
+          required=[
+              'version != 1',
+              'partial durable recovery generation',
+              'unexpected files',
+              'refusing a silent fresh scientific restart',
+              'PRISTINE_FIRST_RUN',
+          ]
+          for token in required:
+              assert token in text, token
+          wrapper=Path('journal_extension/kaggle/tracka_v12_ops/science_account_runner_v13.py').read_text()
+          assert 'command[resume_index] = "never"' in wrapper
+          assert 'command[resume_index] != "auto"' in wrapper
+          print('v13 fail-closed bootstrap contract PASS')
+          PY
+
+      - name: Verify protected surfaces and science semantics remain untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          files=[
+              'science_account_runner_v13.py',
+              'master_science_v13.py',
+              'master_account_driver_v13.py',
+              'master_launch_guard_v13.py',
+          ]
+          root=Path('journal_extension/kaggle/tracka_v12_ops')
+          text='\n'.join((root/f).read_text() for f in files)
+          for forbidden in ('DS-V1-TEST-CONSUMED','DS-EXT-','external_predictions_open','track_c_candidate_runtime_open'):
+              if forbidden in text:
+                  raise SystemExit(f'forbidden v13 runtime content: {forbidden}')
+          print('protected surfaces closed PASS')
+          PY
