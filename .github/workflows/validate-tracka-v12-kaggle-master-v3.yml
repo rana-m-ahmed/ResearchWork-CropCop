@@ -1,10 +1,9 @@
-name: Validate Track-A v1.2 Kaggle master v5-v6 candidate
+name: Validate Track-A v1.2 Kaggle master v6
 
 on:
   push:
     branches:
-      - ops-tracka-kaggle-master-v3-20260913
-      - ops-tracka-kaggle-master-v6-candidate-20260915
+      - ops-tracka-kaggle-master-v6-20260915
     paths:
       - 'journal_extension/kaggle/tracka_v12_ops/**'
       - 'tests/test_tracka_v12_kaggle_ops.py'
@@ -20,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: tracka-v12-kaggle-master-${{ github.ref }}
+  group: tracka-v12-kaggle-master-v6-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -28,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - name: Checkout master operator branch
+      - name: Checkout v6 distribution branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
@@ -76,7 +75,7 @@ jobs:
           print(f'additive separation PASS: {len(rows)} files')
           PY
 
-      - name: Validate current frozen v5 distribution remains intact
+      - name: Validate immutable v6 runtime and exact three-notebook distribution
         shell: bash
         run: |
           set -euo pipefail
@@ -84,9 +83,9 @@ jobs:
           import json
           from pathlib import Path
           SCIENCE_SHA='9a72e9466a9a3e7429e0e36a028edac662f83146'
-          RUNTIME_SHA='902e7774dda32106a03bfb3f5917946c11ff8e2c'
-          RUNTIME_BRANCH='ops-tracka-kaggle-master-runtime-v5-902e777'
-          DRIVER='master_account_driver_v5.py'
+          RUNTIME_SHA='208656f895af5c218a0998b582f2adbb81167eaa'
+          RUNTIME_BRANCH='ops-tracka-kaggle-master-runtime-v6-208656f'
+          DRIVER='master_account_driver_v6.py'
           root=Path('journal_extension/kaggle/tracka_v12_ops')
           expected={'TRACKA_V12_MASTER_K1.ipynb':'K1','TRACKA_V12_MASTER_K2.ipynb':'K2','TRACKA_V12_MASTER_K3.ipynb':'K3'}
           observed={p.name:p for p in root.glob('*.ipynb')}
@@ -97,8 +96,8 @@ jobs:
           freeze=json.loads((root/'MASTER_RUNTIME_FREEZE.json').read_text())
           marker=(root/'.runtime-freeze-marker').read_text()
           for payload,label in ((distribution,'distribution'),(contract,'contract')):
-              if payload.get('schema_version')!='3.5' or payload.get('operator_runtime_sha')!=RUNTIME_SHA or payload.get('operator_runtime_branch')!=RUNTIME_BRANCH or payload.get('driver')!=DRIVER:
-                  raise SystemExit(f'{label} v5 binding mismatch')
+              if payload.get('schema_version')!='3.6' or payload.get('operator_runtime_sha')!=RUNTIME_SHA or payload.get('operator_runtime_branch')!=RUNTIME_BRANCH or payload.get('driver')!=DRIVER:
+                  raise SystemExit(f'{label} v6 binding mismatch')
           if freeze.get('status')!='PASS' or freeze.get('runtime_candidate_sha')!=RUNTIME_SHA or freeze.get('runtime_branch')!=RUNTIME_BRANCH:
               raise SystemExit('freeze record mismatch')
           if not all(x in marker for x in (RUNTIME_SHA,RUNTIME_BRANCH,SCIENCE_SHA)):
@@ -106,17 +105,28 @@ jobs:
           for name,account in expected.items():
               nb=json.loads(observed[name].read_text())
               meta=(nb.get('metadata') or {}).get('cropcop_operator') or {}
-              if meta.get('account_id')!=account or meta.get('science_sha')!=SCIENCE_SHA or meta.get('operator_runtime_sha')!=RUNTIME_SHA or meta.get('operator_runtime_branch')!=RUNTIME_BRANCH or meta.get('driver')!=DRIVER:
+              if nb.get('nbformat')!=4 or nb.get('nbformat_minor')!=5:
+                  raise SystemExit(f'format mismatch: {name}')
+              if meta.get('schema_version')!='3.6' or meta.get('account_id')!=account or meta.get('science_sha')!=SCIENCE_SHA or meta.get('operator_runtime_sha')!=RUNTIME_SHA or meta.get('operator_runtime_branch')!=RUNTIME_BRANCH or meta.get('driver')!=DRIVER:
                   raise SystemExit(f'identity/runtime mismatch: {name}')
+              body='\n'.join(''.join(c.get('source') or []) for c in nb.get('cells') or [])
+              for required in (RUNTIME_SHA,RUNTIME_BRANCH,DRIVER,'CropCop_Final_v1',"V1 / 'audit' / 'final_manifest.csv'", "V1 / 'audit' / 'class_to_idx.json'", "V1 / 'dataset'", 'os.getpid()', 'uuid.uuid4()', 'Process-isolated runtime checkout'):
+                  if required not in body:
+                      raise SystemExit(f'missing {required!r} from {name}')
+              if 'shutil.rmtree(OPS_ROOT)' in body:
+                  raise SystemExit(f'shared runtime checkout deletion remains in {name}')
+              if account=='K1' and 'cropcop-g1-sealed/G1_PACKAGE' not in body:
+                  raise SystemExit('K1 preferred principal G1 path missing')
               for i,cell in enumerate(nb.get('cells') or []):
                   if cell.get('cell_type')=='code':
                       if cell.get('execution_count') is not None or cell.get('outputs') != []:
                           raise SystemExit(f'execution residue: {name}:cell-{i}')
                       compile(''.join(cell.get('source') or []), f'{name}:cell-{i}', 'exec')
-          print('current v5 distribution still intact')
+          print('v6 three-notebook distribution PASS')
           PY
+          test "$(git rev-parse refs/remotes/origin/ops-tracka-kaggle-master-runtime-v6-208656f)" = '208656f895af5c218a0998b582f2adbb81167eaa'
 
-      - name: Compile and import v6 candidate runtime
+      - name: Compile and import v6 runtime graph
         shell: bash
         run: |
           set -euo pipefail
@@ -127,17 +137,18 @@ jobs:
           root=Path.cwd()
           for p in (root/'journal_extension/kaggle/tracka_v12_ops',root/'journal_extension/src'):
               sys.path.insert(0,str(p))
-          import master_g1a_v6, master_singleton_v6, master_account_driver_v6
+          import master_preflight, master_verified_pretrained_v5, master_publication_v4
+          import master_g1a_v6, master_singleton_v6, master_g2a, master_control, master_science_v4, master_account_driver_v6
           print('v6 import graph PASS')
           PY
 
-      - name: Run targeted v6 regression tests
+      - name: Run v6 targeted remediation tests
         shell: bash
         run: |
           set -euo pipefail
           python -m unittest -v tests.test_tracka_v12_kaggle_master_v6
 
-      - name: Run inherited full regression suite
+      - name: Run full inherited regression and distribution suite
         shell: bash
         run: |
           set -euo pipefail
@@ -148,21 +159,35 @@ jobs:
             tests.test_tracka_v12_kaggle_publication_v4 \
             tests.test_tracka_v12_kaggle_master_v5
 
-      - name: Verify provenance and frozen-sealer compatibility contract
+      - name: Verify frozen-sealer compatibility and source-integrity contract
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
+          import builtins, symtable
           from pathlib import Path
           root=Path.cwd()
-          sealer=(root/'journal_extension/scripts/seal_tracka_v12_g1a.py').read_text()
+          sealer_path=root/'journal_extension/scripts/seal_tracka_v12_g1a.py'
+          source=sealer_path.read_text()
           secondary=(root/'journal_extension/src/cropcop_je/secondary.py').read_text()
           compat=(root/'journal_extension/kaggle/tracka_v12_ops/master_g1a_v6.py').read_text()
-          assert '"torchvision_version": TORCHVISION_VERSION' in sealer
+          driver=(root/'journal_extension/kaggle/tracka_v12_ops/master_account_driver_v6.py').read_text()
+          table=symtable.symtable(source,str(sealer_path),'exec')
+          bound={s.get_name() for s in table.get_symbols() if s.is_assigned() or s.is_imported() or s.is_namespace()}
+          unresolved=set()
+          def visit(scope):
+              for s in scope.get_symbols():
+                  if s.is_referenced() and s.is_global() and s.get_name() not in bound and s.get_name() not in dir(builtins):
+                      unresolved.add(s.get_name())
+              for child in scope.get_children():
+                  visit(child)
+          for child in table.get_children(): visit(child)
+          assert unresolved == {'TORCHVISION_VERSION'}, unresolved
           assert 'TORCHVISION_VERSION = "0.27.1"' in secondary
           assert "init_globals={'TORCHVISION_VERSION': TORCHVISION_VERSION}" in compat
           assert 'FROZEN_G1A_SEALER_COMPAT' in compat
-          print('frozen-sealer compatibility contract PASS')
+          assert driver.count('assert_clean_science_checkout(repo)') >= 5
+          print('frozen-sealer + source-integrity contract PASS')
           PY
 
       - name: Reject tracked binary or credential artifacts
