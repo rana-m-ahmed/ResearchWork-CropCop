@@ -1,11 +1,11 @@
 {
-  "schema_version": "3.5",
+  "schema_version": "3.6",
   "status": "LOCKED_MASTER_OPERATOR_CONTRACT",
   "authority_id": "EAAI-JE-SDL-v2.1-QA",
   "scientific_source_sha": "9a72e9466a9a3e7429e0e36a028edac662f83146",
-  "operator_runtime_sha": "902e7774dda32106a03bfb3f5917946c11ff8e2c",
-  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v5-902e777",
-  "driver": "master_account_driver_v5.py",
+  "operator_runtime_sha": "208656f895af5c218a0998b582f2adbb81167eaa",
+  "operator_runtime_branch": "ops-tracka-kaggle-master-runtime-v6-208656f",
+  "driver": "master_account_driver_v6.py",
   "dataset": {
     "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
     "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
@@ -35,6 +35,16 @@
     "candidate_and_official_tensor_identity_must_match": true,
     "frozen_validator_required_before_g1a_seal": true
   },
+  "frozen_g1a_sealer_compatibility": {
+    "frozen_source_modified": false,
+    "static_unresolved_global_count": 1,
+    "static_unresolved_globals": ["TORCHVISION_VERSION"],
+    "injected_from_frozen_module": "cropcop_je.secondary.TORCHVISION_VERSION",
+    "expected_value": "0.27.1",
+    "launcher": "runpy.run_path with init_globals",
+    "real_subprocess_injection_tested": true,
+    "science_checkout_clean_asserted_after_g1a": true
+  },
   "r13": {
     "sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed",
     "bytes": 90095744,
@@ -55,6 +65,17 @@
     "g2a_distinct_private_dataset_count": 5,
     "scientific_distinct_private_dataset_count": 11,
     "canonical_g1a_private_dataset_count": 1
+  },
+  "concurrency": {
+    "per_account_master_singleton": true,
+    "singleton_primitive": "fcntl.flock",
+    "singleton_root": "/kaggle/working",
+    "duplicate_invocation_enters_critical_section": false,
+    "duplicate_invocation_waits_and_mirrors_primary": true,
+    "same_session_terminal_reexecution_allowed": false,
+    "stale_running_marker_fails_closed": true,
+    "notebook_runtime_checkout_process_isolated": true,
+    "g2a_intentional_two_gpu_parallelism_preserved": true
   },
   "publication": {
     "github_evidence_branches": true,
@@ -80,14 +101,23 @@
     "r13_upstream_bounded_retry": true,
     "scientific_result_steps_auto_retried": false
   },
+  "source_integrity": {
+    "clean_after_checkout": true,
+    "clean_after_stack_repair": true,
+    "clean_after_g1a": true,
+    "clean_after_g2a": true,
+    "clean_after_control_plane": true,
+    "clean_before_science": true
+  },
   "recovery": {
-    "same_notebook_rerun": true,
+    "same_notebook_fresh_batch_rerun": true,
     "scientific_resume_mode": "auto",
     "empty_g1a_placeholder_is_recoverable": true,
     "stale_or_invalid_g1a_seal_is_recoverable_without_investigation": false,
     "dependency_timeout_is_science_failure": false,
     "explicit_continuation_required": true,
-    "malformed_summary_is_resumable": false
+    "malformed_summary_is_resumable": false,
+    "same_session_duplicate_execution_is_recoverable_by_rerun": false
   },
   "rules": {
     "scientific_source_may_follow_operator_head": false,
