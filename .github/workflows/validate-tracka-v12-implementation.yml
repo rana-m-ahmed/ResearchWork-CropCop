@@ -14,6 +14,7 @@ on:
       - 'journal_extension/src/cropcop_je/persistence_v8.py'
       - 'journal_extension/src/cropcop_je/tracka_v12*.py'
       - 'journal_extension/src/cropcop_je/secondary.py'
+      - 'journal_extension/teacher_factory/**'
       - 'journal_extension/scripts/seal_tracka_v12_g1a.py'
       - 'journal_extension/scripts/seal_tracka_v12_g1a_v121.py'
       - 'journal_extension/scripts/run_tracka_v12_training.py'
@@ -84,6 +85,7 @@ jobs:
             journal_extension/src/cropcop_je/tracka_v12_historical.py \
             journal_extension/src/cropcop_je/tracka_v12_posttraining.py \
             journal_extension/src/cropcop_je/tracka_v12_xai.py \
+            journal_extension/teacher_factory/historical_dino_tiny.py \
             journal_extension/scripts/seal_tracka_v12_g1a.py \
             journal_extension/scripts/seal_tracka_v12_g1a_v121.py \
             journal_extension/scripts/run_tracka_v12_training.py \
@@ -115,6 +117,7 @@ jobs:
             tests/test_tracka_v12_g2a_v122.py \
             tests/test_tracka_v12_g2a_durability.py \
             tests/test_tracka_v12_mitigation_v8.py \
+            tests/test_tracka_v12_teacher_factory_root_binding.py \
             tests/test_tracka_v12_analysis.py \
             tests/test_tracka_v12_authorization.py \
             tests/test_tracka_v12_placement.py \
@@ -124,7 +127,7 @@ jobs:
             tests/test_tracka_v12_science_go.py \
             tests/test_tracka_v12_science_go_v123.py \
             tests/test_tracka_v12_comprehensive_closure.py
-      - name: Validate contracts, parity amendment, consumer binding, failure injection, orchestration, evidence and closure composition
+      - name: Validate contracts, teacher factory binding, parity amendment, consumer binding, failure injection, orchestration, evidence and closure composition
         run: |
           python journal_extension/amendments/track_a_strengthening_v1/validate_r13_parity_amendment_v1_2_1.py \
             --report r13-parity-amendment-v121-static-report.json
@@ -137,6 +140,7 @@ jobs:
             tests.test_tracka_v12_g2a_v122 \
             tests.test_tracka_v12_g2a_durability \
             tests.test_tracka_v12_mitigation_v8 \
+            tests.test_tracka_v12_teacher_factory_root_binding \
             tests.test_tracka_v12_analysis \
             tests.test_tracka_v12_authorization \
             tests.test_tracka_v12_placement \
