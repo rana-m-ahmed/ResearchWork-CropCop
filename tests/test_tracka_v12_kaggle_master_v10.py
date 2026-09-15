@@ -90,8 +90,6 @@ class TrackAV12KaggleMasterV10Tests(unittest.TestCase):
             self.assertEqual(active.sha256_file(lock), LOCK_MEMBER_SHA256)
 
     def test_versioned_source_contains_teacher_factory_root_fix(self):
-        # Runtime checkout is an operator package; exact science source is cloned separately.
-        # This test asserts the release authority and CI separately prove the exact source object.
         self.assertEqual(active.SCIENCE_SHA, SCIENCE_SHA)
         manifest = active.load_json(attest.ATTESTATION_DIR / "RELEASE_ATTESTATION_MANIFEST.json")
         self.assertEqual(manifest["teacher_factory_root_contract"]["source_sha256"], TEACHER_SHA256)
@@ -127,8 +125,9 @@ class TrackAV12KaggleMasterV10Tests(unittest.TestCase):
         self.assertIn("try_collect_all_g2a", text)
         self.assertIn("try_acquire_control_worker", text)
         self.assertIn("controlled_dependency_continuation", text)
-        self.assertNotIn("collect_all_g2a(", text)
-        self.assertNotIn("acquire_control_worker(", text)
+        self.assertNotIn("from master_g2a_v8 import collect_all_g2a", text)
+        self.assertNotIn("summaries = collect_all_g2a(", text)
+        self.assertNotIn("control_dir, control = acquire_control_worker(", text)
         self.assertIn("return 2", text)
 
     def test_controlled_continuation_is_terminal_for_current_batch_only(self):
