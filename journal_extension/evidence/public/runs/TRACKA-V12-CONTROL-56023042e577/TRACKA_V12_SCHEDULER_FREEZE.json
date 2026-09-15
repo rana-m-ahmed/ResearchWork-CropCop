@@ -1,0 +1,151 @@
+{
+  "algorithm": "deterministic_lpt_list_scheduling_to_six_slots",
+  "checkpoint_identity_is_physical_slot_independent": true,
+  "continuation_dispatch": "each physical slot consumes its frozen queue sequentially; no mutable cross-account central queue",
+  "cost_source": "sealed non-scientific estimated full 30-epoch run seconds only",
+  "freeze_kind": "track_a_v12_pre_science_scheduler_full_run",
+  "g1a_seal_sha256": "c7f5ffc84240a79c3201081896df537959313ac8f0cd2d3aba0205a7fe7cfb8d",
+  "g2a_barrier_sha256": "d8141f5c6f4f7c48bc680c6abd4d63c0871f93253a145c96bbb076615d98fdfc",
+  "initial_dispatch": [
+    {
+      "experiment_id": "R12-MNV4-LOGITS-S2",
+      "slot": "K1/GPU0"
+    },
+    {
+      "experiment_id": "R12-MNV4-LOGITS-S3",
+      "slot": "K1/GPU1"
+    },
+    {
+      "experiment_id": "R12-MNV4-FEATURE-S2",
+      "slot": "K2/GPU0"
+    },
+    {
+      "experiment_id": "R12-MNV4-FEATURE-S3",
+      "slot": "K2/GPU1"
+    },
+    {
+      "experiment_id": "R06-EFFB0-CONTEXT-S2",
+      "slot": "K3/GPU0"
+    },
+    {
+      "experiment_id": "R06-EFFB0-CONTEXT-S3",
+      "slot": "K3/GPU1"
+    }
+  ],
+  "predicted_slot_load_seconds": {
+    "K1/GPU0": 87218.34296090281,
+    "K1/GPU1": 60351.78281251079,
+    "K2/GPU0": 83671.37477455051,
+    "K2/GPU1": 83671.37477455051,
+    "K3/GPU0": 70795.40720714022,
+    "K3/GPU1": 70795.40720714022
+  },
+  "priority": [
+    "R12-MNV4-LOGITS-S2",
+    "R12-MNV4-LOGITS-S3",
+    "R12-MNV4-FEATURE-S2",
+    "R12-MNV4-FEATURE-S3",
+    "R06-EFFB0-CONTEXT-S2",
+    "R06-EFFB0-CONTEXT-S3",
+    "R07-CNXTT-CONTEXT-S2",
+    "R07-CNXTT-CONTEXT-S3",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3"
+  ],
+  "priority_rows": [
+    {
+      "estimated_full_run_seconds_upper_bound": 60351.78281251079,
+      "experiment_id": "R12-MNV4-LOGITS-S2",
+      "profile": "CAL-MNV4-LOGITS"
+    },
+    {
+      "estimated_full_run_seconds_upper_bound": 60351.78281251079,
+      "experiment_id": "R12-MNV4-LOGITS-S3",
+      "profile": "CAL-MNV4-LOGITS"
+    },
+    {
+      "estimated_full_run_seconds_upper_bound": 56804.81462615849,
+      "experiment_id": "R12-MNV4-FEATURE-S2",
+      "profile": "CAL-MNV4-FEATURE"
+    },
+    {
+      "estimated_full_run_seconds_upper_bound": 56804.81462615849,
+      "experiment_id": "R12-MNV4-FEATURE-S3",
+      "profile": "CAL-MNV4-FEATURE"
+    },
+    {
+      "estimated_full_run_seconds_upper_bound": 37383.807371953066,
+      "experiment_id": "R06-EFFB0-CONTEXT-S2",
+      "profile": "CAL-EFFB0"
+    },
+    {
+      "estimated_full_run_seconds_upper_bound": 37383.807371953066,
+      "experiment_id": "R06-EFFB0-CONTEXT-S3",
+      "profile": "CAL-EFFB0"
+    },
+    {
+      "estimated_full_run_seconds_upper_bound": 33411.59983518715,
+      "experiment_id": "R07-CNXTT-CONTEXT-S2",
+      "profile": "CAL-CNXTT"
+    },
+    {
+      "estimated_full_run_seconds_upper_bound": 33411.59983518715,
+      "experiment_id": "R07-CNXTT-CONTEXT-S3",
+      "profile": "CAL-CNXTT"
+    },
+    {
+      "estimated_full_run_seconds_upper_bound": 26866.560148392015,
+      "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+      "profile": "CAL-R13"
+    },
+    {
+      "estimated_full_run_seconds_upper_bound": 26866.560148392015,
+      "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+      "profile": "CAL-R13"
+    },
+    {
+      "estimated_full_run_seconds_upper_bound": 26866.560148392015,
+      "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S3",
+      "profile": "CAL-R13"
+    }
+  ],
+  "scheduler_freeze_sha256": "7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787",
+  "schema_version": "1.2.2",
+  "science_authorized": false,
+  "slot_order": [
+    "K1/GPU0",
+    "K1/GPU1",
+    "K2/GPU0",
+    "K2/GPU1",
+    "K3/GPU0",
+    "K3/GPU1"
+  ],
+  "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "static_slot_queues": {
+    "K1/GPU0": [
+      "R12-MNV4-LOGITS-S2",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S3"
+    ],
+    "K1/GPU1": [
+      "R12-MNV4-LOGITS-S3"
+    ],
+    "K2/GPU0": [
+      "R12-MNV4-FEATURE-S2",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S1"
+    ],
+    "K2/GPU1": [
+      "R12-MNV4-FEATURE-S3",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S2"
+    ],
+    "K3/GPU0": [
+      "R06-EFFB0-CONTEXT-S2",
+      "R07-CNXTT-CONTEXT-S2"
+    ],
+    "K3/GPU1": [
+      "R06-EFFB0-CONTEXT-S3",
+      "R07-CNXTT-CONTEXT-S3"
+    ]
+  },
+  "status": "PASS"
+}
