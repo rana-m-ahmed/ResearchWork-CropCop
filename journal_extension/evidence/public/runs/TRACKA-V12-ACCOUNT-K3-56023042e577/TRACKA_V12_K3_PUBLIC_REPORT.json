@@ -3,14 +3,12 @@
   "child_git_credentials_removed": true,
   "cross_gpu_gradient_synchronization": false,
   "execution_errors": [
-    "K3/GPU0:R06-EFFB0-CONTEXT-S2:continuation_required",
-    "K3/GPU0:R06-EFFB0-CONTEXT-S2:nonterminal_run",
-    "K3/GPU0:R06-EFFB0-CONTEXT-S2:slot_not_terminal",
-    "K3/GPU0:incomplete_queue",
-    "K3/GPU1:R06-EFFB0-CONTEXT-S3:continuation_required",
-    "K3/GPU1:R06-EFFB0-CONTEXT-S3:nonterminal_run",
-    "K3/GPU1:R06-EFFB0-CONTEXT-S3:slot_not_terminal",
-    "K3/GPU1:incomplete_queue"
+    "K3/GPU0:R07-CNXTT-CONTEXT-S2:continuation_required",
+    "K3/GPU0:R07-CNXTT-CONTEXT-S2:nonterminal_run",
+    "K3/GPU0:R07-CNXTT-CONTEXT-S2:slot_not_terminal",
+    "K3/GPU1:R07-CNXTT-CONTEXT-S3:continuation_required",
+    "K3/GPU1:R07-CNXTT-CONTEXT-S3:nonterminal_run",
+    "K3/GPU1:R07-CNXTT-CONTEXT-S3:slot_not_terminal"
   ],
   "operator_publication_count": 0,
   "operator_runtime_sha": "1144858173698faf698a962e9296b34ba873456d",
@@ -23,22 +21,40 @@
   "slot_results": {
     "K3/GPU0": [
       {
-        "continuation_required": true,
+        "continuation_required": false,
         "experiment_id": "R06-EFFB0-CONTEXT-S2",
         "operator_publication": null,
         "return_code": 0,
         "run_id": "JE-R06-EFFB0-CONTEXT-S2-56023042e577-A01",
+        "run_status": "PASS",
+        "selected_checkpoint_sha256": "f0de7831758a18339d1e1f9de60686e48725aa29fe12f0187c1dd8f446085c39"
+      },
+      {
+        "continuation_required": true,
+        "experiment_id": "R07-CNXTT-CONTEXT-S2",
+        "operator_publication": null,
+        "return_code": 0,
+        "run_id": "JE-R07-CNXTT-CONTEXT-S2-56023042e577-A01",
         "run_status": "LAUNCHED",
         "selected_checkpoint_sha256": null
       }
     ],
     "K3/GPU1": [
       {
-        "continuation_required": true,
+        "continuation_required": false,
         "experiment_id": "R06-EFFB0-CONTEXT-S3",
         "operator_publication": null,
         "return_code": 0,
         "run_id": "JE-R06-EFFB0-CONTEXT-S3-56023042e577-A01",
+        "run_status": "PASS",
+        "selected_checkpoint_sha256": "fa895a5a6c3ae81c15ab2af3969556ccbd4eabc8bf87cfac540a9f39ed6854ba"
+      },
+      {
+        "continuation_required": true,
+        "experiment_id": "R07-CNXTT-CONTEXT-S3",
+        "operator_publication": null,
+        "return_code": 0,
+        "run_id": "JE-R07-CNXTT-CONTEXT-S3-56023042e577-A01",
         "run_status": "LAUNCHED",
         "selected_checkpoint_sha256": null
       }
