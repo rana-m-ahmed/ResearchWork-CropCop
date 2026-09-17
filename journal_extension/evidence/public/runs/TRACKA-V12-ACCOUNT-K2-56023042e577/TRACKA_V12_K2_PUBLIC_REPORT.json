@@ -2,20 +2,13 @@
   "account_id": "K2",
   "child_git_credentials_removed": true,
   "cross_gpu_gradient_synchronization": false,
-  "execution_errors": [
-    "K2/GPU0:R13-VIT-DLITTLE-DIFF-CONTEXT-S1:continuation_required",
-    "K2/GPU0:R13-VIT-DLITTLE-DIFF-CONTEXT-S1:nonterminal_run",
-    "K2/GPU0:R13-VIT-DLITTLE-DIFF-CONTEXT-S1:slot_not_terminal",
-    "K2/GPU1:R13-VIT-DLITTLE-DIFF-CONTEXT-S2:continuation_required",
-    "K2/GPU1:R13-VIT-DLITTLE-DIFF-CONTEXT-S2:nonterminal_run",
-    "K2/GPU1:R13-VIT-DLITTLE-DIFF-CONTEXT-S2:slot_not_terminal"
-  ],
+  "execution_errors": [],
   "operator_publication_count": 0,
   "operator_runtime_sha": "1144858173698faf698a962e9296b34ba873456d",
   "scheduler_freeze_sha256": "7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787",
   "schema_version": "1.2.1",
   "science_authorization_sha256": "58d65a9c9f0c06222c00541feca9b2aaa005ebda850d2261d4df3e0e1fe7fbb7",
-  "science_complete": false,
+  "science_complete": true,
   "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
   "scientific_runner_git_publication_requested": false,
   "slot_results": {
@@ -30,13 +23,13 @@
         "selected_checkpoint_sha256": "e87f7e5ac4d29c48b53a8bedb99d19fc807840891d60582f0f766edceb472620"
       },
       {
-        "continuation_required": true,
+        "continuation_required": false,
         "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
         "operator_publication": null,
         "return_code": 0,
         "run_id": "JE-R13-VIT-DLITTLE-DIFF-CONTEXT-S1-56023042e577-A01",
-        "run_status": "LAUNCHED",
-        "selected_checkpoint_sha256": null
+        "run_status": "PASS",
+        "selected_checkpoint_sha256": "b27f494490d37dcf200e3b7f4aafb3fa731ab55f9b5d570c75fd3f36e0938968"
       }
     ],
     "K2/GPU1": [
@@ -50,16 +43,16 @@
         "selected_checkpoint_sha256": "756efe872c4042f718936a94d4ca360f5be6843f31072eb6d650dc6fc4b163f4"
       },
       {
-        "continuation_required": true,
+        "continuation_required": false,
         "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
         "operator_publication": null,
         "return_code": 0,
         "run_id": "JE-R13-VIT-DLITTLE-DIFF-CONTEXT-S2-56023042e577-A01",
-        "run_status": "LAUNCHED",
-        "selected_checkpoint_sha256": null
+        "run_status": "PASS",
+        "selected_checkpoint_sha256": "68c2bbb867874cb553a4702844dbceb187f09fac48051249cc048495ddf0f786"
       }
     ]
   },
   "stage": "TRACKA_V12_MASTER_ACCOUNT",
-  "status": "ATTENTION_REQUIRED"
+  "status": "PASS"
 }
