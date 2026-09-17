@@ -3,14 +3,12 @@
   "child_git_credentials_removed": true,
   "cross_gpu_gradient_synchronization": false,
   "execution_errors": [
-    "K2/GPU0:R12-MNV4-FEATURE-S2:continuation_required",
-    "K2/GPU0:R12-MNV4-FEATURE-S2:nonterminal_run",
-    "K2/GPU0:R12-MNV4-FEATURE-S2:slot_not_terminal",
-    "K2/GPU0:incomplete_queue",
-    "K2/GPU1:R12-MNV4-FEATURE-S3:continuation_required",
-    "K2/GPU1:R12-MNV4-FEATURE-S3:nonterminal_run",
-    "K2/GPU1:R12-MNV4-FEATURE-S3:slot_not_terminal",
-    "K2/GPU1:incomplete_queue"
+    "K2/GPU0:R13-VIT-DLITTLE-DIFF-CONTEXT-S1:continuation_required",
+    "K2/GPU0:R13-VIT-DLITTLE-DIFF-CONTEXT-S1:nonterminal_run",
+    "K2/GPU0:R13-VIT-DLITTLE-DIFF-CONTEXT-S1:slot_not_terminal",
+    "K2/GPU1:R13-VIT-DLITTLE-DIFF-CONTEXT-S2:continuation_required",
+    "K2/GPU1:R13-VIT-DLITTLE-DIFF-CONTEXT-S2:nonterminal_run",
+    "K2/GPU1:R13-VIT-DLITTLE-DIFF-CONTEXT-S2:slot_not_terminal"
   ],
   "operator_publication_count": 0,
   "operator_runtime_sha": "1144858173698faf698a962e9296b34ba873456d",
@@ -23,22 +21,40 @@
   "slot_results": {
     "K2/GPU0": [
       {
-        "continuation_required": true,
+        "continuation_required": false,
         "experiment_id": "R12-MNV4-FEATURE-S2",
         "operator_publication": null,
         "return_code": 0,
         "run_id": "JE-R12-MNV4-FEATURE-S2-56023042e577-A01",
+        "run_status": "PASS",
+        "selected_checkpoint_sha256": "e87f7e5ac4d29c48b53a8bedb99d19fc807840891d60582f0f766edceb472620"
+      },
+      {
+        "continuation_required": true,
+        "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+        "operator_publication": null,
+        "return_code": 0,
+        "run_id": "JE-R13-VIT-DLITTLE-DIFF-CONTEXT-S1-56023042e577-A01",
         "run_status": "LAUNCHED",
         "selected_checkpoint_sha256": null
       }
     ],
     "K2/GPU1": [
       {
-        "continuation_required": true,
+        "continuation_required": false,
         "experiment_id": "R12-MNV4-FEATURE-S3",
         "operator_publication": null,
         "return_code": 0,
         "run_id": "JE-R12-MNV4-FEATURE-S3-56023042e577-A01",
+        "run_status": "PASS",
+        "selected_checkpoint_sha256": "756efe872c4042f718936a94d4ca360f5be6843f31072eb6d650dc6fc4b163f4"
+      },
+      {
+        "continuation_required": true,
+        "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+        "operator_publication": null,
+        "return_code": 0,
+        "run_id": "JE-R13-VIT-DLITTLE-DIFF-CONTEXT-S2-56023042e577-A01",
         "run_status": "LAUNCHED",
         "selected_checkpoint_sha256": null
       }
