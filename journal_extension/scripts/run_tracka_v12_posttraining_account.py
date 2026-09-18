@@ -22,6 +22,17 @@ from cropcop_je.tracka_v12_posttraining_operator import (
     validate_state_operator_spec,
 )
 
+STAGE_SCRIPT = {
+    "direct": "journal_extension/scripts/run_tracka_v12_direct_evidence.py",
+    "xai": "journal_extension/scripts/run_tracka_v12_xai.py",
+    "auxiliary": "journal_extension/scripts/run_tracka_v12_auxiliary_evidence.py",
+}
+STAGE_GATE = {
+    "direct": Path("public_evidence/DIRECT_STATE_EVIDENCE_GATE.json"),
+    "xai": Path("public_xai/XAI_EVIDENCE_GATE.json"),
+    "auxiliary": Path("public_evidence/AUXILIARY_STATE_EVIDENCE_GATE.json"),
+}
+
 
 def load_json(path: str | Path) -> dict:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
