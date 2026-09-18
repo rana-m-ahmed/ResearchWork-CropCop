@@ -108,6 +108,7 @@
     "ARTIFACT_AVAILABILITY",
     "PLACEMENT_FREEZE",
     "TERMINAL_METADATA_RECOVERY",
+    "PRIVATE_EVIDENCE_TARGET_PREFLIGHT",
     "ACCOUNT_READINESS",
     "GLOBAL_READINESS",
     "DIRECT_EVIDENCE",
@@ -136,7 +137,9 @@
     "require_manifest_sha256": true,
     "public_git_destination_prefix": "journal_extension/evidence/public/track_a/posttraining",
     "public_git_branch_run_id_template": "TRACKA-POST-{experiment_slug}-{analysis_sha12}",
-    "public_files_must_pass_allowlist_audit": true
+    "public_files_must_pass_allowlist_audit": true,
+    "private_target_preflight_required_before_account_readiness": true,
+    "private_target_auto_creation_policy": "explicit per-account opt-in only; authenticated owner must match; created target must settle authoritatively private before readiness"
   },
   "required_state_outputs": {
     "direct": [
@@ -159,6 +162,7 @@
     "dataset/class map hash drift",
     "checkpoint/run-record lineage mismatch",
     "account private-dataset owner mismatch",
+    "private evidence target is absent, unsettled, non-private, duplicated, or owned by a different Kaggle account",
     "public evidence audit rejects a file",
     "duplicate state execution with conflicting terminal evidence",
     "attempt to start a stage without sufficient session budget",
@@ -181,6 +185,7 @@
     "auxiliary_analysis": "PASS",
     "direct_selection": "PASS",
     "comprehensive_closure": "PASS",
-    "final_closure_audit": "PASS"
+    "final_closure_audit": "PASS",
+    "private_evidence_target_preflight_accounts": 3
   }
 }
