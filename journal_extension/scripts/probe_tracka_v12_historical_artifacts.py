@@ -7,13 +7,12 @@ from pathlib import Path
 
 import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
-from cropcop_je.checkpointing import verify_selected
 from cropcop_je.hashing import sha256_file, sha256_json
+from cropcop_je.tracka_v12_source_materialization import shallow_verify_selected_checkpoint
 from cropcop_je.tracka_v12_historical import (
     HISTORICAL_TRACKA_CLOSURE_SPECS,
     validate_historical_closure_identity,
 )
-from cropcop_je.train import _identity as checkpoint_identity
 
 ACCOUNTS = {"K1", "K2", "K3"}
 
@@ -66,11 +65,13 @@ def probe_state(experiment_id: str, spec: dict) -> dict:
         expected = ((record.get("artifact_locators") or {}).get("selected_checkpoint") or {}).get("sha256")
         if not expected:
             expected = (record.get("result_summary") or {}).get("selected_checkpoint_sha256")
-        checkpoint_path, payload = verify_selected(
+        closure_spec = HISTORICAL_TRACKA_CLOSURE_SPECS[experiment_id]
+        checkpoint_evidence = shallow_verify_selected_checkpoint(
             checkpoint_root,
-            expected_identity=checkpoint_identity(record),
             expected_sha256=str(expected),
+            expected_epoch=int(closure_spec["selected_epoch"]),
         )
+        checkpoint_path = checkpoint_root / checkpoint_evidence["selected_checkpoint_relative_path"]
         for path in spec.get("required_executor_files", []):
             ok, _ = check_file(path)
             if not ok:
@@ -84,7 +85,9 @@ def probe_state(experiment_id: str, spec: dict) -> dict:
             "run_record_sha256": sha256_file(run_path),
             "selected_checkpoint_sha256": str(expected),
             "selected_checkpoint_file_sha256": sha256_file(checkpoint_path),
-            "selected_checkpoint_epoch": int(payload["epoch"]),
+            "selected_checkpoint_epoch": int(checkpoint_evidence["selected_checkpoint_epoch"]),
+            "payload_deserialized": False,
+            "scientific_metrics_opened": False,
             "scientific_source_git_commit": record.get("source_git_commit"),
         }
         result["available"] = not result["errors"]
