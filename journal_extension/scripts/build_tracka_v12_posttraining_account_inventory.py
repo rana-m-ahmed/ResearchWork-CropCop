@@ -27,6 +27,7 @@ def main() -> int:
     ap.add_argument("--account-id", choices=["K1", "K2", "K3"], required=True)
     ap.add_argument("--materialization-catalog", required=True)
     ap.add_argument("--placement-freeze", required=True)
+    ap.add_argument("--campaign-lock", default="journal_extension/locks/track_a_posttraining_campaign_v1.json")
     ap.add_argument("--analysis-source-git-commit", required=True)
     ap.add_argument("--output", required=True)
     args = ap.parse_args()
@@ -38,8 +39,12 @@ def main() -> int:
 
     catalog_path = Path(args.materialization_catalog).resolve()
     placement_path = Path(args.placement_freeze).resolve()
+    campaign_path = Path(args.campaign_lock)
+    if not campaign_path.is_absolute():
+        campaign_path = repo / campaign_path
     catalog = load_json(catalog_path)
     placement = load_json(placement_path)
+    campaign = load_json(campaign_path)
     if catalog.get("schema_version") != "1.0" or catalog.get("account_id") != args.account_id:
         raise SystemExit("materialization catalog schema/account mismatch")
     if catalog.get("analysis_source_git_commit") != observed:
@@ -57,6 +62,22 @@ def main() -> int:
             raise SystemExit(f"assigned state missing from materialization catalog: {experiment_id}")
         row = dict(catalog_states[experiment_id])
         assignment = placement["assignments"][experiment_id]
+        owner = str((campaign.get("account_owners") or {}).get(args.account_id, "")).strip()
+        template = str((campaign.get("evidence_durability") or {}).get("locator_template", "")).strip()
+        if not owner or not template:
+            raise SystemExit("campaign lock lacks deterministic evidence-dataset owner/template")
+        experiment_slug = experiment_id.lower().replace("_", "-")
+        expected_locator = template.format(
+            owner=owner,
+            experiment_slug=experiment_slug,
+            analysis_sha12=observed[:12],
+        )
+        supplied_locator = str(row.get("evidence_dataset_locator", "")).strip()
+        if supplied_locator and supplied_locator != expected_locator:
+            raise SystemExit(
+                f"materialization catalog evidence locator differs from frozen campaign rule: {experiment_id}"
+            )
+        row["evidence_dataset_locator"] = expected_locator
         if assignment["account_id"] != args.account_id:
             raise SystemExit(f"placement/account mismatch: {experiment_id}")
         row["role"] = row.get("role")
@@ -81,6 +102,7 @@ def main() -> int:
         "states": states,
         "materialization_catalog_sha256": sha256_file(catalog_path),
         "placement_freeze_sha256": sha256_file(placement_path),
+        "campaign_lock_sha256": sha256_file(campaign_path),
     }
     output["inventory_sha256"] = sha256_json(output)
     atomic_write_json(args.output, output)
