@@ -5,6 +5,7 @@ import json
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest import mock
 import zipfile
 from pathlib import Path
@@ -57,7 +58,7 @@ class FinalV1ResolverTests(unittest.TestCase):
         )
 
     def test_canonical_mount_short_circuits_api_discovery(self):
-        sentinel = object()
+        sentinel = SimpleNamespace(root=Path("/tmp/final-v1"))
         with mock.patch(
             "cropcop_je.tracka_v12_final_v1.FINAL_V1_MOUNTED_ROOT"
         ) as mounted, mock.patch(
