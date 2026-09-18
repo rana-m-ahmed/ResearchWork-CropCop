@@ -1,0 +1,371 @@
+{
+  "account_queues": {
+    "K1": [
+      "R04-MNV4-DIRECT-S3",
+      "R05-MNV4-TEACHER-S3",
+      "R12-MNV4-LOGITS-S2",
+      "R12-MNV4-LOGITS-S3",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S3"
+    ],
+    "K2": [
+      "R04-MNV4-DIRECT-S1",
+      "R05-MNV4-TEACHER-S1",
+      "R12-MNV4-FEATURE-S1",
+      "R12-MNV4-FEATURE-S2",
+      "R12-MNV4-FEATURE-S3",
+      "R12-MNV4-LOGITS-S1",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S2"
+    ],
+    "K3": [
+      "R04-MNV4-DIRECT-S2",
+      "R05-MNV4-TEACHER-S2",
+      "R06-EFFB0-CONTEXT-S1",
+      "R06-EFFB0-CONTEXT-S2",
+      "R06-EFFB0-CONTEXT-S3",
+      "R07-CNXTT-CONTEXT-S1",
+      "R07-CNXTT-CONTEXT-S2",
+      "R07-CNXTT-CONTEXT-S3"
+    ]
+  },
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "assignment_count": 21,
+  "assignments": {
+    "R04-MNV4-DIRECT-S1": {
+      "account_id": "K2",
+      "availability_checked": [
+        {
+          "account_id": "K1",
+          "available": false
+        },
+        {
+          "account_id": "K2",
+          "available": true
+        },
+        {
+          "account_id": "K3",
+          "available": false
+        }
+      ],
+      "placement_basis": "pre_metric_historical_artifact_availability",
+      "preference_order": [
+        "K1",
+        "K2",
+        "K3"
+      ],
+      "queue_index_on_account": 0,
+      "slot_id": "K2/GPU0"
+    },
+    "R04-MNV4-DIRECT-S2": {
+      "account_id": "K3",
+      "availability_checked": [
+        {
+          "account_id": "K2",
+          "available": false
+        },
+        {
+          "account_id": "K3",
+          "available": true
+        },
+        {
+          "account_id": "K1",
+          "available": false
+        }
+      ],
+      "placement_basis": "pre_metric_historical_artifact_availability",
+      "preference_order": [
+        "K2",
+        "K3",
+        "K1"
+      ],
+      "queue_index_on_account": 0,
+      "slot_id": "K3/GPU0"
+    },
+    "R04-MNV4-DIRECT-S3": {
+      "account_id": "K1",
+      "availability_checked": [
+        {
+          "account_id": "K3",
+          "available": false
+        },
+        {
+          "account_id": "K1",
+          "available": true
+        },
+        {
+          "account_id": "K2",
+          "available": false
+        }
+      ],
+      "placement_basis": "pre_metric_historical_artifact_availability",
+      "preference_order": [
+        "K3",
+        "K1",
+        "K2"
+      ],
+      "queue_index_on_account": 0,
+      "slot_id": "K1/GPU0"
+    },
+    "R05-MNV4-TEACHER-S1": {
+      "account_id": "K2",
+      "availability_checked": [
+        {
+          "account_id": "K1",
+          "available": false
+        },
+        {
+          "account_id": "K2",
+          "available": true
+        },
+        {
+          "account_id": "K3",
+          "available": false
+        }
+      ],
+      "placement_basis": "pre_metric_historical_artifact_availability",
+      "preference_order": [
+        "K1",
+        "K2",
+        "K3"
+      ],
+      "queue_index_on_account": 1,
+      "slot_id": "K2/GPU1"
+    },
+    "R05-MNV4-TEACHER-S2": {
+      "account_id": "K3",
+      "availability_checked": [
+        {
+          "account_id": "K2",
+          "available": false
+        },
+        {
+          "account_id": "K3",
+          "available": true
+        },
+        {
+          "account_id": "K1",
+          "available": false
+        }
+      ],
+      "placement_basis": "pre_metric_historical_artifact_availability",
+      "preference_order": [
+        "K2",
+        "K3",
+        "K1"
+      ],
+      "queue_index_on_account": 1,
+      "slot_id": "K3/GPU1"
+    },
+    "R05-MNV4-TEACHER-S3": {
+      "account_id": "K1",
+      "availability_checked": [
+        {
+          "account_id": "K3",
+          "available": false
+        },
+        {
+          "account_id": "K1",
+          "available": true
+        },
+        {
+          "account_id": "K2",
+          "available": false
+        }
+      ],
+      "placement_basis": "pre_metric_historical_artifact_availability",
+      "preference_order": [
+        "K3",
+        "K1",
+        "K2"
+      ],
+      "queue_index_on_account": 1,
+      "slot_id": "K1/GPU1"
+    },
+    "R06-EFFB0-CONTEXT-S1": {
+      "account_id": "K3",
+      "availability_checked": [
+        {
+          "account_id": "K2",
+          "available": false
+        },
+        {
+          "account_id": "K1",
+          "available": false
+        },
+        {
+          "account_id": "K3",
+          "available": true
+        }
+      ],
+      "placement_basis": "pre_metric_historical_artifact_availability",
+      "preference_order": [
+        "K2",
+        "K1",
+        "K3"
+      ],
+      "queue_index_on_account": 2,
+      "slot_id": "K3/GPU0"
+    },
+    "R06-EFFB0-CONTEXT-S2": {
+      "account_id": "K3",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 3,
+      "slot_id": "K3/GPU1"
+    },
+    "R06-EFFB0-CONTEXT-S3": {
+      "account_id": "K3",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 4,
+      "slot_id": "K3/GPU0"
+    },
+    "R07-CNXTT-CONTEXT-S1": {
+      "account_id": "K3",
+      "availability_checked": [
+        {
+          "account_id": "K3",
+          "available": true
+        },
+        {
+          "account_id": "K2",
+          "available": false
+        },
+        {
+          "account_id": "K1",
+          "available": false
+        }
+      ],
+      "placement_basis": "pre_metric_historical_artifact_availability",
+      "preference_order": [
+        "K3",
+        "K2",
+        "K1"
+      ],
+      "queue_index_on_account": 5,
+      "slot_id": "K3/GPU1"
+    },
+    "R07-CNXTT-CONTEXT-S2": {
+      "account_id": "K3",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 6,
+      "slot_id": "K3/GPU0"
+    },
+    "R07-CNXTT-CONTEXT-S3": {
+      "account_id": "K3",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 7,
+      "slot_id": "K3/GPU1"
+    },
+    "R12-MNV4-FEATURE-S1": {
+      "account_id": "K2",
+      "availability_checked": [
+        {
+          "account_id": "K1",
+          "available": false
+        },
+        {
+          "account_id": "K2",
+          "available": true
+        },
+        {
+          "account_id": "K3",
+          "available": false
+        }
+      ],
+      "placement_basis": "pre_metric_historical_artifact_availability",
+      "preference_order": [
+        "K1",
+        "K2",
+        "K3"
+      ],
+      "queue_index_on_account": 2,
+      "slot_id": "K2/GPU0"
+    },
+    "R12-MNV4-FEATURE-S2": {
+      "account_id": "K2",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 3,
+      "slot_id": "K2/GPU1"
+    },
+    "R12-MNV4-FEATURE-S3": {
+      "account_id": "K2",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 4,
+      "slot_id": "K2/GPU0"
+    },
+    "R12-MNV4-LOGITS-S1": {
+      "account_id": "K2",
+      "availability_checked": [
+        {
+          "account_id": "K1",
+          "available": false
+        },
+        {
+          "account_id": "K2",
+          "available": true
+        },
+        {
+          "account_id": "K3",
+          "available": false
+        }
+      ],
+      "placement_basis": "pre_metric_historical_artifact_availability",
+      "preference_order": [
+        "K1",
+        "K2",
+        "K3"
+      ],
+      "queue_index_on_account": 5,
+      "slot_id": "K2/GPU1"
+    },
+    "R12-MNV4-LOGITS-S2": {
+      "account_id": "K1",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 2,
+      "slot_id": "K1/GPU0"
+    },
+    "R12-MNV4-LOGITS-S3": {
+      "account_id": "K1",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 3,
+      "slot_id": "K1/GPU1"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1": {
+      "account_id": "K2",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 6,
+      "slot_id": "K2/GPU0"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2": {
+      "account_id": "K2",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 7,
+      "slot_id": "K2/GPU1"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3": {
+      "account_id": "K1",
+      "placement_basis": "continuation_private_durability_owner",
+      "queue_index_on_account": 4,
+      "slot_id": "K1/GPU0"
+    }
+  },
+  "auxiliary_state_count": 9,
+  "availability_report_sha256": {
+    "K1": "1be0644878a4b210ab270fdac82731559f711de3e5bea0035bf70bc5ac269dd9",
+    "K2": "8808e5cd18d67608b875161ebd30a8b5aa1c1bfc54fc59dff7c4d1ef30073c1b",
+    "K3": "de91b612312b10ee4d4a7099b2c403e943f8505296ee44f3658502a72e1e257d"
+  },
+  "campaign_lock_sha256": "6292f874c72643e73eb60bc6c86741f41f127284bb00d12e85f98574d7497256",
+  "closure_authority_sha256": "10e88c34db16c852478e2454f3ccd7aeb5cf1877c82f4bdf00582898833a1d73",
+  "cross_gpu_gradient_synchronization": false,
+  "direct_state_count": 12,
+  "freeze_kind": "track_a_v12_posttraining_placement",
+  "placement_freeze_sha256": "cfe977fd3889725c96a2053688baedfb8d3fbd612b24d8ed692f01cea6d46924",
+  "placement_is_scientific_identity": false,
+  "placement_metric_blind": true,
+  "robustness_results_opened_before_freeze": false,
+  "schema_version": "1.0",
+  "scientific_metrics_opened_before_freeze": false,
+  "selection_outcomes_opened_before_freeze": false,
+  "status": "PASS",
+  "xai_results_opened_before_freeze": false
+}
