@@ -211,23 +211,84 @@ def run_subprocess(command: list[str], *, cwd: Path) -> None:
         raise RuntimeError(f"subprocess failed rc={cp.returncode}: {' '.join(command)}")
 
 
+def restore_state_evidence(*, repo: Path, state: dict, state_root: Path, analysis_sha: str) -> dict:
+    cert_dir = state_root / "certificates"
+    cert_dir.mkdir(parents=True, exist_ok=True)
+    restore_cert = cert_dir / "POSTTRAINING_RESTORE_CERTIFICATE.json"
+    run_subprocess([
+        os.environ.get("PYTHON", "python"),
+        str(repo / "journal_extension/scripts/restore_tracka_v12_posttraining_evidence.py"),
+        "--dataset-locator", state["evidence_dataset_locator"],
+        "--run-id", state["posttraining_public_run_id"],
+        "--experiment-id", state["experiment_id"],
+        "--analysis-source-git-commit", analysis_sha,
+        "--destination-dir", str(state_root),
+        "--output", str(restore_cert),
+    ], cwd=repo)
+    payload = load_json(restore_cert)
+    if payload.get("status") not in {"PASS", "EMPTY"}:
+        raise RuntimeError(f"post-training evidence restore failed: {state['experiment_id']}")
+    if payload.get("status") == "PASS" and payload.get("generation_verified") is not True:
+        raise RuntimeError(f"post-training evidence restore lacked generation verification: {state['experiment_id']}")
+    return payload
+
+
+def sync_partial_state(
+    *,
+    repo: Path,
+    state: dict,
+    state_root: Path,
+    analysis_sha: str,
+    stage: str,
+) -> dict:
+    cert_dir = state_root / "certificates"
+    cert_dir.mkdir(parents=True, exist_ok=True)
+    partial_cert = cert_dir / f"POSTTRAINING_PARTIAL_SYNC_{stage.upper()}.json"
+    partial_cert.unlink(missing_ok=True)
+    run_subprocess([
+        os.environ.get("PYTHON", "python"),
+        str(repo / "journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py"),
+        "--source-dir", str(state_root),
+        "--dataset-locator", state["evidence_dataset_locator"],
+        "--run-id", state["posttraining_public_run_id"],
+        "--experiment-id", state["experiment_id"],
+        "--analysis-source-git-commit", analysis_sha,
+        "--generation-kind", "partial",
+        "--output", str(partial_cert),
+    ], cwd=repo)
+    payload = load_json(partial_cert)
+    if (
+        payload.get("status") != "PASS"
+        or payload.get("generation_kind") != "partial"
+        or payload.get("generation_roundtrip_verified") is not True
+    ):
+        raise RuntimeError(f"partial evidence durability failed: {state['experiment_id']}:{stage}")
+    return payload
+
+
 def finalize_state(*, repo: Path, state: dict, state_root: Path, stage_dirs: dict[str, Path], analysis_sha: str) -> dict:
     sealed = seal_state_bundle(state_root, stage_dirs, state, analysis_sha)
     cert_dir = state_root / "certificates"
     cert_dir.mkdir(parents=True, exist_ok=True)
     sync_cert = cert_dir / "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json"
+    sync_cert.unlink(missing_ok=True)
     run_subprocess([
         os.environ.get("PYTHON", "python"),
         str(repo / "journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py"),
-        "--source-dir", str(sealed),
+        "--source-dir", str(state_root),
         "--dataset-locator", state["evidence_dataset_locator"],
         "--run-id", state["posttraining_public_run_id"],
         "--experiment-id", state["experiment_id"],
         "--analysis-source-git-commit", analysis_sha,
+        "--generation-kind", "final",
         "--output", str(sync_cert),
     ], cwd=repo)
     sync = load_json(sync_cert)
-    if sync.get("status") != "PASS" or sync.get("generation_roundtrip_verified") is not True:
+    if (
+        sync.get("status") != "PASS"
+        or sync.get("generation_kind") != "final"
+        or sync.get("generation_roundtrip_verified") is not True
+    ):
         raise RuntimeError(f"private evidence durability did not pass: {state['experiment_id']}")
 
     gates = {}
@@ -374,6 +435,20 @@ def main() -> int:
                     with results_lock:
                         results[experiment_id] = {"status": "REUSED_COMPLETE", "completion": existing}
                     continue
+            try:
+                restore_state_evidence(
+                    repo=repo,
+                    state=state,
+                    state_root=state_root,
+                    analysis_sha=analysis_sha,
+                )
+            except Exception as exc:
+                with results_lock:
+                    results[experiment_id] = {
+                        "status": "FAIL_RESTORE",
+                        "error": f"{type(exc).__name__}: {exc}",
+                    }
+                return
             stages = ["direct", "xai"] if state["role"] == "direct" else ["auxiliary"]
             terminal_dirs = {}
             deferred = False
@@ -398,6 +473,22 @@ def main() -> int:
                         results[experiment_id] = {"status": "FAIL", "stage": stage}
                     return
                 terminal_dirs[stage] = path
+                try:
+                    sync_partial_state(
+                        repo=repo,
+                        state=state,
+                        state_root=state_root,
+                        analysis_sha=analysis_sha,
+                        stage=stage,
+                    )
+                except Exception as exc:
+                    with results_lock:
+                        results[experiment_id] = {
+                            "status": "FAIL_PARTIAL_DURABILITY",
+                            "stage": stage,
+                            "error": f"{type(exc).__name__}: {exc}",
+                        }
+                    return
             if deferred:
                 with results_lock:
                     results[experiment_id] = {"status": "DEFERRED_SESSION_BUDGET"}
