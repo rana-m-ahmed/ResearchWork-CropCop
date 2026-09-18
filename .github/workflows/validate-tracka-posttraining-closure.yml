@@ -29,6 +29,7 @@ on:
       - 'notebooks/tracka_posttraining_preflight.ipynb'
       - 'tests/test_tracka_v12_posttraining_authority.py'
       - 'tests/test_tracka_v12_posttraining_campaign.py'
+      - 'tests/test_tracka_v12_posttraining_evidence_chain.py'
       - 'tests/test_tracka_v12_posttraining_operator.py'
       - 'tests/test_tracka_v12_posttraining_readiness.py'
       - 'tests/test_tracka_v12_recovery.py'
@@ -94,6 +95,7 @@ jobs:
               'notebooks/tracka_posttraining_preflight.ipynb',
               'tests/test_tracka_v12_posttraining_authority.py',
               'tests/test_tracka_v12_posttraining_campaign.py',
+              'tests/test_tracka_v12_posttraining_evidence_chain.py',
               'tests/test_tracka_v12_posttraining_operator.py',
               'tests/test_tracka_v12_posttraining_readiness.py',
               'tests/test_tracka_v12_recovery.py',
@@ -128,6 +130,7 @@ jobs:
             tests/test_tracka_v12_posttraining_authority.py \
             tests/test_tracka_v12_posttraining_readiness.py \
             tests/test_tracka_v12_posttraining_campaign.py \
+            tests/test_tracka_v12_posttraining_evidence_chain.py \
             tests/test_tracka_v12_posttraining_operator.py
 
       - name: Validate recovery, campaign, operator, evidence and closure contracts
@@ -137,6 +140,7 @@ jobs:
             tests.test_tracka_v12_posttraining_authority \
             tests.test_tracka_v12_posttraining_readiness \
             tests.test_tracka_v12_posttraining_campaign \
+            tests.test_tracka_v12_posttraining_evidence_chain \
             tests.test_tracka_v12_posttraining_operator \
             tests.test_tracka_v12_evidence \
             tests.test_tracka_v12_historical \
