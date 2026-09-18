@@ -171,6 +171,18 @@ The global gate must prove:
 
 **No post-training analysis starts unless all three account gates and this global gate are PASS.**
 
+## Multi-session durability rule
+
+The account evidence operator is stage-durable across Kaggle sessions:
+
+1. before processing an incomplete state, it restores the latest private evidence generation and verifies every restored file by size and SHA-256;
+2. after a newly computed direct, XAI, or auxiliary stage reaches a valid terminal gate, it immediately writes a `partial` private generation and download-verifies it before continuing;
+3. a stage restored from a verified private generation is reused without creating a redundant partial version;
+4. once all required stages for a state are complete, the state is sealed and a `final` private generation is written and round-trip verified;
+5. only the `final` durability certificate may enter public state completion and the global evidence audit.
+
+A restore conflict, wrong analysis SHA, wrong run/experiment identity, invalid generation kind, manifest mismatch, or changed local byte fails closed.
+
 ## 8. PT-5 — direct evidence for all 12 candidate states
 
 Run the frozen `run_tracka_v12_direct_evidence.py` for R04/R06/R07/R13 × S1/S2/S3.
