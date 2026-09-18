@@ -19,6 +19,16 @@ EXPECTED_VAL = 16368
 EXPECTED_TEST = 16363
 EXPECTED_CLASSES = 120
 
+FINAL_V1_DATASET_SLUG = "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1"
+FINAL_V1_MOUNTED_ROOT = Path(
+    "/kaggle/input/datasets/ranamuhammadahmed6/"
+    "cropcop-finalized-v8-11-2026-1/CropCop_Final_v1"
+)
+FINAL_V1_ALTERNATE_MOUNTED_ROOT = Path(
+    "/kaggle/input/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1"
+)
+FINAL_V1_MANIFEST_RELATIVE = Path("audit/training_manifest.csv")
+
 SCIENCE_SOURCE_SHA = "56023042e57758591df9babb3438f191dbe10312"
 _DISCOVERY_KEYWORDS = (
     "tracka",
@@ -362,6 +372,134 @@ def validate_final_v1_root(
         raise direct_error
 
 
+def _find_exact_class_map(root: Path) -> Path:
+    matches: list[Path] = []
+    seen: set[Path] = set()
+    for search_root in (root / "audit", root):
+        if not search_root.is_dir():
+            continue
+        for path in search_root.rglob("*.json"):
+            resolved = path.resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            try:
+                if path.stat().st_size <= 32 * 1024 * 1024 and sha256_file(path) == CLASS_MAP_SHA256:
+                    matches.append(resolved)
+            except OSError:
+                continue
+    if len(matches) != 1:
+        raise FinalV1ResolutionError(
+            f"expected exactly one frozen class-map JSON under {root}; "
+            f"matches={[str(p) for p in matches]}"
+        )
+    return matches[0]
+
+
+def _candidate_known_image_roots(root: Path, manifest: Path) -> list[Path]:
+    candidates: list[Path] = []
+    seen: set[Path] = set()
+
+    def add(path: Path) -> None:
+        try:
+            resolved = path.resolve()
+        except OSError:
+            return
+        if resolved in seen or not resolved.is_dir():
+            return
+        seen.add(resolved)
+        candidates.append(resolved)
+
+    add(root)
+    add(manifest.parent)
+    frontier = [(root, 0)]
+    while frontier:
+        current, depth = frontier.pop(0)
+        if depth >= 4:
+            continue
+        try:
+            children = sorted(p for p in current.iterdir() if p.is_dir())
+        except OSError:
+            continue
+        for child in children:
+            if child.name.startswith("."):
+                continue
+            add(child)
+            frontier.append((child, depth + 1))
+    return candidates
+
+
+def _resolve_known_image_root(root: Path, manifest: Path, rows: list[dict[str, str]]) -> Path:
+    protected = [row for row in rows if row["split"] in {"train", "val"}]
+    if len(protected) != EXPECTED_TRAIN + EXPECTED_VAL:
+        raise FinalV1ResolutionError("protected Train/Val row-count drift before image-root resolution")
+
+    stride = max(1, len(protected) // 128)
+    sample = protected[::stride][:128]
+    viable: list[Path] = []
+    for candidate in _candidate_known_image_roots(root, manifest):
+        if all(
+            row["portable_relpath"]
+            and (candidate / row["portable_relpath"]).is_file()
+            for row in sample
+        ):
+            viable.append(candidate)
+
+    exact: list[Path] = []
+    for candidate in viable:
+        for row in protected:
+            rel = row["portable_relpath"]
+            if not rel or not (candidate / rel).is_file():
+                break
+        else:
+            exact.append(candidate)
+
+    if not exact:
+        raise FinalV1ResolutionError(
+            f"known Final-V1 root found but no image root resolves all "
+            f"{EXPECTED_TRAIN + EXPECTED_VAL} Train/Val paths"
+        )
+    exact.sort(key=lambda p: (len(p.parts), str(p)))
+    return exact[0]
+
+
+def validate_known_final_v1_root(
+    root: str | Path,
+    *,
+    source_kind: str,
+    source_ref: str | None = FINAL_V1_DATASET_SLUG,
+) -> FinalV1Resolution:
+    root = Path(root).resolve()
+    if not root.is_dir():
+        raise FinalV1ResolutionError(f"known Final-V1 root is missing: {root}")
+
+    manifest = (root / FINAL_V1_MANIFEST_RELATIVE).resolve()
+    if not manifest.is_file():
+        raise FinalV1ResolutionError(f"known Final-V1 manifest is missing: {manifest}")
+    observed_manifest = sha256_file(manifest)
+    if observed_manifest != MANIFEST_SHA256:
+        raise FinalV1ResolutionError(
+            f"known Final-V1 manifest SHA mismatch: expected={MANIFEST_SHA256}, "
+            f"observed={observed_manifest}, path={manifest}"
+        )
+
+    class_map = _find_exact_class_map(root)
+    rows, counts = _manifest_rows(manifest)
+    _class_map_contract(class_map)
+    image_root = _resolve_known_image_root(root, manifest, rows)
+    return FinalV1Resolution(
+        source_kind=source_kind,
+        source_ref=source_ref,
+        root=root,
+        manifest=manifest,
+        class_map=class_map,
+        image_root=image_root,
+        train_rows=counts["train"],
+        val_rows=counts["val"],
+        test_rows=counts["test"],
+    )
+
+
 def scan_attached_inputs(input_root: str | Path = "/kaggle/input") -> list[FinalV1Resolution]:
     root = Path(input_root)
     if not root.is_dir():
@@ -605,6 +743,47 @@ def remote_dataset_matches_identity(api, dataset_ref: str) -> bool:
     return False
 
 
+def hydrate_known_final_v1_dataset(api, destination: str | Path) -> FinalV1Resolution:
+    destination = Path(destination).resolve()
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.mkdir(parents=True, exist_ok=False)
+    api.dataset_download_files(
+        FINAL_V1_DATASET_SLUG,
+        path=str(destination),
+        force=True,
+        quiet=True,
+        unzip=True,
+    )
+
+    candidates = [destination / "CropCop_Final_v1", destination]
+    try:
+        candidates.extend(
+            child / "CropCop_Final_v1"
+            for child in destination.iterdir()
+            if child.is_dir()
+        )
+    except OSError:
+        pass
+
+    errors: list[str] = []
+    for candidate in candidates:
+        if not candidate.is_dir():
+            continue
+        try:
+            return validate_known_final_v1_root(
+                candidate,
+                source_kind="downloaded_known_kaggle_dataset",
+                source_ref=FINAL_V1_DATASET_SLUG,
+            )
+        except FinalV1ResolutionError as exc:
+            errors.append(f"{candidate}: {exc}")
+    raise FinalV1ResolutionError(
+        "known Final-V1 Kaggle dataset downloaded but canonical root validation failed: "
+        + " | ".join(errors[-6:])
+    )
+
+
 def hydrate_remote_dataset(api, dataset_ref: str, destination: str | Path) -> FinalV1Resolution:
     destination = Path(destination).resolve()
     if destination.exists():
@@ -683,80 +862,55 @@ def resolve_final_v1(
     attached_input_root: str | Path = "/kaggle/input",
     api_factory=_api,
 ) -> tuple[FinalV1Resolution, dict[str, Any]]:
-    attached = scan_attached_inputs(attached_input_root)
-    if len(attached) == 1:
-        return attached[0], {
-            "attached_matches": 1,
-            "kernel_dataset_candidates": [],
-            "mine_dataset_candidates": [],
-            "remote_candidates_checked": [],
-        }
-    if len(attached) > 1:
-        refs = [row.source_ref for row in attached]
-        raise FinalV1ResolutionError(
-            f"multiple attached inputs independently match exact Final-V1 identity: {refs}"
-        )
-
-    api = api_factory()
-    kernel_refs, kernels_seen = recent_kernel_dataset_sources(api)
-    mine_refs = mine_dataset_refs(api)
-
-    ordered = _ordered_remote_candidates(kernel_refs, mine_refs)
-
-    checked: list[dict[str, Any]] = []
-    output_root = Path(output_root).resolve()
-    output_parent = output_root.parent
-    output_parent.mkdir(parents=True, exist_ok=True)
-
-    # Final-V1 is required in full for post-training evidence anyway. Instead of
-    # probing dozens of loose files, hydrate provenance-ranked candidates one by
-    # one and validate the complete frozen identity contract. This also handles
-    # datasets whose manifest/class-map live inside the dataset archive/layout.
-    for index, ref in enumerate(ordered[:12]):
-        staging = output_parent / f".final_v1_candidate_{index:02d}"
-        if staging.exists():
-            shutil.rmtree(staging)
-        row: dict[str, Any] = {
-            "dataset_ref": ref,
-            "candidate_rank": index,
-            "status": "FAILED",
-        }
-        try:
-            resolution = hydrate_remote_dataset(api, ref, staging)
-        except Exception as exc:
-            row["error"] = f"{type(exc).__name__}: {exc}"
-            checked.append(row)
-            if staging.exists():
-                shutil.rmtree(staging, ignore_errors=True)
+    mounted_errors: list[str] = []
+    for candidate in (FINAL_V1_MOUNTED_ROOT, FINAL_V1_ALTERNATE_MOUNTED_ROOT):
+        if not candidate.is_dir():
             continue
+        try:
+            resolution = validate_known_final_v1_root(
+                candidate,
+                source_kind="canonical_kaggle_mount",
+                source_ref=FINAL_V1_DATASET_SLUG,
+            )
+            return resolution, {
+                "resolution_strategy": "canonical_mounted_root",
+                "canonical_dataset_slug": FINAL_V1_DATASET_SLUG,
+                "canonical_root": str(candidate),
+                "mounted_errors": mounted_errors,
+                "api_download_performed": False,
+            }
+        except FinalV1ResolutionError as exc:
+            mounted_errors.append(f"{candidate}: {exc}")
 
-        row["status"] = "PASS"
-        row["manifest_sha256"] = sha256_file(resolution.manifest)
-        row["class_map_sha256"] = sha256_file(resolution.class_map)
-        checked.append(row)
-
-        if output_root.exists():
-            shutil.rmtree(output_root)
-        staging.rename(output_root)
-        resolution = validate_final_v1_root(
-            output_root,
-            source_kind="historical_kaggle_dataset",
-            source_ref=ref,
-        )
-        diagnostics = {
-            "attached_matches": 0,
-            "kernel_dataset_candidates": kernel_refs,
-            "mine_dataset_candidates": mine_refs,
-            "kernels_seen_count": len(kernels_seen),
-            "remote_candidates_checked": checked,
-            "matched_dataset_ref": ref,
-            "candidate_order": ordered[:20],
+    # Backward-compatible attached-input path, still exact-hash validated.
+    attached = scan_attached_inputs(attached_input_root)
+    canonical_attached = [
+        row for row in attached
+        if row.source_ref and "cropcop-finalized-v8-11-2026-1" in row.source_ref
+    ]
+    if len(canonical_attached) == 1:
+        row = canonical_attached[0]
+        return row, {
+            "resolution_strategy": "attached_canonical_dataset",
+            "canonical_dataset_slug": FINAL_V1_DATASET_SLUG,
+            "canonical_root": str(row.root),
+            "mounted_errors": mounted_errors,
+            "api_download_performed": False,
         }
-        return resolution, diagnostics
+    if len(canonical_attached) > 1:
+        raise FinalV1ResolutionError(
+            "multiple attached copies of the canonical Final-V1 dataset resolved: "
+            f"{[str(row.root) for row in canonical_attached]}"
+        )
 
-    raise FinalV1ResolutionError(
-        "Final-V1 provenance-ranked hydration did not find an exact accessible dataset; "
-        f"kernel_sources={kernel_refs[:40]}, mine_dataset_count={len(mine_refs)}, "
-        f"kernels_seen_count={len(kernels_seen)}, candidate_order={ordered[:20]}, "
-        f"checked={checked}"
-    )
+    # Deterministic authenticated fallback: download ONE known canonical slug.
+    api = api_factory()
+    resolution = hydrate_known_final_v1_dataset(api, output_root)
+    return resolution, {
+        "resolution_strategy": "canonical_slug_download",
+        "canonical_dataset_slug": FINAL_V1_DATASET_SLUG,
+        "canonical_root": str(resolution.root),
+        "mounted_errors": mounted_errors,
+        "api_download_performed": True,
+    }
+
