@@ -67,6 +67,8 @@ def validate_global_readiness(*, authority: dict, account_gates: list[tuple[Path
             raise RuntimeError(f"account post-training readiness advanced scientific state: {account_id}")
         if gate.get("private_material_verified_locally") is not True:
             raise RuntimeError(f"account did not locally verify private material: {account_id}")
+        if gate.get("evidence_targets_ready") is not True:
+            raise RuntimeError(f"account private evidence targets are not ready: {account_id}")
         for experiment_id, row in (gate.get("states") or {}).items():
             if experiment_id in union:
                 raise RuntimeError(f"state appears in more than one account readiness gate: {experiment_id}")
@@ -135,6 +137,7 @@ def validate_global_readiness(*, authority: dict, account_gates: list[tuple[Path
         "model_pool_change_authorized": False,
         "seed_change_authorized": False,
         "selector_change_authorized": False,
+        "all_private_evidence_targets_ready": True,
         "ready_for_posttraining_evidence": True,
     }
     result["gate_sha256"] = sha256_json(result)
