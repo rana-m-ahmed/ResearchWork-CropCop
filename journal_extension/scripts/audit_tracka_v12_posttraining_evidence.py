@@ -113,8 +113,8 @@ def validate_published_completion_chain(
     sync_hash = sync.get("sync_certificate_sha256")
     sync_clean = dict(sync)
     sync_clean.pop("sync_certificate_sha256", None)
-    if sync.get("status") != "PASS":
-        raise RuntimeError(f"published private durability certificate is not PASS: {experiment_id}")
+    if sync.get("status") != "PASS" or sync.get("generation_kind") != "final":
+        raise RuntimeError(f"published private durability certificate is not terminal final PASS: {experiment_id}")
     if sync.get("experiment_id") != experiment_id or sync.get("analysis_source_git_commit") != analysis_sha:
         raise RuntimeError(f"published private durability certificate provenance mismatch: {experiment_id}")
     if sync.get("generation_roundtrip_verified") is not True or sync.get("private_dataset_verified") is not True:
@@ -215,6 +215,30 @@ def main() -> int:
             analysis_sha,
         )
         publication = verify_publication_manifest(files, experiment_id, run_id, analysis_sha)
+        role = completion["role"]
+        expected_public_basenames = {
+            "POSTTRAINING_PUBLICATION_MANIFEST.json",
+            "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json",
+            "POSTTRAINING_STATE_COMPLETION.json",
+        }
+        if role == "direct":
+            expected_public_basenames |= {
+                "DIRECT_STATE_EVIDENCE_GATE.json",
+                "robustness_and_replay.json",
+                "efficiency.json",
+                "XAI_EVIDENCE_GATE.json",
+            }
+        elif role == "auxiliary":
+            expected_public_basenames.add("AUXILIARY_STATE_EVIDENCE_GATE.json")
+        else:
+            raise SystemExit(f"unsupported Track-A completion role: {experiment_id}:{role}")
+        if set(files) != expected_public_basenames:
+            raise SystemExit(
+                f"public evidence branch file inventory mismatch for {experiment_id}: "
+                f"expected={sorted(expected_public_basenames)}, observed={sorted(files)}"
+            )
+        if publication.get("public_file_count") != len(publication.get("public_file_sha256") or {}):
+            raise SystemExit(f"publication manifest file-count mismatch: {experiment_id}")
         try:
             completion_chain = validate_published_completion_chain(
                 files=files,
@@ -224,7 +248,6 @@ def main() -> int:
             )
         except RuntimeError as exc:
             raise SystemExit(str(exc)) from exc
-        role = completion["role"]
         if role == "direct":
             required = {
                 "DIRECT_STATE_EVIDENCE_GATE.json",
