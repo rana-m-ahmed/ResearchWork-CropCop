@@ -62,6 +62,27 @@ class TrackAPosttrainingCampaignTests(unittest.TestCase):
             },
         )
 
+
+    def test_evidence_dataset_slugs_fit_frozen_kaggle_contract(self):
+        durability = self.campaign["evidence_durability"]
+        keys = durability["state_slug_keys"]
+        states = self.authority["state_inventory"]
+        self.assertEqual(set(keys), set(states))
+        self.assertEqual(len(set(keys.values())), 21)
+        contract = durability["dataset_slug_contract"]
+        slugs = []
+        for experiment_id, state_key in keys.items():
+            slug = durability["locator_template"].format(
+                owner="owner",
+                state_key=state_key,
+                analysis_sha12="a" * 12,
+            ).split("/", 1)[1]
+            self.assertGreaterEqual(len(slug), contract["minimum_length"])
+            self.assertLessEqual(len(slug), contract["maximum_length"])
+            self.assertRegex(slug, r"^[a-z0-9-]+$")
+            slugs.append(slug)
+        self.assertEqual(len(slugs), len(set(slugs)))
+
     def test_execution_is_two_isolated_gpus_without_ddp(self):
         execution = self.campaign["execution_model"]
         self.assertEqual(execution["gpus_per_account"], 2)
