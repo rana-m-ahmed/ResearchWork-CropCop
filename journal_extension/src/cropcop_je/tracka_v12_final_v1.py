@@ -3,7 +3,9 @@ from __future__ import annotations
 import csv
 import json
 import shutil
+import tarfile
 import tempfile
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -213,13 +215,87 @@ def _resolve_image_root(bundle_root: Path, manifest: Path, rows: list[dict[str, 
     return exact[0]
 
 
-def validate_final_v1_root(
-    root: str | Path,
+def _safe_extract_zip(archive: Path, destination: Path) -> None:
+    with zipfile.ZipFile(archive, "r") as handle:
+        members = handle.infolist()
+        if len(members) > 300000:
+            raise FinalV1ResolutionError(f"archive member-count limit exceeded: {archive}")
+        total = 0
+        root = destination.resolve()
+        for member in members:
+            total += int(member.file_size)
+            if total > 64 * 1024 * 1024 * 1024:
+                raise FinalV1ResolutionError(f"archive expansion-size limit exceeded: {archive}")
+            target = (destination / member.filename).resolve()
+            if target != root and root not in target.parents:
+                raise FinalV1ResolutionError(f"unsafe ZIP member path: {member.filename}")
+        handle.extractall(destination)
+
+
+def _safe_extract_tar(archive: Path, destination: Path) -> None:
+    with tarfile.open(archive, "r:*") as handle:
+        members = handle.getmembers()
+        if len(members) > 300000:
+            raise FinalV1ResolutionError(f"archive member-count limit exceeded: {archive}")
+        total = 0
+        root = destination.resolve()
+        for member in members:
+            if member.issym() or member.islnk():
+                raise FinalV1ResolutionError(f"archive links are not allowed: {member.name}")
+            total += int(member.size or 0)
+            if total > 64 * 1024 * 1024 * 1024:
+                raise FinalV1ResolutionError(f"archive expansion-size limit exceeded: {archive}")
+            target = (destination / member.name).resolve()
+            if target != root and root not in target.parents:
+                raise FinalV1ResolutionError(f"unsafe TAR member path: {member.name}")
+        handle.extractall(destination)
+
+
+def _expand_nested_archives(root: Path) -> list[Path]:
+    expanded_roots: list[Path] = []
+    archive_root = root / ".cropcop_final_v1_expanded"
+    archives = [
+        path for path in root.rglob("*")
+        if path.is_file()
+        and path.parent != archive_root
+        and (
+            path.suffix.casefold() == ".zip"
+            or path.suffix.casefold() in {".tar", ".tgz", ".gz", ".bz2", ".xz"}
+            or path.name.casefold().endswith((".tar.gz", ".tar.bz2", ".tar.xz"))
+        )
+    ]
+    # Only inspect a small number of archives, prioritizing Final/CropCop-like names.
+    archives.sort(
+        key=lambda p: (
+            0 if any(token in p.name.casefold() for token in ("final", "cropcop", "dataset", "v1")) else 1,
+            p.stat().st_size,
+            str(p),
+        )
+    )
+    for index, archive in enumerate(archives[:8]):
+        destination = archive_root / f"{index:02d}_{archive.stem}"
+        destination.mkdir(parents=True, exist_ok=False)
+        try:
+            if zipfile.is_zipfile(archive):
+                _safe_extract_zip(archive, destination)
+            elif tarfile.is_tarfile(archive):
+                _safe_extract_tar(archive, destination)
+            else:
+                shutil.rmtree(destination, ignore_errors=True)
+                continue
+        except Exception:
+            shutil.rmtree(destination, ignore_errors=True)
+            continue
+        expanded_roots.append(destination.resolve())
+    return expanded_roots
+
+
+def _validate_final_v1_root_once(
+    root: Path,
     *,
     source_kind: str,
-    source_ref: str | None = None,
+    source_ref: str | None,
 ) -> FinalV1Resolution:
-    root = Path(root).resolve()
     pair = _exact_identity_pair(root)
     if pair is None:
         raise FinalV1ResolutionError(
@@ -240,6 +316,50 @@ def validate_final_v1_root(
         val_rows=counts["val"],
         test_rows=counts["test"],
     )
+
+
+def validate_final_v1_root(
+    root: str | Path,
+    *,
+    source_kind: str,
+    source_ref: str | None = None,
+) -> FinalV1Resolution:
+    root = Path(root).resolve()
+    try:
+        return _validate_final_v1_root_once(
+            root,
+            source_kind=source_kind,
+            source_ref=source_ref,
+        )
+    except FinalV1ResolutionError as direct_error:
+        expanded = _expand_nested_archives(root)
+        matches: list[FinalV1Resolution] = []
+        for expanded_root in expanded:
+            try:
+                matches.append(
+                    _validate_final_v1_root_once(
+                        expanded_root,
+                        source_kind=f"{source_kind}_nested_archive",
+                        source_ref=source_ref,
+                    )
+                )
+            except FinalV1ResolutionError:
+                continue
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            identities = [
+                {
+                    "root": str(row.root),
+                    "manifest_sha256": sha256_file(row.manifest),
+                    "class_map_sha256": sha256_file(row.class_map),
+                }
+                for row in matches
+            ]
+            raise FinalV1ResolutionError(
+                f"multiple nested archives independently satisfy Final-V1 identity: {identities}"
+            )
+        raise direct_error
 
 
 def scan_attached_inputs(input_root: str | Path = "/kaggle/input") -> list[FinalV1Resolution]:
