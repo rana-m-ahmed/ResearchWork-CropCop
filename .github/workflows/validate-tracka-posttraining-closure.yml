@@ -8,6 +8,7 @@ on:
       - 'journal_extension/locks/track_a_posttraining_campaign_v1.json'
       - 'journal_extension/locks/track_a_posttraining_closure_authority_v1.json'
       - 'journal_extension/scripts/audit_tracka_v12_posttraining_evidence.py'
+      - 'journal_extension/scripts/bootstrap_tracka_v12_posttraining_evidence_targets.py'
       - 'journal_extension/scripts/build_tracka_v12_posttraining_account_inventory.py'
       - 'journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py'
       - 'journal_extension/scripts/build_tracka_v12_posttraining_readiness.py'
@@ -21,6 +22,7 @@ on:
       - 'journal_extension/scripts/run_tracka_v12_posttraining_account.py'
       - 'journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py'
       - 'journal_extension/scripts/validate_tracka_v12_posttraining_infrastructure.py'
+      - 'journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py'
       - 'journal_extension/src/cropcop_je/tracka_v12_recovery.py'
       - 'notebooks/tracka_posttraining_execute.ipynb'
       - 'notebooks/tracka_posttraining_global.ipynb'
@@ -71,6 +73,7 @@ jobs:
               'journal_extension/locks/track_a_posttraining_campaign_v1.json',
               'journal_extension/locks/track_a_posttraining_closure_authority_v1.json',
               'journal_extension/scripts/audit_tracka_v12_posttraining_evidence.py',
+              'journal_extension/scripts/bootstrap_tracka_v12_posttraining_evidence_targets.py',
               'journal_extension/scripts/build_tracka_v12_posttraining_account_inventory.py',
               'journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py',
               'journal_extension/scripts/build_tracka_v12_posttraining_readiness.py',
@@ -84,6 +87,7 @@ jobs:
               'journal_extension/scripts/run_tracka_v12_posttraining_account.py',
               'journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py',
               'journal_extension/scripts/validate_tracka_v12_posttraining_infrastructure.py',
+              'journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py',
               'journal_extension/src/cropcop_je/tracka_v12_recovery.py',
               'notebooks/tracka_posttraining_execute.ipynb',
               'notebooks/tracka_posttraining_global.ipynb',
@@ -104,11 +108,13 @@ jobs:
         run: |
           python -m compileall -q \
             journal_extension/src/cropcop_je/tracka_v12_recovery.py \
+            journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py \
             journal_extension/scripts/recover_tracka_v12_terminal_record.py \
             journal_extension/scripts/probe_tracka_v12_historical_artifacts.py \
             journal_extension/scripts/freeze_tracka_v12_posttraining_placement.py \
             journal_extension/scripts/prepare_tracka_v12_posttraining_account.py \
             journal_extension/scripts/build_tracka_v12_posttraining_account_inventory.py \
+            journal_extension/scripts/bootstrap_tracka_v12_posttraining_evidence_targets.py \
             journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py \
             journal_extension/scripts/build_tracka_v12_posttraining_readiness.py \
             journal_extension/scripts/run_tracka_v12_posttraining_account.py \
