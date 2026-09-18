@@ -74,6 +74,7 @@ def main() -> int:
         manifest_path = staging / "POSTTRAINING_PUBLICATION_MANIFEST.json"
         atomic_write_json(manifest_path, manifest)
         audit_public_files([manifest_path])
+        manifest_file_sha256 = sha256_file(manifest_path)
         staged.append(manifest_path)
 
         branch = publish_to_github_branch(
@@ -88,7 +89,7 @@ def main() -> int:
         **manifest,
         "status": "PASS",
         "publication_branch": branch,
-        "publication_manifest_file_sha256": sha256_file(manifest_path) if manifest_path.exists() else manifest["publication_manifest_sha256"],
+        "publication_manifest_file_sha256": manifest_file_sha256,
     }
     result["publication_certificate_sha256"] = sha256_json(result)
     atomic_write_json(args.output, result)
