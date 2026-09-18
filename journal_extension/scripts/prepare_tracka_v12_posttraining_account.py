@@ -49,6 +49,26 @@ def main() -> int:
     recovery_root = output / "recovery"
     recovery_root.mkdir()
 
+    # Frozen campaign order: historical artifact availability is established
+    # before terminal-metadata recovery. The historical probe is payload-shallow
+    # and opens no scientific metrics.
+    candidate_inventory = Path(spec["historical_candidate_inventory"]).resolve()
+    availability = output / f"{account}_HISTORICAL_ARTIFACT_AVAILABILITY.json"
+    run([
+        os.environ.get("PYTHON", "python"),
+        str(repo / "journal_extension/scripts/probe_tracka_v12_historical_artifacts.py"),
+        "--repo-root", str(repo),
+        "--account-id", account,
+        "--candidate-inventory", str(candidate_inventory),
+        "--analysis-source-git-commit", analysis_sha,
+        "--output", str(availability),
+    ], cwd=repo)
+    availability_payload = load_json(availability)
+    if availability_payload.get("status") != "PASS":
+        raise SystemExit("historical artifact availability probe failed")
+    if availability_payload.get("scientific_metrics_opened") is not False:
+        raise SystemExit("historical availability probe opened scientific metrics before placement")
+
     recovery_rows = {}
     for row in spec.get("continuation_recoveries", []):
         experiment_id = row["experiment_id"]
@@ -74,21 +94,6 @@ def main() -> int:
             "recovery_certificate": str(cert),
             "recovery_certificate_sha256": sha256_file(cert),
         }
-
-    candidate_inventory = Path(spec["historical_candidate_inventory"]).resolve()
-    availability = output / f"{account}_HISTORICAL_ARTIFACT_AVAILABILITY.json"
-    run([
-        os.environ.get("PYTHON", "python"),
-        str(repo / "journal_extension/scripts/probe_tracka_v12_historical_artifacts.py"),
-        "--repo-root", str(repo),
-        "--account-id", account,
-        "--candidate-inventory", str(candidate_inventory),
-        "--analysis-source-git-commit", analysis_sha,
-        "--output", str(availability),
-    ], cwd=repo)
-    availability_payload = load_json(availability)
-    if availability_payload.get("status") != "PASS":
-        raise SystemExit("historical artifact availability probe failed")
 
     manifest = {
         "schema_version": "1.0",
