@@ -36,6 +36,7 @@ INFRA_SCRIPTS = (
     "journal_extension/scripts/audit_tracka_v12_posttraining_evidence.py",
     "journal_extension/scripts/close_tracka_v12.py",
     "journal_extension/scripts/generate_tracka_v12_posttraining_notebooks.py",
+    "journal_extension/scripts/ensure_tracka_locked_environment.py",
     "journal_extension/scripts/materialize_tracka_v12_source_checkpoint.py",
     "journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py",
     "journal_extension/src/cropcop_je/tracka_v12_source_materialization.py",
@@ -74,6 +75,12 @@ def validate_notebook(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     if SECRET_PATTERN.search(text):
         errors.append(f"{path}: live-looking secret")
+    for token in (
+        "ensure_tracka_locked_environment.py",
+        "--repair",
+    ):
+        if token not in text:
+            errors.append(f"{path}: frozen environment gate missing token: {token}")
     for forbidden in ("DS-V1-TEST-CONSUMED", "TRACK-B-PREDICTIONS", "TRACK-C-CANDIDATE-RESULTS"):
         if forbidden in text and path.name != "tracka_posttraining_preflight.ipynb":
             pass
