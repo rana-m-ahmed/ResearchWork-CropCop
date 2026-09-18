@@ -1,0 +1,112 @@
+{
+  "account_id": "K1",
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "available_state_count": 2,
+  "candidate_inventory_sha256": "52e643205a0a5b30eca004f604cd616ea7c92e6fa463ab4caf1cfc954c825968",
+  "candidate_state_count": 10,
+  "gate_kind": "track_a_v12_historical_artifact_availability",
+  "gate_sha256": "062644464d91df8d6a7655cfbccae3b9f8332857980706ed17070a34e7c80006",
+  "placement_decision_authorized": true,
+  "robustness_results_opened": false,
+  "schema_version": "1.0",
+  "scientific_metrics_opened": false,
+  "selection_outcomes_opened": false,
+  "states": {
+    "R04-MNV4-DIRECT-S1": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R04-MNV4-DIRECT-S1",
+      "verified": {}
+    },
+    "R04-MNV4-DIRECT-S2": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R04-MNV4-DIRECT-S2",
+      "verified": {}
+    },
+    "R04-MNV4-DIRECT-S3": {
+      "available": true,
+      "errors": [],
+      "experiment_id": "R04-MNV4-DIRECT-S3",
+      "verified": {
+        "payload_deserialized": false,
+        "run_id": "JE-R04-MNV4-DIRECT-S3-f171309fc7e9-A01",
+        "run_record_sha256": "4c0731a6c932f45e166d8451c133fb903cac16d0901104c7e44cb7ffa34864ab",
+        "scientific_metrics_opened": false,
+        "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+        "selected_checkpoint_epoch": 28,
+        "selected_checkpoint_file_sha256": "fa200d6add9c25856b1bdaa4d05961a0d1e4050e1204ab2a3103474b9c4a8ed2",
+        "selected_checkpoint_sha256": "fa200d6add9c25856b1bdaa4d05961a0d1e4050e1204ab2a3103474b9c4a8ed2"
+      }
+    },
+    "R05-MNV4-TEACHER-S1": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R05-MNV4-TEACHER-S1",
+      "verified": {}
+    },
+    "R05-MNV4-TEACHER-S2": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R05-MNV4-TEACHER-S2",
+      "verified": {}
+    },
+    "R05-MNV4-TEACHER-S3": {
+      "available": true,
+      "errors": [],
+      "experiment_id": "R05-MNV4-TEACHER-S3",
+      "verified": {
+        "payload_deserialized": false,
+        "run_id": "JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01",
+        "run_record_sha256": "7e04e659ffc7460c907a2fb55bc0d7a7abf45ff17c8a4879f628537d6dfd1404",
+        "scientific_metrics_opened": false,
+        "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+        "selected_checkpoint_epoch": 28,
+        "selected_checkpoint_file_sha256": "0df653f67fe6a0f6a3c4d47fd8746ab563ef92d7182e36598602eba24b518d56",
+        "selected_checkpoint_sha256": "0df653f67fe6a0f6a3c4d47fd8746ab563ef92d7182e36598602eba24b518d56"
+      }
+    },
+    "R06-EFFB0-CONTEXT-S1": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R06-EFFB0-CONTEXT-S1",
+      "verified": {}
+    },
+    "R07-CNXTT-CONTEXT-S1": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R07-CNXTT-CONTEXT-S1",
+      "verified": {}
+    },
+    "R12-MNV4-FEATURE-S1": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R12-MNV4-FEATURE-S1",
+      "verified": {}
+    },
+    "R12-MNV4-LOGITS-S1": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R12-MNV4-LOGITS-S1",
+      "verified": {}
+    }
+  },
+  "status": "PASS",
+  "xai_results_opened": false
+}
