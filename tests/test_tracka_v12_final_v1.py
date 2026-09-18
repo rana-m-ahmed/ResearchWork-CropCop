@@ -84,7 +84,7 @@ class FinalV1ResolverTests(unittest.TestCase):
             self.assertFalse(diagnostics["api_download_performed"])
 
     def test_missing_canonical_mount_downloads_only_exact_slug(self):
-        sentinel = object()
+        sentinel = SimpleNamespace(root=Path("/tmp/final-v1"))
         with mock.patch(
             "cropcop_je.tracka_v12_final_v1.FINAL_V1_MOUNTED_ROOT"
         ) as mounted, mock.patch(
