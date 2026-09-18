@@ -7,7 +7,7 @@ import tarfile
 import tempfile
 import zipfile
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
 from .hashing import sha256_file, sha256_json
@@ -27,7 +27,9 @@ FINAL_V1_MOUNTED_ROOT = Path(
 FINAL_V1_ALTERNATE_MOUNTED_ROOT = Path(
     "/kaggle/input/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1"
 )
-FINAL_V1_MANIFEST_RELATIVE = Path("audit/training_manifest.csv")
+FINAL_V1_MANIFEST_RELATIVE = Path("audit/final_manifest.csv")
+FINAL_V1_CLASS_MAP_RELATIVE = Path("audit/class_to_idx.json")
+FINAL_V1_IMAGE_ROOT_RELATIVE = Path("dataset")
 
 SCIENCE_SOURCE_SHA = "56023042e57758591df9babb3438f191dbe10312"
 _DISCOVERY_KEYWORDS = (
@@ -394,90 +396,47 @@ def _select_exact_class_map_matches(matches: list[Path], root: Path) -> Path:
     return sorted(set(path.resolve() for path in matches), key=preference)[0]
 
 
-def _find_exact_class_map(root: Path) -> Path:
-    matches: list[Path] = []
-    seen: set[Path] = set()
-    for search_root in (root / "audit", root):
-        if not search_root.is_dir():
-            continue
-        for path in search_root.rglob("*.json"):
-            resolved = path.resolve()
-            if resolved in seen:
-                continue
-            seen.add(resolved)
-            try:
-                if path.stat().st_size <= 32 * 1024 * 1024 and sha256_file(path) == CLASS_MAP_SHA256:
-                    matches.append(resolved)
-            except OSError:
-                continue
-    return _select_exact_class_map_matches(matches, root)
-
-
-def _candidate_known_image_roots(root: Path, manifest: Path) -> list[Path]:
-    candidates: list[Path] = []
-    seen: set[Path] = set()
-
-    def add(path: Path) -> None:
-        try:
-            resolved = path.resolve()
-        except OSError:
-            return
-        if resolved in seen or not resolved.is_dir():
-            return
-        seen.add(resolved)
-        candidates.append(resolved)
-
-    add(root)
-    add(manifest.parent)
-    frontier = [(root, 0)]
-    while frontier:
-        current, depth = frontier.pop(0)
-        if depth >= 4:
-            continue
-        try:
-            children = sorted(p for p in current.iterdir() if p.is_dir())
-        except OSError:
-            continue
-        for child in children:
-            if child.name.startswith("."):
-                continue
-            add(child)
-            frontier.append((child, depth + 1))
-    return candidates
-
-
-def _resolve_known_image_root(root: Path, manifest: Path, rows: list[dict[str, str]]) -> Path:
+def _validate_known_split_paths(
+    image_root: Path,
+    rows: list[dict[str, str]],
+) -> None:
     protected = [row for row in rows if row["split"] in {"train", "val"}]
     if len(protected) != EXPECTED_TRAIN + EXPECTED_VAL:
-        raise FinalV1ResolutionError("protected Train/Val row-count drift before image-root resolution")
-
-    stride = max(1, len(protected) // 128)
-    sample = protected[::stride][:128]
-    viable: list[Path] = []
-    for candidate in _candidate_known_image_roots(root, manifest):
-        if all(
-            row["portable_relpath"]
-            and (candidate / row["portable_relpath"]).is_file()
-            for row in sample
-        ):
-            viable.append(candidate)
-
-    exact: list[Path] = []
-    for candidate in viable:
-        for row in protected:
-            rel = row["portable_relpath"]
-            if not rel or not (candidate / rel).is_file():
-                break
-        else:
-            exact.append(candidate)
-
-    if not exact:
         raise FinalV1ResolutionError(
-            f"known Final-V1 root found but no image root resolves all "
-            f"{EXPECTED_TRAIN + EXPECTED_VAL} Train/Val paths"
+            "protected Train/Val row-count drift before image-path validation"
         )
-    exact.sort(key=lambda p: (len(p.parts), str(p)))
-    return exact[0]
+
+    missing: list[dict[str, str]] = []
+    for row in protected:
+        split = row["split"]
+        rel_text = row["portable_relpath"].strip()
+        rel = PurePosixPath(rel_text)
+        if (
+            not rel_text
+            or rel.is_absolute()
+            or "." in rel.parts
+            or ".." in rel.parts
+        ):
+            raise FinalV1ResolutionError(
+                f"unsafe frozen dataset path for record {row.get('record_key')}: {rel_text!r}"
+            )
+        if not rel_text.startswith(split + "/"):
+            raise FinalV1ResolutionError(
+                f"frozen path/split mismatch for record {row.get('record_key')}: "
+                f"split={split!r}, path={rel_text!r}"
+            )
+        if not (image_root / rel_text).is_file():
+            if len(missing) < 25:
+                missing.append({
+                    "record_key": row.get("record_key", ""),
+                    "split": split,
+                    "portable_relpath": rel_text,
+                })
+    if missing:
+        raise FinalV1ResolutionError(
+            "canonical Final-V1 image root is missing Train/Val files; "
+            f"first_missing={missing}"
+        )
 
 
 def validate_known_final_v1_root(
@@ -491,6 +450,9 @@ def validate_known_final_v1_root(
         raise FinalV1ResolutionError(f"known Final-V1 root is missing: {root}")
 
     manifest = (root / FINAL_V1_MANIFEST_RELATIVE).resolve()
+    class_map = (root / FINAL_V1_CLASS_MAP_RELATIVE).resolve()
+    image_root = (root / FINAL_V1_IMAGE_ROOT_RELATIVE).resolve()
+
     if not manifest.is_file():
         raise FinalV1ResolutionError(f"known Final-V1 manifest is missing: {manifest}")
     observed_manifest = sha256_file(manifest)
@@ -500,10 +462,22 @@ def validate_known_final_v1_root(
             f"observed={observed_manifest}, path={manifest}"
         )
 
-    class_map = _find_exact_class_map(root)
+    if not class_map.is_file():
+        raise FinalV1ResolutionError(f"known Final-V1 class map is missing: {class_map}")
+    observed_class_map = sha256_file(class_map)
+    if observed_class_map != CLASS_MAP_SHA256:
+        raise FinalV1ResolutionError(
+            f"known Final-V1 class-map SHA mismatch: expected={CLASS_MAP_SHA256}, "
+            f"observed={observed_class_map}, path={class_map}"
+        )
+
+    if not image_root.is_dir():
+        raise FinalV1ResolutionError(f"known Final-V1 image root is missing: {image_root}")
+
     rows, counts = _manifest_rows(manifest)
     _class_map_contract(class_map)
-    image_root = _resolve_known_image_root(root, manifest, rows)
+    _validate_known_split_paths(image_root, rows)
+
     return FinalV1Resolution(
         source_kind=source_kind,
         source_ref=source_ref,
