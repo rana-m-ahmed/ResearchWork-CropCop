@@ -1,0 +1,109 @@
+{
+  "account_id": "K3",
+  "account_inventory_file_sha256": "17391cf0b02587c96cf66457279da83dca087c6297cc3a61b71721782165c864",
+  "account_readiness_gate_sha256": "70fc75bce842e8a96fae0b36b826d04a9c14d00d1cfd0baf0fd2b46655c94db1",
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "campaign_lock_sha256": "6292f874c72643e73eb60bc6c86741f41f127284bb00d12e85f98574d7497256",
+  "external_predictions_closed": true,
+  "handoff_kind": "track_a_pregpu_to_gpu",
+  "handoff_sha256": "c0a1044743dc048fe58f248d459729e57311d7455fd58b37e38ae7177721dbc4",
+  "kaggle_username": "sabahatabbas",
+  "materialization_catalog_file_sha256": "1cd397a0dfa34e4bb0afa341e73a32ded7ba0c5e24b68e548f14778ab1d0b23a",
+  "orchestrator_version": "v9.3",
+  "placement_freeze_sha256": "4a8f1d3d7cbb02e98986e90764d95729fd48a860ea970f0adabc5b4e8e49f8e8",
+  "schema_version": "2.0",
+  "shared_private_inputs": {
+    "final_v1_class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "final_v1_manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "g1a_locator": "ranamuhammadahmed6/cropcop-g1a-shared-canonical-692be594-56023042",
+    "principal_g1_locator": "ranamuhammadahmed6/cropcop-g1-sealed"
+  },
+  "state_count": 8,
+  "states": {
+    "R04-MNV4-DIRECT-S2": {
+      "analysis_slot_id": "K3/GPU0",
+      "posttraining_evidence_dataset_locator": "sabahatabbas/cropcop-ta-r04-direct-s2-e08e471cc033",
+      "role": "direct",
+      "run_id": "JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "66a3e5f4a90d363c3f6b4ea342ae804af666414851f874238fd3ad83397cd32a",
+      "source_checkpoint_durable_locator": "sabahatabbas/cropcop-je-je-r04-mnv4-direct-s2-f171309fc7e9-a01",
+      "source_persistence_profile": "historical_legacy_kaggle_v1"
+    },
+    "R05-MNV4-TEACHER-S2": {
+      "analysis_slot_id": "K3/GPU1",
+      "posttraining_evidence_dataset_locator": "sabahatabbas/cropcop-ta-r05-teacher-s2-e08e471cc033",
+      "role": "auxiliary",
+      "run_id": "JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "157375477b04cf36095f8b66dff557760c44839373c77691738bca7e9de8468c",
+      "source_checkpoint_durable_locator": "sabahatabbas/cropcop-je-je-r05-mnv4-teacher-s2-f171309fc7e9-a01",
+      "source_persistence_profile": "historical_legacy_kaggle_v1"
+    },
+    "R06-EFFB0-CONTEXT-S1": {
+      "analysis_slot_id": "K3/GPU0",
+      "posttraining_evidence_dataset_locator": "sabahatabbas/cropcop-ta-r06-effb0-s1-e08e471cc033",
+      "role": "direct",
+      "run_id": "JE-R06-EFFB0-CONTEXT-S1-8904b100d223-A01",
+      "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+      "selected_checkpoint_sha256": "882e1e45e1d18a8ed8168aab266ce5a66a9b57a74e2a8d98acf692207d2210c7",
+      "source_checkpoint_durable_locator": "sabahatabbas/sec-je-r06-effb0-context-s1-8904b100d223-a01",
+      "source_persistence_profile": "historical_legacy_kaggle_v1"
+    },
+    "R06-EFFB0-CONTEXT-S2": {
+      "analysis_slot_id": "K3/GPU1",
+      "posttraining_evidence_dataset_locator": "sabahatabbas/cropcop-ta-r06-effb0-s2-e08e471cc033",
+      "role": "direct",
+      "run_id": "JE-R06-EFFB0-CONTEXT-S2-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "f0de7831758a18339d1e1f9de60686e48725aa29fe12f0187c1dd8f446085c39",
+      "source_checkpoint_durable_locator": "sabahatabbas/cropcop-r06-effb0-context-s2-3f5983ed-56023042",
+      "source_persistence_profile": "continuation_generation_aware_v8"
+    },
+    "R06-EFFB0-CONTEXT-S3": {
+      "analysis_slot_id": "K3/GPU0",
+      "posttraining_evidence_dataset_locator": "sabahatabbas/cropcop-ta-r06-effb0-s3-e08e471cc033",
+      "role": "direct",
+      "run_id": "JE-R06-EFFB0-CONTEXT-S3-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "fa895a5a6c3ae81c15ab2af3969556ccbd4eabc8bf87cfac540a9f39ed6854ba",
+      "source_checkpoint_durable_locator": "sabahatabbas/cropcop-r06-effb0-context-s3-a9bf0e72-56023042",
+      "source_persistence_profile": "continuation_generation_aware_v8"
+    },
+    "R07-CNXTT-CONTEXT-S1": {
+      "analysis_slot_id": "K3/GPU1",
+      "posttraining_evidence_dataset_locator": "sabahatabbas/cropcop-ta-r07-cnxtt-s1-e08e471cc033",
+      "role": "direct",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01",
+      "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+      "selected_checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+      "source_checkpoint_durable_locator": "sabahatabbas/sec-je-r07-cnxtt-context-s1-8904b100d223-a01",
+      "source_persistence_profile": "historical_legacy_kaggle_v1"
+    },
+    "R07-CNXTT-CONTEXT-S2": {
+      "analysis_slot_id": "K3/GPU0",
+      "posttraining_evidence_dataset_locator": "sabahatabbas/cropcop-ta-r07-cnxtt-s2-e08e471cc033",
+      "role": "direct",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S2-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
+      "source_checkpoint_durable_locator": "sabahatabbas/cropcop-r07-cnxtt-context-s2-abce1197-56023042",
+      "source_persistence_profile": "continuation_generation_aware_v8"
+    },
+    "R07-CNXTT-CONTEXT-S3": {
+      "analysis_slot_id": "K3/GPU1",
+      "posttraining_evidence_dataset_locator": "sabahatabbas/cropcop-ta-r07-cnxtt-s3-e08e471cc033",
+      "role": "direct",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S3-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37",
+      "source_checkpoint_durable_locator": "sabahatabbas/cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
+      "source_persistence_profile": "continuation_generation_aware_v8"
+    }
+  },
+  "status": "READY",
+  "track_c_candidate_runtime_closed": true,
+  "training_or_adaptation_performed": false,
+  "training_science_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "v1_test_closed": true
+}
