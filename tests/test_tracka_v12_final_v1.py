@@ -5,6 +5,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 from pathlib import Path
 
@@ -16,11 +17,15 @@ if str(SRC) not in sys.path:
 from cropcop_je.hashing import sha256_file  # noqa: E402
 from cropcop_je.tracka_v12_final_v1 import (  # noqa: E402
     CLASS_MAP_SHA256,
+    FINAL_V1_DATASET_SLUG,
+    FINAL_V1_MANIFEST_RELATIVE,
+    FINAL_V1_MOUNTED_ROOT,
     MANIFEST_SHA256,
     FinalV1ResolutionError,
     _class_map_contract,
     _ordered_remote_candidates,
     _safe_extract_zip,
+    resolve_final_v1,
 )
 
 
@@ -34,6 +39,47 @@ class FinalV1ResolverTests(unittest.TestCase):
             CLASS_MAP_SHA256,
             "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
         )
+
+    def test_canonical_dataset_contract_is_exact(self):
+        self.assertEqual(
+            FINAL_V1_DATASET_SLUG,
+            "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1",
+        )
+        self.assertEqual(
+            str(FINAL_V1_MOUNTED_ROOT),
+            "/kaggle/input/datasets/ranamuhammadahmed6/"
+            "cropcop-finalized-v8-11-2026-1/CropCop_Final_v1",
+        )
+        self.assertEqual(
+            str(FINAL_V1_MANIFEST_RELATIVE),
+            "audit/training_manifest.csv",
+        )
+
+    def test_canonical_mount_short_circuits_api_discovery(self):
+        sentinel = object()
+        with mock.patch(
+            "cropcop_je.tracka_v12_final_v1.FINAL_V1_MOUNTED_ROOT"
+        ) as mounted, mock.patch(
+            "cropcop_je.tracka_v12_final_v1.FINAL_V1_ALTERNATE_MOUNTED_ROOT"
+        ) as alternate, mock.patch(
+            "cropcop_je.tracka_v12_final_v1.validate_known_final_v1_root",
+            return_value=sentinel,
+        ):
+            mounted.is_dir.return_value = True
+            mounted.__str__.return_value = "/canonical"
+            alternate.is_dir.return_value = False
+
+            def forbidden_api():
+                raise AssertionError("API factory must not be called for canonical mounted Final-V1")
+
+            resolved, diagnostics = resolve_final_v1(
+                output_root="/unused",
+                attached_input_root="/unused-input",
+                api_factory=forbidden_api,
+            )
+            self.assertIs(resolved, sentinel)
+            self.assertEqual(diagnostics["resolution_strategy"], "canonical_mounted_root")
+            self.assertFalse(diagnostics["api_download_performed"])
 
     def test_class_map_cardinality_guard(self):
         with tempfile.TemporaryDirectory() as td:
