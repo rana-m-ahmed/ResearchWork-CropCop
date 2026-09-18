@@ -19,6 +19,7 @@ on:
       - 'journal_extension/scripts/probe_tracka_v12_historical_artifacts.py'
       - 'journal_extension/scripts/publish_tracka_v12_posttraining_state.py'
       - 'journal_extension/scripts/recover_tracka_v12_terminal_record.py'
+      - 'journal_extension/scripts/restore_tracka_v12_posttraining_evidence.py'
       - 'journal_extension/scripts/run_tracka_v12_posttraining_account.py'
       - 'journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py'
       - 'journal_extension/scripts/validate_tracka_v12_posttraining_infrastructure.py'
@@ -29,6 +30,7 @@ on:
       - 'notebooks/tracka_posttraining_preflight.ipynb'
       - 'tests/test_tracka_v12_posttraining_authority.py'
       - 'tests/test_tracka_v12_posttraining_campaign.py'
+      - 'tests/test_tracka_v12_posttraining_durability.py'
       - 'tests/test_tracka_v12_posttraining_evidence_chain.py'
       - 'tests/test_tracka_v12_posttraining_operator.py'
       - 'tests/test_tracka_v12_posttraining_readiness.py'
@@ -85,6 +87,7 @@ jobs:
               'journal_extension/scripts/probe_tracka_v12_historical_artifacts.py',
               'journal_extension/scripts/publish_tracka_v12_posttraining_state.py',
               'journal_extension/scripts/recover_tracka_v12_terminal_record.py',
+              'journal_extension/scripts/restore_tracka_v12_posttraining_evidence.py',
               'journal_extension/scripts/run_tracka_v12_posttraining_account.py',
               'journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py',
               'journal_extension/scripts/validate_tracka_v12_posttraining_infrastructure.py',
@@ -95,6 +98,7 @@ jobs:
               'notebooks/tracka_posttraining_preflight.ipynb',
               'tests/test_tracka_v12_posttraining_authority.py',
               'tests/test_tracka_v12_posttraining_campaign.py',
+              'tests/test_tracka_v12_posttraining_durability.py',
               'tests/test_tracka_v12_posttraining_evidence_chain.py',
               'tests/test_tracka_v12_posttraining_operator.py',
               'tests/test_tracka_v12_posttraining_readiness.py',
@@ -120,6 +124,7 @@ jobs:
             journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py \
             journal_extension/scripts/build_tracka_v12_posttraining_readiness.py \
             journal_extension/scripts/run_tracka_v12_posttraining_account.py \
+            journal_extension/scripts/restore_tracka_v12_posttraining_evidence.py \
             journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py \
             journal_extension/scripts/publish_tracka_v12_posttraining_state.py \
             journal_extension/scripts/audit_tracka_v12_posttraining_evidence.py \
@@ -130,6 +135,7 @@ jobs:
             tests/test_tracka_v12_posttraining_authority.py \
             tests/test_tracka_v12_posttraining_readiness.py \
             tests/test_tracka_v12_posttraining_campaign.py \
+            tests/test_tracka_v12_posttraining_durability.py \
             tests/test_tracka_v12_posttraining_evidence_chain.py \
             tests/test_tracka_v12_posttraining_operator.py
 
@@ -140,6 +146,7 @@ jobs:
             tests.test_tracka_v12_posttraining_authority \
             tests.test_tracka_v12_posttraining_readiness \
             tests.test_tracka_v12_posttraining_campaign \
+            tests.test_tracka_v12_posttraining_durability \
             tests.test_tracka_v12_posttraining_evidence_chain \
             tests.test_tracka_v12_posttraining_operator \
             tests.test_tracka_v12_evidence \
