@@ -372,6 +372,28 @@ def validate_final_v1_root(
         raise direct_error
 
 
+def _select_exact_class_map_matches(matches: list[Path], root: Path) -> Path:
+    if not matches:
+        raise FinalV1ResolutionError(
+            f"no frozen class-map JSON found under {root}"
+        )
+
+    def preference(path: Path) -> tuple[int, int, str]:
+        try:
+            rel = path.resolve().relative_to(root.resolve()).as_posix().casefold()
+        except ValueError:
+            rel = path.name.casefold()
+        preferred = {
+            "audit/class_index.json": 0,
+            "audit/class_map.json": 1,
+            "class_index.json": 2,
+            "class_map.json": 3,
+        }.get(rel, 10)
+        return (preferred, len(path.parts), rel)
+
+    return sorted(set(path.resolve() for path in matches), key=preference)[0]
+
+
 def _find_exact_class_map(root: Path) -> Path:
     matches: list[Path] = []
     seen: set[Path] = set()
@@ -388,12 +410,7 @@ def _find_exact_class_map(root: Path) -> Path:
                     matches.append(resolved)
             except OSError:
                 continue
-    if len(matches) != 1:
-        raise FinalV1ResolutionError(
-            f"expected exactly one frozen class-map JSON under {root}; "
-            f"matches={[str(p) for p in matches]}"
-        )
-    return matches[0]
+    return _select_exact_class_map_matches(matches, root)
 
 
 def _candidate_known_image_roots(root: Path, manifest: Path) -> list[Path]:
