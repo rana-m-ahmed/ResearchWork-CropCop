@@ -9,6 +9,7 @@ from .models import build_projection_without_state_drift, load_exact_teacher, lo
 from .secondary import load_baseline_initialization
 from .tracka_v12 import EXPERIMENT_SPECS, PAIR_IDS, validate_tracka_v12_config
 from .tracka_v12_g1a import (
+    R13_PARITY_CONTRACT_ID_V121,
     R13_PRETRAINED_SHA256,
     TEACHER_SHA256,
     load_r13_initialization,
@@ -181,6 +182,7 @@ def load_student_and_teacher(
             expected_sha256=row["init_sha256"],
             experiment_id=experiment_id,
             seed=seed,
+            parity_contract_id=R13_PARITY_CONTRACT_ID_V121,
         )
         init_sha = row["init_sha256"]
         pretrained_sha = payload["pretrained_sha256"]
