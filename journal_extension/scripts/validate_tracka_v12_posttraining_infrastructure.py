@@ -26,6 +26,7 @@ INFRA_SCRIPTS = (
     "journal_extension/scripts/freeze_tracka_v12_posttraining_placement.py",
     "journal_extension/scripts/prepare_tracka_v12_posttraining_account.py",
     "journal_extension/scripts/build_tracka_v12_posttraining_account_inventory.py",
+    "journal_extension/scripts/bootstrap_tracka_v12_posttraining_evidence_targets.py",
     "journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py",
     "journal_extension/scripts/build_tracka_v12_posttraining_readiness.py",
     "journal_extension/scripts/run_tracka_v12_posttraining_account.py",
@@ -34,6 +35,7 @@ INFRA_SCRIPTS = (
     "journal_extension/scripts/audit_tracka_v12_posttraining_evidence.py",
     "journal_extension/scripts/close_tracka_v12.py",
     "journal_extension/scripts/generate_tracka_v12_posttraining_notebooks.py",
+    "journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py",
 )
 NOTEBOOKS = (
     "notebooks/tracka_posttraining_preflight.ipynb",
@@ -142,6 +144,16 @@ def main() -> int:
     for forbidden in ("DistributedDataParallel", "DataParallel(", "FullyShardedDataParallel"):
         if forbidden in operator:
             errors.append(f"account operator contains forbidden multi-GPU training primitive: {forbidden}")
+
+    readiness_text = (repo / "journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py").read_text(encoding="utf-8")
+    for token in ("--evidence-target-preflight", "evidence_targets_ready", "validate_state_operator_spec"):
+        if token not in readiness_text:
+            errors.append(f"account readiness missing early-failure control: {token}")
+
+    bootstrap_text = (repo / "journal_extension/scripts/bootstrap_tracka_v12_posttraining_evidence_targets.py").read_text(encoding="utf-8")
+    for token in ("ensure_private_target", "authoritative_is_private", "all_targets_owner_bound"):
+        if token not in bootstrap_text:
+            errors.append(f"private evidence-target bootstrap missing control: {token}")
 
     global_audit = (repo / "journal_extension/scripts/audit_tracka_v12_posttraining_evidence.py").read_text(encoding="utf-8")
     if "validate_direct_state_evidence_bundle" not in global_audit:
