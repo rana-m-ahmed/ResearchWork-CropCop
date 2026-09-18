@@ -17,6 +17,20 @@ from cropcop_je.tracka_v12_historical import (
 ACCOUNTS = {"K1", "K2", "K3"}
 
 
+def public_safe_error(value: object) -> str:
+    text = str(value or "")
+    for prefix in ("/kaggle/input/", "/kaggle/working/"):
+        while prefix in text:
+            start = text.index(prefix)
+            end = len(text)
+            for sep in (" ", "'", '"', "\n", "\t", ":", ",", ";", ")"):
+                pos = text.find(sep, start)
+                if pos >= 0:
+                    end = min(end, pos)
+            text = text[:start] + "<private-path>" + text[end:]
+    return text[:1000]
+
+
 def load_json(path: str | Path) -> dict:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -93,7 +107,9 @@ def probe_state(experiment_id: str, spec: dict) -> dict:
         result["available"] = not result["errors"]
         return result
     except Exception as exc:
-        result["errors"].append(f"{type(exc).__name__}:{exc}")
+        result["errors"].append(
+            f"{type(exc).__name__}:{public_safe_error(exc)}"
+        )
         return result
 
 
