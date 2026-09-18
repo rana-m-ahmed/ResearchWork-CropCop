@@ -92,6 +92,9 @@ class TrackAV12RecoveryTests(unittest.TestCase):
             "g1_seal_sha256": "5" * 64,
             "g2_barrier_sha256": "6" * 64,
             "lane_id": f"TRACKA-V12:{EXP}",
+            "allowed_surfaces": ["DS-V1-TRAIN", "DS-V1-VAL"],
+            "v1_test_accessed": False,
+            "external_protected_surface_accessed": False,
         }
         payload = {
             "identity": identity,
@@ -129,6 +132,8 @@ class TrackAV12RecoveryTests(unittest.TestCase):
             "identity": {
                 "experiment_id": EXP,
                 "source_git_commit": SCIENCE_SOURCE_SHA,
+                "v1_test_accessed": False,
+                "external_protected_surface_accessed": False,
             },
             "identity_sha256": "a" * 64,
             "selected_epoch": 17,
@@ -156,7 +161,12 @@ class TrackAV12RecoveryTests(unittest.TestCase):
 
     def test_recovered_record_rejects_missing_metric(self):
         checkpoint = {
-            "identity": {"experiment_id": EXP, "source_git_commit": SCIENCE_SOURCE_SHA},
+            "identity": {
+                "experiment_id": EXP,
+                "source_git_commit": SCIENCE_SOURCE_SHA,
+                "v1_test_accessed": False,
+                "external_protected_surface_accessed": False,
+            },
             "identity_sha256": "a" * 64,
             "selected_epoch": 17,
             "selected_metrics": {
