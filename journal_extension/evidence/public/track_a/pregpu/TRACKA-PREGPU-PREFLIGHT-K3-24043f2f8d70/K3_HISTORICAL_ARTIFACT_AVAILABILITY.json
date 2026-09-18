@@ -1,0 +1,126 @@
+{
+  "account_id": "K3",
+  "analysis_source_git_commit": "24043f2f8d7043f295f6649fc60069b9f926fce7",
+  "available_state_count": 4,
+  "candidate_inventory_sha256": "2ddf4c8c59dfd41bd977229d82a2b13de0b07e8305fad383dd081ac12b79e6f6",
+  "candidate_state_count": 10,
+  "gate_kind": "track_a_v12_historical_artifact_availability",
+  "gate_sha256": "2ba742b36e5c39dde0d7268c4fd8ab173ade7363c3125df439e4f166c39054df",
+  "placement_decision_authorized": true,
+  "robustness_results_opened": false,
+  "schema_version": "1.0",
+  "scientific_metrics_opened": false,
+  "selection_outcomes_opened": false,
+  "states": {
+    "R04-MNV4-DIRECT-S1": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R04-MNV4-DIRECT-S1",
+      "verified": {}
+    },
+    "R04-MNV4-DIRECT-S2": {
+      "available": true,
+      "errors": [],
+      "experiment_id": "R04-MNV4-DIRECT-S2",
+      "verified": {
+        "payload_deserialized": false,
+        "run_id": "JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01",
+        "run_record_sha256": "75b2c60602d25a05dc12455df4a3458ee38ccfd38ac5761be376d9297db42047",
+        "scientific_metrics_opened": false,
+        "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+        "selected_checkpoint_epoch": 25,
+        "selected_checkpoint_file_sha256": "66a3e5f4a90d363c3f6b4ea342ae804af666414851f874238fd3ad83397cd32a",
+        "selected_checkpoint_sha256": "66a3e5f4a90d363c3f6b4ea342ae804af666414851f874238fd3ad83397cd32a"
+      }
+    },
+    "R04-MNV4-DIRECT-S3": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R04-MNV4-DIRECT-S3",
+      "verified": {}
+    },
+    "R05-MNV4-TEACHER-S1": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R05-MNV4-TEACHER-S1",
+      "verified": {}
+    },
+    "R05-MNV4-TEACHER-S2": {
+      "available": true,
+      "errors": [],
+      "experiment_id": "R05-MNV4-TEACHER-S2",
+      "verified": {
+        "payload_deserialized": false,
+        "run_id": "JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01",
+        "run_record_sha256": "53c5bd0c40e66e2d87ccc6b7e47ead9e923118076f1054e762ee0204e8eaccff",
+        "scientific_metrics_opened": false,
+        "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+        "selected_checkpoint_epoch": 30,
+        "selected_checkpoint_file_sha256": "157375477b04cf36095f8b66dff557760c44839373c77691738bca7e9de8468c",
+        "selected_checkpoint_sha256": "157375477b04cf36095f8b66dff557760c44839373c77691738bca7e9de8468c"
+      }
+    },
+    "R05-MNV4-TEACHER-S3": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R05-MNV4-TEACHER-S3",
+      "verified": {}
+    },
+    "R06-EFFB0-CONTEXT-S1": {
+      "available": true,
+      "errors": [],
+      "experiment_id": "R06-EFFB0-CONTEXT-S1",
+      "verified": {
+        "payload_deserialized": false,
+        "run_id": "JE-R06-EFFB0-CONTEXT-S1-8904b100d223-A01",
+        "run_record_sha256": "ad3d6e9071c8098f0a76a6a9afb9093ddc7be27b5de54f5fd7f4a9fb732d97b0",
+        "scientific_metrics_opened": false,
+        "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+        "selected_checkpoint_epoch": 26,
+        "selected_checkpoint_file_sha256": "882e1e45e1d18a8ed8168aab266ce5a66a9b57a74e2a8d98acf692207d2210c7",
+        "selected_checkpoint_sha256": "882e1e45e1d18a8ed8168aab266ce5a66a9b57a74e2a8d98acf692207d2210c7"
+      }
+    },
+    "R07-CNXTT-CONTEXT-S1": {
+      "available": true,
+      "errors": [],
+      "experiment_id": "R07-CNXTT-CONTEXT-S1",
+      "verified": {
+        "payload_deserialized": false,
+        "run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01",
+        "run_record_sha256": "0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516",
+        "scientific_metrics_opened": false,
+        "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+        "selected_checkpoint_epoch": 27,
+        "selected_checkpoint_file_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+        "selected_checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974"
+      }
+    },
+    "R12-MNV4-FEATURE-S1": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R12-MNV4-FEATURE-S1",
+      "verified": {}
+    },
+    "R12-MNV4-LOGITS-S1": {
+      "available": false,
+      "errors": [
+        "checkpoint_root_missing"
+      ],
+      "experiment_id": "R12-MNV4-LOGITS-S1",
+      "verified": {}
+    }
+  },
+  "status": "PASS",
+  "xai_results_opened": false
+}

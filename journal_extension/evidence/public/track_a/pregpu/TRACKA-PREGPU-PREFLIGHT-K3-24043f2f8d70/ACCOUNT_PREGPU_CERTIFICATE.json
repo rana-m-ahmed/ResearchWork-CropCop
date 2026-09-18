@@ -1,0 +1,31 @@
+{
+  "account_id": "K3",
+  "analysis_source_git_commit": "24043f2f8d7043f295f6649fc60069b9f926fce7",
+  "certificate_sha256": "babbe44f2f22f3f0be4f3d7e7dc49ac96314ae41ee4b0bdc895fc6eabbeb2a52",
+  "checkpoint_payloads_deserialized_for_availability": false,
+  "continuation_recovery_performed": false,
+  "external_predictions_opened": false,
+  "final_v1_train_val_verified": true,
+  "g1a_verified": true,
+  "gate_kind": "track_a_pregpu_account_preflight",
+  "historical_availability_file_sha256": "4fe30c3598b9f5e1b551f24e57fe1a6b41308e3f94e58b4b95b93a3c3c0a023c",
+  "historical_available_count": 4,
+  "historical_available_states": [
+    "R04-MNV4-DIRECT-S2",
+    "R05-MNV4-TEACHER-S2",
+    "R06-EFFB0-CONTEXT-S1",
+    "R07-CNXTT-CONTEXT-S1"
+  ],
+  "kaggle_username": "sabahatabbas",
+  "orchestrator_version": "v9.2",
+  "principal_g1_available": true,
+  "robustness_results_opened": false,
+  "schema_version": "2.0",
+  "scientific_metrics_opened": false,
+  "selection_outcomes_opened": false,
+  "status": "PASS",
+  "track_c_candidate_runtime_opened": false,
+  "training_science_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "v1_test_accessed": false,
+  "xai_results_opened": false
+}
