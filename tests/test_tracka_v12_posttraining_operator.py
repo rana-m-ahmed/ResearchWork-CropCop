@@ -15,7 +15,7 @@ for path in (SCRIPTS, SRC):
 
 from cropcop_je.hashing import sha256_file, sha256_json  # noqa: E402
 import run_tracka_v12_posttraining_account as operator  # noqa: E402
-from cropcop_je.tracka_v12_posttraining_operator import required_stage_args  # noqa: E402
+from cropcop_je.tracka_v12_posttraining_operator import required_stage_args, validate_state_operator_spec  # noqa: E402
 
 ANALYSIS = "a" * 40
 EXPERIMENT = "R13-VIT-DLITTLE-DIFF-CONTEXT-S1"
@@ -168,6 +168,54 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             operator.cli_args({"v1_test": "/forbidden"}, operator.DIRECT_ALLOWED)
 
+
+    def test_preinventory_validation_allows_missing_evidence_locator_only_when_explicit(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            manifest = root / "manifest.csv"
+            class_map = root / "class.json"
+            image_root = root / "dataset"
+            run_record = root / "run_record.json"
+            checkpoint_root = root / "checkpoint"
+            principal_config = root / "config.json"
+            principal_init = root / "init.json"
+            principal_evidence = root / "evidence.json"
+            image_root.mkdir()
+            checkpoint_root.mkdir()
+            for path in (manifest, class_map, run_record, principal_config, principal_init, principal_evidence):
+                path.write_text("{}", encoding="utf-8")
+            spec = {
+                "role": "direct",
+                "run_record": str(run_record),
+                "checkpoint_root": str(checkpoint_root),
+                "executor_args": {
+                    "direct": {
+                        "manifest": str(manifest),
+                        "class_map": str(class_map),
+                        "image_root": str(image_root),
+                        "principal_config": str(principal_config),
+                        "principal_pair_init": str(principal_init),
+                        "principal_pair_evidence": str(principal_evidence),
+                    },
+                    "xai": {
+                        "manifest": str(manifest),
+                        "class_map": str(class_map),
+                        "image_root": str(image_root),
+                        "principal_config": str(principal_config),
+                        "principal_pair_init": str(principal_init),
+                        "principal_pair_evidence": str(principal_evidence),
+                    },
+                },
+            }
+            strict = validate_state_operator_spec("R04-MNV4-DIRECT-S1", spec, check_paths=True)
+            self.assertIn("missing:evidence_dataset_locator", strict)
+            preinventory = validate_state_operator_spec(
+                "R04-MNV4-DIRECT-S1",
+                spec,
+                check_paths=True,
+                require_evidence_dataset_locator=False,
+            )
+            self.assertEqual(preinventory, [])
 
     def test_historical_secondary_direct_does_not_require_secondary_g1_bundle(self):
         for experiment_id in ("R06-EFFB0-CONTEXT-S1", "R07-CNXTT-CONTEXT-S1"):
