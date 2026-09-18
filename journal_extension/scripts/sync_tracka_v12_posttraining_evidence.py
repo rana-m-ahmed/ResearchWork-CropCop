@@ -55,7 +55,15 @@ def download(locator: str, target: Path) -> None:
     run(["kaggle", "datasets", "download", "-d", locator, "-p", str(target), "--unzip", "-q"])
 
 
-def verify_download(root: Path, *, run_id: str, experiment_id: str, nonce: str, manifest_sha: str) -> dict:
+def verify_download(
+    root: Path,
+    *,
+    run_id: str,
+    experiment_id: str,
+    nonce: str,
+    manifest_sha: str,
+    generation_kind: str,
+) -> dict:
     marker_path = root / "POSTTRAINING_DURABILITY_MARKER.json"
     if not marker_path.is_file():
         raise RuntimeError("downloaded evidence generation lacks durability marker")
@@ -66,6 +74,7 @@ def verify_download(root: Path, *, run_id: str, experiment_id: str, nonce: str, 
         "experiment_id": experiment_id,
         "sync_nonce": nonce,
         "evidence_manifest_sha256": manifest_sha,
+        "generation_kind": generation_kind,
         "complete": True,
     }
     for field, value in expected.items():
@@ -91,6 +100,7 @@ def main() -> int:
     ap.add_argument("--experiment-id", required=True)
     ap.add_argument("--analysis-source-git-commit", required=True)
     ap.add_argument("--output", required=True)
+    ap.add_argument("--generation-kind", choices=["partial", "final"], default="final")
     ap.add_argument("--settle-timeout-seconds", type=float, default=900)
     args = ap.parse_args()
 
@@ -122,6 +132,7 @@ def main() -> int:
             "run_id": args.run_id,
             "experiment_id": args.experiment_id,
             "analysis_source_git_commit": args.analysis_source_git_commit,
+            "generation_kind": args.generation_kind,
             "sync_nonce": nonce,
             "previous_version_number": before,
             "files": source_manifest,
@@ -167,6 +178,7 @@ def main() -> int:
                     experiment_id=args.experiment_id,
                     nonce=nonce,
                     manifest_sha=manifest_sha,
+                    generation_kind=args.generation_kind,
                 )
                 roundtrip_sha = sha256_file(root / "POSTTRAINING_DURABILITY_MARKER.json")
                 break
@@ -183,6 +195,7 @@ def main() -> int:
         "experiment_id": args.experiment_id,
         "run_id": args.run_id,
         "analysis_source_git_commit": args.analysis_source_git_commit,
+        "generation_kind": args.generation_kind,
         "dataset_locator": args.dataset_locator,
         "owner_matches_authenticated_user": True,
         "previous_version_number": before,
