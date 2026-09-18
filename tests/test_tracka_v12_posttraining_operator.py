@@ -13,6 +13,7 @@ for path in (SCRIPTS, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
+from cropcop_je.hashing import sha256_file, sha256_json  # noqa: E402
 import run_tracka_v12_posttraining_account as operator  # noqa: E402
 
 ANALYSIS = "a" * 40
@@ -26,6 +27,70 @@ def write_gate(root: Path, stage: str, payload: dict) -> Path:
     gate.parent.mkdir(parents=True, exist_ok=True)
     gate.write_text(json.dumps(payload), encoding="utf-8")
     return attempt
+
+
+
+def write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def build_local_completion_chain(root: Path) -> tuple[dict, dict, dict]:
+    cert_dir = root / "certificates"
+    sync = {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "generation_kind": "final",
+        "experiment_id": EXPERIMENT,
+        "run_id": "TRACKA-POST-R13",
+        "analysis_source_git_commit": ANALYSIS,
+        "dataset_locator": "owner/private-evidence",
+        "generation_roundtrip_verified": True,
+        "private_dataset_verified": True,
+    }
+    sync["sync_certificate_sha256"] = sha256_json(sync)
+    sync_path = cert_dir / "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json"
+    write_json(sync_path, sync)
+
+    completion = {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "completion_kind": "track_a_posttraining_state",
+        "experiment_id": EXPERIMENT,
+        "run_id": RUN,
+        "posttraining_public_run_id": "TRACKA-POST-R13",
+        "analysis_source_git_commit": ANALYSIS,
+        "role": "direct",
+        "stage_gates": {},
+        "private_sync_certificate_sha256": sha256_file(sync_path),
+        "private_evidence_dataset_locator": "owner/private-evidence",
+        "private_generation_roundtrip_verified": True,
+        "publication_branch": "run-evidence/TRACKA-POST-R13",
+        "training_or_adaptation_performed": False,
+        "optimizer_state_advanced": False,
+        "v1_test_accessed": False,
+        "external_surface_accessed": False,
+    }
+    completion["completion_sha256"] = sha256_json(completion)
+    write_json(cert_dir / "POSTTRAINING_STATE_COMPLETION.json", completion)
+
+    publication = {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "publication_kind": "track_a_posttraining_state",
+        "experiment_id": EXPERIMENT,
+        "run_id": "TRACKA-POST-R13",
+        "analysis_source_git_commit": ANALYSIS,
+        "public_file_sha256": {},
+        "public_file_count": 0,
+        "private_material_published": False,
+        "publication_manifest_sha256": "1" * 64,
+        "publication_branch": "run-evidence/TRACKA-POST-R13",
+        "publication_manifest_file_sha256": "2" * 64,
+    }
+    publication["publication_certificate_sha256"] = sha256_json(publication)
+    write_json(cert_dir / "POSTTRAINING_PUBLICATION_CERTIFICATE.json", publication)
+    return completion, publication, sync
 
 
 class TrackAPosttrainingOperatorTests(unittest.TestCase):
@@ -101,6 +166,43 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
         )
         with self.assertRaises(RuntimeError):
             operator.cli_args({"v1_test": "/forbidden"}, operator.DIRECT_ALLOWED)
+
+
+    def test_local_completion_reuse_requires_full_durability_publication_chain(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            completion, _publication, _sync = build_local_completion_chain(root)
+            observed = operator.load_local_completed_state(root, EXPERIMENT, ANALYSIS)
+            self.assertEqual(observed, completion)
+
+    def test_local_completion_without_publication_certificate_is_not_reused(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            build_local_completion_chain(root)
+            (root / "certificates" / "POSTTRAINING_PUBLICATION_CERTIFICATE.json").unlink()
+            self.assertIsNone(operator.load_local_completed_state(root, EXPERIMENT, ANALYSIS))
+
+    def test_local_completion_with_tampered_sync_certificate_is_not_reused(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            build_local_completion_chain(root)
+            sync_path = root / "certificates" / "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json"
+            payload = json.loads(sync_path.read_text(encoding="utf-8"))
+            payload["generation_roundtrip_verified"] = False
+            write_json(sync_path, payload)
+            self.assertIsNone(operator.load_local_completed_state(root, EXPERIMENT, ANALYSIS))
+
+    def test_local_completion_with_wrong_publication_branch_is_not_reused(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            build_local_completion_chain(root)
+            publication_path = root / "certificates" / "POSTTRAINING_PUBLICATION_CERTIFICATE.json"
+            payload = json.loads(publication_path.read_text(encoding="utf-8"))
+            payload["publication_branch"] = "run-evidence/wrong"
+            payload.pop("publication_certificate_sha256")
+            payload["publication_certificate_sha256"] = sha256_json(payload)
+            write_json(publication_path, payload)
+            self.assertIsNone(operator.load_local_completed_state(root, EXPERIMENT, ANALYSIS))
 
     def test_attempt_numbers_are_append_only(self):
         with tempfile.TemporaryDirectory() as td:
