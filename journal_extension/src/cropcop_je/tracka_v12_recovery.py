@@ -14,6 +14,7 @@ from .tracka_v12 import (
     experiment_config_path,
     validate_tracka_v12_config,
 )
+from .tracka_v12_placement import checkpoint_identity_projection, logical_lane_id
 
 SCIENCE_SOURCE_SHA = "56023042e57758591df9babb3438f191dbe10312"
 SCIENCE_AUTHORIZATION_SHA256 = "58d65a9c9f0c06222c00541feca9b2aaa005ebda850d2261d4df3e0e1fe7fbb7"
@@ -107,17 +108,30 @@ def validate_checkpoint_payload(
         "class_map_sha256": CLASS_MAP_SHA256,
         "seed": int(spec["seed"]),
     }
+    expected_identity_keys = set(checkpoint_identity_projection({}))
+    if set(identity) != expected_identity_keys:
+        missing = sorted(expected_identity_keys - set(identity))
+        extra = sorted(set(identity) - expected_identity_keys)
+        raise TerminalRecoveryError(
+            f"checkpoint identity schema drift: missing={missing}, extra={extra}"
+        )
     for field, value in expected.items():
         if identity.get(field) != value:
             raise TerminalRecoveryError(f"checkpoint scientific identity mismatch: {field}")
-    if not str(identity.get("lane_id", "")).endswith(experiment_id):
+    if identity.get("lane_id") != logical_lane_id(experiment_id):
         raise TerminalRecoveryError("checkpoint logical lane does not bind experiment identity")
-    if identity.get("v1_test_accessed") is not False:
-        raise TerminalRecoveryError("checkpoint identity indicates V1-test access")
-    if identity.get("external_protected_surface_accessed") is not False:
-        raise TerminalRecoveryError("checkpoint identity indicates protected external-surface access")
-    if identity.get("allowed_surfaces") != ["DS-V1-TRAIN", "DS-V1-VAL"]:
-        raise TerminalRecoveryError("checkpoint allowed-surface inventory drift")
+
+    # Production checkpoints intentionally serialize only checkpoint_identity_projection().
+    # Surface-access fields belong to the full run record and are not checkpoint fields.
+    # Recover their contract from the frozen config/source instead of treating absence as access.
+    if config.get("train_surface") != "DS-V1-TRAIN":
+        raise TerminalRecoveryError("frozen config training surface drift")
+    if config.get("validation_surface") != "DS-V1-VAL":
+        raise TerminalRecoveryError("frozen config validation surface drift")
+    required_forbidden = {"DS-V1-TEST-CONSUMED", "DS-EXT-*-SEALED", "DS-HIST-COMPARE"}
+    forbidden = set(config.get("forbidden_surfaces") or [])
+    if not required_forbidden.issubset(forbidden):
+        raise TerminalRecoveryError("frozen config protected-surface policy drift")
 
     selection = payload.get("selection_state") or {}
     best = selection.get("best") or {}
@@ -150,6 +164,12 @@ def validate_checkpoint_payload(
         "config_sha256": expected["config_sha256"],
         "ctc_v2_sha256": expected["ctc_v2_sha256"],
         "run_id": run_id,
+        "surface_contract": {
+            "allowed_surfaces": ["DS-V1-TRAIN", "DS-V1-VAL"],
+            "forbidden_surfaces": sorted(required_forbidden),
+            "checkpoint_identity_contains_surface_flags": False,
+            "claim_basis": "frozen_training_runner_and_config_contract",
+        },
     }
 
 
@@ -222,6 +242,9 @@ def build_recovered_terminal_record(
         "status": "PASS",
         "mode": "scientific",
         "continuation_required": False,
+        "allowed_surfaces": list(checkpoint_evidence["surface_contract"]["allowed_surfaces"]),
+        "v1_test_accessed": False,
+        "external_protected_surface_accessed": False,
         "protected_external_surface_accessed": False,
         "artifact_locators": {
             "selected_checkpoint": {
@@ -248,6 +271,15 @@ def build_recovered_terminal_record(
             "science_source_sha": SCIENCE_SOURCE_SHA,
             "science_authorization_sha256": SCIENCE_AUTHORIZATION_SHA256,
             "scheduler_freeze_sha256": SCHEDULER_FREEZE_SHA256,
+            "surface_safety": {
+                **checkpoint_evidence["surface_contract"],
+                "reconstructed_fields": [
+                    "allowed_surfaces",
+                    "v1_test_accessed",
+                    "external_protected_surface_accessed",
+                    "protected_external_surface_accessed",
+                ],
+            },
             "statement": (
                 "This terminal record was reconstructed only from the terminal public account report and "
                 "the hash/identity-verified selected scientific checkpoint because per-run Git publication "
@@ -275,6 +307,8 @@ def validate_recovered_terminal_record(record: dict[str, Any]) -> list[str]:
         errors.append("external_protected_surface_accessed")
     if record.get("protected_external_surface_accessed") is not False:
         errors.append("protected_external_surface_accessed")
+    if record.get("allowed_surfaces") != ["DS-V1-TRAIN", "DS-V1-VAL"]:
+        errors.append("allowed_surfaces")
     selected_artifact = (record.get("artifact_locators") or {}).get("selected_checkpoint") or {}
     selected_result = (record.get("result_summary") or {}).get("selected_checkpoint_sha256")
     if not selected_artifact.get("sha256") or selected_artifact.get("sha256") != selected_result:
@@ -286,6 +320,13 @@ def validate_recovered_terminal_record(record: dict[str, Any]) -> list[str]:
         errors.append("training_reperformed")
     if provenance.get("optimizer_state_advanced") is not False:
         errors.append("optimizer_state_advanced")
+    surface_safety = provenance.get("surface_safety") or {}
+    if surface_safety.get("claim_basis") != "frozen_training_runner_and_config_contract":
+        errors.append("surface_safety:claim_basis")
+    if surface_safety.get("checkpoint_identity_contains_surface_flags") is not False:
+        errors.append("surface_safety:checkpoint_identity_schema")
+    if surface_safety.get("allowed_surfaces") != ["DS-V1-TRAIN", "DS-V1-VAL"]:
+        errors.append("surface_safety:allowed_surfaces")
     metrics = (record.get("result_summary") or {}).get("selected_metrics") or {}
     for name in ("validation_accuracy", "validation_balanced_accuracy", "validation_macro_f1", "validation_nll"):
         if name not in metrics:
