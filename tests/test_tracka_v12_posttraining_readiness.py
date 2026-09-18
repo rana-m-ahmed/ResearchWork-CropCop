@@ -19,6 +19,8 @@ import build_tracka_v12_posttraining_readiness as global_gate  # noqa: E402
 AUTH_PATH = ROOT / "journal_extension" / "locks" / "track_a_posttraining_closure_authority_v1.json"
 SCIENCE = "56023042e57758591df9babb3438f191dbe10312"
 ANALYSIS = "a" * 40
+PLACEMENT_SHA = "b" * 64
+CAMPAIGN_SHA = "c" * 64
 
 
 def seal_account(account_id: str, states: dict, authority_sha: str) -> dict:
@@ -30,6 +32,8 @@ def seal_account(account_id: str, states: dict, authority_sha: str) -> dict:
         "analysis_source_git_commit": ANALYSIS,
         "training_science_source_git_commit": SCIENCE,
         "closure_authority_sha256": authority_sha,
+        "placement_freeze_sha256": PLACEMENT_SHA,
+        "campaign_lock_sha256": CAMPAIGN_SHA,
         "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
         "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
         "state_count": len(states),
@@ -88,6 +92,39 @@ class TrackAV12PosttrainingReadinessTests(unittest.TestCase):
         self.assertEqual(result["historical_state_count"], 10)
         self.assertEqual(result["unique_selected_checkpoint_count"], 21)
         self.assertTrue(result["ready_for_posttraining_evidence"])
+
+    def test_global_readiness_binds_one_placement_and_campaign(self):
+        result = global_gate.validate_global_readiness(
+            authority=self.authority,
+            account_gates=self.gates(),
+            analysis_source=ANALYSIS,
+        )
+        self.assertEqual(result["placement_freeze_sha256"], PLACEMENT_SHA)
+        self.assertEqual(result["campaign_lock_sha256"], CAMPAIGN_SHA)
+
+    def test_account_placement_disagreement_fails(self):
+        gates = self.gates()
+        gates[1][1]["placement_freeze_sha256"] = "d" * 64
+        gates[1][1].pop("gate_sha256")
+        gates[1][1]["gate_sha256"] = sha256_json(gates[1][1])
+        with self.assertRaises(RuntimeError):
+            global_gate.validate_global_readiness(
+                authority=self.authority,
+                account_gates=gates,
+                analysis_source=ANALYSIS,
+            )
+
+    def test_account_campaign_disagreement_fails(self):
+        gates = self.gates()
+        gates[2][1]["campaign_lock_sha256"] = "e" * 64
+        gates[2][1].pop("gate_sha256")
+        gates[2][1]["gate_sha256"] = sha256_json(gates[2][1])
+        with self.assertRaises(RuntimeError):
+            global_gate.validate_global_readiness(
+                authority=self.authority,
+                account_gates=gates,
+                analysis_source=ANALYSIS,
+            )
 
     def test_duplicate_state_across_accounts_fails(self):
         gates = self.gates()
