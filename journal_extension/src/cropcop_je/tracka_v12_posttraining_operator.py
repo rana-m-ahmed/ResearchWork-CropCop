@@ -42,8 +42,12 @@ def required_stage_args(experiment_id: str, stage: str) -> set[str]:
             return base | {"principal_config", "principal_pair_init", "principal_pair_evidence"}
         if experiment_id in EXPERIMENT_SPECS:
             return base | {"g1a_bundle"}
-        if experiment_id.startswith(("R06-", "R07-")):
-            return base | {"secondary_g1_bundle"}
+        if experiment_id in {"R06-EFFB0-CONTEXT-S1", "R07-CNXTT-CONTEXT-S1"}:
+            # Historical secondary-direct replay validates the sealed run identity,
+            # instantiates an empty frozen architecture shell, and immediately loads
+            # the exact selected checkpoint. The Secondary-G1 bundle is optional in
+            # the frozen evidence executor and must not be a placement dependency.
+            return base
         raise ValueError(f"unsupported direct state: {experiment_id}")
     if stage == "auxiliary":
         required = base | {"config"}
