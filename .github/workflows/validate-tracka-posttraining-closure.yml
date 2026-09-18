@@ -83,6 +83,7 @@ jobs:
               'journal_extension/scripts/close_tracka_v12.py',
               'journal_extension/scripts/freeze_tracka_v12_posttraining_placement.py',
               'journal_extension/scripts/generate_tracka_v12_posttraining_notebooks.py',
+            'journal_extension/scripts/materialize_tracka_v12_source_checkpoint.py',
               'journal_extension/scripts/prepare_tracka_v12_posttraining_account.py',
               'journal_extension/scripts/probe_tracka_v12_historical_artifacts.py',
               'journal_extension/scripts/publish_tracka_v12_posttraining_state.py',
@@ -92,6 +93,7 @@ jobs:
               'journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py',
               'journal_extension/scripts/validate_tracka_v12_posttraining_infrastructure.py',
               'journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py',
+            'journal_extension/src/cropcop_je/tracka_v12_source_materialization.py',
               'journal_extension/src/cropcop_je/tracka_v12_recovery.py',
               'notebooks/tracka_posttraining_execute.ipynb',
               'notebooks/tracka_posttraining_global.ipynb',
@@ -103,6 +105,7 @@ jobs:
               'tests/test_tracka_v12_posttraining_operator.py',
               'tests/test_tracka_v12_posttraining_readiness.py',
               'tests/test_tracka_v12_recovery.py',
+            'tests/test_tracka_v12_historical.py',
           }
           changed = {line.strip() for line in Path('/tmp/tracka-closure-delta.txt').read_text().splitlines() if line.strip()}
           if changed != allowed:
