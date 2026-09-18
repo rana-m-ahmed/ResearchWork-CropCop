@@ -47,6 +47,8 @@ def validate_global_readiness(*, authority: dict, account_gates: list[tuple[Path
     authority_sha = sha256_json(authority)
     union: dict[str, dict] = {}
     account_hashes = {}
+    placement_hashes = set()
+    campaign_hashes = set()
     for path, gate in account_gates:
         account_id = str(gate.get("account_id", ""))
         if gate.get("status") != "PASS" or gate.get("gate_kind") != "track_a_v12_posttraining_account_readiness":
@@ -69,6 +71,14 @@ def validate_global_readiness(*, authority: dict, account_gates: list[tuple[Path
             raise RuntimeError(f"account did not locally verify private material: {account_id}")
         if gate.get("evidence_targets_ready") is not True:
             raise RuntimeError(f"account private evidence targets are not ready: {account_id}")
+        placement_sha = gate.get("placement_freeze_sha256")
+        campaign_sha = gate.get("campaign_lock_sha256")
+        if not isinstance(placement_sha, str) or len(placement_sha) != 64:
+            raise RuntimeError(f"account placement-freeze binding missing: {account_id}")
+        if not isinstance(campaign_sha, str) or len(campaign_sha) != 64:
+            raise RuntimeError(f"account campaign-lock binding missing: {account_id}")
+        placement_hashes.add(placement_sha)
+        campaign_hashes.add(campaign_sha)
         for experiment_id, row in (gate.get("states") or {}).items():
             if experiment_id in union:
                 raise RuntimeError(f"state appears in more than one account readiness gate: {experiment_id}")
@@ -78,6 +88,11 @@ def validate_global_readiness(*, authority: dict, account_gates: list[tuple[Path
             "gate_sha256": gate["gate_sha256"],
             "state_count": int(gate.get("state_count", 0)),
         }
+
+    if len(placement_hashes) != 1:
+        raise RuntimeError(f"account readiness gates disagree on placement freeze: {sorted(placement_hashes)}")
+    if len(campaign_hashes) != 1:
+        raise RuntimeError(f"account readiness gates disagree on campaign lock: {sorted(campaign_hashes)}")
 
     if set(union) != set(auth_states):
         missing = sorted(set(auth_states) - set(union))
@@ -122,6 +137,8 @@ def validate_global_readiness(*, authority: dict, account_gates: list[tuple[Path
         "analysis_source_git_commit": analysis_source,
         "training_science_source_git_commit": SCIENCE_SOURCE_SHA,
         "closure_authority_sha256": authority_sha,
+        "placement_freeze_sha256": next(iter(placement_hashes)),
+        "campaign_lock_sha256": next(iter(campaign_hashes)),
         "account_readiness": account_hashes,
         "state_count": 21,
         "direct_state_count": 12,
