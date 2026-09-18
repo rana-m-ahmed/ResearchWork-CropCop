@@ -5,6 +5,16 @@
 **Scope:** evidence recovery, selected-checkpoint post-training analysis, deterministic model selection, and comprehensive 21-state Track-A closure.  
 **Science change authorized:** **NO**.
 
+## Canonical notebook surfaces
+
+Use only these generated notebooks for the campaign:
+
+- `notebooks/tracka_posttraining_preflight.ipynb` — run once on K1/K2/K3 for continuation recovery and historical artifact availability.
+- `notebooks/tracka_posttraining_execute.ipynb` — run first with `CROPCOP_ACCOUNT_PHASE=readiness`, then after global readiness with `CROPCOP_ACCOUNT_PHASE=evidence`.
+- `notebooks/tracka_posttraining_global.ipynb` — run in order with `CROPCOP_GLOBAL_PHASE=placement`, then `readiness`, then `closure`.
+
+The notebooks are generated deterministically by `generate_tracka_v12_posttraining_notebooks.py`. CI regenerates them and requires a byte-clean Git diff, so notebook code cannot silently diverge from the reviewed generator.
+
 ## 1. Non-negotiable boundary
 
 All 21 Track-A training states are terminal. This runbook does not authorize training, adaptation, optimizer advance, new architectures, new seeds, hyperparameter changes, selector changes, V1-test access, Track-B predictions, or Track-C candidate-result access.
@@ -77,9 +87,18 @@ Resolve the immutable historical states:
 
 For each, resolve the canonical terminal run record, selected checkpoint root/SHA, and any required historical initialization evidence. The exact historical lineage is already encoded in `tracka_v12_historical.py` and the immutable Wave-1/Wave-2 closures. No checkpoint substitution is allowed.
 
-## 6. PT-3 — freeze distributed account-local analysis inventories
+## 6. PT-3 — metric-blind placement, deterministic account inventories, and private evidence targets
 
-Create **one account-local inventory per K1/K2/K3**. Do not centralize private checkpoint bytes across accounts.
+First run the historical artifact-availability probe on K1/K2/K3. Then freeze placement with `freeze_tracka_v12_posttraining_placement.py`.
+
+The placement freeze:
+
+- pins all 11 continuation states to the account that owns their private checkpoint durability;
+- assigns each historical state by the frozen account-preference order and pre-metric artifact availability only;
+- assigns GPU0/GPU1 deterministically;
+- records that no validation, robustness, XAI, runtime-quality, or selection outcome was opened before placement.
+
+Next build one account inventory per K1/K2/K3 with `build_tracka_v12_posttraining_account_inventory.py`. Do not centralize private checkpoint bytes across accounts.
 
 Each account inventory records:
 
@@ -88,22 +107,36 @@ Each account inventory records:
 - exact G1A bundle;
 - only the run records/checkpoint roots the account can actually verify;
 - recovery certificates for continuation states assigned to that account;
-- per-state executor dependencies;
-- fixed account/GPU placement.
+- complete role-specific direct/XAI/auxiliary executor arguments;
+- fixed account/GPU placement;
+- a deterministic per-state private evidence dataset locator derived from the frozen campaign owner/template and exact analysis SHA.
 
-The 11 continuation states are pinned to the Kaggle account that owns their private durability dataset. Historical states may be distributed only after artifact-availability preflight. Freeze the final three-account partition before any new post-training metric is opened. Placement is engineering-only and cannot alter model selection.
+Before account readiness, bootstrap or verify every assigned private evidence target:
 
-For each account run:
+```bash
+python journal_extension/scripts/bootstrap_tracka_v12_posttraining_evidence_targets.py \
+  --repo-root . \
+  --account-id K1 \
+  --account-inventory /kaggle/working/K1_POSTTRAINING_INVENTORY.json \
+  --analysis-source-git-commit "$CROPCOP_ANALYSIS_SHA" \
+  --allow-create 1 \
+  --output /kaggle/working/K1_POSTTRAINING_EVIDENCE_TARGETS.json
+```
+
+Auto-creation is explicit opt-in only. Every target must settle as authoritatively private and its owner must equal the authenticated Kaggle account.
+
+Then seal account readiness:
 
 ```bash
 python journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py \
   --repo-root . \
   --inventory /kaggle/working/K1_POSTTRAINING_INVENTORY.json \
+  --evidence-target-preflight /kaggle/working/K1_POSTTRAINING_EVIDENCE_TARGETS.json \
   --analysis-source-git-commit "$CROPCOP_ANALYSIS_SHA" \
   --output /kaggle/working/K1_POSTTRAINING_ACCOUNT_READINESS.json
 ```
 
-Repeat for K2 and K3. Each account gate must locally verify its private selected-checkpoint bytes and identities and emit only public-safe hashes/metadata.
+Repeat for K2 and K3. Account readiness now fails before GPU work if any selected checkpoint, recovered record, historical lineage, executor path/argument, or private evidence target is incomplete or inconsistent.
 
 ## 7. PT-4 — seal the global `POSTTRAINING_READINESS_GATE`
 
@@ -130,6 +163,7 @@ The global gate must prove:
 - all 11 continuation recoveries certified;
 - all 10 historical states match immutable lineage;
 - every private selected checkpoint was locally verified on an authorized account;
+- every per-state evidence dataset was preflighted as owner-bound, settled and authoritatively private;
 - all three gates share the same analysis source, training source, closure authority and frozen dataset identity;
 - no state appears on two account gates;
 - V1 test, Track-B predictions and Track-C candidate outcomes remain closed;
