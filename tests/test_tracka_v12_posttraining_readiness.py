@@ -69,7 +69,7 @@ class TrackAV12PosttrainingReadinessTests(unittest.TestCase):
                 "private_selected_checkpoint_verified": True,
             }
         return [
-            (Path(f"/{account}.json"), seal_account(account, states, self.authority_sha))
+            (AUTH_PATH, seal_account(account, states, self.authority_sha))
             for account, states in buckets.items()
         ]
 
