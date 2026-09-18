@@ -40,6 +40,7 @@ INFRA_SCRIPTS = (
     "journal_extension/scripts/materialize_tracka_v12_source_checkpoint.py",
     "journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py",
     "journal_extension/src/cropcop_je/tracka_v12_source_materialization.py",
+    "journal_extension/src/cropcop_je/tracka_v12_final_v1.py",
 )
 NOTEBOOKS = (
     "notebooks/tracka_posttraining_preflight.ipynb",
