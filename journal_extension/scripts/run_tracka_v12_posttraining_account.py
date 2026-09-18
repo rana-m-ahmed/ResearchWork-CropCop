@@ -254,6 +254,7 @@ def finalize_state(*, repo: Path, state: dict, state_root: Path, stage_dirs: dic
     for stage, path in stage_dirs.items():
         gate = path / STAGE_GATE[stage]
         gates[stage] = {"path": str(gate), "sha256": sha256_file(gate)}
+    expected_publication_branch = f"run-evidence/{state['posttraining_public_run_id']}"
     completion = {
         "schema_version": "1.0",
         "status": "PASS",
@@ -267,6 +268,7 @@ def finalize_state(*, repo: Path, state: dict, state_root: Path, stage_dirs: dic
         "private_sync_certificate_sha256": sha256_file(sync_cert),
         "private_evidence_dataset_locator": state["evidence_dataset_locator"],
         "private_generation_roundtrip_verified": True,
+        "publication_branch": expected_publication_branch,
         "training_or_adaptation_performed": False,
         "optimizer_state_advanced": False,
         "v1_test_accessed": False,
@@ -290,10 +292,8 @@ def finalize_state(*, repo: Path, state: dict, state_root: Path, stage_dirs: dic
     publication = load_json(publication_cert)
     if publication.get("status") != "PASS":
         raise RuntimeError(f"public-safe evidence publication failed: {state['experiment_id']}")
-    completion["publication_certificate_sha256"] = sha256_file(publication_cert)
-    completion["publication_branch"] = publication["publication_branch"]
-    completion["completion_sha256"] = sha256_json({k: v for k, v in completion.items() if k != "completion_sha256"})
-    atomic_write_json(completion_path, completion)
+    if publication.get("publication_branch") != expected_publication_branch:
+        raise RuntimeError(f"public-safe evidence branch mismatch: {state['experiment_id']}")
     return completion
 
 
