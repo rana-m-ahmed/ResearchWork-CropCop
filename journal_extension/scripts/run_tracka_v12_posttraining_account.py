@@ -303,6 +303,7 @@ def main() -> int:
     ap.add_argument("--account-id", choices=["K1", "K2", "K3"], required=True)
     ap.add_argument("--account-inventory", required=True)
     ap.add_argument("--account-readiness", required=True)
+    ap.add_argument("--global-readiness", required=True)
     ap.add_argument("--placement-freeze", required=True)
     ap.add_argument("--campaign-lock", default="journal_extension/locks/track_a_posttraining_campaign_v1.json")
     ap.add_argument("--analysis-source-git-commit", required=True)
@@ -321,11 +322,19 @@ def main() -> int:
     campaign = load_json(campaign_path)
     inventory = load_json(args.account_inventory)
     readiness = load_json(args.account_readiness)
+    global_readiness = load_json(args.global_readiness)
     placement = load_json(args.placement_freeze)
     if readiness.get("status") != "PASS" or readiness.get("account_id") != args.account_id:
         raise SystemExit("account readiness is not PASS for requested account")
     if readiness.get("analysis_source_git_commit") != analysis_sha:
         raise SystemExit("account readiness analysis-source mismatch")
+    if (
+        global_readiness.get("status") != "PASS"
+        or global_readiness.get("gate_kind") != "track_a_v12_posttraining_global_readiness"
+        or global_readiness.get("analysis_source_git_commit") != analysis_sha
+        or global_readiness.get("ready_for_posttraining_evidence") is not True
+    ):
+        raise SystemExit("global readiness must be PASS before any post-training evidence execution")
     if placement.get("status") != "PASS" or placement.get("analysis_source_git_commit") != analysis_sha:
         raise SystemExit("placement freeze is not PASS for this analysis source")
     if placement.get("placement_metric_blind") is not True:
@@ -445,6 +454,7 @@ def main() -> int:
         "campaign_lock_sha256": sha256_file(campaign_path),
         "account_inventory_sha256": sha256_file(args.account_inventory),
         "account_readiness_sha256": sha256_file(args.account_readiness),
+        "global_readiness_sha256": sha256_file(args.global_readiness),
         "placement_freeze_sha256": sha256_file(args.placement_freeze),
         "assigned_state_count": len(states),
         "completed_state_count": sum(row["status"] in complete_statuses for row in results.values()),
