@@ -83,6 +83,7 @@ jobs:
               'journal_extension/scripts/close_tracka_v12.py',
               'journal_extension/scripts/freeze_tracka_v12_posttraining_placement.py',
               'journal_extension/scripts/generate_tracka_v12_posttraining_notebooks.py',
+            'journal_extension/scripts/ensure_tracka_locked_environment.py',
             'journal_extension/scripts/materialize_tracka_v12_source_checkpoint.py',
               'journal_extension/scripts/prepare_tracka_v12_posttraining_account.py',
               'journal_extension/scripts/probe_tracka_v12_historical_artifacts.py',
