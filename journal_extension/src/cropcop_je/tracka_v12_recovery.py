@@ -112,6 +112,12 @@ def validate_checkpoint_payload(
             raise TerminalRecoveryError(f"checkpoint scientific identity mismatch: {field}")
     if not str(identity.get("lane_id", "")).endswith(experiment_id):
         raise TerminalRecoveryError("checkpoint logical lane does not bind experiment identity")
+    if identity.get("v1_test_accessed") is not False:
+        raise TerminalRecoveryError("checkpoint identity indicates V1-test access")
+    if identity.get("external_protected_surface_accessed") is not False:
+        raise TerminalRecoveryError("checkpoint identity indicates protected external-surface access")
+    if identity.get("allowed_surfaces") != ["DS-V1-TRAIN", "DS-V1-VAL"]:
+        raise TerminalRecoveryError("checkpoint allowed-surface inventory drift")
 
     selection = payload.get("selection_state") or {}
     best = selection.get("best") or {}
@@ -216,6 +222,7 @@ def build_recovered_terminal_record(
         "status": "PASS",
         "mode": "scientific",
         "continuation_required": False,
+        "protected_external_surface_accessed": False,
         "artifact_locators": {
             "selected_checkpoint": {
                 "sha256": checkpoint_evidence["selected_checkpoint_sha256"],
@@ -262,6 +269,12 @@ def validate_recovered_terminal_record(record: dict[str, Any]) -> list[str]:
         errors.append("continuation_required")
     if record.get("source_git_commit") != SCIENCE_SOURCE_SHA:
         errors.append("source_git_commit")
+    if record.get("v1_test_accessed") is not False:
+        errors.append("v1_test_accessed")
+    if record.get("external_protected_surface_accessed") is not False:
+        errors.append("external_protected_surface_accessed")
+    if record.get("protected_external_surface_accessed") is not False:
+        errors.append("protected_external_surface_accessed")
     selected_artifact = (record.get("artifact_locators") or {}).get("selected_checkpoint") or {}
     selected_result = (record.get("result_summary") or {}).get("selected_checkpoint_sha256")
     if not selected_artifact.get("sha256") or selected_artifact.get("sha256") != selected_result:
