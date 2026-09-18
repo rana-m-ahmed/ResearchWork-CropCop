@@ -30,6 +30,7 @@ class TrackAPosttrainingEvidenceChainTests(unittest.TestCase):
             "schema_version": "1.0",
             "status": "PASS",
             "sync_kind": "track_a_posttraining_private_evidence",
+            "generation_kind": "final",
             "experiment_id": EXPERIMENT,
             "run_id": "TRACKA-POST-R13",
             "analysis_source_git_commit": ANALYSIS,
