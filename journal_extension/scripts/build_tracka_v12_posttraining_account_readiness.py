@@ -13,6 +13,7 @@ from cropcop_je.tracka_v12 import CLASS_MAP_SHA256, EXPERIMENT_SPECS, MANIFEST_S
 from cropcop_je.tracka_v12_historical import validate_historical_closure_identity
 from cropcop_je.tracka_v12_recovery import SCIENCE_SOURCE_SHA, validate_recovered_terminal_record
 from cropcop_je.tracka_v12_runtime import load_and_validate_g1a_bundle
+from cropcop_je.tracka_v12_posttraining_operator import validate_state_operator_spec
 from cropcop_je.train import _identity as checkpoint_identity
 
 ACCOUNTS = {"K1", "K2", "K3"}
@@ -80,6 +81,12 @@ def validate_account_inventory(*, inventory: dict, authority: dict, repo: Path, 
     for experiment_id in sorted(states):
         spec = states[experiment_id]
         auth = authority_states[experiment_id]
+        operator_errors = validate_state_operator_spec(experiment_id, spec, check_paths=True)
+        if operator_errors:
+            raise RuntimeError(
+                f"post-training operator contract invalid for {experiment_id}: "
+                + "; ".join(operator_errors)
+            )
         if spec.get("role") != auth.get("role"):
             raise RuntimeError(f"role mismatch for {experiment_id}")
         if auth.get("terminal_metadata_recovery_required") is True and auth.get("terminal_account_id") != account_id:
