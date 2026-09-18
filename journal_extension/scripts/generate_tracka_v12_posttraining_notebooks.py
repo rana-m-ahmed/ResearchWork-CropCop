@@ -111,6 +111,7 @@ if phase not in {"readiness", "evidence"}:
 control = Path(os.environ["CROPCOP_ACCOUNT_CONTROL_DIR"]).resolve()
 control.mkdir(parents=True, exist_ok=True)
 inventory = control / f"{account_id}_POSTTRAINING_INVENTORY.json"
+target_preflight = control / f"{account_id}_POSTTRAINING_EVIDENCE_TARGETS.json"
 readiness = control / f"{account_id}_POSTTRAINING_ACCOUNT_READINESS.json"
 subprocess.run([
     sys.executable,
@@ -124,10 +125,21 @@ subprocess.run([
 ], cwd=repo, check=True)
 subprocess.run([
     sys.executable,
+    str(repo / "journal_extension/scripts/bootstrap_tracka_v12_posttraining_evidence_targets.py"),
+    "--repo-root", str(repo),
+    "--account-id", account_id,
+    "--account-inventory", str(inventory),
+    "--analysis-source-git-commit", analysis_sha,
+    "--allow-create", os.environ.get("CROPCOP_POSTTRAINING_ALLOW_CREATE_PRIVATE_DATASET", "0"),
+    "--output", str(target_preflight),
+], cwd=repo, check=True)
+subprocess.run([
+    sys.executable,
     str(repo / "journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py"),
     "--repo-root", str(repo),
     "--inventory", str(inventory),
     "--analysis-source-git-commit", analysis_sha,
+    "--evidence-target-preflight", str(target_preflight),
     "--output", str(readiness),
 ], cwd=repo, check=True)
 gate = json.loads(readiness.read_text(encoding="utf-8"))
