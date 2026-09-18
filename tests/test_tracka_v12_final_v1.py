@@ -45,7 +45,7 @@ class FinalV1ResolverTests(unittest.TestCase):
             path.write_bytes(b"cropcop-final-v1")
             self.assertEqual(
                 sha256_file(path),
-                "8b0c18bd83301115966b6d3bc7a3060e401607e1ea9f004769ae93c0b730ad51",
+                "fd64e31d2710c645d9065b6e07474ebfa76fb8eaeb06b54cc5ca70242bf9b40f",
             )
 
 
