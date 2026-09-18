@@ -492,6 +492,8 @@ def main() -> int:
         raise SystemExit("account readiness is not PASS for requested account")
     if readiness.get("analysis_source_git_commit") != analysis_sha:
         raise SystemExit("account readiness analysis-source mismatch")
+    if readiness.get("inventory_file_sha256") != sha256_file(args.account_inventory):
+        raise SystemExit("account readiness is not bound to the supplied account inventory bytes")
     if (
         global_readiness.get("status") != "PASS"
         or global_readiness.get("gate_kind") != "track_a_v12_posttraining_global_readiness"
@@ -499,12 +501,34 @@ def main() -> int:
         or global_readiness.get("ready_for_posttraining_evidence") is not True
     ):
         raise SystemExit("global readiness must be PASS before any post-training evidence execution")
+    if not verify_self_hash(global_readiness, "gate_sha256"):
+        raise SystemExit("global readiness self-hash mismatch")
+    placement_file_sha = sha256_file(args.placement_freeze)
+    campaign_file_sha = sha256_file(campaign_path)
     if placement.get("status") != "PASS" or placement.get("analysis_source_git_commit") != analysis_sha:
         raise SystemExit("placement freeze is not PASS for this analysis source")
+    if readiness.get("placement_freeze_sha256") != placement_file_sha:
+        raise SystemExit("account readiness placement-freeze binding mismatch")
+    if global_readiness.get("placement_freeze_sha256") != placement_file_sha:
+        raise SystemExit("global readiness placement-freeze binding mismatch")
+    if readiness.get("campaign_lock_sha256") != campaign_file_sha:
+        raise SystemExit("account readiness campaign-lock binding mismatch")
+    if global_readiness.get("campaign_lock_sha256") != campaign_file_sha:
+        raise SystemExit("global readiness campaign-lock binding mismatch")
     if placement.get("placement_metric_blind") is not True:
         raise SystemExit("placement freeze is not metric-blind")
     if inventory.get("account_id") != args.account_id:
         raise SystemExit("account inventory account mismatch")
+    if inventory.get("inventory_sha256") is None:
+        raise SystemExit("account inventory self-hash missing")
+    inventory_clean = dict(inventory)
+    inventory_hash = inventory_clean.pop("inventory_sha256", None)
+    if inventory_hash != sha256_json(inventory_clean):
+        raise SystemExit("account inventory self-hash mismatch")
+    if inventory.get("placement_freeze_sha256") != placement_file_sha:
+        raise SystemExit("account inventory placement-freeze binding mismatch")
+    if inventory.get("campaign_lock_sha256") != campaign_file_sha:
+        raise SystemExit("account inventory campaign-lock binding mismatch")
 
     assigned = placement["account_queues"][args.account_id]
     states = inventory.get("states") or {}
