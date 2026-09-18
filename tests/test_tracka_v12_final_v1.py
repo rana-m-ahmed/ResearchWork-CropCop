@@ -5,6 +5,7 @@ import json
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +19,8 @@ from cropcop_je.tracka_v12_final_v1 import (  # noqa: E402
     MANIFEST_SHA256,
     FinalV1ResolutionError,
     _class_map_contract,
+    _ordered_remote_candidates,
+    _safe_extract_zip,
 )
 
 
@@ -38,6 +41,37 @@ class FinalV1ResolverTests(unittest.TestCase):
             path.write_text(json.dumps({"num_classes": 119}), encoding="utf-8")
             with self.assertRaises(FinalV1ResolutionError):
                 _class_map_contract(path)
+
+    def test_candidate_ranking_prioritizes_finalized_dataset_over_cicps_and_models(self):
+        kernel_refs = [
+            "ranamuhammadahmed6/cropcop-cicps-kaggle-3-inputs-v1-1",
+            "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1",
+            "ranamuhammadahmed6/lastruncheckpoints-cropcop-prodrfdv",
+            "ranamuhammadahmed6/cropcop-model-rfdv",
+            "ranamuhammadahmed6/cropcop-120-class-dataset",
+        ]
+        ordered = _ordered_remote_candidates(kernel_refs, [])
+        self.assertEqual(
+            ordered[:2],
+            [
+                "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1",
+                "ranamuhammadahmed6/cropcop-120-class-dataset",
+            ],
+        )
+        self.assertGreater(
+            ordered.index("ranamuhammadahmed6/cropcop-cicps-kaggle-3-inputs-v1-1"),
+            1,
+        )
+
+    def test_zip_path_traversal_is_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            archive = root / "bad.zip"
+            with zipfile.ZipFile(archive, "w") as handle:
+                handle.writestr("../escape.txt", "blocked")
+            with self.assertRaises(FinalV1ResolutionError):
+                _safe_extract_zip(archive, root / "out")
+            self.assertFalse((root.parent / "escape.txt").exists())
 
     def test_hash_function_is_byte_exact(self):
         with tempfile.TemporaryDirectory() as td:
