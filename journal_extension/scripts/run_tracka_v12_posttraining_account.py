@@ -455,7 +455,6 @@ def main() -> int:
                     state=state,
                     state_root=state_root,
                     analysis_sha=analysis_sha,
-                    publication_lock=publication_lock,
                 )
             except Exception as exc:
                 with results_lock:
@@ -523,6 +522,7 @@ def main() -> int:
                     state_root=state_root,
                     stage_dirs=terminal_dirs,
                     analysis_sha=analysis_sha,
+                    publication_lock=publication_lock,
                 )
             except Exception as exc:
                 with results_lock:
