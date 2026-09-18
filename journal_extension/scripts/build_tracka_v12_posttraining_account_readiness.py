@@ -47,6 +47,11 @@ def directory_required(path: str | Path, label: str) -> Path:
 def validate_account_inventory(*, inventory: dict, authority: dict, repo: Path, analysis_source: str) -> dict:
     if inventory.get("schema_version") != "1.0":
         raise RuntimeError("account post-training inventory schema must be 1.0")
+    inventory_hash = inventory.get("inventory_sha256")
+    inventory_clean = dict(inventory)
+    inventory_clean.pop("inventory_sha256", None)
+    if inventory_hash != sha256_json(inventory_clean):
+        raise RuntimeError("account post-training inventory self-hash mismatch")
     account_id = str(inventory.get("account_id", ""))
     if account_id not in ACCOUNTS:
         raise RuntimeError(f"invalid account_id: {account_id!r}")
@@ -174,6 +179,8 @@ def validate_account_inventory(*, inventory: dict, authority: dict, repo: Path, 
         "training_science_source_git_commit": SCIENCE_SOURCE_SHA,
         "closure_authority_sha256": sha256_json(authority),
         "inventory_sha256": sha256_json(inventory),
+        "placement_freeze_sha256": inventory.get("placement_freeze_sha256"),
+        "campaign_lock_sha256": inventory.get("campaign_lock_sha256"),
         "manifest_sha256": MANIFEST_SHA256,
         "class_map_sha256": CLASS_MAP_SHA256,
         "state_count": len(rows),
