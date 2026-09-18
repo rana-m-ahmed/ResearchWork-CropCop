@@ -30,6 +30,7 @@ INFRA_SCRIPTS = (
     "journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py",
     "journal_extension/scripts/build_tracka_v12_posttraining_readiness.py",
     "journal_extension/scripts/run_tracka_v12_posttraining_account.py",
+    "journal_extension/scripts/restore_tracka_v12_posttraining_evidence.py",
     "journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py",
     "journal_extension/scripts/publish_tracka_v12_posttraining_state.py",
     "journal_extension/scripts/audit_tracka_v12_posttraining_evidence.py",
@@ -136,6 +137,7 @@ def main() -> int:
         "REUSED_COMPLETE",
         "CUDA_VISIBLE_DEVICES",
         "ThreadPoolExecutor(max_workers=2)",
+        "restore_tracka_v12_posttraining_evidence.py",
         "sync_tracka_v12_posttraining_evidence.py",
         "publish_tracka_v12_posttraining_state.py",
     ):
