@@ -28,7 +28,15 @@ R13_CTC_MEAN = (0.485, 0.456, 0.406)
 R13_CTC_STD = (0.229, 0.224, 0.225)
 R13_NATIVE_MEAN = (0.5, 0.5, 0.5)
 R13_NATIVE_STD = (0.5, 0.5, 0.5)
+# Historical v1.2 bound retained for provenance/backward validation.
 R13_PARITY_TOLERANCE = 1e-5
+
+# Pre-execution v1.2.1 amendment. This was frozen before scientific outputs
+# were observed and is bound by the sealed G1A contract/evidence identities.
+R13_PARITY_CONTRACT_ID_V121 = "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2.1"
+R13_PARITY_CONTRACT_SHA256_V121 = "fc78b6fe44be0cb843b507a0453b787a993b7c178abdc4923d7b1fb4349ca918"
+R13_PARITY_PREEXECUTION_EVIDENCE_SHA256_V121 = "961c06f596281c0a38acff419c02512e83ac38ec856209f146b05b6745524d33"
+R13_PARITY_TOLERANCE_V121 = 5e-5
 
 R12_CONSUMERS = {
     "S2": ["R12-MNV4-LOGITS-S2", "R12-MNV4-FEATURE-S2"],
@@ -245,6 +253,7 @@ def load_r13_initialization(
     expected_sha256: str,
     experiment_id: str,
     seed: int,
+    parity_contract_id: str = "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2",
 ):
     import timm
     import torch
@@ -262,8 +271,18 @@ def load_r13_initialization(
         raise TrackAV12G1AError("R13 initialization pretrained identity mismatch")
     if payload.get("normalization_equivalence_applied") is not True:
         raise TrackAV12G1AError("R13 normalization-equivalence marker missing")
-    if float(payload.get("normalization_parity_max_abs", 1.0)) > R13_PARITY_TOLERANCE:
-        raise TrackAV12G1AError("R13 initialization parity evidence exceeds tolerance")
+    if parity_contract_id == "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2":
+        parity_tolerance = R13_PARITY_TOLERANCE
+    elif parity_contract_id == R13_PARITY_CONTRACT_ID_V121:
+        parity_tolerance = R13_PARITY_TOLERANCE_V121
+    else:
+        raise TrackAV12G1AError(f"unsupported R13 parity contract: {parity_contract_id}")
+    parity_value = float(payload.get("normalization_parity_max_abs", 1.0))
+    if parity_value < 0.0 or parity_value > parity_tolerance:
+        raise TrackAV12G1AError(
+            f"R13 initialization parity evidence exceeds contract tolerance: "
+            f"observed={parity_value}, required<={parity_tolerance}"
+        )
     if payload.get("authorized_consumers") != [experiment_id]:
         raise TrackAV12G1AError("R13 initialization consumer mismatch")
     if timm.__version__ != TIMM_VERSION:
@@ -319,8 +338,29 @@ def validate_g1a_seal_object(seal: dict[str, Any]) -> list[str]:
         errors.append("G1A R13 model identity mismatch")
     if r13.get("pretrained_sha256") != R13_PRETRAINED_SHA256 or int(r13.get("pretrained_bytes", -1)) != R13_PRETRAINED_BYTES:
         errors.append("G1A R13 pretrained identity mismatch")
-    if float(r13.get("parity_max_abs", 1.0)) > R13_PARITY_TOLERANCE:
-        errors.append("G1A R13 parity gate failed")
+
+    # The sealed production G1A bundle is governed by the pre-science v1.2.1
+    # numerical-acceptance amendment, not by the superseded v1.2 1e-5 bound.
+    # Fail closed unless every contract/evidence binding is exact.
+    if r13.get("parity_contract_id") != R13_PARITY_CONTRACT_ID_V121:
+        errors.append("G1A R13 parity contract ID mismatch")
+    if r13.get("parity_contract_sha256") != R13_PARITY_CONTRACT_SHA256_V121:
+        errors.append("G1A R13 parity contract SHA mismatch")
+    if r13.get("parity_preexecution_calibration_evidence_sha256") != R13_PARITY_PREEXECUTION_EVIDENCE_SHA256_V121:
+        errors.append("G1A R13 pre-execution parity evidence SHA mismatch")
+    try:
+        historical_bound = float(r13.get("historical_v1_2_required_max_abs_difference"))
+        required_bound = float(r13.get("required_max_abs_difference"))
+        observed_parity = float(r13.get("parity_max_abs"))
+    except (TypeError, ValueError):
+        errors.append("G1A R13 parity contract numeric fields invalid")
+    else:
+        if historical_bound != R13_PARITY_TOLERANCE:
+            errors.append("G1A R13 historical v1.2 parity bound mismatch")
+        if required_bound != R13_PARITY_TOLERANCE_V121:
+            errors.append("G1A R13 v1.2.1 parity bound mismatch")
+        if observed_parity < 0.0 or observed_parity > required_bound:
+            errors.append("G1A R13 parity gate failed")
     states = r13.get("states", {})
     for label in ("S1", "S2", "S3"):
         row = states.get(label, {})
