@@ -42,6 +42,15 @@ if len(analysis_sha) != 40:
 observed = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
 if observed != analysis_sha:
     raise RuntimeError(f"exact analysis checkout mismatch: expected={analysis_sha}, observed={observed}")
+
+environment_gate = repo / "journal_extension/scripts/ensure_tracka_locked_environment.py"
+subprocess.run([
+    sys.executable,
+    str(environment_gate),
+    "--repo-root", str(repo),
+    "--repair",
+], cwd=repo, check=True)
+
 os.environ.setdefault("CROPCOP_NOTEBOOK_STARTED_MONOTONIC", repr(time.monotonic()))
 os.environ.setdefault("CROPCOP_NOTEBOOK_HARD_LIMIT_SECONDS", "43200")
 os.environ.setdefault("CROPCOP_NOTEBOOK_FINALIZATION_MARGIN_SECONDS", "3600")
