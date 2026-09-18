@@ -15,6 +15,7 @@ for path in (SCRIPTS, SRC):
 
 from cropcop_je.hashing import sha256_file, sha256_json  # noqa: E402
 import run_tracka_v12_posttraining_account as operator  # noqa: E402
+from cropcop_je.tracka_v12_posttraining_operator import required_stage_args  # noqa: E402
 
 ANALYSIS = "a" * 40
 EXPERIMENT = "R13-VIT-DLITTLE-DIFF-CONTEXT-S1"
@@ -167,6 +168,12 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             operator.cli_args({"v1_test": "/forbidden"}, operator.DIRECT_ALLOWED)
 
+
+    def test_historical_secondary_direct_does_not_require_secondary_g1_bundle(self):
+        for experiment_id in ("R06-EFFB0-CONTEXT-S1", "R07-CNXTT-CONTEXT-S1"):
+            required = required_stage_args(experiment_id, "direct")
+            self.assertNotIn("secondary_g1_bundle", required)
+            self.assertEqual(required, {"manifest", "class_map", "image_root"})
 
     def test_local_completion_reuse_requires_full_durability_publication_chain(self):
         with tempfile.TemporaryDirectory() as td:
