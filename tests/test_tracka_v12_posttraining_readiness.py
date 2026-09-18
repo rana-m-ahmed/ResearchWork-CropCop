@@ -40,6 +40,7 @@ def seal_account(account_id: str, states: dict, authority_sha: str) -> dict:
         "training_or_adaptation_performed": False,
         "optimizer_state_advanced": False,
         "private_material_verified_locally": True,
+        "evidence_targets_ready": True,
     }
     payload["gate_sha256"] = sha256_json(payload)
     return payload
