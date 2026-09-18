@@ -88,6 +88,51 @@ def verify_publication_manifest(files: dict[str, Path], experiment_id: str, run_
     return manifest
 
 
+def validate_published_completion_chain(
+    *,
+    files: dict[str, Path],
+    account_completion: dict,
+    experiment_id: str,
+    analysis_sha: str,
+) -> dict:
+    published_completion_path = files.get("POSTTRAINING_STATE_COMPLETION.json")
+    published_sync_path = files.get("POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json")
+    if published_completion_path is None or published_sync_path is None:
+        raise RuntimeError(f"published completion/durability certificate missing: {experiment_id}")
+
+    published_completion = load_json(published_completion_path)
+    if published_completion != account_completion:
+        raise RuntimeError(f"published state completion differs from account completion manifest: {experiment_id}")
+    completion_hash = published_completion.get("completion_sha256")
+    completion_clean = dict(published_completion)
+    completion_clean.pop("completion_sha256", None)
+    if completion_hash != sha256_json(completion_clean):
+        raise RuntimeError(f"published state completion self-hash mismatch: {experiment_id}")
+
+    sync = load_json(published_sync_path)
+    sync_hash = sync.get("sync_certificate_sha256")
+    sync_clean = dict(sync)
+    sync_clean.pop("sync_certificate_sha256", None)
+    if sync.get("status") != "PASS":
+        raise RuntimeError(f"published private durability certificate is not PASS: {experiment_id}")
+    if sync.get("experiment_id") != experiment_id or sync.get("analysis_source_git_commit") != analysis_sha:
+        raise RuntimeError(f"published private durability certificate provenance mismatch: {experiment_id}")
+    if sync.get("generation_roundtrip_verified") is not True or sync.get("private_dataset_verified") is not True:
+        raise RuntimeError(f"published private durability certificate lacks round-trip/private proof: {experiment_id}")
+    if sync.get("dataset_locator") != published_completion.get("private_evidence_dataset_locator"):
+        raise RuntimeError(f"published private durability dataset locator mismatch: {experiment_id}")
+    if sync_hash != sha256_json(sync_clean):
+        raise RuntimeError(f"published private durability certificate self-hash mismatch: {experiment_id}")
+    if sha256_file(published_sync_path) != published_completion.get("private_sync_certificate_sha256"):
+        raise RuntimeError(f"published private durability certificate file-hash mismatch: {experiment_id}")
+
+    return {
+        "state_completion_sha256": sha256_file(published_completion_path),
+        "private_sync_certificate_sha256": sha256_file(published_sync_path),
+        "private_generation_roundtrip_verified": True,
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-root", default=".")
@@ -170,33 +215,15 @@ def main() -> int:
             analysis_sha,
         )
         publication = verify_publication_manifest(files, experiment_id, run_id, analysis_sha)
-        published_completion_path = files.get("POSTTRAINING_STATE_COMPLETION.json")
-        published_sync_path = files.get("POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json")
-        if published_completion_path is None or published_sync_path is None:
-            raise SystemExit(f"published completion/durability certificate missing: {experiment_id}")
-        published_completion = load_json(published_completion_path)
-        if published_completion != completion:
-            raise SystemExit(f"published state completion differs from account completion manifest: {experiment_id}")
-        completion_hash = published_completion.get("completion_sha256")
-        completion_clean = dict(published_completion)
-        completion_clean.pop("completion_sha256", None)
-        if completion_hash != sha256_json(completion_clean):
-            raise SystemExit(f"published state completion self-hash mismatch: {experiment_id}")
-        sync = load_json(published_sync_path)
-        sync_hash = sync.get("sync_certificate_sha256")
-        sync_clean = dict(sync)
-        sync_clean.pop("sync_certificate_sha256", None)
-        if (
-            sync.get("status") != "PASS"
-            or sync.get("experiment_id") != experiment_id
-            or sync.get("analysis_source_git_commit") != analysis_sha
-            or sync.get("generation_roundtrip_verified") is not True
-            or sync.get("private_dataset_verified") is not True
-            or sync.get("dataset_locator") != completion.get("private_evidence_dataset_locator")
-            or sync_hash != sha256_json(sync_clean)
-            or sha256_file(published_sync_path) != completion.get("private_sync_certificate_sha256")
-        ):
-            raise SystemExit(f"published private durability certificate mismatch: {experiment_id}")
+        try:
+            completion_chain = validate_published_completion_chain(
+                files=files,
+                account_completion=completion,
+                experiment_id=experiment_id,
+                analysis_sha=analysis_sha,
+            )
+        except RuntimeError as exc:
+            raise SystemExit(str(exc)) from exc
         role = completion["role"]
         if role == "direct":
             required = {
@@ -253,10 +280,8 @@ def main() -> int:
             "role": role,
             "publication_branch": completion["publication_branch"],
             "publication_manifest_sha256": sha256_file(files["POSTTRAINING_PUBLICATION_MANIFEST.json"]),
-            "state_completion_sha256": sha256_file(published_completion_path),
-            "private_sync_certificate_sha256": sha256_file(published_sync_path),
+            **completion_chain,
             "public_file_sha256": publication["public_file_sha256"],
-            "private_generation_roundtrip_verified": True,
         }
 
     if set(direct_index["states"]) != set(ALL_DIRECT_STATES):
