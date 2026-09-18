@@ -13,31 +13,14 @@ import _bootstrap  # noqa: F401
 from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.hashing import sha256_file, sha256_json
 from cropcop_je.session import SessionBudget
-
-DIRECT_ALLOWED = {
-    "manifest", "class_map", "image_root", "g1a_bundle", "secondary_g1_bundle",
-    "principal_config", "principal_pair_init", "principal_pair_evidence",
-    "row_id_column", "path_column", "split_column", "label_column", "class_index_column",
-    "train_split_value", "val_split_value", "batch_size", "num_workers",
-}
-XAI_ALLOWED = DIRECT_ALLOWED - {"batch_size", "num_workers"}
-AUX_ALLOWED = {
-    "config", "manifest", "class_map", "image_root", "g1a_bundle",
-    "principal_pair_init", "principal_pair_evidence",
-    "row_id_column", "path_column", "split_column", "label_column", "class_index_column",
-    "train_split_value", "val_split_value", "batch_size", "num_workers",
-}
-STAGE_SCRIPT = {
-    "direct": "journal_extension/scripts/run_tracka_v12_direct_evidence.py",
-    "xai": "journal_extension/scripts/run_tracka_v12_xai.py",
-    "auxiliary": "journal_extension/scripts/run_tracka_v12_auxiliary_evidence.py",
-}
-STAGE_GATE = {
-    "direct": Path("public_evidence/DIRECT_STATE_EVIDENCE_GATE.json"),
-    "xai": Path("public_xai/XAI_EVIDENCE_GATE.json"),
-    "auxiliary": Path("public_evidence/AUXILIARY_STATE_EVIDENCE_GATE.json"),
-}
-STAGE_ALLOWED = {"direct": DIRECT_ALLOWED, "xai": XAI_ALLOWED, "auxiliary": AUX_ALLOWED}
+from cropcop_je.tracka_v12_posttraining_operator import (
+    DIRECT_ALLOWED,
+    XAI_ALLOWED,
+    AUX_ALLOWED,
+    STAGE_ALLOWED,
+    cli_args,
+    validate_state_operator_spec,
+)
 
 
 def load_json(path: str | Path) -> dict:
@@ -54,20 +37,6 @@ def verify_self_hash(payload: dict, field: str) -> bool:
     clean = dict(payload)
     clean.pop(field, None)
     return observed == sha256_json(clean)
-
-
-def cli_args(mapping: dict, allowed: set[str]) -> list[str]:
-    unknown = set(mapping) - allowed
-    if unknown:
-        raise RuntimeError(f"operator executor args contain unsupported keys: {sorted(unknown)}")
-    result = []
-    for key in sorted(mapping):
-        value = mapping[key]
-        if value in (None, ""):
-            continue
-        flag = "--" + key.replace("_", "-")
-        result.extend([flag, str(value)])
-    return result
 
 
 def terminal_stage(attempt_root: Path, stage: str, experiment_id: str, run_id: str, analysis_sha: str) -> Path | None:
@@ -346,6 +315,12 @@ def main() -> int:
     states = inventory.get("states") or {}
     if set(assigned) != set(states):
         raise SystemExit("account inventory must equal exact frozen placement queue for this account")
+    for experiment_id, spec in states.items():
+        operator_errors = validate_state_operator_spec(experiment_id, spec, check_paths=True)
+        if operator_errors:
+            raise SystemExit(
+                f"operator contract invalid for {experiment_id}: " + "; ".join(operator_errors)
+            )
     if set(readiness.get("states", {})) != set(states):
         raise SystemExit("account readiness state inventory differs from operator inventory")
 
