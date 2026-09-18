@@ -82,6 +82,32 @@ class FinalV1ResolverTests(unittest.TestCase):
             self.assertEqual(diagnostics["resolution_strategy"], "canonical_mounted_root")
             self.assertFalse(diagnostics["api_download_performed"])
 
+    def test_missing_canonical_mount_downloads_only_exact_slug(self):
+        sentinel = object()
+        with mock.patch(
+            "cropcop_je.tracka_v12_final_v1.FINAL_V1_MOUNTED_ROOT"
+        ) as mounted, mock.patch(
+            "cropcop_je.tracka_v12_final_v1.FINAL_V1_ALTERNATE_MOUNTED_ROOT"
+        ) as alternate, mock.patch(
+            "cropcop_je.tracka_v12_final_v1.hydrate_known_final_v1_dataset",
+            return_value=sentinel,
+        ) as hydrate, mock.patch(
+            "cropcop_je.tracka_v12_final_v1.scan_attached_inputs",
+            side_effect=AssertionError("generic attached-input scan must not run"),
+        ):
+            mounted.is_dir.return_value = False
+            alternate.is_dir.return_value = False
+            api = object()
+            resolved, diagnostics = resolve_final_v1(
+                output_root="/tmp/final-v1",
+                attached_input_root="/unused",
+                api_factory=lambda: api,
+            )
+            self.assertIs(resolved, sentinel)
+            hydrate.assert_called_once_with(api, "/tmp/final-v1")
+            self.assertEqual(diagnostics["resolution_strategy"], "canonical_slug_download")
+            self.assertTrue(diagnostics["api_download_performed"])
+
     def test_class_map_cardinality_guard(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "class_map.json"
