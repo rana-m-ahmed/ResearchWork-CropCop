@@ -25,6 +25,8 @@ on:
       - 'journal_extension/scripts/validate_tracka_v12_posttraining_infrastructure.py'
       - 'journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py'
       - 'journal_extension/src/cropcop_je/tracka_v12_recovery.py'
+      - 'journal_extension/src/cropcop_je/tracka_v12_g1a.py'
+      - 'journal_extension/src/cropcop_je/tracka_v12_runtime.py'
       - 'notebooks/tracka_posttraining_execute.ipynb'
       - 'notebooks/tracka_posttraining_global.ipynb'
       - 'notebooks/tracka_posttraining_preflight.ipynb'
@@ -35,6 +37,7 @@ on:
       - 'tests/test_tracka_v12_posttraining_operator.py'
       - 'tests/test_tracka_v12_posttraining_readiness.py'
       - 'tests/test_tracka_v12_recovery.py'
+      - 'tests/test_tracka_v12_g1a_parity_contract.py'
   workflow_dispatch:
 
 permissions:
@@ -96,6 +99,8 @@ jobs:
               'journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py',
             'journal_extension/src/cropcop_je/tracka_v12_source_materialization.py',
               'journal_extension/src/cropcop_je/tracka_v12_recovery.py',
+              'journal_extension/src/cropcop_je/tracka_v12_g1a.py',
+              'journal_extension/src/cropcop_je/tracka_v12_runtime.py',
               'notebooks/tracka_posttraining_execute.ipynb',
               'notebooks/tracka_posttraining_global.ipynb',
               'notebooks/tracka_posttraining_preflight.ipynb',
@@ -107,6 +112,7 @@ jobs:
               'tests/test_tracka_v12_posttraining_readiness.py',
               'tests/test_tracka_v12_recovery.py',
             'tests/test_tracka_v12_historical.py',
+            'tests/test_tracka_v12_g1a_parity_contract.py',
           }
           changed = {line.strip() for line in Path('/tmp/tracka-closure-delta.txt').read_text().splitlines() if line.strip()}
           if changed != allowed:
@@ -119,6 +125,8 @@ jobs:
           python -m compileall -q \
             journal_extension/src/cropcop_je/tracka_v12_recovery.py \
             journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py \
+            journal_extension/src/cropcop_je/tracka_v12_g1a.py \
+            journal_extension/src/cropcop_je/tracka_v12_runtime.py \
             journal_extension/scripts/recover_tracka_v12_terminal_record.py \
             journal_extension/scripts/probe_tracka_v12_historical_artifacts.py \
             journal_extension/scripts/freeze_tracka_v12_posttraining_placement.py \
@@ -141,7 +149,8 @@ jobs:
             tests/test_tracka_v12_posttraining_campaign.py \
             tests/test_tracka_v12_posttraining_durability.py \
             tests/test_tracka_v12_posttraining_evidence_chain.py \
-            tests/test_tracka_v12_posttraining_operator.py
+            tests/test_tracka_v12_posttraining_operator.py \
+            tests/test_tracka_v12_g1a_parity_contract.py
 
       - name: Validate recovery, campaign, operator, evidence and closure contracts
         run: |
@@ -155,6 +164,7 @@ jobs:
             tests.test_tracka_v12_posttraining_operator \
             tests.test_tracka_v12_evidence \
             tests.test_tracka_v12_historical \
+            tests.test_tracka_v12_g1a_parity_contract \
             tests.test_tracka_v12_comprehensive_closure \
             -v
 
