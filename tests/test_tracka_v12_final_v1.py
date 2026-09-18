@@ -20,6 +20,8 @@ from cropcop_je.tracka_v12_final_v1 import (  # noqa: E402
     CLASS_MAP_SHA256,
     FINAL_V1_DATASET_SLUG,
     FINAL_V1_MANIFEST_RELATIVE,
+    FINAL_V1_CLASS_MAP_RELATIVE,
+    FINAL_V1_IMAGE_ROOT_RELATIVE,
     FINAL_V1_MOUNTED_ROOT,
     MANIFEST_SHA256,
     FinalV1ResolutionError,
@@ -54,7 +56,15 @@ class FinalV1ResolverTests(unittest.TestCase):
         )
         self.assertEqual(
             str(FINAL_V1_MANIFEST_RELATIVE),
-            "audit/training_manifest.csv",
+            "audit/final_manifest.csv",
+        )
+        self.assertEqual(
+            str(FINAL_V1_CLASS_MAP_RELATIVE),
+            "audit/class_to_idx.json",
+        )
+        self.assertEqual(
+            str(FINAL_V1_IMAGE_ROOT_RELATIVE),
+            "dataset",
         )
 
     def test_canonical_mount_short_circuits_api_discovery(self):
