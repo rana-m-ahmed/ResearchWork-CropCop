@@ -369,11 +369,20 @@ def finalize_state(
     analysis_sha: str,
     publication_lock: threading.Lock,
 ) -> dict:
-    sealed = seal_state_bundle(state_root, stage_dirs, state, analysis_sha)
     cert_dir = state_root / "certificates"
     cert_dir.mkdir(parents=True, exist_ok=True)
+    for transient in (
+        cert_dir / "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json",
+        cert_dir / "POSTTRAINING_STATE_COMPLETION.json",
+        cert_dir / "POSTTRAINING_PUBLICATION_CERTIFICATE.json",
+    ):
+        transient.unlink(missing_ok=True)
+    public_release_existing = state_root / "public_release"
+    if public_release_existing.exists():
+        shutil.rmtree(public_release_existing)
+
+    sealed = seal_state_bundle(state_root, stage_dirs, state, analysis_sha)
     sync_cert = cert_dir / "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json"
-    sync_cert.unlink(missing_ok=True)
     run_subprocess([
         os.environ.get("PYTHON", "python"),
         str(repo / "journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py"),
