@@ -1,0 +1,79 @@
+{
+  "account_id": "K1",
+  "account_inventory_file_sha256": "604b1f211e2259a9e5122e49391e1a5323e371c82e88efcbc00d049e02cbbc3c",
+  "account_readiness_gate_sha256": "b8f2e0d21526057cb3d0428b5fa68bf26b674eaf89ab7171715322bc9921ccec",
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "campaign_lock_sha256": "6292f874c72643e73eb60bc6c86741f41f127284bb00d12e85f98574d7497256",
+  "external_predictions_closed": true,
+  "handoff_kind": "track_a_pregpu_to_gpu",
+  "handoff_sha256": "5586d646765676f278260285fe30bd336c3ae9def37050d1e898150796bbfac6",
+  "kaggle_username": "ranamuhammadahmed6",
+  "materialization_catalog_file_sha256": "078faf924ff03c5085831648a9810d0560c2221ec29992f5d51a7df6dde85dc0",
+  "orchestrator_version": "v9.3",
+  "placement_freeze_sha256": "4a8f1d3d7cbb02e98986e90764d95729fd48a860ea970f0adabc5b4e8e49f8e8",
+  "schema_version": "2.0",
+  "shared_private_inputs": {
+    "final_v1_class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "final_v1_manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "g1a_locator": "ranamuhammadahmed6/cropcop-g1a-shared-canonical-692be594-56023042",
+    "principal_g1_locator": "ranamuhammadahmed6/cropcop-g1-sealed"
+  },
+  "state_count": 5,
+  "states": {
+    "R04-MNV4-DIRECT-S3": {
+      "analysis_slot_id": "K1/GPU0",
+      "posttraining_evidence_dataset_locator": "ranamuhammadahmed6/cropcop-ta-r04-direct-s3-e08e471cc033",
+      "role": "direct",
+      "run_id": "JE-R04-MNV4-DIRECT-S3-f171309fc7e9-A01",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "fa200d6add9c25856b1bdaa4d05961a0d1e4050e1204ab2a3103474b9c4a8ed2",
+      "source_checkpoint_durable_locator": "ranamuhammadahmed6/cropcop-je-je-r04-mnv4-direct-s3-f171309fc7e9-a01",
+      "source_persistence_profile": "historical_legacy_kaggle_v1"
+    },
+    "R05-MNV4-TEACHER-S3": {
+      "analysis_slot_id": "K1/GPU1",
+      "posttraining_evidence_dataset_locator": "ranamuhammadahmed6/cropcop-ta-r05-teacher-s3-e08e471cc033",
+      "role": "auxiliary",
+      "run_id": "JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "0df653f67fe6a0f6a3c4d47fd8746ab563ef92d7182e36598602eba24b518d56",
+      "source_checkpoint_durable_locator": "ranamuhammadahmed6/cropcop-je-je-r05-mnv4-teacher-s3-f171309fc7e9-a01",
+      "source_persistence_profile": "historical_legacy_kaggle_v1"
+    },
+    "R12-MNV4-LOGITS-S2": {
+      "analysis_slot_id": "K1/GPU0",
+      "posttraining_evidence_dataset_locator": "ranamuhammadahmed6/cropcop-ta-r12-logits-s2-e08e471cc033",
+      "role": "auxiliary",
+      "run_id": "JE-R12-MNV4-LOGITS-S2-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "725db4da414795a5082867bf73cf8366814233c6a9546264659186456ffffe32",
+      "source_checkpoint_durable_locator": "ranamuhammadahmed6/cropcop-r12-mnv4-logits-s2-f04a6089-56023042",
+      "source_persistence_profile": "continuation_generation_aware_v8"
+    },
+    "R12-MNV4-LOGITS-S3": {
+      "analysis_slot_id": "K1/GPU1",
+      "posttraining_evidence_dataset_locator": "ranamuhammadahmed6/cropcop-ta-r12-logits-s3-e08e471cc033",
+      "role": "auxiliary",
+      "run_id": "JE-R12-MNV4-LOGITS-S3-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "b81f3e8de8acbda55c13b687412b09186bb128a921bea949af6be2bc9795fd06",
+      "source_checkpoint_durable_locator": "ranamuhammadahmed6/cropcop-r12-mnv4-logits-s3-0c97a693-56023042",
+      "source_persistence_profile": "continuation_generation_aware_v8"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3": {
+      "analysis_slot_id": "K1/GPU0",
+      "posttraining_evidence_dataset_locator": "ranamuhammadahmed6/cropcop-ta-r13-vit-s3-e08e471cc033",
+      "role": "direct",
+      "run_id": "JE-R13-VIT-DLITTLE-DIFF-CONTEXT-S3-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "c10a93d5a6a264c80992a1d4d8b1a19daa732dfc9e68d2b8e7c96fb2dba73b67",
+      "source_checkpoint_durable_locator": "ranamuhammadahmed6/cropcop-r13-vit-dlittle-diff-con-c2bd5ef6-56023042",
+      "source_persistence_profile": "continuation_generation_aware_v8"
+    }
+  },
+  "status": "READY",
+  "track_c_candidate_runtime_closed": true,
+  "training_or_adaptation_performed": false,
+  "training_science_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "v1_test_closed": true
+}
