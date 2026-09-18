@@ -294,7 +294,11 @@ def finalize_state(*, repo: Path, state: dict, state_root: Path, stage_dirs: dic
     gates = {}
     for stage, path in stage_dirs.items():
         gate = path / STAGE_GATE[stage]
-        gates[stage] = {"path": str(gate), "sha256": sha256_file(gate)}
+        gates[stage] = {
+            "basename": gate.name,
+            "logical_relative_path": f"{stage}/{STAGE_GATE[stage].as_posix()}",
+            "sha256": sha256_file(gate),
+        }
     expected_publication_branch = f"run-evidence/{state['posttraining_public_run_id']}"
     completion = {
         "schema_version": "1.0",
