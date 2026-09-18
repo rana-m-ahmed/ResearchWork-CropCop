@@ -75,11 +75,11 @@ def probe_state(experiment_id: str, spec: dict) -> dict:
         for path in spec.get("required_executor_files", []):
             ok, _ = check_file(path)
             if not ok:
-                result["errors"].append(f"required_file_missing:{path}")
+                result["errors"].append(f"required_file_missing:{Path(path).name}")
         for path in spec.get("required_executor_directories", []):
             ok, _ = check_dir(path)
             if not ok:
-                result["errors"].append(f"required_directory_missing:{path}")
+                result["errors"].append(f"required_directory_missing:{Path(path).name}")
         result["verified"] = {
             "run_id": record.get("run_id"),
             "run_record_sha256": sha256_file(run_path),
