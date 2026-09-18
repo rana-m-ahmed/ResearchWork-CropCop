@@ -238,6 +238,12 @@ class TrackAV12RecoveryTests(unittest.TestCase):
             "checkpoint_index_sha256": "c" * 64,
             "selected_checkpoint_file_sha256": SELECTED,
             "run_id": RUN,
+            "surface_contract": {
+                "allowed_surfaces": ["DS-V1-TRAIN", "DS-V1-VAL"],
+                "forbidden_surfaces": ["DS-EXT-*-SEALED", "DS-HIST-COMPARE", "DS-V1-TEST-CONSUMED"],
+                "checkpoint_identity_contains_surface_flags": False,
+                "claim_basis": "frozen_training_runner_and_config_contract",
+            },
         }
         record = build_recovered_terminal_record(
             experiment_id=EXP,
