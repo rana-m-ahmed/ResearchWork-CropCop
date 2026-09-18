@@ -88,6 +88,37 @@ def terminal_stage(attempt_root: Path, stage: str, experiment_id: str, run_id: s
     return None
 
 
+def load_local_completed_state(state_root: Path, experiment_id: str, analysis_sha: str) -> dict | None:
+    completion_path = state_root / "certificates" / "POSTTRAINING_STATE_COMPLETION.json"
+    publication_path = state_root / "certificates" / "POSTTRAINING_PUBLICATION_CERTIFICATE.json"
+    if not completion_path.is_file() or not publication_path.is_file():
+        return None
+    try:
+        completion = load_json(completion_path)
+        publication = load_json(publication_path)
+    except Exception:
+        return None
+    expected_branch = completion.get("publication_branch")
+    if (
+        completion.get("status") != "PASS"
+        or completion.get("experiment_id") != experiment_id
+        or completion.get("analysis_source_git_commit") != analysis_sha
+        or completion.get("private_generation_roundtrip_verified") is not True
+        or not expected_branch
+        or publication.get("status") != "PASS"
+        or publication.get("experiment_id") != experiment_id
+        or publication.get("analysis_source_git_commit") != analysis_sha
+        or publication.get("publication_branch") != expected_branch
+    ):
+        return None
+    completion_hash = completion.get("completion_sha256")
+    clean = dict(completion)
+    clean.pop("completion_sha256", None)
+    if completion_hash != sha256_json(clean):
+        return None
+    return completion
+
+
 def next_attempt(attempt_root: Path) -> Path:
     attempt_root.mkdir(parents=True, exist_ok=True)
     indices = []
@@ -436,19 +467,11 @@ def main() -> int:
             experiment_id = state["experiment_id"]
             state_root = work_root / experiment_id
             state_root.mkdir(parents=True, exist_ok=True)
-            completion_path = state_root / "certificates" / "POSTTRAINING_STATE_COMPLETION.json"
-            if completion_path.is_file():
-                existing = load_json(completion_path)
-                if (
-                    existing.get("status") == "PASS"
-                    and existing.get("experiment_id") == experiment_id
-                    and existing.get("analysis_source_git_commit") == analysis_sha
-                    and existing.get("private_generation_roundtrip_verified") is True
-                    and existing.get("publication_branch")
-                ):
-                    with results_lock:
-                        results[experiment_id] = {"status": "REUSED_COMPLETE", "completion": existing}
-                    continue
+            existing = load_local_completed_state(state_root, experiment_id, analysis_sha)
+            if existing is not None:
+                with results_lock:
+                    results[experiment_id] = {"status": "REUSED_COMPLETE", "completion": existing}
+                continue
             try:
                 restore_state_evidence(
                     repo=repo,
