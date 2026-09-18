@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -63,15 +64,27 @@ def main() -> int:
         row = dict(catalog_states[experiment_id])
         assignment = placement["assignments"][experiment_id]
         owner = str((campaign.get("account_owners") or {}).get(args.account_id, "")).strip()
-        template = str((campaign.get("evidence_durability") or {}).get("locator_template", "")).strip()
-        if not owner or not template:
-            raise SystemExit("campaign lock lacks deterministic evidence-dataset owner/template")
-        experiment_slug = experiment_id.lower().replace("_", "-")
+        durability = campaign.get("evidence_durability") or {}
+        template = str(durability.get("locator_template", "")).strip()
+        state_key = str((durability.get("state_slug_keys") or {}).get(experiment_id, "")).strip()
+        slug_contract = durability.get("dataset_slug_contract") or {}
+        if not owner or not template or not state_key:
+            raise SystemExit("campaign lock lacks deterministic evidence-dataset owner/template/state key")
         expected_locator = template.format(
             owner=owner,
-            experiment_slug=experiment_slug,
+            state_key=state_key,
             analysis_sha12=observed[:12],
         )
+        _owner, _, dataset_slug = expected_locator.partition("/")
+        min_len = int(slug_contract.get("minimum_length", 3))
+        max_len = int(slug_contract.get("maximum_length", 50))
+        if not (min_len <= len(dataset_slug) <= max_len):
+            raise SystemExit(
+                f"derived evidence dataset slug length violates frozen Kaggle contract: "
+                f"{experiment_id}:{len(dataset_slug)}"
+            )
+        if re.fullmatch(r"[a-z0-9-]+", dataset_slug) is None:
+            raise SystemExit(f"derived evidence dataset slug violates frozen character contract: {experiment_id}")
         supplied_locator = str(row.get("evidence_dataset_locator", "")).strip()
         if supplied_locator and supplied_locator != expected_locator:
             raise SystemExit(
