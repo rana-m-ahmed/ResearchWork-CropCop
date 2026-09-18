@@ -63,6 +63,7 @@ def validate_state_operator_spec(
     spec: dict[str, Any],
     *,
     check_paths: bool = True,
+    require_evidence_dataset_locator: bool = True,
 ) -> list[str]:
     errors: list[str] = []
     try:
@@ -71,7 +72,10 @@ def validate_state_operator_spec(
         return [str(exc)]
     if spec.get("role") != expected_role:
         errors.append("role_mismatch")
-    for field in ("run_record", "checkpoint_root", "evidence_dataset_locator"):
+    required_identity_fields = ["run_record", "checkpoint_root"]
+    if require_evidence_dataset_locator:
+        required_identity_fields.append("evidence_dataset_locator")
+    for field in required_identity_fields:
         if not str(spec.get(field, "")).strip():
             errors.append(f"missing:{field}")
 
