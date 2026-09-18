@@ -899,28 +899,8 @@ def resolve_final_v1(
         except FinalV1ResolutionError as exc:
             mounted_errors.append(f"{candidate}: {exc}")
 
-    # Backward-compatible attached-input path, still exact-hash validated.
-    attached = scan_attached_inputs(attached_input_root)
-    canonical_attached = [
-        row for row in attached
-        if row.source_ref and "cropcop-finalized-v8-11-2026-1" in row.source_ref
-    ]
-    if len(canonical_attached) == 1:
-        row = canonical_attached[0]
-        return row, {
-            "resolution_strategy": "attached_canonical_dataset",
-            "canonical_dataset_slug": FINAL_V1_DATASET_SLUG,
-            "canonical_root": str(row.root),
-            "mounted_errors": mounted_errors,
-            "api_download_performed": False,
-        }
-    if len(canonical_attached) > 1:
-        raise FinalV1ResolutionError(
-            "multiple attached copies of the canonical Final-V1 dataset resolved: "
-            f"{[str(row.root) for row in canonical_attached]}"
-        )
-
     # Deterministic authenticated fallback: download ONE known canonical slug.
+    # Deliberately do not scan unrelated attached inputs or historical kernels.
     api = api_factory()
     resolution = hydrate_known_final_v1_dataset(api, output_root)
     return resolution, {
