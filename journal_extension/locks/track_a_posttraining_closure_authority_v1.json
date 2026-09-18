@@ -23,7 +23,7 @@
   "handoff_rule": "Only a PASS comprehensive 21-state closure may authorize downstream Track B/Track C handoff. A CO_PRIMARY_TIE keeps both handoffs closed until the separately frozen deployment-feasibility tie gate resolves it.",
   "later_v1_test_rule": "Do not open the consumed V1 test during Track-A closure. Before any later one-shot use, reconcile the original ten-state continuity authority with the strengthened selected-primary-only rule in a separate explicit authority artifact.",
   "parent_training_science_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
-  "placement_policy": "Use artifact locality first and balance remaining work. Placement must be frozen in the readiness inventory before any new post-training metric is opened; placement is not scientific identity.",
+  "placement_policy": "Keep each of the 11 continuation states on the Kaggle account that owns its private durability dataset. Assign historical states only after artifact-availability preflight. Freeze the final three-account state partition before any new post-training metric is opened; placement is engineering-only and not scientific identity.",
   "posttraining_execution_order": [
     "recover and certify 11 new terminal run records",
     "resolve all 10 historical artifact roots and exact run records",
@@ -39,18 +39,31 @@
     "analysis_may_start_before_pass": false,
     "required_auxiliary_states": 9,
     "required_checks": [
+      "each Kaggle account locally verifies every private selected checkpoint assigned to it",
       "all run records terminal PASS",
       "all selected checkpoint bytes hash-verified",
       "all new-state recovery certificates PASS",
       "all historical lineages equal immutable Wave closures",
-      "G1A validates",
+      "G1A validates on each account executing evidence",
       "frozen dataset hashes match",
       "all executor dependencies exist",
-      "three-account placement frozen and inventory hashed"
+      "three account-local readiness gates PASS and their union is exactly 21 states",
+      "global readiness aggregate contains exactly 12 direct, 9 auxiliary, 11 recovered and 10 historical states"
     ],
     "required_direct_states": 12,
     "required_state_count": 21,
-    "required_unique_selected_checkpoints": 21
+    "required_unique_selected_checkpoints": 21,
+    "distributed_readiness": {
+      "account_gate": "track_a_v12_posttraining_account_readiness",
+      "global_gate": "track_a_v12_posttraining_global_readiness",
+      "account_ids": [
+        "K1",
+        "K2",
+        "K3"
+      ],
+      "private_checkpoint_material_may_cross_accounts": false,
+      "global_gate_consumes_public_safe_account_certificates_only": true
+    }
   },
   "protected_surfaces": {
     "external_predictions": "CLOSED",
