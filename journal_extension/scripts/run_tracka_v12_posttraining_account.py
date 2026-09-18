@@ -266,7 +266,15 @@ def sync_partial_state(
     return payload
 
 
-def finalize_state(*, repo: Path, state: dict, state_root: Path, stage_dirs: dict[str, Path], analysis_sha: str) -> dict:
+def finalize_state(
+    *,
+    repo: Path,
+    state: dict,
+    state_root: Path,
+    stage_dirs: dict[str, Path],
+    analysis_sha: str,
+    publication_lock: threading.Lock,
+) -> dict:
     sealed = seal_state_bundle(state_root, stage_dirs, state, analysis_sha)
     cert_dir = state_root / "certificates"
     cert_dir.mkdir(parents=True, exist_ok=True)
@@ -324,16 +332,17 @@ def finalize_state(*, repo: Path, state: dict, state_root: Path, stage_dirs: dic
     atomic_write_json(completion_path, completion)
 
     publication_cert = cert_dir / "POSTTRAINING_PUBLICATION_CERTIFICATE.json"
-    run_subprocess([
-        os.environ.get("PYTHON", "python"),
-        str(repo / "journal_extension/scripts/publish_tracka_v12_posttraining_state.py"),
-        "--repo-root", str(repo),
-        "--state-root", str(state_root),
-        "--analysis-source-git-commit", analysis_sha,
-        "--run-id", state["posttraining_public_run_id"],
-        "--experiment-id", state["experiment_id"],
-        "--output", str(publication_cert),
-    ], cwd=repo)
+    with publication_lock:
+        run_subprocess([
+            os.environ.get("PYTHON", "python"),
+            str(repo / "journal_extension/scripts/publish_tracka_v12_posttraining_state.py"),
+            "--repo-root", str(repo),
+            "--state-root", str(state_root),
+            "--analysis-source-git-commit", analysis_sha,
+            "--run-id", state["posttraining_public_run_id"],
+            "--experiment-id", state["experiment_id"],
+            "--output", str(publication_cert),
+        ], cwd=repo)
     publication = load_json(publication_cert)
     if publication.get("status") != "PASS":
         raise RuntimeError(f"public-safe evidence publication failed: {state['experiment_id']}")
@@ -406,6 +415,7 @@ def main() -> int:
     work_root = Path(args.work_root).resolve()
     work_root.mkdir(parents=True, exist_ok=True)
     log_lock = threading.Lock()
+    publication_lock = threading.Lock()
 
     slot_queues = {0: [], 1: []}
     for experiment_id in assigned:
@@ -445,6 +455,7 @@ def main() -> int:
                     state=state,
                     state_root=state_root,
                     analysis_sha=analysis_sha,
+                    publication_lock=publication_lock,
                 )
             except Exception as exc:
                 with results_lock:
