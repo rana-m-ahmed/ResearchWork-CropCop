@@ -39,6 +39,7 @@ on:
       - 'tests/test_tracka_v12_posttraining_operator.py'
       - 'tests/test_tracka_v12_posttraining_readiness.py'
       - 'tests/test_tracka_v12_recovery.py'
+      - 'tests/test_tracka_v12_g1a_contract.py'
       - 'tests/test_tracka_v12_g1a_parity_contract.py'
       - 'tests/test_tracka_v12_final_v1.py'
   workflow_dispatch:
@@ -117,6 +118,7 @@ jobs:
               'tests/test_tracka_v12_posttraining_readiness.py',
               'tests/test_tracka_v12_recovery.py',
             'tests/test_tracka_v12_historical.py',
+            'tests/test_tracka_v12_g1a_contract.py',
             'tests/test_tracka_v12_g1a_parity_contract.py',
             'tests/test_tracka_v12_final_v1.py',
           }
