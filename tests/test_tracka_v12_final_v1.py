@@ -25,6 +25,7 @@ from cropcop_je.tracka_v12_final_v1 import (  # noqa: E402
     _class_map_contract,
     _ordered_remote_candidates,
     _safe_extract_zip,
+    _select_exact_class_map_matches,
     resolve_final_v1,
 )
 
@@ -87,6 +88,18 @@ class FinalV1ResolverTests(unittest.TestCase):
             path.write_text(json.dumps({"num_classes": 119}), encoding="utf-8")
             with self.assertRaises(FinalV1ResolutionError):
                 _class_map_contract(path)
+
+    def test_duplicate_exact_class_map_copies_choose_deterministically(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            audit = root / "audit"
+            audit.mkdir()
+            a = audit / "class_index.json"
+            b = root / "class_map.json"
+            a.write_text("{}", encoding="utf-8")
+            b.write_text("{}", encoding="utf-8")
+            selected = _select_exact_class_map_matches([b, a], root)
+            self.assertEqual(selected, a.resolve())
 
     def test_candidate_ranking_prioritizes_finalized_dataset_over_cicps_and_models(self):
         kernel_refs = [
