@@ -18,6 +18,7 @@ from cropcop_je.tracka_v12 import (  # noqa: E402
     MANIFEST_SHA256,
     experiment_config_path,
 )
+from cropcop_je.tracka_v12_placement import checkpoint_identity_projection, logical_lane_id  # noqa: E402
 from cropcop_je.tracka_v12_recovery import (  # noqa: E402
     SCIENCE_AUTHORIZATION_SHA256,
     SCIENCE_SOURCE_SHA,
@@ -73,7 +74,7 @@ class TrackAV12RecoveryTests(unittest.TestCase):
     def test_checkpoint_payload_can_recover_selection_metrics_without_original_run_record(self):
         config = json.loads((ROOT / experiment_config_path(EXP)).read_text(encoding="utf-8"))
         ctc = json.loads((ROOT / config["ctc_config"]).read_text(encoding="utf-8"))
-        identity = {
+        full_identity = {
             "experiment_id": EXP,
             "authority_id": AUTHORITY_ID,
             "source_git_commit": SCIENCE_SOURCE_SHA,
@@ -91,11 +92,12 @@ class TrackAV12RecoveryTests(unittest.TestCase):
             "dependency_lock_sha256": "4" * 64,
             "g1_seal_sha256": "5" * 64,
             "g2_barrier_sha256": "6" * 64,
-            "lane_id": f"TRACKA-V12:{EXP}",
+            "lane_id": logical_lane_id(EXP),
             "allowed_surfaces": ["DS-V1-TRAIN", "DS-V1-VAL"],
             "v1_test_accessed": False,
             "external_protected_surface_accessed": False,
         }
+        identity = checkpoint_identity_projection(full_identity)
         payload = {
             "identity": identity,
             "identity_sha256": sha256_json(identity),
@@ -127,13 +129,64 @@ class TrackAV12RecoveryTests(unittest.TestCase):
         self.assertEqual(evidence["selected_epoch"], 17)
         self.assertEqual(evidence["selected_metrics"]["validation_macro_f1"], 0.96)
 
+    def test_checkpoint_payload_rejects_nonproduction_identity_fields(self):
+        config = json.loads((ROOT / experiment_config_path(EXP)).read_text(encoding="utf-8"))
+        ctc = json.loads((ROOT / config["ctc_config"]).read_text(encoding="utf-8"))
+        full_identity = {
+            "experiment_id": EXP,
+            "authority_id": AUTHORITY_ID,
+            "source_git_commit": SCIENCE_SOURCE_SHA,
+            "config_sha256": sha256_json(config),
+            "ctc_v2_sha256": sha256_json(ctc),
+            "manifest_sha256": MANIFEST_SHA256,
+            "class_map_sha256": CLASS_MAP_SHA256,
+            "seed": int(EXPERIMENT_SPECS[EXP]["seed"]),
+            "student_init_sha256": "1" * 64,
+            "pretrained_sha256": "2" * 64,
+            "teacher_sha256": None,
+            "teacher_factory_sha256": None,
+            "teacher_factory_bundle_sha256": None,
+            "software_stack_sha256": "3" * 64,
+            "dependency_lock_sha256": "4" * 64,
+            "g1_seal_sha256": "5" * 64,
+            "g2_barrier_sha256": "6" * 64,
+            "lane_id": logical_lane_id(EXP),
+        }
+        identity = checkpoint_identity_projection(full_identity)
+        identity["v1_test_accessed"] = False
+        payload = {
+            "identity": identity,
+            "identity_sha256": sha256_json(identity),
+            "epoch": 17,
+            "optimizer_step": 20000,
+            "selection_state": {
+                "best": {
+                    "epoch": 17,
+                    "checkpoint_sha256": None,
+                    "metrics": {
+                        "validation_accuracy": 0.98,
+                        "validation_balanced_accuracy": 0.95,
+                        "validation_macro_f1": 0.96,
+                        "validation_nll": 0.1,
+                    },
+                }
+            },
+        }
+        with self.assertRaises(TerminalRecoveryError):
+            validate_checkpoint_payload(
+                repo_root=ROOT,
+                experiment_id=EXP,
+                run_id=RUN,
+                selected_ref={"sha256": SELECTED, "epoch": 17, "optimizer_step": 20000},
+                payload=payload,
+                expected_selected_sha256=SELECTED,
+            )
+
     def test_recovered_record_is_explicitly_recovery_not_retraining(self):
         checkpoint = {
             "identity": {
                 "experiment_id": EXP,
                 "source_git_commit": SCIENCE_SOURCE_SHA,
-                "v1_test_accessed": False,
-                "external_protected_surface_accessed": False,
             },
             "identity_sha256": "a" * 64,
             "selected_epoch": 17,
@@ -147,6 +200,12 @@ class TrackAV12RecoveryTests(unittest.TestCase):
             "checkpoint_index_sha256": "c" * 64,
             "selected_checkpoint_file_sha256": SELECTED,
             "run_id": RUN,
+            "surface_contract": {
+                "allowed_surfaces": ["DS-V1-TRAIN", "DS-V1-VAL"],
+                "forbidden_surfaces": ["DS-EXT-*-SEALED", "DS-HIST-COMPARE", "DS-V1-TEST-CONSUMED"],
+                "checkpoint_identity_contains_surface_flags": False,
+                "claim_basis": "frozen_training_runner_and_config_contract",
+            },
         }
         record = build_recovered_terminal_record(
             experiment_id=EXP,
