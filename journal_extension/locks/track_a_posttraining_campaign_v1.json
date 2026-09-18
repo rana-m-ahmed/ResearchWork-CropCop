@@ -169,6 +169,18 @@
       "R13-VIT-DLITTLE-DIFF-CONTEXT-S1": "r13-vit-s1",
       "R13-VIT-DLITTLE-DIFF-CONTEXT-S2": "r13-vit-s2",
       "R13-VIT-DLITTLE-DIFF-CONTEXT-S3": "r13-vit-s3"
+    },
+    "stage_level_continuation": {
+      "required": true,
+      "generation_kinds": [
+        "partial",
+        "final"
+      ],
+      "partial_sync_timing": "immediately after every newly computed terminal stage PASS before any subsequent stage begins",
+      "restore_timing": "before stage reuse/launch on every account session when state is not already locally complete",
+      "restore_conflict_policy": "existing local file must match restored byte size and SHA-256 or fail closed",
+      "redundant_resync_policy": "verified restored terminal stages are reused without creating another partial generation",
+      "final_generation_requirement": "state completion requires generation_kind=final with successful download-and-rehash round trip"
     }
   },
   "required_state_outputs": {
@@ -194,6 +206,7 @@
     "account private-dataset owner mismatch",
     "private evidence target is absent, unsettled, non-private, duplicated, or owned by a different Kaggle account",
     "public evidence audit rejects a file",
+    "restored partial evidence conflicts with local bytes or provenance",
     "duplicate state execution with conflicting terminal evidence",
     "attempt to start a stage without sufficient session budget",
     "any protected surface marker is open",
@@ -216,6 +229,7 @@
     "direct_selection": "PASS",
     "comprehensive_closure": "PASS",
     "final_closure_audit": "PASS",
-    "private_evidence_target_preflight_accounts": 3
+    "private_evidence_target_preflight_accounts": 3,
+    "final_private_generation_roundtrip_verified_state_count": 21
   }
 }
