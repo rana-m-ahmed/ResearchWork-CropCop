@@ -89,13 +89,16 @@ def terminal_stage(attempt_root: Path, stage: str, experiment_id: str, run_id: s
 
 
 def load_local_completed_state(state_root: Path, experiment_id: str, analysis_sha: str) -> dict | None:
-    completion_path = state_root / "certificates" / "POSTTRAINING_STATE_COMPLETION.json"
-    publication_path = state_root / "certificates" / "POSTTRAINING_PUBLICATION_CERTIFICATE.json"
-    if not completion_path.is_file() or not publication_path.is_file():
+    cert_dir = state_root / "certificates"
+    completion_path = cert_dir / "POSTTRAINING_STATE_COMPLETION.json"
+    publication_path = cert_dir / "POSTTRAINING_PUBLICATION_CERTIFICATE.json"
+    sync_path = cert_dir / "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json"
+    if not completion_path.is_file() or not publication_path.is_file() or not sync_path.is_file():
         return None
     try:
         completion = load_json(completion_path)
         publication = load_json(publication_path)
+        sync = load_json(sync_path)
     except Exception:
         return None
     expected_branch = completion.get("publication_branch")
@@ -109,12 +112,30 @@ def load_local_completed_state(state_root: Path, experiment_id: str, analysis_sh
         or publication.get("experiment_id") != experiment_id
         or publication.get("analysis_source_git_commit") != analysis_sha
         or publication.get("publication_branch") != expected_branch
+        or sync.get("status") != "PASS"
+        or sync.get("generation_kind") != "final"
+        or sync.get("experiment_id") != experiment_id
+        or sync.get("analysis_source_git_commit") != analysis_sha
+        or sync.get("generation_roundtrip_verified") is not True
+        or sync.get("private_dataset_verified") is not True
+        or sync.get("dataset_locator") != completion.get("private_evidence_dataset_locator")
+        or sha256_file(sync_path) != completion.get("private_sync_certificate_sha256")
     ):
         return None
     completion_hash = completion.get("completion_sha256")
-    clean = dict(completion)
-    clean.pop("completion_sha256", None)
-    if completion_hash != sha256_json(clean):
+    completion_clean = dict(completion)
+    completion_clean.pop("completion_sha256", None)
+    publication_hash = publication.get("publication_certificate_sha256")
+    publication_clean = dict(publication)
+    publication_clean.pop("publication_certificate_sha256", None)
+    sync_hash = sync.get("sync_certificate_sha256")
+    sync_clean = dict(sync)
+    sync_clean.pop("sync_certificate_sha256", None)
+    if (
+        completion_hash != sha256_json(completion_clean)
+        or publication_hash != sha256_json(publication_clean)
+        or sync_hash != sha256_json(sync_clean)
+    ):
         return None
     return completion
 
