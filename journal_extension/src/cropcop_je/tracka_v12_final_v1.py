@@ -17,8 +17,8 @@ EXPECTED_VAL = 16368
 EXPECTED_TEST = 16363
 EXPECTED_CLASSES = 120
 
+SCIENCE_SOURCE_SHA = "56023042e57758591df9babb3438f191dbe10312"
 _DISCOVERY_KEYWORDS = (
-    "cropcop",
     "tracka",
     "track-a",
     "science",
@@ -26,6 +26,12 @@ _DISCOVERY_KEYWORDS = (
     "r13",
     "secondary",
     "principal",
+)
+_SCIENCE_CODE_TOKENS = (
+    SCIENCE_SOURCE_SHA,
+    "tracka_v12",
+    "run_tracka_v12",
+    "TRACKA_V12",
 )
 _IDENTITY_NAME_HINTS = (
     "manifest",
@@ -267,6 +273,24 @@ def _ref(value: object) -> str:
     return str(getattr(value, "ref", "") or "").strip()
 
 
+def _kernel_pull_text(root: Path) -> str:
+    chunks: list[str] = []
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        if path.name == "kernel-metadata.json":
+            continue
+        if path.suffix.casefold() not in {".py", ".ipynb", ".md", ".txt"}:
+            continue
+        try:
+            if path.stat().st_size > 16 * 1024 * 1024:
+                continue
+            chunks.append(path.read_text(encoding="utf-8", errors="ignore"))
+        except OSError:
+            continue
+    return "\n".join(chunks)
+
+
 def recent_kernel_dataset_sources(
     api,
     *,
@@ -294,29 +318,68 @@ def recent_kernel_dataset_sources(
             haystack = f"{ref} {title}".casefold()
             if any(token in haystack for token in _DISCOVERY_KEYWORDS):
                 preferred.append(row)
-            elif len(fallback) < 40:
+            elif len(fallback) < 60:
                 fallback.append(row)
 
-    dataset_refs: list[str] = []
-    seen_refs: set[str] = set()
-    to_pull = preferred[:120] if preferred else fallback[:40]
+    science_sources: list[str] = []
+    preferred_sources: list[str] = []
+    fallback_sources: list[str] = []
+    seen_science: set[str] = set()
+    seen_preferred: set[str] = set()
+    seen_fallback: set[str] = set()
+
+    to_pull = preferred[:140] + fallback[:60]
     for row in to_pull:
         ref = _ref(row)
         if not ref:
             continue
         with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
             try:
                 api.kernels_pull(ref, path=td, metadata=True, quiet=True)
-                meta_path = Path(td) / "kernel-metadata.json"
+                meta_path = root / "kernel-metadata.json"
                 meta = _json_object(meta_path)
             except Exception:
                 continue
-        for source in meta.get("dataset_sources") or []:
-            value = str(source or "").strip()
-            if "/" in value and value.casefold() not in seen_refs:
-                seen_refs.add(value.casefold())
-                dataset_refs.append(value)
-    return dataset_refs, kernels_seen
+
+            code_text = _kernel_pull_text(root)
+            code_lower = code_text.casefold()
+            is_science = (
+                SCIENCE_SOURCE_SHA.casefold() in code_lower
+                or "tracka_v12" in code_lower
+                or "run_tracka_v12" in code_lower
+            )
+            title = str(getattr(row, "title", "") or "")
+            title_haystack = f"{ref} {title}".casefold()
+            is_preferred = any(token in title_haystack for token in _DISCOVERY_KEYWORDS)
+
+            for source in meta.get("dataset_sources") or []:
+                value = str(source or "").strip()
+                if "/" not in value:
+                    continue
+                key = value.casefold()
+                if is_science:
+                    if key not in seen_science:
+                        seen_science.add(key)
+                        science_sources.append(value)
+                elif is_preferred:
+                    if key not in seen_preferred:
+                        seen_preferred.add(key)
+                        preferred_sources.append(value)
+                else:
+                    if key not in seen_fallback:
+                        seen_fallback.add(key)
+                        fallback_sources.append(value)
+
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for collection in (science_sources, preferred_sources, fallback_sources):
+        for value in collection:
+            key = value.casefold()
+            if key not in seen:
+                seen.add(key)
+                ordered.append(value)
+    return ordered, kernels_seen
 
 
 def mine_dataset_refs(
@@ -441,6 +504,59 @@ def hydrate_remote_dataset(api, dataset_ref: str, destination: str | Path) -> Fi
     )
 
 
+def _final_v1_candidate_score(dataset_ref: str, *, kernel_rank: int | None) -> tuple[int, int, str]:
+    name = dataset_ref.casefold()
+    score = 0
+    if "finalized" in name:
+        score += 600
+    if "final-v1" in name or "final_v1" in name or "finalv1" in name:
+        score += 550
+    if "120-class" in name or "120_class" in name or "120class" in name:
+        score += 450
+    if "cropcop" in name:
+        score += 120
+    if "dataset" in name:
+        score += 40
+
+    for token, penalty in (
+        ("checkpoint", 700),
+        ("model", 500),
+        ("readiness", 450),
+        ("qa", 400),
+        ("audit", 350),
+        ("cicps", 600),
+        ("agri-", 250),
+        ("g1a", 300),
+        ("g1-", 300),
+        ("g2", 300),
+    ):
+        if token in name:
+            score -= penalty
+
+    # Kernel provenance is stronger than an owned-dataset inventory fallback.
+    provenance_bonus = 300 if kernel_rank is not None else 0
+    rank_penalty = kernel_rank if kernel_rank is not None else 10_000
+    return (-(score + provenance_bonus), rank_penalty, name)
+
+
+def _ordered_remote_candidates(kernel_refs: list[str], mine_refs: list[str]) -> list[str]:
+    kernel_rank = {value.casefold(): index for index, value in enumerate(kernel_refs)}
+    merged: list[str] = []
+    seen: set[str] = set()
+    for value in [*kernel_refs, *mine_refs]:
+        key = value.casefold()
+        if key not in seen:
+            seen.add(key)
+            merged.append(value)
+    return sorted(
+        merged,
+        key=lambda value: _final_v1_candidate_score(
+            value,
+            kernel_rank=kernel_rank.get(value.casefold()),
+        ),
+    )
+
+
 def resolve_final_v1(
     *,
     output_root: str | Path,
@@ -465,49 +581,62 @@ def resolve_final_v1(
     kernel_refs, kernels_seen = recent_kernel_dataset_sources(api)
     mine_refs = mine_dataset_refs(api)
 
-    ordered: list[str] = []
-    seen: set[str] = set()
-    for ref in kernel_refs:
-        if ref.casefold() not in seen:
-            seen.add(ref.casefold())
-            ordered.append(ref)
-    mine_ranked = sorted(
-        mine_refs,
-        key=lambda value: (
-            0 if any(token in value.casefold() for token in ("cropcop", "final", "v1")) else 1,
-            value.casefold(),
-        ),
-    )
-    for ref in mine_ranked:
-        if ref.casefold() not in seen:
-            seen.add(ref.casefold())
-            ordered.append(ref)
+    ordered = _ordered_remote_candidates(kernel_refs, mine_refs)
 
-    checked: list[str] = []
-    matches: list[str] = []
-    for ref in ordered[:250]:
-        checked.append(ref)
+    checked: list[dict[str, Any]] = []
+    output_root = Path(output_root).resolve()
+    output_parent = output_root.parent
+    output_parent.mkdir(parents=True, exist_ok=True)
+
+    # Final-V1 is required in full for post-training evidence anyway. Instead of
+    # probing dozens of loose files, hydrate provenance-ranked candidates one by
+    # one and validate the complete frozen identity contract. This also handles
+    # datasets whose manifest/class-map live inside the dataset archive/layout.
+    for index, ref in enumerate(ordered[:12]):
+        staging = output_parent / f".final_v1_candidate_{index:02d}"
+        if staging.exists():
+            shutil.rmtree(staging)
+        row: dict[str, Any] = {
+            "dataset_ref": ref,
+            "candidate_rank": index,
+            "status": "FAILED",
+        }
         try:
-            if remote_dataset_matches_identity(api, ref):
-                matches.append(ref)
-        except Exception:
+            resolution = hydrate_remote_dataset(api, ref, staging)
+        except Exception as exc:
+            row["error"] = f"{type(exc).__name__}: {exc}"
+            checked.append(row)
+            if staging.exists():
+                shutil.rmtree(staging, ignore_errors=True)
             continue
 
-    if len(matches) != 1:
-        raise FinalV1ResolutionError(
-            "Final-V1 exact-hash discovery did not resolve exactly one accessible Kaggle dataset; "
-            f"matches={matches}, kernel_sources={kernel_refs[:40]}, "
-            f"mine_dataset_count={len(mine_refs)}, kernels_seen_count={len(kernels_seen)}, "
-            f"remote_candidates_checked={len(checked)}"
-        )
+        row["status"] = "PASS"
+        row["manifest_sha256"] = sha256_file(resolution.manifest)
+        row["class_map_sha256"] = sha256_file(resolution.class_map)
+        checked.append(row)
 
-    resolution = hydrate_remote_dataset(api, matches[0], output_root)
-    diagnostics = {
-        "attached_matches": 0,
-        "kernel_dataset_candidates": kernel_refs,
-        "mine_dataset_candidates": mine_refs,
-        "kernels_seen_count": len(kernels_seen),
-        "remote_candidates_checked": checked,
-        "matched_dataset_ref": matches[0],
-    }
-    return resolution, diagnostics
+        if output_root.exists():
+            shutil.rmtree(output_root)
+        staging.rename(output_root)
+        resolution = validate_final_v1_root(
+            output_root,
+            source_kind="historical_kaggle_dataset",
+            source_ref=ref,
+        )
+        diagnostics = {
+            "attached_matches": 0,
+            "kernel_dataset_candidates": kernel_refs,
+            "mine_dataset_candidates": mine_refs,
+            "kernels_seen_count": len(kernels_seen),
+            "remote_candidates_checked": checked,
+            "matched_dataset_ref": ref,
+            "candidate_order": ordered[:20],
+        }
+        return resolution, diagnostics
+
+    raise FinalV1ResolutionError(
+        "Final-V1 provenance-ranked hydration did not find an exact accessible dataset; "
+        f"kernel_sources={kernel_refs[:40]}, mine_dataset_count={len(mine_refs)}, "
+        f"kernels_seen_count={len(kernels_seen)}, candidate_order={ordered[:20]}, "
+        f"checked={checked}"
+    )
