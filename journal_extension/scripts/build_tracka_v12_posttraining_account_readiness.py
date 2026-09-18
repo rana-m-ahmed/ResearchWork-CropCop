@@ -140,6 +140,10 @@ def validate_account_inventory(*, inventory: dict, authority: dict, repo: Path, 
         for path in spec.get("required_executor_directories", []):
             directory_required(path, f"executor dependency for {experiment_id}")
 
+        evidence_locator = str(spec.get("evidence_dataset_locator", "")).strip()
+        if not evidence_locator:
+            raise RuntimeError(f"evidence dataset locator missing for {experiment_id}")
+
         rows[experiment_id] = {
             "role": auth["role"],
             "run_id": record.get("run_id"),
@@ -151,6 +155,7 @@ def validate_account_inventory(*, inventory: dict, authority: dict, repo: Path, 
             "recovery_certificate_sha256": certificate_sha,
             "recovered_terminal_metadata": recovered,
             "private_selected_checkpoint_verified": True,
+            "evidence_dataset_locator": evidence_locator,
         }
 
     result = {
@@ -183,6 +188,7 @@ def main() -> int:
     ap.add_argument("--inventory", required=True)
     ap.add_argument("--authority", default="journal_extension/locks/track_a_posttraining_closure_authority_v1.json")
     ap.add_argument("--analysis-source-git-commit", required=True)
+    ap.add_argument("--evidence-target-preflight", required=True)
     ap.add_argument("--output", required=True)
     args = ap.parse_args()
 
@@ -196,9 +202,34 @@ def main() -> int:
     authority = load_json(authority_path)
     inventory_path = Path(args.inventory).resolve()
     inventory = load_json(inventory_path)
+    target_path = Path(args.evidence_target_preflight).resolve()
+    targets = load_json(target_path)
+    if (
+        targets.get("status") != "PASS"
+        or targets.get("gate_kind") != "track_a_posttraining_private_evidence_targets"
+        or targets.get("account_id") != inventory.get("account_id")
+        or targets.get("analysis_source_git_commit") != observed
+        or targets.get("account_inventory_sha256") != sha256_file(inventory_path)
+        or targets.get("all_targets_private") is not True
+        or targets.get("all_targets_owner_bound") is not True
+    ):
+        raise SystemExit("private evidence target preflight does not authorize account readiness")
+    target_states = targets.get("states") or {}
+    inventory_states = inventory.get("states") or {}
+    if set(target_states) != set(inventory_states):
+        raise SystemExit("private evidence target preflight state inventory mismatch")
+    for experiment_id, spec in inventory_states.items():
+        row = target_states[experiment_id]
+        if row.get("dataset_slug") != spec.get("evidence_dataset_locator"):
+            raise SystemExit(f"private evidence target locator mismatch: {experiment_id}")
+        if row.get("authoritative_is_private") is not True:
+            raise SystemExit(f"private evidence target is not authoritatively private: {experiment_id}")
+
     gate = validate_account_inventory(inventory=inventory, authority=authority, repo=repo, analysis_source=observed)
     gate["inventory_file_sha256"] = sha256_file(inventory_path)
     gate["authority_file_sha256"] = sha256_file(authority_path)
+    gate["evidence_target_preflight_sha256"] = sha256_file(target_path)
+    gate["evidence_targets_ready"] = True
     gate["gate_sha256"] = sha256_json({key: value for key, value in gate.items() if key != "gate_sha256"})
     atomic_write_json(args.output, gate)
     print(json.dumps(gate, indent=2, sort_keys=True))
