@@ -473,22 +473,23 @@ def main() -> int:
                         results[experiment_id] = {"status": "FAIL", "stage": stage}
                     return
                 terminal_dirs[stage] = path
-                try:
-                    sync_partial_state(
-                        repo=repo,
-                        state=state,
-                        state_root=state_root,
-                        analysis_sha=analysis_sha,
-                        stage=stage,
-                    )
-                except Exception as exc:
-                    with results_lock:
-                        results[experiment_id] = {
-                            "status": "FAIL_PARTIAL_DURABILITY",
-                            "stage": stage,
-                            "error": f"{type(exc).__name__}: {exc}",
-                        }
-                    return
+                if status == "PASS":
+                    try:
+                        sync_partial_state(
+                            repo=repo,
+                            state=state,
+                            state_root=state_root,
+                            analysis_sha=analysis_sha,
+                            stage=stage,
+                        )
+                    except Exception as exc:
+                        with results_lock:
+                            results[experiment_id] = {
+                                "status": "FAIL_PARTIAL_DURABILITY",
+                                "stage": stage,
+                                "error": f"{type(exc).__name__}: {exc}",
+                            }
+                        return
             if deferred:
                 with results_lock:
                     results[experiment_id] = {"status": "DEFERRED_SESSION_BUDGET"}
