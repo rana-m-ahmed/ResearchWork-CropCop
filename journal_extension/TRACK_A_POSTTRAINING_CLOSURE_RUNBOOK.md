@@ -77,47 +77,65 @@ Resolve the immutable historical states:
 
 For each, resolve the canonical terminal run record, selected checkpoint root/SHA, and any required historical initialization evidence. The exact historical lineage is already encoded in `tracka_v12_historical.py` and the immutable Wave-1/Wave-2 closures. No checkpoint substitution is allowed.
 
-## 6. PT-3 — freeze the 21-state analysis inventory
+## 6. PT-3 — freeze distributed account-local analysis inventories
 
-Create one inventory with:
+Create **one account-local inventory per K1/K2/K3**. Do not centralize private checkpoint bytes across accounts.
+
+Each account inventory records:
 
 - exact closure-analysis SHA;
 - frozen manifest, class map and image root;
 - exact G1A bundle;
-- all 21 run records;
-- all 21 checkpoint roots;
-- recovery certificate for each of the 11 new states;
-- per-state required executor inputs;
-- fixed analysis account/slot placement.
+- only the run records/checkpoint roots the account can actually verify;
+- recovery certificates for continuation states assigned to that account;
+- per-state executor dependencies;
+- fixed account/GPU placement.
 
-Placement must be frozen before any new post-training result is opened. Placement is engineering-only and cannot alter model selection.
+The 11 continuation states are pinned to the Kaggle account that owns their private durability dataset. Historical states may be distributed only after artifact-availability preflight. Freeze the final three-account partition before any new post-training metric is opened. Placement is engineering-only and cannot alter model selection.
 
-## 7. PT-4 — seal `POSTTRAINING_READINESS_GATE`
+For each account run:
+
+```bash
+python journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py \
+  --repo-root . \
+  --inventory /kaggle/working/K1_POSTTRAINING_INVENTORY.json \
+  --analysis-source-git-commit "$CROPCOP_ANALYSIS_SHA" \
+  --output /kaggle/working/K1_POSTTRAINING_ACCOUNT_READINESS.json
+```
+
+Repeat for K2 and K3. Each account gate must locally verify its private selected-checkpoint bytes and identities and emit only public-safe hashes/metadata.
+
+## 7. PT-4 — seal the global `POSTTRAINING_READINESS_GATE`
+
+Collect only the three public-safe account readiness certificates into one aggregation environment. The global gate must **not** require private checkpoint material.
 
 Run:
 
 ```bash
 python journal_extension/scripts/build_tracka_v12_posttraining_readiness.py \
   --repo-root . \
-  --inventory /kaggle/working/TRACKA_V12_POSTTRAINING_INVENTORY.json \
+  --authority journal_extension/locks/track_a_posttraining_closure_authority_v1.json \
+  --account-readiness /evidence/K1_POSTTRAINING_ACCOUNT_READINESS.json \
+  --account-readiness /evidence/K2_POSTTRAINING_ACCOUNT_READINESS.json \
+  --account-readiness /evidence/K3_POSTTRAINING_ACCOUNT_READINESS.json \
   --analysis-source-git-commit "$CROPCOP_ANALYSIS_SHA" \
-  --output /kaggle/working/POSTTRAINING_READINESS_GATE.json
+  --output /evidence/POSTTRAINING_READINESS_GATE.json
 ```
 
-The gate must prove:
+The global gate must prove:
 
-- exactly 21 states = 12 direct + 9 auxiliary;
+- exact account set K1/K2/K3;
+- union is exactly 21 states = 12 direct + 9 auxiliary;
 - exactly 21 unique selected checkpoint SHAs;
-- all selected checkpoint bytes/identities verify;
-- all 11 recovery certificates verify;
+- all 11 continuation recoveries certified;
 - all 10 historical states match immutable lineage;
-- frozen manifest/class-map hashes match;
-- G1A validates;
-- all executor dependencies exist;
-- three-account placement is frozen;
-- V1 test, Track-B predictions and Track-C candidate outcomes remain closed.
+- every private selected checkpoint was locally verified on an authorized account;
+- all three gates share the same analysis source, training source, closure authority and frozen dataset identity;
+- no state appears on two account gates;
+- V1 test, Track-B predictions and Track-C candidate outcomes remain closed;
+- no training/adaptation or optimizer advance occurred.
 
-**No post-training analysis starts unless this gate is PASS.**
+**No post-training analysis starts unless all three account gates and this global gate are PASS.**
 
 ## 8. PT-5 — direct evidence for all 12 candidate states
 
