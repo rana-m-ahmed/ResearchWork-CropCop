@@ -318,6 +318,48 @@ def sync_partial_state(
     return payload
 
 
+def build_public_release(
+    *,
+    state_root: Path,
+    state: dict,
+    stage_dirs: dict[str, Path],
+    sync_cert: Path,
+    completion_path: Path,
+) -> Path:
+    release = state_root / "public_release"
+    if release.exists():
+        shutil.rmtree(release)
+    release.mkdir(parents=True, exist_ok=False)
+
+    sources: list[Path] = [sync_cert, completion_path]
+    if state["role"] == "direct":
+        direct = stage_dirs["direct"]
+        xai = stage_dirs["xai"]
+        sources.extend(
+            [
+                direct / "public_evidence" / "DIRECT_STATE_EVIDENCE_GATE.json",
+                direct / "public_evidence" / "robustness_and_replay.json",
+                direct / "public_evidence" / "efficiency.json",
+                xai / "public_xai" / "XAI_EVIDENCE_GATE.json",
+            ]
+        )
+    elif state["role"] == "auxiliary":
+        auxiliary = stage_dirs["auxiliary"]
+        sources.append(auxiliary / "public_evidence" / "AUXILIARY_STATE_EVIDENCE_GATE.json")
+    else:
+        raise RuntimeError(f"unsupported Track-A publication role: {state['role']}")
+
+    seen = set()
+    for source in sources:
+        if not source.is_file():
+            raise RuntimeError(f"public release source missing: {source}")
+        if source.name in seen:
+            raise RuntimeError(f"public release basename collision: {source.name}")
+        seen.add(source.name)
+        shutil.copy2(source, release / source.name)
+    return release
+
+
 def finalize_state(
     *,
     repo: Path,
@@ -382,6 +424,13 @@ def finalize_state(
     completion["completion_sha256"] = sha256_json(completion)
     completion_path = cert_dir / "POSTTRAINING_STATE_COMPLETION.json"
     atomic_write_json(completion_path, completion)
+    public_release = build_public_release(
+        state_root=state_root,
+        state=state,
+        stage_dirs=stage_dirs,
+        sync_cert=sync_cert,
+        completion_path=completion_path,
+    )
 
     publication_cert = cert_dir / "POSTTRAINING_PUBLICATION_CERTIFICATE.json"
     with publication_lock:
@@ -389,7 +438,7 @@ def finalize_state(
             os.environ.get("PYTHON", "python"),
             str(repo / "journal_extension/scripts/publish_tracka_v12_posttraining_state.py"),
             "--repo-root", str(repo),
-            "--state-root", str(state_root),
+            "--state-root", str(public_release),
             "--analysis-source-git-commit", analysis_sha,
             "--run-id", state["posttraining_public_run_id"],
             "--experiment-id", state["experiment_id"],
