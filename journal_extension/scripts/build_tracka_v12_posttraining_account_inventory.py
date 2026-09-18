@@ -50,6 +50,11 @@ def main() -> int:
         raise SystemExit("materialization catalog schema/account mismatch")
     if catalog.get("analysis_source_git_commit") != observed:
         raise SystemExit("materialization catalog analysis-source mismatch")
+    placement_hash = placement.get("placement_freeze_sha256")
+    placement_clean = dict(placement)
+    placement_clean.pop("placement_freeze_sha256", None)
+    if placement_hash != sha256_json(placement_clean):
+        raise SystemExit("placement freeze self-hash mismatch")
     if placement.get("status") != "PASS" or placement.get("analysis_source_git_commit") != observed:
         raise SystemExit("placement freeze is not PASS for this analysis source")
 
