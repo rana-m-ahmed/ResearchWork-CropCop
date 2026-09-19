@@ -5,11 +5,11 @@
   "public_file_count": 3,
   "public_file_sha256": {
     "AUXILIARY_STATE_EVIDENCE_GATE.json": "9332f03bc30e8d89b9cb952c47acb395e26c62d6fa79ef4d91e6e132940cfb16",
-    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "33034edefd90e91afedaef6fdcbfc717c1422051c262b495bffa530d6dddd8ee",
-    "POSTTRAINING_STATE_COMPLETION.json": "cf7b2f8e1756ec27d5c56b7b87a70dff35d725b8bc29b5829f8bd42d609ce090"
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "cfea2fec5fcfd8164bc3500f3a9c59b9728d897268ef3bdcfd8953d79711a8c6",
+    "POSTTRAINING_STATE_COMPLETION.json": "31f270c2522882c7dd54a0b44b1b77e8c0c8190b45d83fe6f08e4df2713acd30"
   },
   "publication_kind": "track_a_posttraining_state",
-  "publication_manifest_sha256": "a489d17704705df0855f4fa2b10a603569bc559e8b46017e47e7a803a372aade",
+  "publication_manifest_sha256": "7d7dc7b77412330ae3fc4f4068e50ca5b06390d946931797edf72bddbcd76abf",
   "run_id": "TRACKA-POST-r12-mnv4-logits-s2-e08e471cc033",
   "schema_version": "1.0",
   "status": "PASS"
