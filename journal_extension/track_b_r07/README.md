@@ -48,6 +48,15 @@ Required manifest keys:
 
 `v1_validation_root` is the directory **above** the frozen `val/` subtree because the certified manifest paths already begin with `val/`. The core package may contain only that `val/` subtree beneath the root; a sibling `test/`, `v1_test/`, `test_consumed/`, or `DS-V1-TEST-CONSUMED/` directory is a hard packaging failure. `TRACKB_CODE_ATTESTATION_v1.json` binds the load-bearing Track-B and inherited Track-A source files by Git-blob identity, and its SHA-256 is itself frozen in the execution lock. Use `prepare_trackb_core_input.py` to verify these identities and catch the common `val/val/...` packaging mistake before upload.
 
+The execution lock also binds the three authoritative replay records and the DINO factory manifest:
+
+- R07 S1 run record: `0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516`
+- R07 S2 run record: `0e48fdc0907a44042110f146ec27f796ea3d185fad1e2fc008cd1332bfd0ae15`
+- R07 S3 run record: `6ba1f3a7348f5c4ba0347621edef0e75e311b89bd38ff13ec4288cd81cf70050`
+- DINO factory manifest: `df70164ef227878353dde5430e8e0386b8853b53a2b66c20602e4cecd4dab7f1`
+
+For operator use, prefer `trackb_build_core_package.ipynb`. It accepts the already-existing Final-V1, R07-S1/S2/S3, and Secondary-G1-v2 Kaggle datasets, discovers checkpoint/run-record/factory files by authoritative SHA-256, copies only the 16,368-image validation surface, runs `prepare_trackb_core_input.py`, and emits a publishable immutable `role = core` directory. The source dataset locators are frozen in that notebook so checkpoint filenames never need to be guessed manually.
+
 ### 2. `role = historical_compare`
 
 The **safe executable post-closure route** is a development-surface comparison package:
@@ -137,9 +146,10 @@ If that semantic record is absent or fails, Candidate B becomes `EXT-X`; the not
 
 ## Lean input-preparation utilities
 
-The final claim notebook remains one clean end-to-end notebook. Input preparation is intentionally separated because source acquisition and historical comparison indexing are infrastructure, not protected model evaluation. The executable post-closure index is train+validation-only; a full 117,546 representation is accepted only if it already exists from before V1-test closure. The repository contains only four small preparation utilities:
+The final claim notebook remains one clean end-to-end notebook. Input preparation is intentionally separated because source acquisition and historical comparison indexing are infrastructure, not protected model evaluation. The executable post-closure index is train+validation-only; a full 117,546 representation is accepted only if it already exists from before V1-test closure. The repository contains a small, explicit preparation layer:
 
-- `prepare_trackb_core_input.py` — hashes/binds the frozen repository, code attestation, R07 S1/S2/S3, validation-only replay surface, class map, DINO encoder and locks;
+- `trackb_build_core_package.ipynb` + `build_trackb_core_package.py` — assemble the immutable core package from the exact existing Kaggle datasets using hash discovery and validation-only copying;
+- `prepare_trackb_core_input.py` — hashes/binds the assembled repository, code attestation, R07 S1/S2/S3 checkpoints and authoritative run records, validation-only replay surface, class map, DINO encoder/factory and locks;
 - `prepare_trackb_candidate_input.py` — verifies source metadata/counts/semantic gate and creates Candidate A/B input manifests;
 - `prepare_trackb_historical_source_input.py` — deliberately disabled after V1-test closure so the full raw 117,546-image surface cannot be reconstructed by reopening consumed test images;
 - `build_trackb_historical_compare.py` — produces the safe 92,744-image train+validation SHA/pHash/dHash/DINO/ORB comparison package, with an automatic `EXT-S` ceiling.
