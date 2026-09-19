@@ -264,14 +264,22 @@ class TrackBR07Tests(unittest.TestCase):
         )
         self.assertFalse(lock["kaggle"]["protected_inference_network_dependency"])
         self.assertEqual(lock["software"]["timm"], "1.0.26")
+        self.assertEqual(lock["software"]["opencv_python_headless"], "4.13.0.92")
+        self.assertEqual(lock["software"]["kaggle"], "2.2.4")
         bootstrap = lock["runtime_bootstrap"]
-        self.assertEqual(bootstrap["mode"], "ISOLATED_VIRTUAL_ENVIRONMENT")
-        self.assertEqual(bootstrap["pytorch_wheel_index"], "https://download.pytorch.org/whl/cu126")
-        self.assertTrue(bootstrap["live_kernel_torch_replacement_forbidden"])
+        self.assertEqual(bootstrap["mode"], "PROVEN_KAGGLE_LOCK_REPAIR_FRESH_SUBPROCESS")
+        self.assertEqual(bootstrap["python"], "3.12.13")
         self.assertEqual(
-            bootstrap["secrets_handoff"],
-            "PARENT_KAGGLE_KERNEL_TO_CHILD_ENVIRONMENT_ONLY",
+            bootstrap["pip_install_strategy"],
+            "ACTIVE_INTERPRETER_EXACT_LOCK_BEFORE_SCIENTIFIC_IMPORTS",
         )
+        self.assertFalse(bootstrap["venv_required"])
+        self.assertFalse(bootstrap["ensurepip_required"])
+        self.assertEqual(
+            bootstrap["scientific_execution_process"],
+            "FRESH_SUBPROCESS_AFTER_LOCK_REPAIR",
+        )
+        self.assertTrue(bootstrap["parent_kernel_scientific_imports_after_repair_forbidden"])
 
         drifted = dict(lock)
         drifted["automation"] = dict(automation)
@@ -291,7 +299,7 @@ class TrackBR07Tests(unittest.TestCase):
         with self.assertRaises(TrackBError):
             validate_execution_lock(drifted_network)
 
-    def test_secret_loader_prefers_environment_for_isolated_runtime(self):
+    def test_secret_loader_prefers_environment_for_fresh_subprocess_runtime(self):
         key = "TRACKB_TEST_SECRET"
         previous = os.environ.get(key)
         try:
