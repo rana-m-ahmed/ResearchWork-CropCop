@@ -5,14 +5,14 @@
   "public_file_count": 6,
   "public_file_sha256": {
     "DIRECT_STATE_EVIDENCE_GATE.json": "3389359184129e5fcc3f66ce640e20573dd290bb865e0cccece1b95589e6e475",
-    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "ef21e0350cdb1783aca88d530c58f3f09a1c4d06f8e34168b098385f5e943f94",
-    "POSTTRAINING_STATE_COMPLETION.json": "e10e2e5cd89aa65c568a882f17bfd9f874f60dcd47c544aa9589d8b294a77ba8",
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "9a4b87d1f92847eb6e58086c1599f3bf67ace4a8534dc829a511733340a35455",
+    "POSTTRAINING_STATE_COMPLETION.json": "8609de3ffa70c61c957bdacb717d1ae41f64f7f714b63048d5931e610b773062",
     "XAI_EVIDENCE_GATE.json": "f90c74f73db85a7d95340869b122568e1c358a5b50547339cec6589621816128",
     "efficiency.json": "35648b7902bb4cefad4ec289126611242a3e957391e68c378b926e1b48704082",
     "robustness_and_replay.json": "83335a4fca47ca9895b191c38e1b07420e61d73a5682f90aa5d1b9f85cbd6c3f"
   },
   "publication_kind": "track_a_posttraining_state",
-  "publication_manifest_sha256": "3026c694613a73e6b1f6c6eb2918a0b96fa743b4d56334d0a420c8135f502d0a",
+  "publication_manifest_sha256": "5e6e56941541339689bcbb37d3d6d8605e42dece596c5671c7eff338d1cd8163",
   "run_id": "TRACKA-POST-r04-mnv4-direct-s3-e08e471cc033",
   "schema_version": "1.0",
   "status": "PASS"
