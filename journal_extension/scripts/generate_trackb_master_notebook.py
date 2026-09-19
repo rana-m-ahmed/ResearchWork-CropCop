@@ -32,7 +32,7 @@ One-time Kaggle setup:
 
 Do **not** manually attach or publish Track-B input/evidence datasets.
 
-The notebook creates a clean isolated Track-B Python environment under /kaggle/working, installs the frozen scientific stack there (including the official PyTorch 2.12.1 / torchvision 0.27.1 CUDA 12.6 wheels), then runs the automated Track-B controller from that environment. Kaggle's preinstalled Torch stack is deliberately left untouched.
+Kaggle's stock image is allowed to start with a different Torch stack. Before any scientific import, the notebook applies the exact Track-B requirements lock to the active Kaggle interpreter using the same execution pattern already qualified by CropCop Track A. Scientific code is then launched only in a **fresh subprocess**, so stale modules from the notebook process cannot contaminate Track B.
 
 The consumed V1 test remains forbidden. The classifier family/seeds are frozen. GVLiD is the confirmatory field cohort; Irish Potato is the complementary harder stress cohort. Candidate substitution after any external prediction is forbidden.
 """),
@@ -66,17 +66,19 @@ del _value, _secret_client
 print('Required secrets loaded into process environment: PASS')
 """),
         code("""BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'
-VENV_ROOT = WORK / 'trackb_runtime_env'
+LOCKFILE = REPO / 'journal_extension/track_b_r07/requirements-trackb.lock.txt'
 BOOTSTRAP_RECEIPT = WORK / 'TRACKB_RUNTIME_BOOTSTRAP.json'
 
 if not BOOTSTRAP.is_file():
     raise RuntimeError(f'Track-B runtime bootstrap missing: {BOOTSTRAP}')
+if not LOCKFILE.is_file():
+    raise RuntimeError(f'Track-B requirements lock missing: {LOCKFILE}')
 
 subprocess.run(
     [
         sys.executable,
         str(BOOTSTRAP),
-        '--venv-root', str(VENV_ROOT),
+        '--requirements', str(LOCKFILE),
         '--receipt', str(BOOTSTRAP_RECEIPT),
     ],
     cwd=REPO,
@@ -86,18 +88,21 @@ subprocess.run(
 
 bootstrap = json.loads(BOOTSTRAP_RECEIPT.read_text())
 if bootstrap.get('status') != 'PASS':
-    raise RuntimeError('Track-B isolated runtime bootstrap did not PASS')
-VENV_PY = Path(bootstrap['venv_python'])
-if not VENV_PY.is_file():
-    raise RuntimeError(f'Isolated Track-B Python missing: {VENV_PY}')
+    raise RuntimeError('Track-B runtime repair/verification did not PASS')
+if bootstrap.get('scientific_execution_requires_fresh_subprocess') is not True:
+    raise RuntimeError('Track-B runtime receipt does not require a fresh scientific subprocess')
+
 print(json.dumps({
     'runtime_status': bootstrap['status'],
     'runtime_mode': bootstrap['mode'],
-    'python': bootstrap['probe']['python'],
+    'python_expected': bootstrap['python_expected'],
+    'pre_install_drift': bootstrap['pre_install_drift'],
     'versions': bootstrap['probe']['versions'],
+    'torch_runtime_version': bootstrap['probe']['torch_runtime_version'],
     'torch_cuda_version': bootstrap['probe']['torch_cuda_version'],
     'cuda_available': bootstrap['probe']['cuda_available'],
     'cuda_devices': bootstrap['probe']['cuda_devices'],
+    'opencv_runtime_version': bootstrap['probe']['opencv_runtime_version'],
 }, indent=2, sort_keys=True))
 """),
         code("""MASTER = REPO / 'journal_extension/scripts/run_trackb_r07_master.py'
@@ -108,9 +113,12 @@ WORKSPACE = WORK / 'trackb_master'
 if WORKSPACE.exists():
     shutil.rmtree(WORKSPACE)
 
+# IMPORTANT: scientific execution starts in a fresh interpreter after the exact
+# package lock has been repaired. Do not import torch/torchvision/timm in the
+# notebook process before this point.
 subprocess.run(
     [
-        str(VENV_PY),
+        sys.executable,
         str(MASTER),
         '--repo-root', str(REPO),
         '--workspace', str(WORKSPACE),
