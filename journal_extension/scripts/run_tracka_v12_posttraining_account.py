@@ -305,10 +305,34 @@ def seal_state_bundle(state_root: Path, stage_dirs: dict[str, Path], state: dict
     return sealed
 
 
-def run_subprocess(command: list[str], *, cwd: Path) -> None:
-    cp = subprocess.run(command, cwd=cwd, check=False)
+def run_subprocess(
+    command: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str] | None = None,
+) -> None:
+    cp = subprocess.run(command, cwd=cwd, env=env, check=False)
     if cp.returncode != 0:
         raise RuntimeError(f"subprocess failed rc={cp.returncode}: {' '.join(command)}")
+
+
+def publication_subprocess_env() -> dict[str, str]:
+    env = dict(os.environ)
+    overlay = os.environ.get("CROPCOP_TRACKA_PUBLICATION_PYTHONPATH", "").strip()
+    if not overlay:
+        return env
+    root = Path(overlay).resolve()
+    package = root / "cropcop_je"
+    if not root.is_dir() or not package.is_dir() or not (package / "publication.py").is_file():
+        raise RuntimeError(
+            "publication overlay must contain cropcop_je/publication.py: "
+            f"{root}"
+        )
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = os.pathsep.join(
+        [str(root), existing] if existing else [str(root)]
+    )
+    return env
 
 
 def restore_state_evidence(*, repo: Path, state: dict, state_root: Path, analysis_sha: str) -> dict:
@@ -500,7 +524,7 @@ def finalize_state(
             "--run-id", state["posttraining_public_run_id"],
             "--experiment-id", state["experiment_id"],
             "--output", str(publication_cert),
-        ], cwd=repo)
+        ], cwd=repo, env=publication_subprocess_env())
     publication = load_json(publication_cert)
     if publication.get("status") != "PASS":
         raise RuntimeError(f"public-safe evidence publication failed: {state['experiment_id']}")
