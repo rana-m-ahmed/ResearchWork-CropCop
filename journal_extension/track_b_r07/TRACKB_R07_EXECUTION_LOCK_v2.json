@@ -209,6 +209,8 @@
     "private_historical_dataset_slug_template": "{owner}/cropcop-trackb-historical-r07-v2",
     "private_evidence_dataset_slug_template": "{owner}/cropcop-trackb-r07-evidence",
     "kaggle_dataset_owner_mode": "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT",
-    "kaggle_dataset_owner_must_match_active_token_for_create_or_version": true
+    "kaggle_dataset_owner_must_match_active_token_for_create_or_version": true,
+    "github_push_permission_preflight": true,
+    "external_source_reachability_preflight": true
   }
 }
