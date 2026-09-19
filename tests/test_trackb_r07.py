@@ -10,6 +10,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from cropcop_je.trackb_r07 import (
+    CANDIDATE_CONTRACTS,
+    REQUIRED_INPUT_ROLES,
     DINO_FACTORY_MANIFEST_SHA256,
     R07_CHECKPOINTS,
     R07_RUN_RECORDS,
@@ -226,8 +228,82 @@ class TrackBR07Tests(unittest.TestCase):
             with self.assertRaises(TrackBError):
                 verify_code_attestation(root, ap)
 
+    def test_v2_candidate_roles_are_frozen_and_agrivision_is_retired(self):
+        self.assertEqual(REQUIRED_INPUT_ROLES, {"core", "historical_compare", "gvlid_v5", "irish_potato"})
+        self.assertNotIn("agrivision_bd", CANDIDATE_CONTRACTS)
+        self.assertEqual(
+            CANDIDATE_CONTRACTS["gvlid_grape"]["mapping"],
+            {
+                "Black Rot": "grape_black_rot",
+                "Esca": "grape_esca",
+                "Healthy": "grape_healthy",
+                "Leaf Blight": "grape_leaf_blight",
+            },
+        )
+
+    def test_v2_lock_requires_automated_publication_boundaries(self):
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+        validate_execution_lock(lock)
+        automation = lock["automation"]
+        self.assertTrue(automation["single_master_notebook"])
+        self.assertTrue(automation["auto_commit_public_safe_evidence_to_github"])
+        self.assertTrue(automation["auto_archive_complete_restricted_evidence_to_private_kaggle"])
+        self.assertFalse(automation["raw_images_to_github"])
+        self.assertFalse(automation["checkpoints_to_github"])
+        drifted = dict(lock)
+        drifted["automation"] = dict(automation)
+        drifted["automation"]["raw_images_to_github"] = True
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted)
+
+    def test_gvlid_seal_contract_accepts_exact_four_class_scope(self):
+        h = "b" * 64
+        mapping = CANDIDATE_CONTRACTS["gvlid_grape"]["mapping"]
+        payload = {
+            "candidate_id": "gvlid_grape",
+            "scope": "SCOPE-GRAPE-4",
+            "source_doi": "10.17632/wkymf8bhcg.5",
+            "source_version": "5",
+            "source_identity_ok": True,
+            "mapping_ok": True,
+            "unresolved_lineage": True,
+            "known_historical_contributor_relationship": False,
+            "mapping": mapping,
+            "grade": "EXT-S",
+            "claim_mode": "CROSS_DATASET_STRESS",
+            "grade_reasons": ["HISTORICAL_COMPARISON_INCOMPLETE", "UNRESOLVED_LINEAGE"],
+            "sealed_at_utc": "2026-09-19T00:00:00+00:00",
+            "prediction_count_at_seal": 0,
+            "preprocessing": {
+                "entrypoint": "cropcop_je.data.ctc_v2_eval_transform",
+                "config_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+            },
+            "bootstrap_seed": 409883112,
+            "bootstrap_replicates": 5000,
+            "external_family_order_seed": 1936263114,
+            "downstream_authority_sha256": h,
+            "execution_lock_sha256": h,
+            "source_manifest_sha256": h,
+            "source_metadata_record_sha256": h,
+            "mapping_sha256": sha256_json(mapping),
+            "family_graph_sha256": h,
+            "representative_manifest_sha256": h,
+            "exclusion_ledger_sha256": h,
+            "decode_failure_ledger_sha256": h,
+            "historical_compare_input_manifest_sha256": h,
+            "accepted_within_edges_sha256": h,
+            "accepted_historical_edges_sha256": h,
+            "historical_comparison_summary_sha256": h,
+            "within_comparison_summary_sha256": h,
+            "family_support": {label: 50 for label in mapping},
+            "historical_surface_complete": False,
+            "accepted_historical_link_count": 0,
+            "authorized_r07_checkpoint_sha256": R07_CHECKPOINTS,
+        }
+        verify_candidate_seal(build_candidate_seal(payload))
+
     def test_execution_lock_binds_replay_records_and_dino_factory(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v1.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
         validate_execution_lock(lock)
         ids = lock["identities"]
         self.assertEqual(ids["dino_factory_manifest_sha256"], DINO_FACTORY_MANIFEST_SHA256)
@@ -243,7 +319,7 @@ class TrackBR07Tests(unittest.TestCase):
             validate_execution_lock(drifted)
 
     def test_execution_lock_forbids_postclosure_full_raw_rebuild(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v1.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
         validate_execution_lock(lock)
         drifted = dict(lock)
         drifted["historical_compare"] = dict(lock["historical_compare"])
