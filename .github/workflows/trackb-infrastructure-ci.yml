@@ -42,6 +42,7 @@ jobs:
       - name: Regenerate canonical notebooks
         run: |
           python journal_extension/scripts/generate_trackb_core_builder_notebook.py
+          python journal_extension/scripts/generate_trackb_master_notebook.py
           python journal_extension/scripts/generate_trackb_r07_notebook.py
           python journal_extension/scripts/generate_trackb_historical_compare_notebook.py
           git diff --exit-code --             journal_extension/kaggle/trackb_build_core_package.ipynb             journal_extension/kaggle/trackb_r07_end_to_end.ipynb             journal_extension/kaggle/trackb_build_historical_compare.ipynb
