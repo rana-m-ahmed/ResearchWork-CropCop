@@ -102,7 +102,7 @@ def git_blob_sha1(path: str | Path) -> str:
 def verify_code_attestation(repo_root: str | Path, attestation_path: str | Path) -> dict[str, Any]:
     root = Path(repo_root).resolve()
     attestation = load_json(attestation_path)
-    if attestation.get("attestation_id") != "TRACKB_CODE_ATTESTATION_v1":
+    if attestation.get("attestation_id") != "TRACKB_CODE_ATTESTATION_v2":
         raise TrackBError("Track-B code attestation identity mismatch")
     if attestation.get("parent_track_a_closure_commit") != TRACK_A_CLOSURE_COMMIT:
         raise TrackBError("Track-B code attestation parent-closure mismatch")
