@@ -28,6 +28,7 @@ OPENCV_VARIANTS = (
     "opencv-contrib-python-headless",
 )
 EXPECTED_PYTHON = "3.12.13"
+EXPECTED_REQUIREMENTS_BASENAME = "requirements-trackb.lock.txt"
 
 
 class BootstrapError(RuntimeError):
@@ -200,6 +201,11 @@ def bootstrap(requirements: Path, receipt_path: Path) -> dict[str, object]:
         )
     if not requirements.is_file():
         raise BootstrapError(f"Track-B requirements lock missing: {requirements}")
+    if requirements.name != EXPECTED_REQUIREMENTS_BASENAME:
+        raise BootstrapError(
+            f"unexpected Track-B requirements lock name: {requirements.name!r}; "
+            f"expected {EXPECTED_REQUIREMENTS_BASENAME!r}"
+        )
 
     working = Path("/kaggle/working")
     pre = _metadata_snapshot()
