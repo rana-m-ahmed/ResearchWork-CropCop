@@ -41,21 +41,24 @@ def main() -> int:
     args = ap.parse_args()
     root = Path(args.repo_root).resolve()
 
-    authority_path = root / "journal_extension/amendments/track_bc_r07_downstream_v1.json"
-    lock_path = root / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v1.json"
+    authority_path = root / "journal_extension/amendments/track_bc_r07_downstream_v2.json"
+    lock_path = root / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v2.json"
     attestation_path = root / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v1.json"
     final_nb = root / "journal_extension/kaggle/trackb_r07_end_to_end.ipynb"
+    master_nb = root / "journal_extension/kaggle/trackb_r07_master.ipynb"
     core_nb = root / "journal_extension/kaggle/trackb_build_core_package.ipynb"
     hist_nb = root / "journal_extension/kaggle/trackb_build_historical_compare.ipynb"
     runner = root / "journal_extension/scripts/run_trackb_r07.py"
     audit_module = root / "journal_extension/src/cropcop_je/trackb_r07_audit.py"
+    ops_module = root / "journal_extension/src/cropcop_je/trackb_r07_ops.py"
+    master_runner = root / "journal_extension/scripts/run_trackb_r07_master.py"
     core_builder = root / "journal_extension/scripts/build_trackb_core_package.py"
     hist_builder = root / "journal_extension/scripts/build_trackb_historical_compare.py"
     hist_source_prep = root / "journal_extension/scripts/prepare_trackb_historical_source_input.py"
 
     for path in (
-        authority_path, lock_path, attestation_path, final_nb, core_nb, hist_nb, runner,
-        audit_module, core_builder, hist_builder, hist_source_prep,
+        authority_path, lock_path, attestation_path, final_nb, master_nb, core_nb, hist_nb, runner,
+        audit_module, ops_module, master_runner, core_builder, hist_builder, hist_source_prep,
     ):
         if not path.is_file():
             raise TrackBError(f"required Track-B infrastructure file missing: {path.relative_to(root)}")
@@ -71,9 +74,11 @@ def main() -> int:
     attestation = verify_code_attestation(root, attestation_path)
 
     final_info = _compile_notebook(final_nb)
+    master_info = _compile_notebook(master_nb)
     core_info = _compile_notebook(core_nb)
     hist_info = _compile_notebook(hist_nb)
     final_text = final_info.pop("text")
+    master_text = master_info.pop("text")
     core_text = core_info.pop("text")
     hist_text = hist_info.pop("text")
     lowered = final_text.lower()
@@ -108,6 +113,47 @@ def main() -> int:
             raise TrackBError(f"core package builder missing safety/identity guard: {required}")
     if "copytree(image_root" in core_builder_text or "dataset/test" in core_builder_text:
         raise TrackBError("core builder contains a broad or explicit consumed-test copy path")
+
+    for required in (
+        "KAGGLE_API_TOKEN",
+        "CROPCOP_GITHUB_TOKEN",
+        "run_trackb_r07_master.py",
+        "PASS_AUTOMATED_TRACK_B_COMPLETE",
+    ):
+        if required not in master_text:
+            raise TrackBError(f"master notebook missing automation binding: {required}")
+    if "agrivision_v2" in master_text.lower() or "agrivision_bd" in master_text.lower():
+        raise TrackBError("master notebook still references retired Agri-Vision candidate")
+
+    ops_text = ops_module.read_text(encoding="utf-8")
+    for required in (
+        "KAGGLE_API_TOKEN",
+        "CROPCOP_GITHUB_TOKEN",
+        "publish_to_github_branch",
+        "publish_private_kaggle_dataset",
+        "acquire_gvlid_v5",
+        "acquire_irish_potato",
+        "raw_external_images_included",
+    ):
+        if required not in ops_text:
+            raise TrackBError(f"Track-B operations module missing automation/security guard: {required}")
+    if "--public" in ops_text or '"-u"' in ops_text:
+        raise TrackBError("Track-B operations module exposes public Kaggle dataset publication")
+
+    master_runner_text = master_runner.read_text(encoding="utf-8")
+    for required in (
+        "configure_runtime_secrets",
+        "download_kaggle_dataset",
+        "KAGGLE_HISTORICAL_DATASET",
+        "publish_public_trackb_evidence",
+        "publish_private_kaggle_dataset",
+        "gvlid_v5",
+        "irish_potato",
+    ):
+        if required not in master_runner_text:
+            raise TrackBError(f"master controller missing automated operation: {required}")
+    if "agrivision_v2" in master_runner_text.lower() or "agrivision_bd" in master_runner_text.lower():
+        raise TrackBError("master controller still references retired Agri-Vision candidate")
 
     if "build_trackb_historical_compare.py" not in hist_text or "code_attestation" not in hist_text:
         raise TrackBError("historical comparison notebook is not bound to the attested builder")
@@ -152,12 +198,15 @@ def main() -> int:
     ):
         if required not in runner_text:
             raise TrackBError(f"final runner missing safe historical-package gate: {required}")
-    audit_call = runner_text.find('potato = _audit_candidate(')
-    second_audit_call = runner_text.find('agrivision = _audit_candidate(')
+    audit_call = runner_text.find('grape = _audit_candidate(')
+    second_audit_call = runner_text.find('potato = _audit_candidate(')
     firewall = runner_text.find('stage("4 :: prediction firewall")')
-    protected = runner_text.find('"irish_potato": _protected_inference(')
+    protected = runner_text.find('"gvlid_grape": _protected_inference(')
     if min(audit_call, second_audit_call, firewall, protected) < 0 or not (audit_call < second_audit_call < firewall < protected):
-        raise TrackBError("runner chronology no longer guarantees both audits before protected inference")
+        raise TrackBError("runner chronology no longer guarantees both v2 audits before protected inference")
+    for retired in ("agrivision_v2", "agrivision_bd", "Tomato Mosaic -> tomato_mosaic_virus"):
+        if retired.lower() in runner_text.lower():
+            raise TrackBError(f"runner still references retired Track-B v1 candidate surface: {retired}")
 
     result = {
         "schema_version": "1.0",
@@ -167,8 +216,14 @@ def main() -> int:
         "code_attestation_sha256": sha256_file(attestation_path),
         "attested_file_count": len(attestation.get("files", [])),
         "final_notebook": final_info,
+        "master_notebook": master_info,
         "core_builder_notebook": core_info,
         "historical_builder_notebook": hist_info,
+        "single_master_automation_surface": True,
+        "automatic_private_kaggle_archival": True,
+        "automatic_public_safe_github_publication": True,
+        "track_b_v2_candidates": ["gvlid_grape", "irish_potato"],
+        "retired_v1_candidate_absent": True,
         "core_builder_validation_only_surface": True,
         "prediction_blind_audit_module": True,
         "both_candidate_audits_before_protected_inference": True,
