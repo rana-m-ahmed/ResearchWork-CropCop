@@ -114,6 +114,14 @@ def main() -> int:
         raise TrackBError("obsolete full-raw historical source preparer is not fail-closed")
 
     runner_text = runner.read_text(encoding="utf-8")
+    for required in (
+        "declared_hist_count == 92744",
+        '"coverage_scope": "V1_TRAIN_VAL_ONLY"',
+        '"maximum_evidence_grade": "EXT-S"',
+        "full 117,546-image EXT-I route is dormant",
+    ):
+        if required not in runner_text:
+            raise TrackBError(f"final runner missing safe historical-package gate: {required}")
     audit_call = runner_text.find('potato = _audit_candidate(')
     second_audit_call = runner_text.find('agrivision = _audit_candidate(')
     firewall = runner_text.find('stage("4 :: prediction firewall")')
