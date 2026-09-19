@@ -64,6 +64,17 @@ for _name in ('KAGGLE_API_TOKEN', 'CROPCOP_GITHUB_TOKEN'):
     os.environ[_name] = _value
 del _value, _secret_client
 print('Required secrets loaded into process environment: PASS')
+
+# Fail fast on the exact Git transport used by terminal evidence publication.
+# This imports no scientific package and runs before the expensive runtime repair.
+sys.path.insert(0, str(REPO / 'journal_extension' / 'src'))
+from cropcop_je.trackb_r07_ops import verify_github_repository_push_access
+github_preflight = verify_github_repository_push_access(
+    REPO,
+    source_git_sha=HEAD,
+)
+print('GitHub evidence write preflight: PASS')
+print(json.dumps(github_preflight, indent=2, sort_keys=True))
 """),
         code("""BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'
 LOCKFILE = REPO / 'journal_extension/track_b_r07/requirements-trackb.lock.txt'
@@ -134,10 +145,16 @@ receipt = json.loads((OUT / 'TRACKB_AUTOMATION_RECEIPT.json').read_text())
 closure = json.loads((OUT / 'TRACKB_FINAL_CLOSURE.json').read_text())
 qa = json.loads((OUT / 'TRACKB_FINAL_QA.json').read_text())
 
-if receipt.get('status') != 'PASS_AUTOMATED_TRACK_B_COMPLETE':
-    raise RuntimeError('Automation receipt is not terminal PASS')
 if closure.get('status') != 'TRACK_B_CLOSED' or qa.get('status') != 'PASS':
     raise RuntimeError('Track-B terminal scientific closure/QA is not PASS')
+if receipt.get('status') != 'PASS_AUTOMATED_TRACK_B_COMPLETE':
+    if receipt.get('status') == 'TRACK_B_CLOSED_PRIVATE_EVIDENCE_ARCHIVED_GITHUB_PUBLICATION_FAILED':
+        raise RuntimeError(
+            'Track B science is CLOSED and restricted evidence is safely archived, '
+            'but GitHub public-safe publication failed after retries. Do not rerun '
+            'scientific execution; repair GitHub publication using the preserved evidence.'
+        )
+    raise RuntimeError(f"Automation receipt is not terminal PASS: {receipt.get('status')}")
 
 print(json.dumps({
     'automation_status': receipt['status'],
