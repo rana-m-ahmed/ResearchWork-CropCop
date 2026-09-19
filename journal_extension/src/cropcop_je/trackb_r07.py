@@ -173,6 +173,26 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
     dino_pre = lock.get("candidate_generation", {}).get("dino_feature_preprocessing", {})
     if dino_pre.get("entrypoint") != "cropcop_je.data.ctc_v2_eval_transform" or dino_pre.get("ctc_v2_config_sha256") != CTC_V2_CONFIG_SHA256:
         raise TrackBError("DINO audit preprocessing contract drift")
+    historical = lock.get("historical_compare", {})
+    safe = historical.get("safe_postclosure_route", {})
+    expected_safe = {
+        "coverage_scope": "V1_TRAIN_VAL_ONLY",
+        "image_count": 92744,
+        "train_image_count": 76376,
+        "validation_image_count": 16368,
+        "v1_test_image_bytes_accessed": False,
+        "maximum_evidence_grade": "EXT-S",
+    }
+    for key, value in expected_safe.items():
+        if safe.get(key) != value:
+            raise TrackBError(f"safe post-closure historical route drift: {key}")
+    full = historical.get("full_ext_i_route", {})
+    if (
+        int(full.get("image_count", -1)) != 117546
+        or full.get("authorization") != "RECOVERED_PRE_TEST_CRYPTOGRAPHIC_REPRESENTATION_ONLY"
+        or full.get("raw_postclosure_rebuild_forbidden") is not True
+    ):
+        raise TrackBError("full EXT-I historical representation policy drift")
     if len(str(lock.get("code_attestation_sha256", ""))) != 64:
         raise TrackBError("Track-B execution lock does not bind a code attestation")
 
