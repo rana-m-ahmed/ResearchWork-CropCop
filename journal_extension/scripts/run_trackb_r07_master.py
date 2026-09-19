@@ -5,6 +5,7 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import _bootstrap  # noqa: F401
@@ -209,16 +210,22 @@ def main() -> int:
 
     stage("0 :: secrets and platform")
     secret_presence = configure_runtime_secrets()
-    kaggle_cli = ensure_kaggle_cli()
-    github_permission = verify_github_repository_push_access("rana-m-ahmed/ResearchWork-CropCop")
-    external_source_probe = probe_external_sources()
-    kaggle_owner = verify_authenticated_kaggle_owner(requested_kaggle_owner)
-    source_access = verify_kaggle_source_access(SOURCE_DATASETS)
-    historical_dataset = historical_dataset_slug(kaggle_owner)
-    evidence_dataset = evidence_dataset_slug(kaggle_owner)
-    source_git_sha = run_checked(["git", "-C", str(repo_root), "rev-parse", "HEAD"], timeout=120).stdout.strip()
+    source_git_sha = run_checked(
+        ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+        timeout=120,
+    ).stdout.strip()
     if not source_git_sha:
         raise TrackBOpsError("could not bind repository HEAD")
+    github_permission = verify_github_repository_push_access(
+        repo_root,
+        source_git_sha=source_git_sha,
+    )
+    kaggle_cli = ensure_kaggle_cli()
+    kaggle_owner = verify_authenticated_kaggle_owner(requested_kaggle_owner)
+    source_access = verify_kaggle_source_access(SOURCE_DATASETS)
+    external_source_probe = probe_external_sources()
+    historical_dataset = historical_dataset_slug(kaggle_owner)
+    evidence_dataset = evidence_dataset_slug(kaggle_owner)
     receipt = {
         "schema_version": "2.0",
         "controller": "TRACKB_R07_MASTER_v2",
@@ -322,16 +329,7 @@ def main() -> int:
     if closure.get("status") != "TRACK_B_CLOSED" or qa.get("status") != "PASS":
         raise TrackBOpsError("runner returned without terminal Track-B QA/closure")
 
-    stage("7 :: safe GitHub evidence publication")
-    github_receipt = publish_public_trackb_evidence(
-        repo_root=repo_root,
-        source_git_sha=source_git_sha,
-        output_root=output_root,
-    )
-    receipt["github_public_evidence"] = github_receipt
-    print(json.dumps(github_receipt, indent=2), flush=True)
-
-    stage("8 :: restricted evidence archive to private Kaggle")
+    stage("7 :: restricted evidence archive to private Kaggle")
     restricted = prepare_private_evidence_folder(output_root, workspace / "restricted_archive")
     private_receipt = publish_private_kaggle_dataset(
         folder=restricted,
@@ -343,6 +341,62 @@ def main() -> int:
     receipt["private_kaggle_evidence"] = private_receipt
     receipt["closure_sha256"] = closure["closure_sha256"]
     receipt["final_qa_sha256"] = qa["qa_sha256"]
+    receipt["scientific_closure_durable_before_github_publication"] = True
+
+    # Persist a checkpoint receipt before the non-scientific publication layer.
+    receipt["status"] = "TRACK_B_CLOSED_PRIVATE_EVIDENCE_ARCHIVED"
+    receipt["github_public_evidence"] = None
+    (output_root / "TRACKB_AUTOMATION_RECEIPT.json").write_text(
+        json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
+    )
+
+    stage("8 :: safe GitHub evidence publication")
+    github_receipt = None
+    github_errors = []
+    for attempt, delay in enumerate((0, 5, 15, 30), start=1):
+        if delay:
+            time.sleep(delay)
+        try:
+            github_receipt = publish_public_trackb_evidence(
+                repo_root=repo_root,
+                source_git_sha=source_git_sha,
+                output_root=output_root,
+            )
+            break
+        except Exception as exc:
+            message = redact(str(exc))
+            github_errors.append(
+                {
+                    "attempt": attempt,
+                    "error_type": type(exc).__name__,
+                    "message": message[-1800:],
+                }
+            )
+            print(
+                f"GitHub evidence publication attempt {attempt}/4 failed: "
+                f"{type(exc).__name__}: {message[-600:]}",
+                flush=True,
+            )
+
+    if github_receipt is None:
+        receipt["github_publication_errors"] = github_errors
+        receipt["completed_at_utc"] = utc_now()
+        receipt["final_disk_gb"] = disk_gb(workspace)
+        receipt["status"] = "TRACK_B_CLOSED_PRIVATE_EVIDENCE_ARCHIVED_GITHUB_PUBLICATION_FAILED"
+        receipt["manual_publication_steps_required"] = 1
+        (output_root / "TRACKB_AUTOMATION_RECEIPT.json").write_text(
+            json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
+        )
+        raise TrackBOpsError(
+            "Track B scientific closure is complete and restricted evidence is safely "
+            "archived on private Kaggle, but GitHub public-safe evidence publication "
+            "failed after 4 attempts. Do not rerun science; repair GitHub connectivity/"
+            "credential and publish from the preserved closure evidence."
+        )
+
+    receipt["github_public_evidence"] = github_receipt
+    print(json.dumps(github_receipt, indent=2), flush=True)
+
     receipt["completed_at_utc"] = utc_now()
     receipt["final_disk_gb"] = disk_gb(workspace)
     receipt["status"] = "PASS_AUTOMATED_TRACK_B_COMPLETE"
