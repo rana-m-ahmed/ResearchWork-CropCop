@@ -7,6 +7,11 @@
       "path": "journal_extension/configs/common/ctc_v2.json"
     },
     {
+      "git_blob_sha1": "89fc1926dca0b9862c07ce8d5744b78ccfa7e077",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/kaggle/trackb_build_core_package.ipynb"
+    },
+    {
       "git_blob_sha1": "87f8f63893ad837520cb954c52c04799122c566a",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/kaggle/trackb_build_historical_compare.ipynb"
@@ -20,6 +25,11 @@
       "git_blob_sha1": "a10d813c8b64762bab3e3d5cb683d5df66243f03",
       "origin": "parent_track_a_closure",
       "path": "journal_extension/scripts/_bootstrap.py"
+    },
+    {
+      "git_blob_sha1": "894fb34db359fba5fa41afb1d18113c3ea4aac89",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/scripts/build_trackb_core_package.py"
     },
     {
       "git_blob_sha1": "9b5872fa7b8788a556e21a27d34ce583bccddded",
@@ -47,7 +57,7 @@
       "path": "journal_extension/scripts/run_trackb_r07.py"
     },
     {
-      "git_blob_sha1": "ef718d49376c9d456157cd2410cb11a1e27f9c9e",
+      "git_blob_sha1": "f48409eb3a94e4afa15ced124592beeab7bac11f",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/validate_trackb_infrastructure.py"
     },
@@ -112,11 +122,6 @@
       "path": "journal_extension/src/cropcop_je/tracka_v12_posttraining.py"
     },
     {
-      "git_blob_sha1": "3d54303c42cc478a2ce1e9a2284da2ceb171afe7",
-      "origin": "track_b_infrastructure",
-      "path": "journal_extension/src/cropcop_je/trackb_r07.py"
-    },
-    {
       "git_blob_sha1": "c83711c239585cf2466236f7a326db8a16b26463",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/src/cropcop_je/trackb_r07_analysis.py"
@@ -125,6 +130,11 @@
       "git_blob_sha1": "84aff832cd3df98cb57949e4c6b68fcc92f800dc",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/src/cropcop_je/trackb_r07_audit.py"
+    },
+    {
+      "git_blob_sha1": "3d54303c42cc478a2ce1e9a2284da2ceb171afe7",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/src/cropcop_je/trackb_r07.py"
     },
     {
       "git_blob_sha1": "5503f289a27fc65f2259745ed9ef8b1794f56329",
@@ -140,5 +150,5 @@
   "hash_algorithm": "git_blob_sha1",
   "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
   "schema_version": "1.0",
-  "scope": "load-bearing Track-B claim execution, safe post-closure development-surface historical comparison build, input preparation, and canonical Kaggle notebooks"
+  "scope": "load-bearing Track-B claim execution, deterministic core assembly, safe post-closure development-surface historical comparison build, input preparation, and canonical Kaggle notebooks"
 }
