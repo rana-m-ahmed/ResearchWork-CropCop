@@ -36,6 +36,7 @@ from cropcop_je.trackb_r07_ops import (
     utc_now,
     verify_authenticated_kaggle_owner,
     verify_github_repository_push_access,
+    verify_kaggle_source_access,
 )
 
 
@@ -212,6 +213,7 @@ def main() -> int:
     github_permission = verify_github_repository_push_access("rana-m-ahmed/ResearchWork-CropCop")
     external_source_probe = probe_external_sources()
     kaggle_owner = verify_authenticated_kaggle_owner(requested_kaggle_owner)
+    source_access = verify_kaggle_source_access(SOURCE_DATASETS)
     historical_dataset = historical_dataset_slug(kaggle_owner)
     evidence_dataset = evidence_dataset_slug(kaggle_owner)
     source_git_sha = run_checked(["git", "-C", str(repo_root), "rev-parse", "HEAD"], timeout=120).stdout.strip()
@@ -226,18 +228,12 @@ def main() -> int:
         "kaggle_cli": kaggle_cli,
         "github_permission_preflight": github_permission,
         "external_source_preflight": external_source_probe,
+        "kaggle_source_access_preflight": source_access,
         "initial_disk_gb": disk_gb(workspace),
         "kaggle_owner": kaggle_owner,
         "protected_external_predictions_before_controller": False,
     }
     print(json.dumps({k: v for k, v in receipt.items() if k != "secret_presence"} | {"secret_presence": secret_presence}, indent=2))
-
-    inaccessible = [slug for slug in SOURCE_DATASETS.values() if not kaggle_dataset_exists(slug)]
-    if inaccessible:
-        raise TrackBOpsError(
-            "active Kaggle token cannot access all frozen Track-B source datasets; "
-            f"fix dataset sharing/token account before GPU work: {inaccessible}"
-        )
 
     stage("1 :: automatic owned/private source acquisition")
     source_roots: dict[str, Path] = {}
