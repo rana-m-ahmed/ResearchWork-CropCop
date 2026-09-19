@@ -385,7 +385,7 @@ def _audit_candidate(
 
     mapped_source_labels = set(mapping)
     mapped_records = [r for r in records if r.source_label in mapped_source_labels]
-    if candidate_id == "irish_potato" and any(label not in mapped_source_labels for _path, label in all_items):
+    if candidate_id in {"irish_potato", "gvlid_grape"} and any(label not in mapped_source_labels for _path, label in all_items):
         source_ok = False
     mapping_ok = semantic_ok and len(set(mapping.values())) == len(mapping) and all(target in class_map for target in mapping.values())
 
@@ -946,25 +946,25 @@ def main() -> int:
     dino_model, dino_identity = _load_dino(core)
     atomic_write_json(output_root / "dino_audit_encoder_identity.json", dino_identity)
 
-    potato_mapping = lock["candidate_a"]["mapping"]
-    agrivision_mapping = lock["candidate_b"]["mapping"]
+    grape_mapping = lock["candidate_a"]["mapping"]
+    potato_mapping = lock["candidate_b"]["mapping"]
+    grape = _audit_candidate(
+        candidate_id="gvlid_grape",
+        bundle=inputs["gvlid_v5"], historical_bundle=historical, core_bundle=core,
+        output_root=output_root, class_map=class_map, mapping=grape_mapping,
+        expected_count=3477, expected_doi="10.17632/wkymf8bhcg.5", expected_version="5",
+        eligible_subtree=None, semantic_gate_required=False, scope=lock["candidate_a"]["scope"],
+        expected_label_support=None,
+        workers=args.workers, device=args.device,
+        dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
+    )
     potato = _audit_candidate(
         candidate_id="irish_potato",
         bundle=inputs["irish_potato"], historical_bundle=historical, core_bundle=core,
         output_root=output_root, class_map=class_map, mapping=potato_mapping,
         expected_count=58709, expected_doi="10.5281/zenodo.8286529", expected_version="01",
-        eligible_subtree=None, semantic_gate_required=False, scope=lock["candidate_a"]["scope"],
-        expected_label_support=lock["candidate_a"].get("expected_source_support"),
-        workers=args.workers, device=args.device,
-        dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
-    )
-    agrivision = _audit_candidate(
-        candidate_id="agrivision_bd",
-        bundle=inputs["agrivision_v2"], historical_bundle=historical, core_bundle=core,
-        output_root=output_root, class_map=class_map, mapping=agrivision_mapping,
-        expected_count=5266, expected_doi="10.17632/8t6k37ztxc.2", expected_version="2",
-        eligible_subtree="Original_Images", semantic_gate_required=True, scope=lock["candidate_b"]["scope"],
-        expected_label_support=lock["candidate_b"].get("expected_mapped_source_support"),
+        eligible_subtree=None, semantic_gate_required=False, scope=lock["candidate_b"]["scope"],
+        expected_label_support=lock["candidate_b"].get("expected_source_support"),
         workers=args.workers, device=args.device,
         dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
     )
@@ -973,26 +973,26 @@ def main() -> int:
     torch.cuda.empty_cache()
 
     stage("4 :: prediction firewall")
-    for candidate in (potato, agrivision):
+    for candidate in (grape, potato):
         verify_candidate_seal(candidate["seal"])
     firewall = {
         "status": "PASS",
         "authority_id": AUTHORITY_ID,
         "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
         "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
-        "candidate_terminal_grades": {potato["candidate_id"]: potato["grade"], agrivision["candidate_id"]: agrivision["grade"]},
-        "candidate_seal_sha256": {potato["candidate_id"]: potato["seal"]["seal_sha256"], agrivision["candidate_id"]: agrivision["seal"]["seal_sha256"]},
+        "candidate_terminal_grades": {grape["candidate_id"]: grape["grade"], potato["candidate_id"]: potato["grade"]},
+        "candidate_seal_sha256": {grape["candidate_id"]: grape["seal"]["seal_sha256"], potato["candidate_id"]: potato["seal"]["seal_sha256"]},
         "external_predictions_before_firewall": 0,
         "v1_test_accessed": False,
         "all_three_r07_checkpoints_bound": True,
     }
     atomic_write_json(output_root / "TRACKB_PREDICTION_FIREWALL.json", firewall)
 
+    _inject_image_paths(grape, inputs["gvlid_v5"])
     _inject_image_paths(potato, inputs["irish_potato"])
-    _inject_image_paths(agrivision, inputs["agrivision_v2"])
     results = {
+        "gvlid_grape": _protected_inference(grape, core, class_map, output_root, args.device),
         "irish_potato": _protected_inference(potato, core, class_map, output_root, args.device),
-        "agrivision_bd": _protected_inference(agrivision, core, class_map, output_root, args.device),
     }
 
     stage("7 :: independent closure QA")
