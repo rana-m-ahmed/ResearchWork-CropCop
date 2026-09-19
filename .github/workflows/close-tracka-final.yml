@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - tracka-final-closure-20260919
+  pull_request:
+    branches:
+      - tracka-posttraining-closure-prep-20260918
+    paths:
+      - '.github/workflows/close-tracka-final.yml'
   workflow_dispatch:
 
 permissions:
