@@ -133,6 +133,12 @@ def main() -> int:
         raise TrackBError("master notebook does not use the proven active-interpreter lock-repair path")
     if "VENV_PY" in master_text or "trackb_runtime_env" in master_text:
         raise TrackBError("master notebook still exposes the failed venv execution path")
+    if "verify_github_repository_push_access" not in master_text:
+        raise TrackBError("master notebook lacks fail-fast Git write preflight")
+    git_preflight_pos = master_text.find("verify_github_repository_push_access")
+    runtime_bootstrap_pos = master_text.find("bootstrap_trackb_runtime.py")
+    if min(git_preflight_pos, runtime_bootstrap_pos) < 0 or git_preflight_pos > runtime_bootstrap_pos:
+        raise TrackBError("GitHub write preflight must execute before runtime package repair")
 
     ops_text = ops_module.read_text(encoding="utf-8")
     for required in (
@@ -155,6 +161,17 @@ def main() -> int:
             raise TrackBError(f"Track-B operations module missing automation/security guard: {required}")
     if "--public" in ops_text or '"-u"' in ops_text:
         raise TrackBError("Track-B operations module exposes public Kaggle dataset publication")
+    for required in (
+        '"push", "--dry-run"',
+        "GIT_PUSH_DRY_RUN_NO_REMOTE_REF_CREATED",
+        "GIT_ASKPASS_REQUIRE",
+        "credential.helper",
+        "_classify_github_push_failure",
+    ):
+        if required not in ops_text:
+            raise TrackBError(f"GitHub write preflight missing exact Git-transport guard: {required}")
+    if "api.github.com/repos/" in ops_text:
+        raise TrackBError("Track-B GitHub write preflight regressed to REST-only permission probing")
     if '_safe_extract_zip(archive, data_root / class_name)' in ops_text:
         raise TrackBError("Irish Potato acquisition still trusts archive-internal directory layout")
 
@@ -205,6 +222,17 @@ def main() -> int:
             raise TrackBError(f"master controller missing automated operation: {required}")
     if "agrivision_v2" in master_runner_text.lower() or "agrivision_bd" in master_runner_text.lower():
         raise TrackBError("master controller still references retired Agri-Vision candidate")
+    archive_pos = master_runner_text.find('stage("7 :: restricted evidence archive to private Kaggle")')
+    github_pos = master_runner_text.find('stage("8 :: safe GitHub evidence publication")')
+    if min(archive_pos, github_pos) < 0 or archive_pos > github_pos:
+        raise TrackBError("private evidence must be durably archived before GitHub publication")
+    for required in (
+        "TRACK_B_CLOSED_PRIVATE_EVIDENCE_ARCHIVED_GITHUB_PUBLICATION_FAILED",
+        "for attempt, delay in enumerate((0, 5, 15, 30), start=1)",
+        "scientific_closure_durable_before_github_publication",
+    ):
+        if required not in master_runner_text:
+            raise TrackBError(f"master controller missing publication durability guard: {required}")
     if '"--kaggle-owner", default=KAGGLE_OWNER_DEFAULT' not in master_runner_text:
         raise TrackBError("master controller does not expose the authenticated-owner policy surface")
     automation = lock.get("automation", {})
@@ -288,6 +316,10 @@ def main() -> int:
         "proven_kaggle_lock_repair_bootstrap": True,
         "automatic_private_kaggle_archival": True,
         "automatic_public_safe_github_publication": True,
+        "git_write_preflight_uses_publication_transport": True,
+        "git_write_preflight_before_runtime_repair": True,
+        "private_evidence_archived_before_github_publication": True,
+        "github_publication_retry_attempts": 4,
         "track_b_v2_candidates": ["gvlid_grape", "irish_potato"],
         "retired_v1_candidate_absent": True,
         "core_builder_validation_only_surface": True,
