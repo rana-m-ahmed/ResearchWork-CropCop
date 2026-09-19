@@ -1,0 +1,144 @@
+{
+  "attestation_id": "TRACKB_CODE_ATTESTATION_v1",
+  "files": [
+    {
+      "git_blob_sha1": "517d6fcc38e3a8e480fb1edcd97bac87907c5b5c",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/configs/common/ctc_v2.json"
+    },
+    {
+      "git_blob_sha1": "bedb7fe7c480cf41c72c10965f42adc107d637e1",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/kaggle/trackb_build_historical_compare.ipynb"
+    },
+    {
+      "git_blob_sha1": "b4aa0ee1c47614c2f2d7d0e6e04fac1f7ab8a251",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/kaggle/trackb_r07_end_to_end.ipynb"
+    },
+    {
+      "git_blob_sha1": "a10d813c8b64762bab3e3d5cb683d5df66243f03",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/scripts/_bootstrap.py"
+    },
+    {
+      "git_blob_sha1": "8ca7a4eaa4792f60ffc63a10f3d781476ddb209a",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/scripts/build_trackb_historical_compare.py"
+    },
+    {
+      "git_blob_sha1": "6cd8e2a508441acce08b045461e5e5eb1e2bb885",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/scripts/prepare_trackb_candidate_input.py"
+    },
+    {
+      "git_blob_sha1": "c781dd660774d831b41214c97e8f8a1ba8140c7f",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/scripts/prepare_trackb_core_input.py"
+    },
+    {
+      "git_blob_sha1": "4bc9537a7421dae93ec18c7cd0bc9ff8a7a42231",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/scripts/prepare_trackb_historical_source_input.py"
+    },
+    {
+      "git_blob_sha1": "3cbd66479a31ec6142fc7b0dec368a17c64cdc9f",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/scripts/run_trackb_r07.py"
+    },
+    {
+      "git_blob_sha1": "8bf765e34b46d9f3cf9bb94aefb4ff445f3e74fe",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/scripts/validate_trackb_infrastructure.py"
+    },
+    {
+      "git_blob_sha1": "600a4f401a4836ee856764317bf8bc8eb2228280",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/atomic_io.py"
+    },
+    {
+      "git_blob_sha1": "f30744db5b1fdddd917052eea9b0db0b3c8b02b4",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/checkpointing.py"
+    },
+    {
+      "git_blob_sha1": "9871ece382e0345bcab2e832d3116611855c3de7",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/data.py"
+    },
+    {
+      "git_blob_sha1": "121834f7f573d0818ac914b67e290cc4f20546ed",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/frozen_v1_manifest.py"
+    },
+    {
+      "git_blob_sha1": "94aa6262b36a72903053a1c8376023f541afaedd",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/g1.py"
+    },
+    {
+      "git_blob_sha1": "d31dda0c7f900c4d4b648c970d4ea299d7d4ef67",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/hashing.py"
+    },
+    {
+      "git_blob_sha1": "c7db1155de1621e751c4bdbad7e9c4096ab06746",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/models.py"
+    },
+    {
+      "git_blob_sha1": "9785a87db41a534f6bba08d62127eadf564e19fa",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/smoke_handoff.py"
+    },
+    {
+      "git_blob_sha1": "00120944a069f2c70d9affe11727f456878259a1",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/tensor_identity.py"
+    },
+    {
+      "git_blob_sha1": "da16543f5140b26390b5326ae5a66d2ed921feb5",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/tracka_v12_analysis.py"
+    },
+    {
+      "git_blob_sha1": "f8b929e3a459d038120a02005f2631f08a49e94e",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/tracka_v12_evidence.py"
+    },
+    {
+      "git_blob_sha1": "0f51992fc0d378e52a98361841be18cdd5c6b9cd",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/src/cropcop_je/tracka_v12_posttraining.py"
+    },
+    {
+      "git_blob_sha1": "b6eca593d3e181f1fe0f3efbf81220c99b16245e",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/src/cropcop_je/trackb_r07.py"
+    },
+    {
+      "git_blob_sha1": "c83711c239585cf2466236f7a326db8a16b26463",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/src/cropcop_je/trackb_r07_analysis.py"
+    },
+    {
+      "git_blob_sha1": "84aff832cd3df98cb57949e4c6b68fcc92f800dc",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/src/cropcop_je/trackb_r07_audit.py"
+    },
+    {
+      "git_blob_sha1": "5503f289a27fc65f2259745ed9ef8b1794f56329",
+      "origin": "parent_track_a_closure",
+      "path": "journal_extension/teacher_factory/historical_dino_tiny.py"
+    },
+    {
+      "git_blob_sha1": "44eaad1a7dae34fd3b237cef33d81122534883fd",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/track_b_r07/requirements-trackb.lock.txt"
+    }
+  ],
+  "hash_algorithm": "git_blob_sha1",
+  "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+  "schema_version": "1.0",
+  "scope": "load-bearing Track-B claim execution, historical-comparison build, input preparation, and canonical Kaggle notebooks"
+}

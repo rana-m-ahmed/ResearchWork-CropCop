@@ -1,0 +1,10 @@
+# CropCop Track B R07 external-validation runtime.
+# Core versions inherit the frozen Track-A stack; OpenCV is the only added audit dependency.
+torch==2.12.1
+torchvision==0.27.1
+numpy==2.5.2
+Pillow==12.3.0
+transformers==5.0.0
+huggingface-hub==1.30.0
+safetensors==0.8.0
+opencv-python-headless==4.12.0.88

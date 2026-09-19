@@ -1,0 +1,85 @@
+{
+  "audit_encoder": {
+    "checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+    "classifier_outputs_forbidden": true,
+    "identity": "historical DINOv3 ConvNeXt-Tiny reference",
+    "role": "duplicate_family_audit_only"
+  },
+  "authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v1",
+  "dataset": {
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "name": "CropCop_Final_v1",
+    "v1_test_status": "CLOSED_FOR_TRACK_B"
+  },
+  "downstream_separation": {
+    "track_b_and_track_c_protected_results_cannot_reopen_model_or_seed_selection": true,
+    "track_b_evaluates_all_three_frozen_r07_states": true,
+    "track_c_uses_single_preselected_r07_s1_representative": true
+  },
+  "historical_mobile_artifact": {
+    "pte_sha256": "7c70d0f307f0d9578310600913cb8ff171b294ae4de0813f7cd1d6a53628bdf1",
+    "role": "historical_preprint_context_only",
+    "track_b_classifier": false
+  },
+  "parent_scientific_authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "parent_scientific_authority_sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74",
+  "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+  "parent_track_a_final_audit_self_hash": "1c7d98fa47a12ae6eaa53e1c6e91b4e6eef2d04bb717c2d58c7ae2ebae2b51c6",
+  "preserves": [
+    "prediction-blind external candidate audit",
+    "source/version/license binding",
+    "historical-source exclusion",
+    "exact/near-family audit",
+    "complete historical comparison requirement for EXT-I",
+    "deterministic family representatives",
+    "EXT-I/EXT-S/EXT-X evidence grades",
+    "candidate seal before classifier inference",
+    "native 120-way classifier output",
+    "no mapped-subset logit renormalization",
+    "family-level bootstrap",
+    "negative and inconclusive result retention"
+  ],
+  "schema_version": "1.0",
+  "selected_scientific_family": "R07",
+  "status": "ACTIVE",
+  "supersedes_only": [
+    "historical rule requiring the MobileNetV4/PTE lineage as the primary Track-B classifier",
+    "historical Track-B final-performance IDs tied to the PTE lineage"
+  ],
+  "track_b_classifier_states": {
+    "R07-S1": {
+      "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+      "experiment_id": "R07-CNXTT-CONTEXT-S1",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01"
+    },
+    "R07-S2": {
+      "checkpoint_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
+      "experiment_id": "R07-CNXTT-CONTEXT-S2",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S2-56023042e577-A01"
+    },
+    "R07-S3": {
+      "checkpoint_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37",
+      "experiment_id": "R07-CNXTT-CONTEXT-S3",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S3-56023042e577-A01"
+    }
+  },
+  "track_b_rules": {
+    "all_three_r07_seeds_required": true,
+    "candidate_shopping_forbidden": true,
+    "mapping_change_after_prediction_forbidden": true,
+    "new_training_forbidden": true,
+    "seed_replacement_forbidden": true,
+    "track_b_results_cannot_reopen_architecture_selection": true,
+    "track_c_feedback_into_track_b_forbidden": true,
+    "v1_test_access_forbidden": true
+  },
+  "track_c_deployment_representative": {
+    "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "experiment_id": "R07-CNXTT-CONTEXT-S1",
+    "selection_basis": "frozen Track-A development evidence before any Track-B/Track-C protected outcome",
+    "state": "R07-S1",
+    "track_b_results_may_change_representative": false,
+    "track_c_results_may_change_representative": false
+  }
+}

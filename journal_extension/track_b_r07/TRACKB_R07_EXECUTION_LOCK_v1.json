@@ -1,0 +1,171 @@
+{
+  "authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v1",
+  "bootstrap": {
+    "interval": "percentile_95",
+    "no_new_nhst_family": true,
+    "replicates": 5000,
+    "same_resample_indices_for_all_three_seeds": true,
+    "seed": 409883112,
+    "stratify_within_mapped_class": true,
+    "unit": "family_representative"
+  },
+  "candidate_a": {
+    "doi": "10.5281/zenodo.8286529",
+    "expected_original_images": 58709,
+    "expected_source_support": {
+      "earlyblt": 17772,
+      "healthy": 20438,
+      "lateblt": 20499
+    },
+    "id": "irish_potato",
+    "mapping": {
+      "earlyblt": "potato_early_blight",
+      "healthy": "potato_healthy",
+      "lateblt": "potato_late_blight"
+    },
+    "scope": "SCOPE-POTATO-3",
+    "version": "01"
+  },
+  "candidate_b": {
+    "doi": "10.17632/8t6k37ztxc.2",
+    "eligible_subtree": "Original_Images",
+    "expected_mapped_source_support": {
+      "Papaya Healthy Leaf": 189,
+      "Tomato Healthy": 288,
+      "Tomato Mosaic": 195
+    },
+    "expected_original_images": 5266,
+    "id": "agrivision_bd",
+    "mapping": {
+      "Papaya Healthy Leaf": "papaya_healthy_leaf",
+      "Tomato Healthy": "tomato_healthy",
+      "Tomato Mosaic": "tomato_mosaic_virus"
+    },
+    "mapping_failure_action": "EXT-X",
+    "scope": "SCOPE-TOMATO-PAPAYA-3",
+    "tomato_mosaic_semantic_verification_required": true,
+    "version": "2"
+  },
+  "candidate_generation": {
+    "dhash": {
+      "bits": 64,
+      "hamming_max": 10,
+      "implementation": "9x8 EXIF-aware grayscale LANCZOS; adjacent horizontal comparison"
+    },
+    "dino_feature_preprocessing": {
+      "ctc_v2_config_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+      "entrypoint": "cropcop_je.data.ctc_v2_eval_transform",
+      "source_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+      "status": "PROSPECTIVELY_FROZEN_TRACKB_IMPLEMENTATION_OF_03R_DETERMINISTIC_EVAL_PREPROCESSING"
+    },
+    "dino_top_k": 50,
+    "exact_raw_sha256": true,
+    "phash": {
+      "bits": 64,
+      "hamming_max": 12,
+      "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
+    }
+  },
+  "code_attestation_sha256": "51bf5e71c114d2d2a11406548dea41842fa658c9012b22ac1f168f859fc644d3",
+  "experiment_ids": [
+    "TB2-AUDIT-POTATO",
+    "TB2-AUDIT-AGRIVISION",
+    "TB2-R07-POTATO-S1",
+    "TB2-R07-POTATO-S2",
+    "TB2-R07-POTATO-S3",
+    "TB2-R07-AGRIVISION-S1",
+    "TB2-R07-AGRIVISION-S2",
+    "TB2-R07-AGRIVISION-S3",
+    "TB2-ANALYSIS-POTATO",
+    "TB2-ANALYSIS-AGRIVISION",
+    "TB2-FINAL-CLOSURE"
+  ],
+  "external_family_order_seed": 1936263114,
+  "final_notebook_policy": {
+    "audit_both_candidates_before_any_external_r07_forward_pass": true,
+    "classifier_object_creation_before_candidate_terminal_audits": false,
+    "git_push_from_notebook": false,
+    "output_root": "/kaggle/working/trackb_r07",
+    "single_clean_notebook": true,
+    "technical_retry_policy": "rerun the unchanged frozen notebook/configuration from the beginning"
+  },
+  "geometric_acceptance": {
+    "bfmatcher_norm": "HAMMING",
+    "homography_ransac_reprojection_px": 5.0,
+    "lowe_ratio": 0.75,
+    "max_image_side": 800,
+    "maximum_median_symmetric_reprojection_px": 3.0,
+    "minimum_convex_hull_coverage_each_image": 0.1,
+    "minimum_good_matches": 20,
+    "minimum_homography_inliers": 12,
+    "minimum_inlier_ratio": 0.35,
+    "minimum_normalized_good_match_ratio": 0.12,
+    "orb_features_max": 1200
+  },
+  "grade_rules": {
+    "any_accepted_historical_link_permanently_blocks_ext_i": true,
+    "ext_s_requires_minimum_support": true,
+    "ext_x_if_minimum_support_fails": true,
+    "known_historical_contributor_relationship_is_ext_x": true,
+    "minimum_independent_families_per_required_mapped_class": 50,
+    "performance_cannot_change_grade": true,
+    "residual_lineage_uncertainty_max_grade": "EXT-S"
+  },
+  "historical_compare": {
+    "expected_image_count": 117546,
+    "partial_surface_max_grade": "EXT-S",
+    "required_for_ext_i": true
+  },
+  "identities": {
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "ctc_v2_config_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+    "ctc_v2_eval_entrypoint": "cropcop_je.data.ctc_v2_eval_transform",
+    "ctc_v2_source_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+    "dataset_manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "dino_audit_encoder_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+    "r07_s1_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "r07_s2_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
+    "r07_s3_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37",
+    "track_a_replay_tolerance": 1e-06
+  },
+  "kaggle": {
+    "autosaved_working_disk_gb": 20,
+    "clean_save_and_run_all_required": true,
+    "ddp": false,
+    "internet_required_during_claim_run": false,
+    "multi_gpu_training": false,
+    "runtime_margin_policy": "preflight must project completion with material margin; optimize implementation, never scientific thresholds",
+    "scientific_device": "cuda:0",
+    "session_hard_limit_hours": 12,
+    "target_accelerator": "T4x2"
+  },
+  "lock_id": "TRACKB_R07_EXECUTION_LOCK_v1",
+  "metrics": {
+    "macro_f1_labels": "required mapped ground-truth classes only",
+    "mapped_subset_logit_renormalization": false,
+    "native_output_space": 120,
+    "predictions_outside_mapped_scope_are_errors": true,
+    "primary": "mapped_scope_macro_f1",
+    "secondary": [
+      "accuracy",
+      "balanced_accuracy",
+      "per_class_precision_recall_f1_support",
+      "confusion_matrix",
+      "out_of_mapped_subset_prediction_rate"
+    ]
+  },
+  "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+  "schema_version": "1.0",
+  "software": {
+    "Pillow": "12.3.0",
+    "huggingface_hub": "1.30.0",
+    "numpy": "2.5.2",
+    "opencv_python_headless": "4.12.0.88",
+    "python": "3.12.13",
+    "safetensors": "0.8.0",
+    "torch": "2.12.1",
+    "torchvision": "0.27.1",
+    "transformers": "5.0.0"
+  },
+  "status": "PRE_EXECUTION_LOCK"
+}
