@@ -135,12 +135,16 @@ def main() -> int:
         "acquire_irish_potato",
         "detect_authenticated_kaggle_owner",
         "verify_authenticated_kaggle_owner",
+        "normalized_image_count",
+        "observed_class_support",
         "raw_external_images_included",
     ):
         if required not in ops_text:
             raise TrackBError(f"Track-B operations module missing automation/security guard: {required}")
     if "--public" in ops_text or '"-u"' in ops_text:
         raise TrackBError("Track-B operations module exposes public Kaggle dataset publication")
+    if '_safe_extract_zip(archive, data_root / class_name)' in ops_text:
+        raise TrackBError("Irish Potato acquisition still trusts archive-internal directory layout")
 
     master_runner_text = master_runner.read_text(encoding="utf-8")
     for required in (
