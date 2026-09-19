@@ -19,6 +19,8 @@ from cropcop_je.trackb_r07 import (
     verify_candidate_seal,
     git_blob_sha1,
     verify_code_attestation,
+    load_json,
+    validate_execution_lock,
 )
 from cropcop_je.hashing import sha256_json
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
@@ -221,6 +223,18 @@ class TrackBR07Tests(unittest.TestCase):
             f.write_text("print('drift')\n", encoding="utf-8")
             with self.assertRaises(TrackBError):
                 verify_code_attestation(root, ap)
+
+    def test_execution_lock_forbids_postclosure_full_raw_rebuild(self):
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v1.json")
+        validate_execution_lock(lock)
+        drifted = dict(lock)
+        drifted["historical_compare"] = dict(lock["historical_compare"])
+        drifted["historical_compare"]["full_ext_i_route"] = dict(
+            lock["historical_compare"]["full_ext_i_route"]
+        )
+        drifted["historical_compare"]["full_ext_i_route"]["raw_postclosure_rebuild_forbidden"] = False
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted)
 
     def test_seed_row_identity_must_be_exact(self):
         base = [{"stable_row_id": "a", "target_class_index": 1, "predicted_class_index": 1}]
