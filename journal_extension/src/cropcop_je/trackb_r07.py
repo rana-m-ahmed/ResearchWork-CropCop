@@ -193,6 +193,36 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
             raise TrackBError(f"execution lock identity mismatch: {key}")
     if float(identities.get("track_a_replay_tolerance", -1)) != REPLAY_TOLERANCE:
         raise TrackBError("Track-A replay tolerance drift")
+    software = lock.get("software", {})
+    expected_software = {
+        "torch": "2.12.1",
+        "torchvision": "0.27.1",
+        "timm": "1.0.26",
+        "numpy": "2.5.2",
+        "Pillow": "12.3.0",
+        "transformers": "5.0.0",
+        "huggingface_hub": "1.30.0",
+        "safetensors": "0.8.0",
+        "opencv_python_headless": "4.12.0.88",
+    }
+    for key, value in expected_software.items():
+        if software.get(key) != value:
+            raise TrackBError(f"Track-B software lock drift: {key}")
+    bootstrap = lock.get("runtime_bootstrap", {})
+    expected_bootstrap = {
+        "mode": "ISOLATED_VIRTUAL_ENVIRONMENT",
+        "python_major_minor": "3.12",
+        "torch_version": "2.12.1",
+        "torchvision_version": "0.27.1",
+        "pytorch_wheel_index": "https://download.pytorch.org/whl/cu126",
+        "cuda_wheel_family": "cu126",
+        "live_kernel_torch_replacement_forbidden": True,
+        "secrets_handoff": "PARENT_KAGGLE_KERNEL_TO_CHILD_ENVIRONMENT_ONLY",
+        "pip_cache_disabled": True,
+    }
+    for key, value in expected_bootstrap.items():
+        if bootstrap.get(key) != value:
+            raise TrackBError(f"Track-B runtime bootstrap drift: {key}")
     grade = lock.get("grade_rules", {})
     if int(grade.get("minimum_independent_families_per_required_mapped_class", -1)) != 50:
         raise TrackBError("external support floor drift")
