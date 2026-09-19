@@ -250,11 +250,35 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertTrue(automation["auto_archive_complete_restricted_evidence_to_private_kaggle"])
         self.assertFalse(automation["raw_images_to_github"])
         self.assertFalse(automation["checkpoints_to_github"])
+        self.assertEqual(automation["kaggle_dataset_owner_default"], "AUTO")
+        self.assertEqual(
+            automation["kaggle_dataset_owner_mode"],
+            "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT",
+        )
+        self.assertTrue(lock["kaggle"]["internet_required_during_claim_run"])
+        self.assertEqual(
+            lock["kaggle"]["internet_role"],
+            "ORCHESTRATION_AND_EVIDENCE_PUBLICATION_ONLY",
+        )
+        self.assertFalse(lock["kaggle"]["protected_inference_network_dependency"])
+
         drifted = dict(lock)
         drifted["automation"] = dict(automation)
         drifted["automation"]["raw_images_to_github"] = True
         with self.assertRaises(TrackBError):
             validate_execution_lock(drifted)
+
+        drifted_owner = dict(lock)
+        drifted_owner["automation"] = dict(automation)
+        drifted_owner["automation"]["kaggle_dataset_owner_default"] = "someone"
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted_owner)
+
+        drifted_network = dict(lock)
+        drifted_network["kaggle"] = dict(lock["kaggle"])
+        drifted_network["kaggle"]["protected_inference_network_dependency"] = True
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted_network)
 
     def test_gvlid_seal_contract_accepts_exact_four_class_scope(self):
         h = "b" * 64
