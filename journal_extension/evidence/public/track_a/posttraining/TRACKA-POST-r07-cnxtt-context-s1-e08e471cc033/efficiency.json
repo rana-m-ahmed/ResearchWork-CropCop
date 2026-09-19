@@ -1,0 +1,15 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "experiment_id": "R07-CNXTT-CONTEXT-S1",
+  "external_surface_accessed": false,
+  "input_resolution": 256,
+  "model_state_tensor_bytes_fp32": 111649632,
+  "schema_version": "1.2",
+  "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "selected_checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+  "source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "total_parameter_count": 27912408,
+  "trainable_parameter_count": 27912408,
+  "training_performed": false,
+  "v1_test_accessed": false
+}

@@ -1,0 +1,38 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "classwise_pass": true,
+  "efficiency_pass": true,
+  "experiment_id": "R07-CNXTT-CONTEXT-S1",
+  "external_surface_accessed": false,
+  "optimizer_state_advanced": false,
+  "public_evidence_sha256": {
+    "efficiency.json": "57c0001de8a1934e014176a677da43ff9227964619e6355069ee687e029dae4e",
+    "robustness_and_replay.json": "c900d43a1e40fa164d645a1bb636aca29f28242b1aab4e3f8029291150c47094"
+  },
+  "replay_gate": {
+    "absolute_metric_differences": {
+      "validation_accuracy": 0.0,
+      "validation_balanced_accuracy": 0.0,
+      "validation_macro_f1": 0.0,
+      "validation_nll": 2.1689892937271082e-10
+    },
+    "all_metric_replay_max_abs_diff": 2.1689892937271082e-10,
+    "metric_match_tolerance": 1e-06,
+    "optimizer_state_advanced": false,
+    "protected_external_surface_accessed": false,
+    "status": "PASS",
+    "training_performed": false,
+    "v1_test_accessed": false
+  },
+  "robustness_pass": true,
+  "run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01",
+  "schema_version": "1.2",
+  "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "selected_checkpoint_epoch": 27,
+  "selected_checkpoint_file_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+  "selected_checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+  "source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "status": "PASS",
+  "training_performed": false,
+  "v1_test_accessed": false
+}
