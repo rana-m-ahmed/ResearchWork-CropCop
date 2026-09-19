@@ -10,8 +10,8 @@ from typing import Any, Iterable
 
 from .hashing import require_sha256, sha256_file, sha256_json
 
-AUTHORITY_ID = "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v1"
-EXECUTION_LOCK_ID = "TRACKB_R07_EXECUTION_LOCK_v1"
+AUTHORITY_ID = "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v2"
+EXECUTION_LOCK_ID = "TRACKB_R07_EXECUTION_LOCK_v2"
 TRACK_A_CLOSURE_COMMIT = "604aafd51e20e70098ce4af647e90c8ff558a9e8"
 TRACK_A_FINAL_AUDIT_SELF_HASH = "1c7d98fa47a12ae6eaa53e1c6e91b4e6eef2d04bb717c2d58c7ae2ebae2b51c6"
 DATASET_MANIFEST_SHA256 = "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2"
@@ -39,10 +39,21 @@ R07_CHECKPOINTS = {
     "S2": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
     "S3": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37",
 }
-REQUIRED_INPUT_ROLES = {"core", "historical_compare", "irish_potato", "agrivision_v2"}
+REQUIRED_INPUT_ROLES = {"core", "historical_compare", "gvlid_v5", "irish_potato"}
 FORBIDDEN_SURFACE = "DS-V1-TEST-CONSUMED"
 
 CANDIDATE_CONTRACTS = {
+    "gvlid_grape": {
+        "scope": "SCOPE-GRAPE-4",
+        "doi": "10.17632/wkymf8bhcg.5",
+        "version": "5",
+        "mapping": {
+            "Black Rot": "grape_black_rot",
+            "Esca": "grape_esca",
+            "Healthy": "grape_healthy",
+            "Leaf Blight": "grape_leaf_blight",
+        },
+    },
     "irish_potato": {
         "scope": "SCOPE-POTATO-3",
         "doi": "10.5281/zenodo.8286529",
@@ -51,16 +62,6 @@ CANDIDATE_CONTRACTS = {
             "earlyblt": "potato_early_blight",
             "healthy": "potato_healthy",
             "lateblt": "potato_late_blight",
-        },
-    },
-    "agrivision_bd": {
-        "scope": "SCOPE-TOMATO-PAPAYA-3",
-        "doi": "10.17632/8t6k37ztxc.2",
-        "version": "2",
-        "mapping": {
-            "Tomato Healthy": "tomato_healthy",
-            "Tomato Mosaic": "tomato_mosaic_virus",
-            "Papaya Healthy Leaf": "papaya_healthy_leaf",
         },
     },
 }
@@ -127,7 +128,7 @@ def verify_code_attestation(repo_root: str | Path, attestation_path: str | Path)
 
 
 def validate_downstream_authority(authority: dict[str, Any]) -> None:
-    if authority.get("authority_id") != AUTHORITY_ID or authority.get("status") != "ACTIVE":
+    if authority.get("authority_id") != AUTHORITY_ID or authority.get("status") not in {"ACTIVE", "ACTIVE_PRE_EXECUTION"}:
         raise TrackBError("Track-B/C downstream amendment is missing or inactive")
     if authority.get("parent_track_a_closure_commit") != TRACK_A_CLOSURE_COMMIT:
         raise TrackBError("downstream amendment is not bound to the formal Track-A closure")
@@ -155,7 +156,7 @@ def validate_downstream_authority(authority: dict[str, Any]) -> None:
 
 
 def validate_execution_lock(lock: dict[str, Any]) -> None:
-    if lock.get("lock_id") != EXECUTION_LOCK_ID or lock.get("status") != "PRE_EXECUTION_LOCK":
+    if lock.get("lock_id") != EXECUTION_LOCK_ID or lock.get("status") not in {"PRE_EXECUTION_LOCK", "PRE_EXECUTION_LOCK_V2"}:
         raise TrackBError("Track-B execution lock is absent or invalid")
     if lock.get("authority_id") != AUTHORITY_ID:
         raise TrackBError("execution lock/downstream authority mismatch")
