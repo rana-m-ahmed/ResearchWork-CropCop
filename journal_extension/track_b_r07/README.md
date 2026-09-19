@@ -1,187 +1,153 @@
-# CropCop Track B — R07 External Validation Infrastructure
+# CropCop Track B — R07 External Validation v2
 
-This namespace implements the audited Track-B v2.1-QA design as a lean, fail-closed Kaggle workflow.
+Track B evaluates the frozen Track-A-selected R07 ConvNeXt-Tiny family on prospectively fixed external field cohorts. It does not train, tune, reselect, or replace model states. The consumed V1 test remains closed.
 
-## Scientific boundary
+## Operator entry point
 
-Track B evaluates the already-selected R07 ConvNeXt-Tiny family on two prospectively fixed public external candidates. It does not train, tune, select, replace, or rank new model states. The consumed V1 test is forbidden. Both external candidates are fully audited and sealed before any external R07 forward pass.
+Use only:
 
-The classifier states are exactly R07-S1/S2/S3. The historical DINOv3 ConvNeXt-Tiny checkpoint is an audit-only feature encoder. The historical MobileNetV4/PTE lineage remains preprint context and is not rerun here.
+`journal_extension/kaggle/trackb_r07_master.ipynb`
 
-## Kaggle runtime
+One-time Kaggle setup:
 
-The claim-producing notebook targets Kaggle **T4x2** but intentionally uses `cuda:0` only. There is no DDP/multi-GPU training and no dependency on a second GPU. This avoids multi-process failure modes while retaining GPU acceleration for DINO feature extraction, nearest-neighbor search, R07 replay, and external inference.
+- enable Internet;
+- select T4 x2;
+- add secret `KAGGLE_API_TOKEN`;
+- add secret `CROPCOP_GITHUB_TOKEN`.
 
-Kaggle currently provides a 12-hour CPU/GPU notebook limit and 20 GB auto-saved `/kaggle/working` storage. The P100 option was retired on 2026-09-15, so this workflow does not depend on it. Use Kaggle's Dependency Manager to install the exact `requirements-trackb.lock.txt` stack before a clean **Save & Run All**. The claim run itself should not need Internet.
+No Track-B input dataset needs to be manually uploaded or attached. The master notebook clones the Track-B branch, verifies the scientific dependency lock, loads both secrets, identifies the Kaggle account authenticated by the API token, and runs `run_trackb_r07_master.py`.
 
-## Four immutable Kaggle input datasets
+The older `trackb_r07_end_to_end.ipynb` is retained only as an inspectable internal claim-engine/recovery surface. It is not the supported operator workflow.
 
-The notebook discovers inputs by scanning `/kaggle/input/**/TRACKB_INPUT_MANIFEST.json`; Kaggle dataset slugs therefore do not need to be hard-coded.
+## Frozen scientific cohorts
 
-### 1. `role = core`
+### Confirmatory field cohort — GVLiD v5
 
-Required manifest keys:
+- Candidate ID: `gvlid_grape`
+- Input role: `gvlid_v5`
+- DOI: `10.17632/wkymf8bhcg.5`
+- Version: 5
+- Expected images: 3,477
+- Scope: `SCOPE-GRAPE-4`
 
-```json
-{
-  "schema_version": "1.0",
-  "role": "core",
-  "v1_validation_root": "relative/path/to/validation/image/root",
-  "dino_factory_source_root": "relative/path/to/frozen/repository/source/root",
-  "files": {
-    "downstream_authority": {"path": "...json", "sha256": "..."},
-    "execution_lock": {"path": "...json", "sha256": "..."},
-    "code_attestation": {"path": "TRACKB_CODE_ATTESTATION_v1.json", "sha256": "..."},
-    "class_map": {"path": "class_to_idx.json", "sha256": "46f7..."},
-    "v1_manifest": {"path": "final_manifest.csv", "sha256": "bdb8..."},
-    "r07_s1": {"path": "...ckpt", "sha256": "dc7f..."},
-    "r07_s2": {"path": "...ckpt", "sha256": "199a..."},
-    "r07_s3": {"path": "...ckpt", "sha256": "621c..."},
-    "r07_s1_run_record": {"path": "...json", "sha256": "..."},
-    "r07_s2_run_record": {"path": "...json", "sha256": "..."},
-    "r07_s3_run_record": {"path": "...json", "sha256": "..."},
-    "dino_checkpoint": {"path": "...", "sha256": "74b4..."},
-    "dino_factory_manifest": {"path": "TEACHER_FACTORY_BUNDLE.json", "sha256": "..."}
-  }
-}
-```
+Frozen mapping:
 
-`v1_validation_root` is the directory **above** the frozen `val/` subtree because the certified manifest paths already begin with `val/`. The core package may contain only that `val/` subtree beneath the root; a sibling `test/`, `v1_test/`, `test_consumed/`, or `DS-V1-TEST-CONSUMED/` directory is a hard packaging failure. `TRACKB_CODE_ATTESTATION_v1.json` binds the load-bearing Track-B and inherited Track-A source files by Git-blob identity, and its SHA-256 is itself frozen in the execution lock. Use `prepare_trackb_core_input.py` to verify these identities and catch the common `val/val/...` packaging mistake before upload.
+| Source label | CropCop label |
+|---|---|
+| Black Rot | `grape_black_rot` |
+| Esca | `grape_esca` |
+| Healthy | `grape_healthy` |
+| Leaf Blight | `grape_leaf_blight` |
 
-The execution lock also binds the three authoritative replay records and the DINO factory manifest:
+The source publication/package has a one-image arithmetic inconsistency between its stated total and one displayed class-count table. Track B therefore treats the exact acquired version-5 bytes as authority: total identity must reconcile to 3,477 and observed class supports are enumerated and frozen before any R07 prediction.
 
-- R07 S1 run record: `0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516`
-- R07 S2 run record: `0e48fdc0907a44042110f146ec27f796ea3d185fad1e2fc008cd1332bfd0ae15`
-- R07 S3 run record: `6ba1f3a7348f5c4ba0347621edef0e75e311b89bd38ff13ec4288cd81cf70050`
-- DINO factory manifest: `df70164ef227878353dde5430e8e0386b8853b53a2b66c20602e4cecd4dab7f1`
+### Complementary stress cohort — Irish Potato Version 01
 
-For operator use, prefer `trackb_build_core_package.ipynb`. It accepts the already-existing Final-V1, R07-S1/S2/S3, and Secondary-G1-v2 Kaggle datasets, discovers checkpoint/run-record/factory files by authoritative SHA-256, copies only the 16,368-image validation surface, runs `prepare_trackb_core_input.py`, and emits a publishable immutable `role = core` directory. The source dataset locators are frozen in that notebook so checkpoint filenames never need to be guessed manually.
+- Candidate ID: `irish_potato`
+- Input role: `irish_potato`
+- DOI: `10.5281/zenodo.8286529`
+- Version: `01`
+- Expected images: 58,709
+- Scope: `SCOPE-POTATO-3`
 
-### 2. `role = historical_compare`
+Frozen mapping:
 
-The **safe executable post-closure route** is a development-surface comparison package:
+| Source label | CropCop label |
+|---|---|
+| `earlyblt` | `potato_early_blight` |
+| `healthy` | `potato_healthy` |
+| `lateblt` | `potato_late_blight` |
 
-```json
-{
-  "schema_version": "1.1",
-  "role": "historical_compare",
-  "coverage_scope": "V1_TRAIN_VAL_ONLY",
-  "image_count": 92744,
-  "expected_full_historical_image_count": 117546,
-  "ext_i_eligible": false,
-  "maximum_evidence_grade": "EXT-S",
-  "v1_test_image_bytes_accessed": false,
-  "dino_audit_encoder_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
-  "code_attestation_sha256": "...",
-  "features_l2_normalized": true,
-  "files": {
-    "historical_manifest": {"path": "historical_manifest.csv", "sha256": "..."},
-    "dino_features": {"path": "dino_features.npy", "sha256": "..."},
-    "orb_offsets": {"path": "orb_offsets.npy", "sha256": "..."},
-    "orb_xy": {"path": "orb_xy.npy", "sha256": "..."},
-    "orb_desc": {"path": "orb_desc.npy", "sha256": "..."},
-    "orb_shapes": {"path": "orb_shapes.npy", "sha256": "..."}
-  }
-}
-```
+Expected source support remains 17,772 / 20,438 / 20,499 respectively.
 
-`historical_manifest.csv` columns:
+Agri-Vision Bangladesh is retired from Track-B v2 **before protected external inference**. It is not a fallback candidate if either frozen v2 cohort performs poorly.
 
-```text
-hist_id,raw_sha256,phash64,dhash64,width,height
-```
+## Why the two-cohort design is locked this way
 
-The runnable builder deliberately uses only the frozen Final-V1 **train + validation** development surface: 76,376 + 16,368 = **92,744** images. It never opens consumed V1-test image bytes. Because this comparison surface is partial relative to the historical 117,546-image audited universe, it permanently caps candidate evidence at `EXT-S`. That is an intentional scientific boundary, not a runtime limitation.
+Candidate selection used only pre-external evidence: ontology compatibility, acquisition/source independence, field realism, public provenance, support, frozen R07 internal class reliability, and complementarity between a stronger confirmatory scope and a harder stress scope. External R07 performance cannot alter the cohort pair, mappings, model family, or seed set.
 
-A candidate may reach `EXT-I` only if a complete 117,546-image comparison representation that was created before V1-test closure is genuinely recovered, cryptographically verified, and attached directly as `role = historical_compare`. Do **not** regenerate such a representation now by reopening raw V1-test image bytes. The deprecated `prepare_trackb_historical_source_input.py` fails closed for this reason.
+Track B evaluates exactly R07-S1/S2/S3. The historical DINOv3 ConvNeXt-Tiny checkpoint is an audit-only feature encoder. Historical MobileNetV4/PTE remains contextual preprint evidence and is not the Track-B classifier.
 
-Build the safe package once with `build_trackb_historical_compare.py` (or `trackb_build_historical_compare.ipynb`), publish its output as an immutable private Kaggle Dataset, then attach that exact dataset version to the final Track-B claim notebook. The DINO matrix is exactly `(image_count, 768)`, finite, L2-normalized, and bound to the frozen audit encoder plus CTC-v2 deterministic evaluation preprocessing.
+## Automated master workflow
 
-### 3. `role = irish_potato`
+The master controller performs these stages in order:
 
-```json
-{
-  "schema_version": "1.0",
-  "role": "irish_potato",
-  "doi": "10.5281/zenodo.8286529",
-  "version": "01",
-  "data_root": "relative/path/to/extracted/originals",
-  "unresolved_lineage": false,
-  "files": {
-    "source_metadata_record": {"path": "SOURCE_METADATA.json", "sha256": "..."}
-  }
-}
-```
+1. verify Kaggle/GitHub secrets and exact runtime dependencies;
+2. auto-detect the Kaggle owner authenticated by `KAGGLE_API_TOKEN`;
+3. verify access to the frozen Final-V1, R07-S1/S2/S3, and DINO source datasets;
+4. automatically download those frozen assets;
+5. build the immutable `core` package containing only the allowed validation replay surface and frozen model/audit identities;
+6. build or reuse an exact private `historical_compare` cache over V1 train+validation only;
+7. delete large temporary source downloads to control working-disk pressure;
+8. acquire GVLiD v5 and Irish Potato from their authoritative public repositories;
+9. validate/package both external candidates;
+10. run prediction-blind exact/pHash/dHash/DINO/ORB family and historical-overlap audits;
+11. freeze each candidate grade and immutable seal before any R07 forward pass;
+12. run S1/S2/S3 native 120-way inference on the same sealed representatives;
+13. compute the fixed 5,000-replicate family bootstrap with shared resamples;
+14. independently recompute QA and require `TRACK_B_CLOSED`;
+15. publish only audited public-safe summaries to a GitHub evidence branch;
+16. archive the complete restricted evidence ZIP to a private Kaggle dataset.
 
-`SOURCE_METADATA.json` must contain the observed DOI, version, source URL, retrieval timestamp, non-empty observed license/access text, `known_historical_contributor_relationship` (boolean), and `lineage_review_status` (`PASS_NO_KNOWN_RELATIONSHIP` or `RESIDUAL_UNCERTAINTY`). The runner requires exactly 58,709 images with source supports 17,772 `earlyblt`, 20,438 `healthy`, and 20,499 `lateblt`. Use `prepare_trackb_candidate_input.py` before publishing the Kaggle dataset.
+The controller automatically garbage-collects large source downloads between stages rather than requiring the operator to create and reattach multiple intermediate datasets.
 
-### 4. `role = agrivision_v2`
+## Historical comparison boundary
 
-```json
-{
-  "schema_version": "1.0",
-  "role": "agrivision_v2",
-  "doi": "10.17632/8t6k37ztxc.2",
-  "version": "2",
-  "data_root": "relative/path/to/package/root",
-  "unresolved_lineage": false,
-  "files": {
-    "source_metadata_record": {"path": "SOURCE_METADATA.json", "sha256": "..."},
-    "mapping_semantic_record": {"path": "TOMATO_MOSAIC_MAPPING.json", "sha256": "..."}
-  }
-}
-```
+The executable post-closure historical comparison uses only frozen Final-V1 train + validation:
 
-The package must contain exactly one `Original_Images` directory with 5,266 images. `TOMATO_MOSAIC_MAPPING.json` must be frozen before execution and contain:
+- train: 76,376
+- validation: 16,368
+- total: 92,744
+- consumed V1-test image bytes accessed: **false**
 
-```json
-{
-  "status": "PASS",
-  "mapping": "Tomato Mosaic -> tomato_mosaic_virus"
-}
-```
+This route has a permanent maximum grade of `EXT-S` because it is not the complete 117,546-image historical audited universe.
 
-If that semantic record is absent or fails, Candidate B becomes `EXT-X`; the notebook does not invent a narrower post-hoc mapping. `SOURCE_METADATA.json` uses the same source/lineage fields required for Candidate A. `prepare_trackb_candidate_input.py` verifies the 5,266-original count and mapped source supports before the dataset is published.
+`EXT-I` is possible only if a complete pre-test cryptographic comparison representation of all 117,546 historical images is genuinely recovered and independently verified. The repository must not recreate that surface now by reopening consumed V1-test images.
 
+## Prediction firewall
 
-## Lean input-preparation utilities
+For each candidate, the following must be frozen before R07 inference:
 
-The final claim notebook remains one clean end-to-end notebook. Input preparation is intentionally separated because source acquisition and historical comparison indexing are infrastructure, not protected model evaluation. The executable post-closure index is train+validation-only; a full 117,546 representation is accepted only if it already exists from before V1-test closure. The repository contains a small, explicit preparation layer:
+- DOI/version/source metadata;
+- raw-image manifest;
+- frozen source→CropCop mapping;
+- decode-failure ledger;
+- family graph and deterministic family representatives;
+- exact/near historical-overlap evidence;
+- family support;
+- terminal `EXT-I`, `EXT-S`, or `EXT-X` grade;
+- all three R07 checkpoint hashes;
+- class-map and preprocessing identity;
+- bootstrap configuration;
+- immutable seal hash.
 
-- `trackb_build_core_package.ipynb` + `build_trackb_core_package.py` — assemble the immutable core package from the exact existing Kaggle datasets using hash discovery and validation-only copying;
-- `prepare_trackb_core_input.py` — hashes/binds the assembled repository, code attestation, R07 S1/S2/S3 checkpoints and authoritative run records, validation-only replay surface, class map, DINO encoder/factory and locks;
-- `prepare_trackb_candidate_input.py` — verifies source metadata/counts/semantic gate and creates Candidate A/B input manifests;
-- `prepare_trackb_historical_source_input.py` — deliberately disabled after V1-test closure so the full raw 117,546-image surface cannot be reconstructed by reopening consumed test images;
-- `build_trackb_historical_compare.py` — produces the safe 92,744-image train+validation SHA/pHash/dHash/DINO/ORB comparison package, with an automatic `EXT-S` ceiling.
+`EXT-X` produces no claim-making protected classifier inference.
 
-No database, workflow service, GitHub token, distributed training layer, or resume state machine is required. A technical failure of the final claim notebook is retried by rerunning the unchanged frozen notebook from the beginning.
+## Evidence publication boundary
 
-## Final notebook stages
+GitHub receives only allow-listed text evidence after terminal QA. The publication layer rejects model/checkpoint archives, raw images, secrets, credentials, private runtime paths, and row-level logits.
 
-1. authority/environment and exact R07 validation replay;
-2. source verification for both candidates;
-3. prediction-blind within-candidate family and historical-overlap audit; decoded failures are preserved before seal, and the geometric audit persists accepted relations plus deterministic rejection-funnel counts rather than gigabytes of low-value rejected-pair rows;
-4. deterministic `EXT-I/EXT-S/EXT-X` grade + immutable seal for both candidates;
-5. prediction firewall;
-6. S1/S2/S3 native 120-way inference only for `EXT-I`/`EXT-S` candidates, with mapped-class precision/recall/F1 plus sparse native-120 confusion evidence and explicit out-of-mapped prediction rate;
-7. fixed 5,000-replicate family bootstrap using shared resample indices;
-8. independent re-read/recompute QA and `TRACK_B_CLOSED`.
+Complete restricted evidence is persisted to a private Kaggle dataset under the owner authenticated by the API token. The master notebook does not hard-code a personal Kaggle owner.
 
-A bad metric is a valid scientific result. It never changes the candidate, mapping, grade, row set, model seed, or retry policy.
+## Claim boundary
 
-## Output
+- `EXT-I`: only audit-bounded source-independent wording for that candidate's frozen mapped scope.
+- `EXT-S`: public cross-dataset / external-domain stress-test wording only.
+- `EXT-X`: no claim-producing performance result.
 
-The notebook writes only to `/kaggle/working/trackb_r07` and emits:
+No Track-B outcome establishes universal 120-class field generalization, agronomic treatment readiness, or device/runtime performance.
 
-- `TRACKB_PREDICTION_FIREWALL.json`
-- candidate audit/seal evidence
-- S1/S2/S3 row-level predictions for claim-producing candidates
-- seedwise metrics and three-seed summary
-- frozen bootstrap output
-- `TRACKB_FINAL_QA.json`
-- `TRACKB_FINAL_CLOSURE.json`
-- `TRACKB_COMPLETE_EVIDENCE.zip`
-- `TRACKB_PUBLIC_EVIDENCE.zip`
-- `TRACKB_PACKAGE_MANIFEST.json`
+## Core frozen identities
 
-No GitHub credential is required and the notebook never pushes to the repository.
+- dataset manifest SHA-256: `bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2`
+- class-map SHA-256: `46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2`
+- DINO audit checkpoint SHA-256: `74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79`
+- R07-S1: `dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974`
+- R07-S2: `199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310`
+- R07-S3: `621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37`
+
+Current authority:
+
+- `EAAI-JE-TRACKBC-R07-DOWNSTREAM-v2`
+- `TRACKB_R07_EXECUTION_LOCK_v2`
+- `TRACKB_CODE_ATTESTATION_v2`
