@@ -1,0 +1,19 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "confirmed_version_number": 4,
+  "dataset_locator": "ranaabdulrehmannn/cropcop-ta-r13-vit-s2-e08e471cc033",
+  "evidence_file_count": 79,
+  "evidence_manifest_sha256": "a62de9536d9a4710cf8be865a153c91100ee5704d1523c5c28d5ab15c61f2728",
+  "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+  "generation_kind": "final",
+  "generation_roundtrip_verified": true,
+  "owner_matches_authenticated_user": true,
+  "previous_version_number": 3,
+  "private_dataset_verified": true,
+  "roundtrip_marker_sha256": "031304d884f1ca8a0c6e5ba023f8f6663e4f6c3cdc54ba2f96f8e9a02af1fc1a",
+  "run_id": "TRACKA-POST-r13-vit-dlittle-diff-context-s2-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS",
+  "sync_certificate_sha256": "07f36f5469081f2ac9f73283d8c07c0816c3cc56e9a5f43d15cf0ba7b698567b",
+  "sync_kind": "track_a_posttraining_private_evidence"
+}
