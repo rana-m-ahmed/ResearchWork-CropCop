@@ -294,7 +294,7 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             completion, _publication, _sync = build_local_completion_chain(root)
-            observed = operator.load_local_completed_state(root, EXPERIMENT, ANALYSIS)
+            observed = operator.load_local_completed_state(root, EXPERIMENT, RUN, ANALYSIS)
             self.assertEqual(observed, completion)
 
     def test_local_completion_without_publication_certificate_is_not_reused(self):
@@ -302,7 +302,7 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
             root = Path(td)
             build_local_completion_chain(root)
             (root / "certificates" / "POSTTRAINING_PUBLICATION_CERTIFICATE.json").unlink()
-            self.assertIsNone(operator.load_local_completed_state(root, EXPERIMENT, ANALYSIS))
+            self.assertIsNone(operator.load_local_completed_state(root, EXPERIMENT, RUN, ANALYSIS))
 
     def test_local_completion_with_tampered_sync_certificate_is_not_reused(self):
         with tempfile.TemporaryDirectory() as td:
@@ -312,7 +312,7 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
             payload = json.loads(sync_path.read_text(encoding="utf-8"))
             payload["generation_roundtrip_verified"] = False
             write_json(sync_path, payload)
-            self.assertIsNone(operator.load_local_completed_state(root, EXPERIMENT, ANALYSIS))
+            self.assertIsNone(operator.load_local_completed_state(root, EXPERIMENT, RUN, ANALYSIS))
 
     def test_local_completion_with_wrong_publication_branch_is_not_reused(self):
         with tempfile.TemporaryDirectory() as td:
@@ -324,7 +324,7 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
             payload.pop("publication_certificate_sha256")
             payload["publication_certificate_sha256"] = sha256_json(payload)
             write_json(publication_path, payload)
-            self.assertIsNone(operator.load_local_completed_state(root, EXPERIMENT, ANALYSIS))
+            self.assertIsNone(operator.load_local_completed_state(root, EXPERIMENT, RUN, ANALYSIS))
 
     def test_attempt_numbers_are_append_only(self):
         with tempfile.TemporaryDirectory() as td:
