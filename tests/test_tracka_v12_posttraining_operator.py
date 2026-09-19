@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -196,6 +197,39 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
                 operator.stage_script_path(repo, "direct"),
                 repo / operator.STAGE_SCRIPT["direct"],
             )
+
+
+    def test_publication_overlay_is_scoped_to_publication_subprocess_env(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            package = root / "cropcop_je"
+            package.mkdir()
+            (package / "publication.py").write_text("# hotfix\n", encoding="utf-8")
+            with patch.dict(
+                "os.environ",
+                {
+                    "CROPCOP_TRACKA_PUBLICATION_PYTHONPATH": str(root),
+                    "PYTHONPATH": "/frozen/science/src",
+                },
+                clear=False,
+            ):
+                env = operator.publication_subprocess_env()
+                self.assertEqual(
+                    env["PYTHONPATH"].split(os.pathsep),
+                    [str(root.resolve()), "/frozen/science/src"],
+                )
+                self.assertEqual(os.environ["PYTHONPATH"], "/frozen/science/src")
+
+    def test_publication_overlay_rejects_invalid_package_root(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            with patch.dict(
+                "os.environ",
+                {"CROPCOP_TRACKA_PUBLICATION_PYTHONPATH": str(root)},
+                clear=False,
+            ):
+                with self.assertRaises(RuntimeError):
+                    operator.publication_subprocess_env()
 
     def test_xai_filesystem_wrapper_creates_nested_panel_parents_and_rejects_escape(self):
         with tempfile.TemporaryDirectory() as td:
