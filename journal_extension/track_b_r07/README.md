@@ -50,13 +50,18 @@ Required manifest keys:
 
 ### 2. `role = historical_compare`
 
-Required identity:
+The **safe executable post-closure route** is a development-surface comparison package:
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "role": "historical_compare",
-  "image_count": 117546,
+  "coverage_scope": "V1_TRAIN_VAL_ONLY",
+  "image_count": 92744,
+  "expected_full_historical_image_count": 117546,
+  "ext_i_eligible": false,
+  "maximum_evidence_grade": "EXT-S",
+  "v1_test_image_bytes_accessed": false,
   "dino_audit_encoder_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
   "code_attestation_sha256": "...",
   "features_l2_normalized": true,
@@ -77,9 +82,11 @@ Required identity:
 hist_id,raw_sha256,phash64,dhash64,width,height
 ```
 
-For the preferred `EXT-I` route, the six files cover the full 117,546-image V4 audited candidate universe. The runner also accepts a cryptographically bound **partial** comparison package so Track B can still complete as `EXT-S`; any count below 117,546 permanently caps that candidate at stress-test evidence. The DINO matrix is exactly `(image_count, 768)`, finite, L2-normalized, and bound to the frozen audit encoder plus `CTC-v2` deterministic evaluation preprocessing (`53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4`). This is the prospective Track-B implementation of the 03R “deterministic evaluation preprocessing” clause; it is not presented as a reconstruction of an undocumented historical feature transform.
+The runnable builder deliberately uses only the frozen Final-V1 **train + validation** development surface: 76,376 + 16,368 = **92,744** images. It never opens consumed V1-test image bytes. Because this comparison surface is partial relative to the historical 117,546-image audited universe, it permanently caps candidate evidence at `EXT-S`. That is an intentional scientific boundary, not a runtime limitation.
 
-Build this package once with `build_trackb_historical_compare.py` (or the generated `trackb_build_historical_compare.ipynb`), publish the output as an immutable private Kaggle Dataset, and attach that fixed dataset version to the final Track-B claim notebook. The builder first verifies the same code attestation frozen for the claim run and writes that attestation SHA into both its build certificate and output manifest. The builder writes ORB arrays in bounded chunks rather than retaining all descriptors in RAM.
+A candidate may reach `EXT-I` only if a complete 117,546-image comparison representation that was created before V1-test closure is genuinely recovered, cryptographically verified, and attached directly as `role = historical_compare`. Do **not** regenerate such a representation now by reopening raw V1-test image bytes. The deprecated `prepare_trackb_historical_source_input.py` fails closed for this reason.
+
+Build the safe package once with `build_trackb_historical_compare.py` (or `trackb_build_historical_compare.ipynb`), publish its output as an immutable private Kaggle Dataset, then attach that exact dataset version to the final Track-B claim notebook. The DINO matrix is exactly `(image_count, 768)`, finite, L2-normalized, and bound to the frozen audit encoder plus CTC-v2 deterministic evaluation preprocessing.
 
 ### 3. `role = irish_potato`
 
@@ -130,12 +137,12 @@ If that semantic record is absent or fails, Candidate B becomes `EXT-X`; the not
 
 ## Lean input-preparation utilities
 
-The final claim notebook remains one clean end-to-end notebook. Input preparation is intentionally separated because source acquisition and the 117,546-image historical feature index are infrastructure, not protected model evaluation. The repository contains only four small preparation utilities:
+The final claim notebook remains one clean end-to-end notebook. Input preparation is intentionally separated because source acquisition and historical comparison indexing are infrastructure, not protected model evaluation. The executable post-closure index is train+validation-only; a full 117,546 representation is accepted only if it already exists from before V1-test closure. The repository contains only four small preparation utilities:
 
 - `prepare_trackb_core_input.py` — hashes/binds the frozen repository, code attestation, R07 S1/S2/S3, validation-only replay surface, class map, DINO encoder and locks;
 - `prepare_trackb_candidate_input.py` — verifies source metadata/counts/semantic gate and creates Candidate A/B input manifests;
-- `prepare_trackb_historical_source_input.py` — binds the raw 117,546-image V4 source manifest for one-time indexing;
-- `build_trackb_historical_compare.py` — produces the compact SHA/pHash/dHash/DINO/ORB comparison package.
+- `prepare_trackb_historical_source_input.py` — deliberately disabled after V1-test closure so the full raw 117,546-image surface cannot be reconstructed by reopening consumed test images;
+- `build_trackb_historical_compare.py` — produces the safe 92,744-image train+validation SHA/pHash/dHash/DINO/ORB comparison package, with an automatic `EXT-S` ceiling.
 
 No database, workflow service, GitHub token, distributed training layer, or resume state machine is required. A technical failure of the final claim notebook is retried by rerunning the unchanged frozen notebook from the beginning.
 
