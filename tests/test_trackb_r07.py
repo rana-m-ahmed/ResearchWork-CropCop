@@ -30,7 +30,7 @@ from cropcop_je.trackb_r07 import (
 from cropcop_je.hashing import sha256_json
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
 from cropcop_je.trackb_r07_audit import ImageAuditRecord, representative_manifest
-from cropcop_je.trackb_r07_ops import load_kaggle_secret
+from cropcop_je.trackb_r07_ops import load_kaggle_secret, _classify_github_push_failure
 
 
 class TrackBR07Tests(unittest.TestCase):
@@ -280,6 +280,14 @@ class TrackBR07Tests(unittest.TestCase):
             "FRESH_SUBPROCESS_AFTER_LOCK_REPAIR",
         )
         self.assertTrue(bootstrap["parent_kernel_scientific_imports_after_repair_forbidden"])
+        self.assertEqual(
+            automation["github_push_preflight_transport"],
+            "GIT_PUSH_DRY_RUN_SAME_AS_PUBLICATION",
+        )
+        self.assertTrue(automation["github_push_preflight_before_runtime_repair"])
+        self.assertTrue(automation["private_evidence_archive_before_github_publication"])
+        self.assertEqual(automation["github_publication_retry_attempts"], 4)
+        self.assertTrue(automation["github_publication_failure_preserves_scientific_closure"])
 
         drifted = dict(lock)
         drifted["automation"] = dict(automation)
@@ -298,6 +306,20 @@ class TrackBR07Tests(unittest.TestCase):
         drifted_network["kaggle"]["protected_inference_network_dependency"] = True
         with self.assertRaises(TrackBError):
             validate_execution_lock(drifted_network)
+
+    def test_github_push_failure_classifier_distinguishes_bad_token(self):
+        message = _classify_github_push_failure(
+            "remote: Invalid username or token. Password authentication is not supported."
+        )
+        self.assertIn("invalid", message.lower())
+        self.assertIn("CROPCOP_GITHUB_TOKEN", message)
+
+    def test_github_push_failure_classifier_distinguishes_permission_scope(self):
+        message = _classify_github_push_failure(
+            "remote: Write access to repository not granted. fatal: unable to access: 403"
+        )
+        self.assertIn("lacks repository write permission", message)
+        self.assertIn("Contents: Read and write", message)
 
     def test_secret_loader_prefers_environment_for_fresh_subprocess_runtime(self):
         key = "TRACKB_TEST_SECRET"
