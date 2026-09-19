@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "states": {
+    "R04-MNV4-DIRECT-S1": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S1/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S1/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S1/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S1/XAI_EVIDENCE_GATE.json"
+    },
+    "R04-MNV4-DIRECT-S2": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S2/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S2/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S2/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S2/XAI_EVIDENCE_GATE.json"
+    },
+    "R04-MNV4-DIRECT-S3": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S3/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S3/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S3/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S3/XAI_EVIDENCE_GATE.json"
+    },
+    "R06-EFFB0-CONTEXT-S1": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S1/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S1/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S1/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S1/XAI_EVIDENCE_GATE.json"
+    },
+    "R06-EFFB0-CONTEXT-S2": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S2/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S2/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S2/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S2/XAI_EVIDENCE_GATE.json"
+    },
+    "R06-EFFB0-CONTEXT-S3": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S3/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S3/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S3/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R06-EFFB0-CONTEXT-S3/XAI_EVIDENCE_GATE.json"
+    },
+    "R07-CNXTT-CONTEXT-S1": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S1/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S1/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S1/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S1/XAI_EVIDENCE_GATE.json"
+    },
+    "R07-CNXTT-CONTEXT-S2": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S2/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S2/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S2/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S2/XAI_EVIDENCE_GATE.json"
+    },
+    "R07-CNXTT-CONTEXT-S3": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S3/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S3/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S3/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R07-CNXTT-CONTEXT-S3/XAI_EVIDENCE_GATE.json"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S1/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S1/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S1/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S1/XAI_EVIDENCE_GATE.json"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S2/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S2/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S2/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S2/XAI_EVIDENCE_GATE.json"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3": {
+      "direct_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S3/DIRECT_STATE_EVIDENCE_GATE.json",
+      "efficiency": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S3/efficiency.json",
+      "robustness_replay": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S3/robustness_and_replay.json",
+      "xai_gate": "/tmp/cropcop_tracka_final_closure/global_audit/states/R13-VIT-DLITTLE-DIFF-CONTEXT-S3/XAI_EVIDENCE_GATE.json"
+    }
+  }
+}

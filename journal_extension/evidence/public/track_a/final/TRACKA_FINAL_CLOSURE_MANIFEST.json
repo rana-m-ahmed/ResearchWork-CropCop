@@ -1,0 +1,26 @@
+{
+  "artifact_kind": "track_a_final_closure_manifest",
+  "closure_input_files": {
+    "K1_completion_reconstructed.json": "55ecb777659e3187bfa4cc395df00efcc66d76168d25b5964e7a91333067834d",
+    "K2_completion_reconstructed.json": "4bea0927059ef8c841a16c7c062a1fca335ac9a48e1e2a3eb66e94e607ba659f",
+    "K3_completion_reconstructed.json": "3998ae73dd72af6a879989e3b89d6fe74a36592e76d0d024e9aefd31a7e5d711"
+  },
+  "files": {
+    "TRACKA_AUXILIARY_ANALYSIS.json": "3fbcdc8086f099f7fcd98855addbde9b32536cc5a9393d46aee75b8f12b44b14",
+    "TRACKA_AUXILIARY_EVIDENCE_INDEX.json": "4b0e7c16796f5dd142cf527b353f36dbde707b61d6b885916b8d1d452c934c41",
+    "TRACKA_CLAIM_MATRIX.json": "b4b812f4d3885d37f3a62f6e543e61f7f77725b0c51e7c0aea6bac285a2f2ff6",
+    "TRACKA_COMPREHENSIVE_CLOSURE.json": "54bb6db58fa4efd946b94626f873a31b021fd58501d4b4638472624ef96ec09d",
+    "TRACKA_DIRECT_EVIDENCE_INDEX.json": "2dbc5e52e9ed8707d2017364d41f74b90fa798fa811b1eb78bdb9f3f693e2957",
+    "TRACKA_DIRECT_SELECTION.json": "4048bb651a39f7fabb3703de7ac92c5ab4ce46c1299c4e8ad3ac0b64066847f2",
+    "TRACKA_FINAL_AUTHORITY_CHAIN.json": "88d7b2c401624c2f6d4545289229f5b4d7089948d1091fd6ed8e133c01ae128c",
+    "TRACKA_FINAL_CLOSURE_AUDIT.json": "222cd641adc1f8d59161a2e94bfcda18f656a6e065223404916e058452040eb8",
+    "TRACKA_FINAL_CLOSURE_REPORT.md": "148d14aff59a9d4d9704d1cd5b42649e0c1639a6f40e7bce7049c279a638124c",
+    "TRACKA_POSTTRAINING_GLOBAL_EVIDENCE_AUDIT.json": "f8bb3b038af01154006244974b866d54cc653da6dcf1bcb8740a1e8ecfe7f5a0"
+  },
+  "manifest_sha256": "1fea4d4a21104813e9c0700b08701c971aac76f783cc65d58c681a8a6a21afda",
+  "schema_version": "1.0",
+  "status": "PASS",
+  "track_a_closed": true,
+  "track_b_handoff_authorized": true,
+  "track_c_handoff_authorized": true
+}
