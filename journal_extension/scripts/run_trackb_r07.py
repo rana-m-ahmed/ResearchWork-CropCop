@@ -691,6 +691,27 @@ def _preflight(core, historical, output_root: Path, device: str):
     declared_hist_count = int(historical.manifest.get("image_count", -1))
     if declared_hist_count != len(hist_rows):
         raise TrackBError(f"historical comparison manifest declares {declared_hist_count} rows but contains {len(hist_rows)}")
+    if declared_hist_count == 92744:
+        expected_partial = {
+            "coverage_scope": "V1_TRAIN_VAL_ONLY",
+            "ext_i_eligible": False,
+            "maximum_evidence_grade": "EXT-S",
+            "v1_test_image_bytes_accessed": False,
+        }
+        for key, value in expected_partial.items():
+            if historical.manifest.get(key) != value:
+                raise TrackBError(f"safe historical comparison package policy mismatch: {key}")
+    elif declared_hist_count == 117546:
+        raise TrackBError(
+            "full 117,546-image EXT-I route is dormant until a recovered pre-test comparison "
+            "representation receives a formal provenance binding before candidate audit; row count alone "
+            "cannot authorize reopening EXT-I"
+        )
+    else:
+        raise TrackBError(
+            f"unsupported historical comparison surface size {declared_hist_count}; "
+            "current executable authority accepts exactly the safe 92,744-image V1 train+validation surface"
+        )
     import numpy as np
     hist_features = np.load(resolve_bundle_file(historical, "dino_features"), mmap_mode="r")
     if hist_features.shape != (len(hist_rows), 768):
