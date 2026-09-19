@@ -12,7 +12,9 @@ from cropcop_je.trackb_r07 import (
     CLASS_MAP_SHA256,
     DATASET_MANIFEST_SHA256,
     DINO_AUDIT_SHA256,
+    DINO_FACTORY_MANIFEST_SHA256,
     R07_CHECKPOINTS,
+    R07_RUN_RECORDS,
     TrackBError,
     load_json,
     validate_downstream_authority,
@@ -84,8 +86,23 @@ def main() -> int:
     for seed in ("S1", "S2", "S3"):
         if files[f"r07_{seed.lower()}"]["sha256"] != R07_CHECKPOINTS[seed]:
             raise TrackBError(f"R07 {seed} checkpoint SHA mismatch")
+        run_key = f"r07_{seed.lower()}_run_record"
+        if files[run_key]["sha256"] != R07_RUN_RECORDS[seed]["sha256"]:
+            raise TrackBError(f"R07 {seed} run-record SHA mismatch")
+        run_record = load_json(_inside(root, file_args[run_key]))
+        if str(run_record.get("run_id", "")) != R07_RUN_RECORDS[seed]["run_id"]:
+            raise TrackBError(f"R07 {seed} run-record ID mismatch")
+        selected_sha = (
+            ((run_record.get("artifact_locators") or {}).get("selected_checkpoint") or {}).get("sha256")
+            or (run_record.get("result_summary") or {}).get("selected_checkpoint_sha256")
+            or run_record.get("selected_checkpoint_sha256")
+        )
+        if str(selected_sha) != R07_CHECKPOINTS[seed]:
+            raise TrackBError(f"R07 {seed} run record does not bind the frozen checkpoint")
     if files["dino_checkpoint"]["sha256"] != DINO_AUDIT_SHA256:
         raise TrackBError("DINO audit checkpoint SHA mismatch")
+    if files["dino_factory_manifest"]["sha256"] != DINO_FACTORY_MANIFEST_SHA256:
+        raise TrackBError("DINO factory-manifest SHA mismatch")
 
     validate_downstream_authority(load_json(_inside(root, args.downstream_authority)))
     lock = load_json(_inside(root, args.execution_lock))
