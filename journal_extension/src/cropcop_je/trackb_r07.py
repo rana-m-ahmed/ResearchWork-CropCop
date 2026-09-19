@@ -268,6 +268,7 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         "github_push_preflight_before_runtime_repair": True,
         "private_evidence_archive_before_github_publication": True,
         "github_publication_retry_attempts": 4,
+        "private_kaggle_publication_retry_attempts": 4,
         "github_publication_failure_preserves_scientific_closure": True,
         "external_source_reachability_preflight": True,
     }
