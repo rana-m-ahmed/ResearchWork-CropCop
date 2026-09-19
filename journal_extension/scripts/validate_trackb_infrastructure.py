@@ -129,8 +129,10 @@ def main() -> int:
         raise TrackBError("master notebook still references retired Agri-Vision candidate")
     if "metadata.version(" in master_text:
         raise TrackBError("master notebook still depends on Kaggle live-kernel package versions")
-    if "str(VENV_PY)" not in master_text:
-        raise TrackBError("master notebook does not execute Track B with the isolated runtime Python")
+    if "sys.executable" not in master_text or "--requirements" not in master_text:
+        raise TrackBError("master notebook does not use the proven active-interpreter lock-repair path")
+    if "VENV_PY" in master_text or "trackb_runtime_env" in master_text:
+        raise TrackBError("master notebook still exposes the failed venv execution path")
 
     ops_text = ops_module.read_text(encoding="utf-8")
     for required in (
@@ -157,18 +159,26 @@ def main() -> int:
 
     bootstrap_text = runtime_bootstrap.read_text(encoding="utf-8")
     for required in (
-        'TORCH_INDEX = "https://download.pytorch.org/whl/cu126"',
         '"torch": "2.12.1"',
         '"torchvision": "0.27.1"',
         '"timm": "1.0.26"',
-        "--no-cache-dir",
+        '"numpy": "2.5.2"',
+        '"opencv-python-headless": "4.13.0.92"',
+        '"kaggle": "2.2.4"',
+        "requirements-trackb.lock.txt",
+        '"-m",',
+        '"pip",',
+        '"install",',
+        '"--no-cache-dir"',
+        "scientific_execution_requires_fresh_subprocess",
         "cuda_available",
-        "live_kernel_packages_modified",
+        "opencv_runtime_version",
     ):
         if required not in bootstrap_text:
-            raise TrackBError(f"isolated runtime bootstrap missing frozen guard: {required}")
-    if "--system-site-packages" in bootstrap_text:
-        raise TrackBError("isolated Track-B runtime must not inherit Kaggle system site-packages")
+            raise TrackBError(f"Track-B runtime repair bootstrap missing frozen guard: {required}")
+    for forbidden in ("-m\", \"venv", "ensurepip", "VENV_PY", "trackb_runtime_env"):
+        if forbidden in bootstrap_text:
+            raise TrackBError(f"Track-B runtime bootstrap still exposes failed venv path: {forbidden}")
 
     master_runner_text = master_runner.read_text(encoding="utf-8")
     for required in (
@@ -269,7 +279,7 @@ def main() -> int:
         "core_builder_notebook": core_info,
         "historical_builder_notebook": hist_info,
         "single_master_automation_surface": True,
-        "isolated_runtime_bootstrap": True,
+        "proven_kaggle_lock_repair_bootstrap": True,
         "automatic_private_kaggle_archival": True,
         "automatic_public_safe_github_publication": True,
         "track_b_v2_candidates": ["gvlid_grape", "irish_potato"],
