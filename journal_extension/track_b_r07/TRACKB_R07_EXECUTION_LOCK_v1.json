@@ -66,7 +66,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "51bf5e71c114d2d2a11406548dea41842fa658c9012b22ac1f168f859fc644d3",
+  "code_attestation_sha256": "4c1733da427271c184a73648670a5acdb98d14b8a5b9a51369ec59873544a440",
   "experiment_ids": [
     "TB2-AUDIT-POTATO",
     "TB2-AUDIT-AGRIVISION",
@@ -91,10 +91,10 @@
   },
   "geometric_acceptance": {
     "bfmatcher_norm": "HAMMING",
-    "homography_ransac_reprojection_px": 5.0,
+    "homography_ransac_reprojection_px": 5,
     "lowe_ratio": 0.75,
     "max_image_side": 800,
-    "maximum_median_symmetric_reprojection_px": 3.0,
+    "maximum_median_symmetric_reprojection_px": 3,
     "minimum_convex_hull_coverage_each_image": 0.1,
     "minimum_good_matches": 20,
     "minimum_homography_inliers": 12,
@@ -114,7 +114,20 @@
   "historical_compare": {
     "expected_image_count": 117546,
     "partial_surface_max_grade": "EXT-S",
-    "required_for_ext_i": true
+    "required_for_ext_i": true,
+    "safe_postclosure_route": {
+      "coverage_scope": "V1_TRAIN_VAL_ONLY",
+      "image_count": 92744,
+      "train_image_count": 76376,
+      "validation_image_count": 16368,
+      "v1_test_image_bytes_accessed": false,
+      "maximum_evidence_grade": "EXT-S"
+    },
+    "full_ext_i_route": {
+      "image_count": 117546,
+      "authorization": "RECOVERED_PRE_TEST_CRYPTOGRAPHIC_REPRESENTATION_ONLY",
+      "raw_postclosure_rebuild_forbidden": true
+    }
   },
   "identities": {
     "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
@@ -126,7 +139,7 @@
     "r07_s1_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
     "r07_s2_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
     "r07_s3_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37",
-    "track_a_replay_tolerance": 1e-06
+    "track_a_replay_tolerance": 0.000001
   },
   "kaggle": {
     "autosaved_working_disk_gb": 20,
