@@ -176,7 +176,7 @@ def main() -> int:
     ):
         if required not in bootstrap_text:
             raise TrackBError(f"Track-B runtime repair bootstrap missing frozen guard: {required}")
-    for forbidden in ("-m\", \"venv", "ensurepip", "VENV_PY", "trackb_runtime_env"):
+    for forbidden in ("-m\", \"venv", "-m\", \"ensurepip", "VENV_PY", "trackb_runtime_env"):
         if forbidden in bootstrap_text:
             raise TrackBError(f"Track-B runtime bootstrap still exposes failed venv path: {forbidden}")
 
