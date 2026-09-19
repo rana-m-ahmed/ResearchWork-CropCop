@@ -174,6 +174,13 @@ def main() -> int:
         raise TrackBError("Track-B GitHub write preflight regressed to REST-only permission probing")
     if '_safe_extract_zip(archive, data_root / class_name)' in ops_text:
         raise TrackBError("Irish Potato acquisition still trusts archive-internal directory layout")
+    for required in (
+        "Private Kaggle publication attempt",
+        "for attempt, delay in enumerate((0, 5, 15, 30), start=1)",
+        "private Kaggle dataset publication failed after 4 attempts",
+    ):
+        if required not in ops_text:
+            raise TrackBError(f"private Kaggle publication retry guard missing: {required}")
 
     bootstrap_text = runtime_bootstrap.read_text(encoding="utf-8")
     for required in (
@@ -320,6 +327,7 @@ def main() -> int:
         "git_write_preflight_before_runtime_repair": True,
         "private_evidence_archived_before_github_publication": True,
         "github_publication_retry_attempts": 4,
+        "private_kaggle_publication_retry_attempts": 4,
         "track_b_v2_candidates": ["gvlid_grape", "irish_potato"],
         "retired_v1_candidate_absent": True,
         "core_builder_validation_only_surface": True,
