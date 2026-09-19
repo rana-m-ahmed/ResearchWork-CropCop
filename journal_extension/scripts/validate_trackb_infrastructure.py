@@ -48,8 +48,13 @@ def main() -> int:
     hist_nb = root / "journal_extension/kaggle/trackb_build_historical_compare.ipynb"
     runner = root / "journal_extension/scripts/run_trackb_r07.py"
     audit_module = root / "journal_extension/src/cropcop_je/trackb_r07_audit.py"
+    hist_builder = root / "journal_extension/scripts/build_trackb_historical_compare.py"
+    hist_source_prep = root / "journal_extension/scripts/prepare_trackb_historical_source_input.py"
 
-    for path in (authority_path, lock_path, attestation_path, final_nb, hist_nb, runner, audit_module):
+    for path in (
+        authority_path, lock_path, attestation_path, final_nb, hist_nb, runner,
+        audit_module, hist_builder, hist_source_prep,
+    ):
         if not path.is_file():
             raise TrackBError(f"required Track-B infrastructure file missing: {path.relative_to(root)}")
 
@@ -76,11 +81,37 @@ def main() -> int:
             raise TrackBError(f"final Track-B notebook missing expected controller binding: {required}")
     if "build_trackb_historical_compare.py" not in hist_text or "code_attestation" not in hist_text:
         raise TrackBError("historical comparison notebook is not bound to the attested builder")
+    for required in (
+        "V1_TRAIN_VAL_ONLY",
+        "92744",
+        "EXT-S",
+        "v1_test_image_bytes_accessed",
+        "--v1-manifest",
+    ):
+        if required not in hist_text:
+            raise TrackBError(f"safe historical comparison notebook missing guard: {required}")
+    if "--source-manifest" in hist_text or "historical_source package" in hist_text:
+        raise TrackBError("historical comparison notebook still exposes the obsolete full-raw source route")
 
     audit_text = audit_module.read_text(encoding="utf-8")
     for forbidden in ("load_r07_checkpoint", "prediction_rows", "mapped_scope_metrics", "R07_CHECKPOINTS"):
         if forbidden in audit_text:
             raise TrackBError(f"prediction-blind audit module imports/references classifier path: {forbidden}")
+
+    hist_builder_text = hist_builder.read_text(encoding="utf-8")
+    for required in (
+        'SAFE_ROWS = TRAIN_ROWS + VAL_ROWS',
+        'SAFE_SCOPE = "V1_TRAIN_VAL_ONLY"',
+        '"v1_test_image_bytes_accessed": False',
+        '"maximum_evidence_grade": "EXT-S"',
+    ):
+        if required not in hist_builder_text:
+            raise TrackBError(f"safe historical builder missing guard: {required}")
+    if "EXPECTED_ROWS = 117546" in hist_builder_text:
+        raise TrackBError("post-closure historical builder still authorizes raw 117,546-image reconstruction")
+    prep_text = hist_source_prep.read_text(encoding="utf-8")
+    if "Raw 117,546-image historical-source reconstruction is disabled after V1-test closure" not in prep_text:
+        raise TrackBError("obsolete full-raw historical source preparer is not fail-closed")
 
     runner_text = runner.read_text(encoding="utf-8")
     audit_call = runner_text.find('potato = _audit_candidate(')
@@ -103,6 +134,10 @@ def main() -> int:
         "both_candidate_audits_before_protected_inference": True,
         "git_push_from_claim_notebook": False,
         "consumed_v1_test_reference_in_claim_notebook": False,
+        "safe_historical_builder_scope": "V1_TRAIN_VAL_ONLY",
+        "safe_historical_builder_image_count": 92744,
+        "safe_historical_builder_maximum_grade": "EXT-S",
+        "full_ext_i_representation_policy": "pre_test_recovered_representation_only",
     }
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
