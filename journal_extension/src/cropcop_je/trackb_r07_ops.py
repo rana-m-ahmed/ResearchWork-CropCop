@@ -51,10 +51,9 @@ def utc_now() -> str:
 
 
 def load_kaggle_secret(name: str) -> str:
-    # The master notebook may launch Track B inside an isolated virtual environment.
-    # In that case Kaggle's notebook-only kaggle_secrets module is not importable, so
-    # secrets are read once by the parent kernel and passed only through the child
-    # process environment. Environment values therefore take precedence.
+    # The operator notebook reads Kaggle secrets once, then passes them only through
+    # the fresh scientific subprocess environment. Environment values therefore take
+    # precedence and no secret value is persisted to evidence.
     value = (os.environ.get(name) or "").strip()
     if not value:
         try:
@@ -83,37 +82,137 @@ def configure_runtime_secrets() -> dict[str, bool]:
     return {"KAGGLE_API_TOKEN": True, "CROPCOP_GITHUB_TOKEN": True}
 
 
-def verify_github_repository_push_access(repository_full_name: str) -> dict[str, str | bool]:
+def _github_askpass_environment(token: str, askpass: Path) -> dict[str, str]:
+    token = token.strip()
+    if not token:
+        raise TrackBOpsError("CROPCOP_GITHUB_TOKEN is empty")
+    if any(ch.isspace() for ch in token):
+        raise TrackBOpsError("CROPCOP_GITHUB_TOKEN contains whitespace/newlines")
+    env = dict(os.environ)
+    env["CROPCOP_GITHUB_TOKEN"] = token
+    env["CROPCOP_GIT_USERNAME"] = (
+        os.environ.get("CROPCOP_GIT_USERNAME", "").strip() or "x-access-token"
+    )
+    env["GIT_ASKPASS"] = str(askpass)
+    env["GIT_ASKPASS_REQUIRE"] = "force"
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    env["GIT_CONFIG_COUNT"] = "1"
+    env["GIT_CONFIG_KEY_0"] = "credential.helper"
+    env["GIT_CONFIG_VALUE_0"] = ""
+    return env
+
+
+def _classify_github_push_failure(detail: str) -> str:
+    low = detail.lower()
+    if any(marker in low for marker in (
+        "authentication failed",
+        "invalid username or token",
+        "bad credentials",
+        "could not read username",
+    )):
+        return (
+            "GitHub credential is invalid, expired, revoked, or not a raw PAT. "
+            "Replace Kaggle Secret CROPCOP_GITHUB_TOKEN with a valid GitHub PAT."
+        )
+    if any(marker in low for marker in (
+        "permission to",
+        "write access to repository not granted",
+        "403",
+        "denied to",
+    )):
+        return (
+            "GitHub credential authenticated but lacks repository write permission. "
+            "For a fine-grained PAT, grant repository access to ResearchWork-CropCop "
+            "with Contents: Read and write."
+        )
+    if any(marker in low for marker in (
+        "could not resolve host",
+        "connection timed out",
+        "failed to connect",
+        "connection reset",
+        "temporary failure",
+        "network is unreachable",
+    )):
+        return "GitHub network transport failed; this looks transient rather than a token-scope failure."
+    return "GitHub write preflight failed for an unclassified Git transport reason."
+
+
+def verify_github_repository_push_access(
+    repo_dir: str | Path,
+    *,
+    source_git_sha: str | None = None,
+) -> dict[str, str | bool]:
     token = (os.environ.get("CROPCOP_GITHUB_TOKEN") or "").strip()
     if not token:
         raise TrackBOpsError("CROPCOP_GITHUB_TOKEN is not configured")
-    if "/" not in repository_full_name:
-        raise TrackBOpsError(f"invalid GitHub repository name: {repository_full_name!r}")
-    url = f"https://api.github.com/repos/{repository_full_name}"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "CropCop-TrackB/2.0",
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {token}",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=120) as response:
-            obj = json.loads(response.read().decode("utf-8"))
-    except Exception as exc:
-        raise TrackBOpsError("GitHub token/repository permission preflight failed") from exc
-    permissions = obj.get("permissions") or {}
-    if permissions.get("push") is not True:
+    repo_dir = Path(repo_dir).resolve()
+    if not (repo_dir / ".git").exists():
+        raise TrackBOpsError(f"GitHub push preflight requires a Git checkout: {repo_dir}")
+
+    observed_head = subprocess.check_output(
+        ["git", "-C", str(repo_dir), "rev-parse", "HEAD"],
+        text=True,
+    ).strip()
+    if source_git_sha and observed_head != str(source_git_sha).strip():
         raise TrackBOpsError(
-            f"GitHub token lacks push permission for {repository_full_name}; "
-            "fix CROPCOP_GITHUB_TOKEN before starting Track-B compute"
+            f"GitHub push preflight source mismatch: expected={source_git_sha}, observed={observed_head}"
         )
+
+    remote_url = subprocess.check_output(
+        ["git", "-C", str(repo_dir), "remote", "get-url", "origin"],
+        text=True,
+    ).strip()
+    parsed = urllib.parse.urlparse(remote_url)
+    if parsed.scheme != "https" or parsed.netloc.lower() != "github.com":
+        raise TrackBOpsError(
+            f"GitHub push preflight requires an HTTPS github.com origin; observed {remote_url!r}"
+        )
+
+    with tempfile.TemporaryDirectory() as td:
+        askpass = Path(td) / "askpass.py"
+        askpass.write_text(
+            "#!/usr/bin/env python3\n"
+            "import os,sys\n"
+            "p=(sys.argv[1] if len(sys.argv)>1 else '').lower()\n"
+            "if 'username' in p:\n"
+            "    print(os.environ.get('CROPCOP_GIT_USERNAME','x-access-token'))\n"
+            "elif 'password' in p:\n"
+            "    print(os.environ['CROPCOP_GITHUB_TOKEN'])\n"
+            "else:\n"
+            "    raise SystemExit(2)\n",
+            encoding="utf-8",
+        )
+        askpass.chmod(0o700)
+        env = _github_askpass_environment(token, askpass)
+
+        probe_ref = f"refs/heads/run-evidence/auth-probe-{observed_head[:12]}"
+        args = [
+            "git", "-C", str(repo_dir), "push", "--dry-run",
+            "origin", f"HEAD:{probe_ref}",
+        ]
+        proc = subprocess.run(
+            args,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=180,
+        )
+        if proc.returncode != 0:
+            detail = redact(((proc.stderr or "") + "\n" + (proc.stdout or "")).strip())
+            classification = _classify_github_push_failure(detail)
+            if len(detail) > 1800:
+                detail = detail[-1800:]
+            raise TrackBOpsError(
+                f"{classification} git push --dry-run diagnostic: {detail or '<no diagnostic>'}"
+            )
+
     return {
-        "repository": repository_full_name,
+        "repository_origin": remote_url,
         "authenticated": True,
         "push": True,
+        "preflight": "GIT_PUSH_DRY_RUN_NO_REMOTE_REF_CREATED",
+        "source_git_sha": observed_head,
     }
 
 
