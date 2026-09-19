@@ -217,7 +217,7 @@ class TrackBR07Tests(unittest.TestCase):
             f = root / "x.py"
             f.write_text("print('ok')\n", encoding="utf-8")
             att = {
-                "attestation_id": "TRACKB_CODE_ATTESTATION_v1",
+                "attestation_id": "TRACKB_CODE_ATTESTATION_v2",
                 "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
                 "files": [{"path": "x.py", "git_blob_sha1": git_blob_sha1(f)}],
             }
