@@ -31,9 +31,11 @@ from cropcop_je.trackb_r07_ops import (
     prepare_private_evidence_folder,
     publish_private_kaggle_dataset,
     publish_public_trackb_evidence,
+    probe_external_sources,
     run_checked,
     utc_now,
     verify_authenticated_kaggle_owner,
+    verify_github_repository_push_access,
 )
 
 
@@ -207,6 +209,8 @@ def main() -> int:
     stage("0 :: secrets and platform")
     secret_presence = configure_runtime_secrets()
     kaggle_cli = ensure_kaggle_cli()
+    github_permission = verify_github_repository_push_access("rana-m-ahmed/ResearchWork-CropCop")
+    external_source_probe = probe_external_sources()
     kaggle_owner = verify_authenticated_kaggle_owner(requested_kaggle_owner)
     historical_dataset = historical_dataset_slug(kaggle_owner)
     evidence_dataset = evidence_dataset_slug(kaggle_owner)
@@ -220,6 +224,8 @@ def main() -> int:
         "repository_head": source_git_sha,
         "secret_presence": secret_presence,
         "kaggle_cli": kaggle_cli,
+        "github_permission_preflight": github_permission,
+        "external_source_preflight": external_source_probe,
         "initial_disk_gb": disk_gb(workspace),
         "kaggle_owner": kaggle_owner,
         "protected_external_predictions_before_controller": False,
