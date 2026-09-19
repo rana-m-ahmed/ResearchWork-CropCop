@@ -287,6 +287,7 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertTrue(automation["github_push_preflight_before_runtime_repair"])
         self.assertTrue(automation["private_evidence_archive_before_github_publication"])
         self.assertEqual(automation["github_publication_retry_attempts"], 4)
+        self.assertEqual(automation["private_kaggle_publication_retry_attempts"], 4)
         self.assertTrue(automation["github_publication_failure_preserves_scientific_closure"])
 
         drifted = dict(lock)
