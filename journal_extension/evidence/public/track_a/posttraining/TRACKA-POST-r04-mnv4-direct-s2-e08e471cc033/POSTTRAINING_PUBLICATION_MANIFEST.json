@@ -1,0 +1,19 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "experiment_id": "R04-MNV4-DIRECT-S2",
+  "private_material_published": false,
+  "public_file_count": 6,
+  "public_file_sha256": {
+    "DIRECT_STATE_EVIDENCE_GATE.json": "78fd6df086269af5ed8e11f6aa9f06da2b393a9d6d3d54c77554dbe4be0e795a",
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "0d8c9af4bbe8473a55cd03ea7a7809793c22adadadf1682b2f432abc016af8fc",
+    "POSTTRAINING_STATE_COMPLETION.json": "3a37142185329bc379d02ee65d3a4bd34038410116e6af5a946a8a5d79124e93",
+    "XAI_EVIDENCE_GATE.json": "b9eecebb8d0857709c70986efceb18beeab0088712ccfad1fdf932ea113cb12d",
+    "efficiency.json": "3d7b6ba479d5a77d9d1e629725edc306b45a9f3a42ef4f15171dc483a71d2cb6",
+    "robustness_and_replay.json": "7d74c8ea9e3f1573fed23e60b4811b2598351468fcf57c182a3f87b33eea4f0d"
+  },
+  "publication_kind": "track_a_posttraining_state",
+  "publication_manifest_sha256": "4f53d99b871183712835c13cebad1d8e825d99e6af722e2ae4b59bf40d6f704b",
+  "run_id": "TRACKA-POST-r04-mnv4-direct-s2-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS"
+}

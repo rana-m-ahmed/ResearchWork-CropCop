@@ -1,0 +1,38 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "classwise_pass": true,
+  "efficiency_pass": true,
+  "experiment_id": "R04-MNV4-DIRECT-S2",
+  "external_surface_accessed": false,
+  "optimizer_state_advanced": false,
+  "public_evidence_sha256": {
+    "efficiency.json": "3d7b6ba479d5a77d9d1e629725edc306b45a9f3a42ef4f15171dc483a71d2cb6",
+    "robustness_and_replay.json": "7d74c8ea9e3f1573fed23e60b4811b2598351468fcf57c182a3f87b33eea4f0d"
+  },
+  "replay_gate": {
+    "absolute_metric_differences": {
+      "validation_accuracy": 0.0,
+      "validation_balanced_accuracy": 0.0,
+      "validation_macro_f1": 1.1102230246251565e-16,
+      "validation_nll": 8.031315890111301e-11
+    },
+    "all_metric_replay_max_abs_diff": 8.031315890111301e-11,
+    "metric_match_tolerance": 1e-06,
+    "optimizer_state_advanced": false,
+    "protected_external_surface_accessed": false,
+    "status": "PASS",
+    "training_performed": false,
+    "v1_test_accessed": false
+  },
+  "robustness_pass": true,
+  "run_id": "JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01",
+  "schema_version": "1.2",
+  "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "selected_checkpoint_epoch": 25,
+  "selected_checkpoint_file_sha256": "66a3e5f4a90d363c3f6b4ea342ae804af666414851f874238fd3ad83397cd32a",
+  "selected_checkpoint_sha256": "66a3e5f4a90d363c3f6b4ea342ae804af666414851f874238fd3ad83397cd32a",
+  "source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "status": "PASS",
+  "training_performed": false,
+  "v1_test_accessed": false
+}
