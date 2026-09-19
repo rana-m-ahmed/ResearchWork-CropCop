@@ -7,7 +7,7 @@
       "path": "journal_extension/configs/common/ctc_v2.json"
     },
     {
-      "git_blob_sha1": "bedb7fe7c480cf41c72c10965f42adc107d637e1",
+      "git_blob_sha1": "87f8f63893ad837520cb954c52c04799122c566a",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/kaggle/trackb_build_historical_compare.ipynb"
     },
@@ -22,7 +22,7 @@
       "path": "journal_extension/scripts/_bootstrap.py"
     },
     {
-      "git_blob_sha1": "8ca7a4eaa4792f60ffc63a10f3d781476ddb209a",
+      "git_blob_sha1": "9b5872fa7b8788a556e21a27d34ce583bccddded",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/build_trackb_historical_compare.py"
     },
@@ -37,7 +37,7 @@
       "path": "journal_extension/scripts/prepare_trackb_core_input.py"
     },
     {
-      "git_blob_sha1": "4bc9537a7421dae93ec18c7cd0bc9ff8a7a42231",
+      "git_blob_sha1": "ddc9a4e6a551882d96d70d6113cdb9d8750ab095",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/prepare_trackb_historical_source_input.py"
     },
@@ -47,7 +47,7 @@
       "path": "journal_extension/scripts/run_trackb_r07.py"
     },
     {
-      "git_blob_sha1": "8bf765e34b46d9f3cf9bb94aefb4ff445f3e74fe",
+      "git_blob_sha1": "55fd1dd87e2fbc20dc103718794ae99ed724a019",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/validate_trackb_infrastructure.py"
     },
@@ -140,5 +140,5 @@
   "hash_algorithm": "git_blob_sha1",
   "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
   "schema_version": "1.0",
-  "scope": "load-bearing Track-B claim execution, historical-comparison build, input preparation, and canonical Kaggle notebooks"
+  "scope": "load-bearing Track-B claim execution, safe post-closure development-surface historical comparison build, input preparation, and canonical Kaggle notebooks"
 }
