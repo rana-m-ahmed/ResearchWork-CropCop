@@ -51,15 +51,22 @@ def utc_now() -> str:
 
 
 def load_kaggle_secret(name: str) -> str:
-    try:
-        from kaggle_secrets import UserSecretsClient
-    except Exception as exc:
-        raise TrackBOpsError("Kaggle UserSecretsClient is unavailable") from exc
-    try:
-        value = UserSecretsClient().get_secret(name)
-    except Exception as exc:
-        raise TrackBOpsError(f"required Kaggle secret is unavailable: {name}") from exc
-    value = (value or "").strip()
+    # The master notebook may launch Track B inside an isolated virtual environment.
+    # In that case Kaggle's notebook-only kaggle_secrets module is not importable, so
+    # secrets are read once by the parent kernel and passed only through the child
+    # process environment. Environment values therefore take precedence.
+    value = (os.environ.get(name) or "").strip()
+    if not value:
+        try:
+            from kaggle_secrets import UserSecretsClient
+        except Exception as exc:
+            raise TrackBOpsError(
+                f"required secret {name} is not present in the environment and Kaggle UserSecretsClient is unavailable"
+            ) from exc
+        try:
+            value = (UserSecretsClient().get_secret(name) or "").strip()
+        except Exception as exc:
+            raise TrackBOpsError(f"required Kaggle secret is unavailable: {name}") from exc
     if not value:
         raise TrackBOpsError(f"required Kaggle secret is empty: {name}")
     if any(ch.isspace() for ch in value):
