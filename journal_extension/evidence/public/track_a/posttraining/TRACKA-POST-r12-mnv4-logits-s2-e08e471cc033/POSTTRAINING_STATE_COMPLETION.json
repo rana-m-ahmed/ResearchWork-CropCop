@@ -1,0 +1,26 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "completion_kind": "track_a_posttraining_state",
+  "completion_sha256": "a709a6cd609cf952439f4f1ca68e0e8f67a2675c93a7ea0886802a44e3597d59",
+  "experiment_id": "R12-MNV4-LOGITS-S2",
+  "external_surface_accessed": false,
+  "optimizer_state_advanced": false,
+  "posttraining_public_run_id": "TRACKA-POST-r12-mnv4-logits-s2-e08e471cc033",
+  "private_evidence_dataset_locator": "ranamuhammadahmed6/cropcop-ta-r12-logits-s2-e08e471cc033",
+  "private_generation_roundtrip_verified": true,
+  "private_sync_certificate_sha256": "33034edefd90e91afedaef6fdcbfc717c1422051c262b495bffa530d6dddd8ee",
+  "publication_branch": "run-evidence/TRACKA-POST-r12-mnv4-logits-s2-e08e471cc033",
+  "role": "auxiliary",
+  "run_id": "JE-R12-MNV4-LOGITS-S2-56023042e577-A01",
+  "schema_version": "1.0",
+  "stage_gates": {
+    "auxiliary": {
+      "basename": "AUXILIARY_STATE_EVIDENCE_GATE.json",
+      "logical_relative_path": "auxiliary/public_evidence/AUXILIARY_STATE_EVIDENCE_GATE.json",
+      "sha256": "9332f03bc30e8d89b9cb952c47acb395e26c62d6fa79ef4d91e6e132940cfb16"
+    }
+  },
+  "status": "PASS",
+  "training_or_adaptation_performed": false,
+  "v1_test_accessed": false
+}
