@@ -1,0 +1,38 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "classwise_pass": true,
+  "efficiency_pass": true,
+  "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S3",
+  "external_surface_accessed": false,
+  "optimizer_state_advanced": false,
+  "public_evidence_sha256": {
+    "efficiency.json": "ec5b125c9942c52979e57465cfb808b6ccfb0300f150f80e5f78fc1ff426f2de",
+    "robustness_and_replay.json": "2847fb9c33b84c79a7c371bdffcf65ef92a813f60d81704749fbb97b5171e050"
+  },
+  "replay_gate": {
+    "absolute_metric_differences": {
+      "validation_accuracy": 0.0,
+      "validation_balanced_accuracy": 1.1102230246251565e-16,
+      "validation_macro_f1": 1.1102230246251565e-16,
+      "validation_nll": 4.0283058833079366e-10
+    },
+    "all_metric_replay_max_abs_diff": 4.0283058833079366e-10,
+    "metric_match_tolerance": 1e-06,
+    "optimizer_state_advanced": false,
+    "protected_external_surface_accessed": false,
+    "status": "PASS",
+    "training_performed": false,
+    "v1_test_accessed": false
+  },
+  "robustness_pass": true,
+  "run_id": "JE-R13-VIT-DLITTLE-DIFF-CONTEXT-S3-56023042e577-A01",
+  "schema_version": "1.2",
+  "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "selected_checkpoint_epoch": 30,
+  "selected_checkpoint_file_sha256": "c10a93d5a6a264c80992a1d4d8b1a19daa732dfc9e68d2b8e7c96fb2dba73b67",
+  "selected_checkpoint_sha256": "c10a93d5a6a264c80992a1d4d8b1a19daa732dfc9e68d2b8e7c96fb2dba73b67",
+  "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "status": "PASS",
+  "training_performed": false,
+  "v1_test_accessed": false
+}
