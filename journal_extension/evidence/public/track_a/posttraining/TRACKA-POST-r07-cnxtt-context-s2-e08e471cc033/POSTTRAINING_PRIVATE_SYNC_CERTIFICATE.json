@@ -1,0 +1,19 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "confirmed_version_number": 4,
+  "dataset_locator": "sabahatabbas/cropcop-ta-r07-cnxtt-s2-e08e471cc033",
+  "evidence_file_count": 80,
+  "evidence_manifest_sha256": "569dd9e577cd26c86270722291b3cc91272a15ffd42d5eb96c52eccfb67c76b0",
+  "experiment_id": "R07-CNXTT-CONTEXT-S2",
+  "generation_kind": "final",
+  "generation_roundtrip_verified": true,
+  "owner_matches_authenticated_user": true,
+  "previous_version_number": 3,
+  "private_dataset_verified": true,
+  "roundtrip_marker_sha256": "42300d0407da7462d1abe3e66ba103e550463bc1644e82b949df32e6dcd64c49",
+  "run_id": "TRACKA-POST-r07-cnxtt-context-s2-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS",
+  "sync_certificate_sha256": "823bc5967688343c60e4343c62e9a56b7c54acc267ea6794e47409b934117570",
+  "sync_kind": "track_a_posttraining_private_evidence"
+}
