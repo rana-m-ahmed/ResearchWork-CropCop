@@ -21,9 +21,21 @@ class TrackBOpsError(RuntimeError):
     pass
 
 
-KAGGLE_OWNER_DEFAULT = "ranamuhammadahmed6"
-KAGGLE_HISTORICAL_DATASET = f"{KAGGLE_OWNER_DEFAULT}/cropcop-trackb-historical-r07-v2"
-KAGGLE_EVIDENCE_DATASET = f"{KAGGLE_OWNER_DEFAULT}/cropcop-trackb-r07-evidence"
+KAGGLE_OWNER_DEFAULT = "sabahatabbas"
+
+
+def historical_dataset_slug(owner: str) -> str:
+    owner = str(owner).strip()
+    if not owner or "/" in owner:
+        raise TrackBOpsError(f"invalid Kaggle owner: {owner!r}")
+    return f"{owner}/cropcop-trackb-historical-r07-v2"
+
+
+def evidence_dataset_slug(owner: str) -> str:
+    owner = str(owner).strip()
+    if not owner or "/" in owner:
+        raise TrackBOpsError(f"invalid Kaggle owner: {owner!r}")
+    return f"{owner}/cropcop-trackb-r07-evidence"
 
 SOURCE_DATASETS = {
     "final_v1": "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1",
