@@ -174,6 +174,9 @@ def main() -> int:
         "scientific_execution_requires_fresh_subprocess",
         "cuda_available",
         "opencv_runtime_version",
+        "pre_install_conflicting_opencv_variants",
+        "--force-reinstall",
+        "--no-deps",
     ):
         if required not in bootstrap_text:
             raise TrackBError(f"Track-B runtime repair bootstrap missing frozen guard: {required}")
@@ -255,6 +258,7 @@ def main() -> int:
         '"coverage_scope": "V1_TRAIN_VAL_ONLY"',
         '"maximum_evidence_grade": "EXT-S"',
         "full 117,546-image EXT-I route is dormant",
+        "locked Python drift",
     ):
         if required not in runner_text:
             raise TrackBError(f"final runner missing safe historical-package gate: {required}")
