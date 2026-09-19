@@ -140,7 +140,11 @@
     "r07_s1_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
     "r07_s2_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
     "r07_s3_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37",
-    "track_a_replay_tolerance": 0.000001
+    "track_a_replay_tolerance": 0.000001,
+    "dino_factory_manifest_sha256": "df70164ef227878353dde5430e8e0386b8853b53a2b66c20602e4cecd4dab7f1",
+    "r07_s1_run_record_sha256": "0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516",
+    "r07_s2_run_record_sha256": "0e48fdc0907a44042110f146ec27f796ea3d185fad1e2fc008cd1332bfd0ae15",
+    "r07_s3_run_record_sha256": "6ba1f3a7348f5c4ba0347621edef0e75e311b89bd38ff13ec4288cd81cf70050"
   },
   "kaggle": {
     "autosaved_working_disk_gb": 20,
