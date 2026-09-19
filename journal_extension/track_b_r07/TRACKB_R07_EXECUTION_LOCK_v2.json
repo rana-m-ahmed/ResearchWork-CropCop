@@ -213,7 +213,12 @@
     "kaggle_dataset_owner_mode": "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT",
     "kaggle_dataset_owner_must_match_active_token_for_create_or_version": true,
     "github_push_permission_preflight": true,
-    "external_source_reachability_preflight": true
+    "external_source_reachability_preflight": true,
+    "github_push_preflight_transport": "GIT_PUSH_DRY_RUN_SAME_AS_PUBLICATION",
+    "github_push_preflight_before_runtime_repair": true,
+    "private_evidence_archive_before_github_publication": true,
+    "github_publication_retry_attempts": 4,
+    "github_publication_failure_preserves_scientific_closure": true
   },
   "runtime_bootstrap": {
     "mode": "PROVEN_KAGGLE_LOCK_REPAIR_FRESH_SUBPROCESS",
