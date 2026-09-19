@@ -116,6 +116,73 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
             payload["training_or_adaptation_performed"] = False
         return payload
 
+    def test_runtime_identity_binds_run_id_from_sealed_readiness_and_run_record(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            run_record = root / "run_record.json"
+            payload = {
+                "schema_version": "1.0",
+                "status": "PASS",
+                "experiment_id": EXPERIMENT,
+                "run_id": RUN,
+            }
+            write_json(run_record, payload)
+            spec = {
+                "role": "direct",
+                "run_record": str(run_record),
+                "checkpoint_root": str(root / "checkpoint"),
+                "evidence_dataset_locator": "owner/private-evidence",
+                "executor_args": {},
+            }
+            readiness = {
+                "run_id": RUN,
+                "run_record_sha256": sha256_file(run_record),
+            }
+            bound = operator.bind_runtime_identity(
+                experiment_id=EXPERIMENT,
+                spec=spec,
+                readiness_state=readiness,
+                analysis_sha=ANALYSIS,
+            )
+            self.assertEqual(bound["run_id"], RUN)
+            self.assertEqual(bound["experiment_id"], EXPERIMENT)
+            self.assertEqual(
+                bound["posttraining_public_run_id"],
+                f"TRACKA-POST-{EXPERIMENT.lower()}-{ANALYSIS[:12]}",
+            )
+
+    def test_runtime_identity_rejects_readiness_run_id_mismatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            run_record = root / "run_record.json"
+            write_json(
+                run_record,
+                {
+                    "schema_version": "1.0",
+                    "status": "PASS",
+                    "experiment_id": EXPERIMENT,
+                    "run_id": RUN,
+                },
+            )
+            spec = {
+                "role": "direct",
+                "run_record": str(run_record),
+                "checkpoint_root": str(root / "checkpoint"),
+                "evidence_dataset_locator": "owner/private-evidence",
+                "executor_args": {},
+            }
+            readiness = {
+                "run_id": "wrong-run",
+                "run_record_sha256": sha256_file(run_record),
+            }
+            with self.assertRaises(RuntimeError):
+                operator.bind_runtime_identity(
+                    experiment_id=EXPERIMENT,
+                    spec=spec,
+                    readiness_state=readiness,
+                    analysis_sha=ANALYSIS,
+                )
+
     def test_terminal_direct_attempt_reused_only_when_all_gates_hold(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
