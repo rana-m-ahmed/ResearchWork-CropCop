@@ -224,6 +224,13 @@ def main() -> int:
     }
     print(json.dumps({k: v for k, v in receipt.items() if k != "secret_presence"} | {"secret_presence": secret_presence}, indent=2))
 
+    inaccessible = [slug for slug in SOURCE_DATASETS.values() if not kaggle_dataset_exists(slug)]
+    if inaccessible:
+        raise TrackBOpsError(
+            "active Kaggle token cannot access all frozen Track-B source datasets; "
+            f"fix dataset sharing/token account before GPU work: {inaccessible}"
+        )
+
     stage("1 :: automatic owned/private source acquisition")
     source_roots: dict[str, Path] = {}
     for key, slug in SOURCE_DATASETS.items():
