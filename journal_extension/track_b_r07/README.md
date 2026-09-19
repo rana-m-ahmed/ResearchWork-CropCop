@@ -15,7 +15,12 @@ One-time Kaggle setup:
 - add secret `KAGGLE_API_TOKEN`;
 - add secret `CROPCOP_GITHUB_TOKEN`.
 
-No Track-B input dataset needs to be manually uploaded or attached. The master notebook clones the frozen Track-B source, loads both secrets, and applies `requirements-trackb.lock.txt` directly to Kaggle's active Python interpreter **before any scientific package import**. This deliberately reuses the clean-session execution pattern already qualified during Track A. The repaired stack is verified from a fresh child interpreter with CUDA before `run_trackb_r07_master.py` is launched in another fresh subprocess.
+`CROPCOP_GITHUB_TOKEN` must be a current raw GitHub PAT that can push to
+`rana-m-ahmed/ResearchWork-CropCop`. For a fine-grained PAT, select that repository
+and grant **Contents: Read and write**. Do not store quotes, a URL, a username, or an
+expired/revoked token in the Kaggle secret.
+
+No Track-B input dataset needs to be manually uploaded or attached. The master notebook clones the frozen Track-B source, loads both secrets, and immediately performs a non-mutating `git push --dry-run` to a disposable evidence probe ref using temporary `GIT_ASKPASS`. This is the same Git transport used by final evidence publication and creates no remote ref. Invalid/expired credentials therefore fail **before** the expensive runtime repair. Only after this preflight passes does the notebook apply `requirements-trackb.lock.txt` directly to Kaggle's active Python interpreter **before any scientific package import**. This deliberately reuses the clean-session execution pattern already qualified during Track A. The repaired stack is verified from a fresh child interpreter with CUDA before `run_trackb_r07_master.py` is launched in another fresh subprocess.
 
 Do not create a Python `venv` on Kaggle for Track B: the Kaggle system interpreter may not provide a working `ensurepip` path. Do not manually install Torch either; the master notebook owns the one-time exact-lock repair.
 
@@ -94,9 +99,9 @@ Track B evaluates exactly R07-S1/S2/S3. The historical DINOv3 ConvNeXt-Tiny chec
 
 The master controller performs these stages in order:
 
-1. load Kaggle/GitHub secrets, repair any stock Kaggle package drift to the exact Track-B lock, and verify the repaired stack/CUDA from a fresh subprocess;
-2. auto-detect the Kaggle owner authenticated by `KAGGLE_API_TOKEN`;
-3. verify access to every frozen Final-V1, R07-S1/S2/S3, and DINO source dataset before large downloads begin;
+1. load Kaggle/GitHub secrets and prove GitHub evidence-branch write access with a non-mutating `git push --dry-run` before dependency repair;
+2. repair any stock Kaggle package drift to the exact Track-B lock and verify the repaired stack/CUDA from a fresh subprocess;
+3. auto-detect the Kaggle owner authenticated by `KAGGLE_API_TOKEN` and verify access to every frozen Final-V1, R07-S1/S2/S3, and DINO source dataset before large downloads begin;
 4. automatically download those frozen assets;
 5. build the immutable `core` package containing only the allowed validation replay surface and frozen model/audit identities;
 6. build or reuse an exact private `historical_compare` cache over V1 train+validation only;
@@ -108,10 +113,24 @@ The master controller performs these stages in order:
 12. run S1/S2/S3 native 120-way inference on the same sealed representatives;
 13. compute the fixed 5,000-replicate family bootstrap with shared resamples;
 14. independently recompute QA and require `TRACK_B_CLOSED`;
-15. publish only audited public-safe summaries to a GitHub evidence branch;
-16. archive the complete restricted evidence ZIP to a private Kaggle dataset.
+15. archive the complete restricted evidence ZIP to a private Kaggle dataset **before** any final GitHub publication attempt;
+16. publish only audited public-safe summaries to a GitHub evidence branch, retrying transient failures four times.
 
 The controller automatically garbage-collects large source downloads between stages rather than requiring the operator to create and reattach multiple intermediate datasets.
+
+## Publication durability
+
+GitHub publication is an operational dissemination layer, not part of the scientific
+estimator. The notebook proves Git write access before compute. After terminal
+`TRACK_B_CLOSED` + QA PASS, the complete restricted evidence is archived to the
+private Kaggle evidence dataset first. GitHub public-safe publication then receives
+four attempts with bounded retry delays.
+
+If GitHub becomes unavailable after scientific closure, Track B does **not** discard
+or reinterpret results. The automation receipt records
+`TRACK_B_CLOSED_PRIVATE_EVIDENCE_ARCHIVED_GITHUB_PUBLICATION_FAILED`, and the
+private evidence remains the durable recovery authority. Credential failures should
+normally be caught before dependency repair by the early dry-run preflight.
 
 ## Historical comparison boundary
 
