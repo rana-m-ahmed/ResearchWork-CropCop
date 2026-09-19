@@ -88,7 +88,12 @@ def terminal_stage(attempt_root: Path, stage: str, experiment_id: str, run_id: s
     return None
 
 
-def load_local_completed_state(state_root: Path, experiment_id: str, analysis_sha: str) -> dict | None:
+def load_local_completed_state(
+    state_root: Path,
+    experiment_id: str,
+    run_id: str,
+    analysis_sha: str,
+) -> dict | None:
     cert_dir = state_root / "certificates"
     completion_path = cert_dir / "POSTTRAINING_STATE_COMPLETION.json"
     publication_path = cert_dir / "POSTTRAINING_PUBLICATION_CERTIFICATE.json"
@@ -106,6 +111,7 @@ def load_local_completed_state(state_root: Path, experiment_id: str, analysis_sh
         completion.get("status") != "PASS"
         or completion.get("experiment_id") != experiment_id
         or completion.get("analysis_source_git_commit") != analysis_sha
+        or completion.get("run_id") != run_id
         or completion.get("private_generation_roundtrip_verified") is not True
         or not expected_branch
         or publication.get("status") != "PASS"
@@ -138,6 +144,36 @@ def load_local_completed_state(state_root: Path, experiment_id: str, analysis_sh
     ):
         return None
     return completion
+
+
+def bind_runtime_identity(
+    *,
+    experiment_id: str,
+    spec: dict,
+    readiness_state: dict,
+    analysis_sha: str,
+) -> dict:
+    row = dict(spec)
+    run_record_path = Path(row["run_record"]).resolve()
+    run_record = load_json(run_record_path)
+    run_id = str(readiness_state.get("run_id", "")).strip()
+    expected_run_record_sha = str(readiness_state.get("run_record_sha256", "")).strip()
+    if not run_id:
+        raise RuntimeError(f"sealed readiness run_id missing: {experiment_id}")
+    if not expected_run_record_sha:
+        raise RuntimeError(f"sealed readiness run-record SHA missing: {experiment_id}")
+    if sha256_file(run_record_path) != expected_run_record_sha:
+        raise RuntimeError(f"sealed readiness/run-record byte mismatch: {experiment_id}")
+    if run_record.get("run_id") != run_id:
+        raise RuntimeError(f"sealed readiness/run-record run_id mismatch: {experiment_id}")
+    if run_record.get("experiment_id") != experiment_id or run_record.get("status") != "PASS":
+        raise RuntimeError(f"scientific run record is not terminal PASS for {experiment_id}")
+    row["experiment_id"] = experiment_id
+    row["run_id"] = run_id
+    row["posttraining_public_run_id"] = (
+        f"TRACKA-POST-{experiment_id.lower().replace('_','-')}-{analysis_sha[:12]}"
+    )
+    return row
 
 
 def next_attempt(attempt_root: Path) -> Path:
@@ -555,10 +591,11 @@ def main() -> int:
     for experiment_id in assigned:
         assignment = placement["assignments"][experiment_id]
         gpu_index = 0 if assignment["slot_id"].endswith("GPU0") else 1
-        row = dict(states[experiment_id])
-        row["experiment_id"] = experiment_id
-        row["posttraining_public_run_id"] = (
-            f"TRACKA-POST-{experiment_id.lower().replace('_','-')}-{analysis_sha[:12]}"
+        row = bind_runtime_identity(
+            experiment_id=experiment_id,
+            spec=states[experiment_id],
+            readiness_state=readiness["states"][experiment_id],
+            analysis_sha=analysis_sha,
         )
         slot_queues[gpu_index].append(row)
 
@@ -570,7 +607,12 @@ def main() -> int:
             experiment_id = state["experiment_id"]
             state_root = work_root / experiment_id
             state_root.mkdir(parents=True, exist_ok=True)
-            existing = load_local_completed_state(state_root, experiment_id, analysis_sha)
+            existing = load_local_completed_state(
+                state_root,
+                experiment_id,
+                state["run_id"],
+                analysis_sha,
+            )
             if existing is not None:
                 with results_lock:
                     results[experiment_id] = {"status": "REUSED_COMPLETE", "completion": existing}
@@ -594,17 +636,26 @@ def main() -> int:
             deferred = False
             for stage in stages:
                 estimate_key = {"direct": "DIRECT_EVIDENCE", "xai": "XAI_EVIDENCE", "auxiliary": "AUXILIARY_EVIDENCE"}[stage]
-                status, path = run_stage(
-                    repo=repo,
-                    state=state,
-                    stage=stage,
-                    state_root=state_root,
-                    analysis_sha=analysis_sha,
-                    gpu_index=gpu_index,
-                    estimated_seconds=float(stage_seconds[estimate_key]),
-                    budget=budget,
-                    log_lock=log_lock,
-                )
+                try:
+                    status, path = run_stage(
+                        repo=repo,
+                        state=state,
+                        stage=stage,
+                        state_root=state_root,
+                        analysis_sha=analysis_sha,
+                        gpu_index=gpu_index,
+                        estimated_seconds=float(stage_seconds[estimate_key]),
+                        budget=budget,
+                        log_lock=log_lock,
+                    )
+                except Exception as exc:
+                    with results_lock:
+                        results[experiment_id] = {
+                            "status": "FAIL_STAGE_EXCEPTION",
+                            "stage": stage,
+                            "error": f"{type(exc).__name__}: {exc}",
+                        }
+                    return
                 if status == "DEFERRED_SESSION_BUDGET":
                     deferred = True
                     break
