@@ -43,7 +43,7 @@ def main() -> int:
 
     authority_path = root / "journal_extension/amendments/track_bc_r07_downstream_v2.json"
     lock_path = root / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v2.json"
-    attestation_path = root / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v1.json"
+    attestation_path = root / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v2.json"
     final_nb = root / "journal_extension/kaggle/trackb_r07_end_to_end.ipynb"
     master_nb = root / "journal_extension/kaggle/trackb_r07_master.ipynb"
     core_nb = root / "journal_extension/kaggle/trackb_build_core_package.ipynb"
