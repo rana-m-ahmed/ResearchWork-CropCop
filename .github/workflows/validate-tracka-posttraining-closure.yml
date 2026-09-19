@@ -22,6 +22,7 @@ on:
       - 'journal_extension/scripts/resolve_tracka_v12_final_v1.py'
       - 'journal_extension/scripts/restore_tracka_v12_posttraining_evidence.py'
       - 'journal_extension/scripts/run_tracka_v12_posttraining_account.py'
+      - 'journal_extension/scripts/run_tracka_v12_xai_filesystem_wrapper.py'
       - 'journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py'
       - 'journal_extension/scripts/validate_tracka_v12_posttraining_infrastructure.py'
       - 'journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py'
@@ -99,6 +100,7 @@ jobs:
               'journal_extension/scripts/resolve_tracka_v12_final_v1.py',
               'journal_extension/scripts/restore_tracka_v12_posttraining_evidence.py',
               'journal_extension/scripts/run_tracka_v12_posttraining_account.py',
+              'journal_extension/scripts/run_tracka_v12_xai_filesystem_wrapper.py',
               'journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py',
               'journal_extension/scripts/validate_tracka_v12_posttraining_infrastructure.py',
               'journal_extension/src/cropcop_je/tracka_v12_posttraining_operator.py',
@@ -146,6 +148,7 @@ jobs:
             journal_extension/scripts/build_tracka_v12_posttraining_account_readiness.py \
             journal_extension/scripts/build_tracka_v12_posttraining_readiness.py \
             journal_extension/scripts/run_tracka_v12_posttraining_account.py \
+            journal_extension/scripts/run_tracka_v12_xai_filesystem_wrapper.py \
             journal_extension/scripts/restore_tracka_v12_posttraining_evidence.py \
             journal_extension/scripts/sync_tracka_v12_posttraining_evidence.py \
             journal_extension/scripts/publish_tracka_v12_posttraining_state.py \
