@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib.metadata
 import json
 import os
 import platform
@@ -610,6 +611,7 @@ def _preflight(core, historical, output_root: Path, device: str):
         "numpy": np.__version__,
         "Pillow": PIL.__version__,
         "opencv": cv2.__version__,
+        "kaggle": importlib.metadata.version("kaggle"),
         "transformers": transformers.__version__,
         "huggingface_hub": huggingface_hub.__version__,
         "safetensors": safetensors.__version__,
@@ -618,12 +620,11 @@ def _preflight(core, historical, output_root: Path, device: str):
         "cuda_devices": [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())],
     }
     expected = execution_lock["software"]
-    for key in ("torch", "torchvision", "timm", "numpy", "Pillow", "transformers", "huggingface_hub", "safetensors"):
+    for key in ("torch", "torchvision", "timm", "numpy", "Pillow", "kaggle", "transformers", "huggingface_hub", "safetensors"):
         if str(environment[key]) != str(expected[key]):
             raise TrackBError(f"locked dependency drift: {key}: expected {expected[key]}, got {environment[key]}")
-    if str(environment["opencv"]) != str(expected["opencv_python_headless"]).split(".88")[0] and str(environment["opencv"]) != "4.12.0":
-        # OpenCV wheel metadata has a build suffix; runtime cv2.__version__ is normally 4.12.0.
-        raise TrackBError(f"locked OpenCV drift: expected 4.12.0 runtime, got {environment['opencv']}")
+    if str(environment["opencv"]) != "4.13.0":
+        raise TrackBError(f"locked OpenCV drift: expected 4.13.0 runtime, got {environment['opencv']}")
     cv2.setNumThreads(1)
     environment["opencv_threads"] = int(cv2.getNumThreads())
     if not torch.cuda.is_available():
