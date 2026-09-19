@@ -203,22 +203,25 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         "transformers": "5.0.0",
         "huggingface_hub": "1.30.0",
         "safetensors": "0.8.0",
-        "opencv_python_headless": "4.12.0.88",
+        "opencv_python_headless": "4.13.0.92",
+        "kaggle": "2.2.4",
     }
     for key, value in expected_software.items():
         if software.get(key) != value:
             raise TrackBError(f"Track-B software lock drift: {key}")
     bootstrap = lock.get("runtime_bootstrap", {})
     expected_bootstrap = {
-        "mode": "ISOLATED_VIRTUAL_ENVIRONMENT",
-        "python_major_minor": "3.12",
-        "torch_version": "2.12.1",
-        "torchvision_version": "0.27.1",
-        "pytorch_wheel_index": "https://download.pytorch.org/whl/cu126",
-        "cuda_wheel_family": "cu126",
-        "live_kernel_torch_replacement_forbidden": True,
-        "secrets_handoff": "PARENT_KAGGLE_KERNEL_TO_CHILD_ENVIRONMENT_ONLY",
+        "mode": "PROVEN_KAGGLE_LOCK_REPAIR_FRESH_SUBPROCESS",
+        "python": "3.12.13",
+        "requirements_lock": "journal_extension/track_b_r07/requirements-trackb.lock.txt",
+        "pip_install_strategy": "ACTIVE_INTERPRETER_EXACT_LOCK_BEFORE_SCIENTIFIC_IMPORTS",
+        "pip_index": "PYPI_DEFAULT",
         "pip_cache_disabled": True,
+        "venv_required": False,
+        "ensurepip_required": False,
+        "scientific_execution_process": "FRESH_SUBPROCESS_AFTER_LOCK_REPAIR",
+        "parent_kernel_scientific_imports_after_repair_forbidden": True,
+        "provenance": "reuses qualified Track-A Kaggle exact-stack repair pattern",
     }
     for key, value in expected_bootstrap.items():
         if bootstrap.get(key) != value:
