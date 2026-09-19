@@ -594,6 +594,7 @@ def _preflight(core, historical, output_root: Path, device: str):
     import PIL
     import torch
     import torchvision
+    import timm
     import transformers
     import huggingface_hub
     import safetensors
@@ -605,6 +606,7 @@ def _preflight(core, historical, output_root: Path, device: str):
         "python": platform.python_version(),
         "torch": torch.__version__.split("+", 1)[0],
         "torchvision": torchvision.__version__.split("+", 1)[0],
+        "timm": timm.__version__,
         "numpy": np.__version__,
         "Pillow": PIL.__version__,
         "opencv": cv2.__version__,
@@ -616,7 +618,7 @@ def _preflight(core, historical, output_root: Path, device: str):
         "cuda_devices": [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())],
     }
     expected = execution_lock["software"]
-    for key in ("torch", "torchvision", "numpy", "Pillow", "transformers", "huggingface_hub", "safetensors"):
+    for key in ("torch", "torchvision", "timm", "numpy", "Pillow", "transformers", "huggingface_hub", "safetensors"):
         if str(environment[key]) != str(expected[key]):
             raise TrackBError(f"locked dependency drift: {key}: expected {expected[key]}, got {environment[key]}")
     if str(environment["opencv"]) != str(expected["opencv_python_headless"]).split(".88")[0] and str(environment["opencv"]) != "4.12.0":
