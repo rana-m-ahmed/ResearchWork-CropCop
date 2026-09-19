@@ -62,7 +62,7 @@
       "path": "journal_extension/scripts/run_trackb_r07_master.py"
     },
     {
-      "git_blob_sha1": "98dac13f6482c761fd973905e749230a16de26d6",
+      "git_blob_sha1": "a28c6b626745771bf6c92221a10003e0594882fd",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/run_trackb_r07.py"
     },
@@ -169,6 +169,6 @@
   ],
   "hash_algorithm": "git_blob_sha1",
   "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
-  "schema_version": "2.1",
+  "schema_version": "2.2",
   "scope": "load-bearing Track-B v2 scientific execution, authenticated-owner Kaggle automation, safe GitHub evidence publication, deterministic core assembly, safe historical comparison, input preparation, and canonical notebooks"
 }
