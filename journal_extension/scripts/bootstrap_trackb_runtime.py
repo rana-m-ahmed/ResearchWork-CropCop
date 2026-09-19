@@ -210,10 +210,13 @@ def bootstrap(requirements: Path, receipt_path: Path) -> dict[str, object]:
     working = Path("/kaggle/working")
     pre = _metadata_snapshot()
     pre_drift = _drift(pre)
+    pre_conflicting_opencv_variants = [
+        name for name in OPENCV_VARIANTS if _version(name) is not None
+    ]
     removed_opencv_variants: list[str] = []
-    repaired = bool(pre_drift)
+    repaired = bool(pre_drift or pre_conflicting_opencv_variants)
 
-    if pre_drift:
+    if repaired:
         print(
             "Frozen stack verification requires repair: "
             + json.dumps(pre_drift, sort_keys=True),
@@ -279,6 +282,7 @@ def bootstrap(requirements: Path, receipt_path: Path) -> dict[str, object]:
         "python_expected": EXPECTED_PYTHON,
         "pre_install_versions": pre,
         "pre_install_drift": pre_drift,
+        "pre_install_conflicting_opencv_variants": pre_conflicting_opencv_variants,
         "removed_conflicting_opencv_variants": removed_opencv_variants,
         "pip_cache_disabled": True,
         "venv_used": False,
