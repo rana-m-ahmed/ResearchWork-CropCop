@@ -34,6 +34,18 @@ STAGE_GATE = {
 }
 
 
+def stage_script_path(repo: Path, stage: str) -> Path:
+    if stage not in STAGE_SCRIPT:
+        raise RuntimeError(f"unknown post-training stage: {stage}")
+    configured = STAGE_SCRIPT[stage]
+    if stage == "xai":
+        override = os.environ.get("CROPCOP_TRACKA_XAI_ENTRYPOINT", "").strip()
+        if override:
+            configured = override
+    path = Path(configured)
+    return path if path.is_absolute() else (repo / path)
+
+
 def load_json(path: str | Path) -> dict:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -216,7 +228,7 @@ def run_stage(
         raise RuntimeError(f"missing frozen executor args for {experiment_id}:{stage}")
     command = [
         os.environ.get("PYTHON", "python"),
-        str(repo / STAGE_SCRIPT[stage]),
+        str(stage_script_path(repo, stage)),
         "--repo-root", str(repo),
         "--analysis-source-git-commit", analysis_sha,
         "--run-record", str(Path(state["run_record"]).resolve()),
