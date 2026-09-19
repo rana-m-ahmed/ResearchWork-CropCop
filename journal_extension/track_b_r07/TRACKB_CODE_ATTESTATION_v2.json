@@ -17,12 +17,12 @@
       "path": "journal_extension/kaggle/trackb_build_historical_compare.ipynb"
     },
     {
-      "git_blob_sha1": "36a22f747c16334a03396e7d7ff0e24cff23d032",
+      "git_blob_sha1": "33c83ce256d51173911e6bf8fa41c7195d64e9ca",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/kaggle/trackb_r07_end_to_end.ipynb"
     },
     {
-      "git_blob_sha1": "b0383c98313ac8f8de8b4c3963a760485cb674a5",
+      "git_blob_sha1": "5d08b025d256fa4a2bc8c00c4ffa0e85546fba9e",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/kaggle/trackb_r07_master.ipynb"
     },
@@ -57,7 +57,7 @@
       "path": "journal_extension/scripts/prepare_trackb_historical_source_input.py"
     },
     {
-      "git_blob_sha1": "a4efb6deadcfb8f3d686bbd5302c1f2eed6bd874",
+      "git_blob_sha1": "0c912ae59c8bbc034c785100e358b5bc4e7ca4a1",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/run_trackb_r07_master.py"
     },
@@ -67,7 +67,7 @@
       "path": "journal_extension/scripts/run_trackb_r07.py"
     },
     {
-      "git_blob_sha1": "e8bc81b1a4a25937c83a41bad5ffaf3e65da075f",
+      "git_blob_sha1": "b556409d840efaf339d9357d437a3ca7d4fc8735",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/validate_trackb_infrastructure.py"
     },
@@ -147,12 +147,12 @@
       "path": "journal_extension/src/cropcop_je/trackb_r07_audit.py"
     },
     {
-      "git_blob_sha1": "d6012537443d889e39a6b0552036b0768c1154e3",
+      "git_blob_sha1": "0a32a96b0e31733c106a76bfcad64533c690fa18",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py"
     },
     {
-      "git_blob_sha1": "2e9510000a7eafd87267415e4e58fa08e01c6195",
+      "git_blob_sha1": "fef819691332292b415f536b7e6244d724b51a66",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/src/cropcop_je/trackb_r07.py"
     },
@@ -169,6 +169,6 @@
   ],
   "hash_algorithm": "git_blob_sha1",
   "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
-  "schema_version": "2.0",
-  "scope": "load-bearing Track-B v2 scientific execution, automated Kaggle orchestration, safe GitHub evidence publication, deterministic core assembly, safe historical comparison, input preparation, and canonical notebooks"
+  "schema_version": "2.1",
+  "scope": "load-bearing Track-B v2 scientific execution, authenticated-owner Kaggle automation, safe GitHub evidence publication, deterministic core assembly, safe historical comparison, input preparation, and canonical notebooks"
 }
