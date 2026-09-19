@@ -980,7 +980,7 @@ def main() -> int:
         "new_training_performed": False,
         "external_predictions_before_candidate_seal": False,
     }
-    for candidate in (potato, agrivision):
+    for candidate in (grape, potato):
         qa["candidate_qa"][candidate["candidate_id"]] = _independent_candidate_qa(candidate, output_root)
     qa["qa_sha256"] = sha256_json({k: v for k, v in qa.items() if k != "qa_sha256"})
     atomic_write_json(output_root / "TRACKB_FINAL_QA.json", qa)
