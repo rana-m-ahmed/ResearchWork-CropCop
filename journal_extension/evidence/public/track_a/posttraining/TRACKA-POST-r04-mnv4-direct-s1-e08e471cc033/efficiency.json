@@ -1,0 +1,15 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "experiment_id": "R04-MNV4-DIRECT-S1",
+  "external_surface_accessed": false,
+  "input_resolution": 256,
+  "model_state_tensor_bytes_fp32": 34625160,
+  "schema_version": "1.2",
+  "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "selected_checkpoint_sha256": "63a5ba04a278fcc5a0a333bfc38a21ab4718df5530c9b4f99bc81ef13011251c",
+  "source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "total_parameter_count": 8588232,
+  "trainable_parameter_count": 8588232,
+  "training_performed": false,
+  "v1_test_accessed": false
+}
