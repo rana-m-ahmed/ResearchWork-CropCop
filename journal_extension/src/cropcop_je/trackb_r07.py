@@ -148,6 +148,20 @@ def validate_downstream_authority(authority: dict[str, Any]) -> None:
             raise TrackBError(f"R07 {seed} checkpoint authority mismatch")
     if authority.get("audit_encoder", {}).get("checkpoint_sha256") != DINO_AUDIT_SHA256:
         raise TrackBError("DINO audit encoder identity mismatch")
+    chronology = authority.get("chronology", {})
+    if chronology.get("protected_external_predictions_before_v2") is not False:
+        raise TrackBError("v2 cohort redesign does not predate protected external predictions")
+    if chronology.get("external_metric_results_used_to_choose_v2_candidates") is not False:
+        raise TrackBError("v2 cohort redesign is not explicitly pre-external/outcome-blind")
+    redesign = authority.get("cohort_redesign", {})
+    if (redesign.get("primary_confirmatory_candidate") or {}).get("id") != "gvlid_grape":
+        raise TrackBError("v2 confirmatory cohort identity drift")
+    if (redesign.get("complementary_stress_candidate") or {}).get("id") != "irish_potato":
+        raise TrackBError("v2 stress cohort identity drift")
+    if (redesign.get("retired_candidate") or {}).get("id") != "agrivision_bd":
+        raise TrackBError("v2 retired-candidate chronology is missing")
+    if redesign.get("post_prediction_candidate_substitution_forbidden") is not True:
+        raise TrackBError("v2 candidate substitution firewall is missing")
     track_c = authority.get("track_c_deployment_representative", {})
     if track_c.get("state") != "R07-S1" or track_c.get("checkpoint_sha256") != R07_CHECKPOINTS["S1"]:
         raise TrackBError("shared downstream amendment does not freeze the independent Track-C R07-S1 representative")
@@ -190,6 +204,36 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         raise TrackBError("residual-lineage EXT-S cap missing")
     if lock.get("metrics", {}).get("native_output_space") != 120:
         raise TrackBError("native output-space contract drift")
+    frozen_candidates = (
+        ("candidate_a", "gvlid_grape", "gvlid_v5"),
+        ("candidate_b", "irish_potato", "irish_potato"),
+    )
+    for key, candidate_id, role in frozen_candidates:
+        row = lock.get(key, {})
+        contract = CANDIDATE_CONTRACTS[candidate_id]
+        if row.get("id") != candidate_id or row.get("role") != role:
+            raise TrackBError(f"Track-B v2 candidate identity drift: {key}")
+        if row.get("scope") != contract["scope"] or row.get("doi") != contract["doi"] or str(row.get("version")) != contract["version"]:
+            raise TrackBError(f"Track-B v2 candidate source identity drift: {candidate_id}")
+        if row.get("mapping") != contract["mapping"]:
+            raise TrackBError(f"Track-B v2 candidate mapping drift: {candidate_id}")
+    automation = lock.get("automation", {})
+    expected_automation = {
+        "single_master_notebook": True,
+        "kaggle_api_secret": "KAGGLE_API_TOKEN",
+        "github_token_secret": "CROPCOP_GITHUB_TOKEN",
+        "auto_download_owned_kaggle_inputs": True,
+        "auto_create_or_version_private_kaggle_cache_datasets": True,
+        "auto_archive_complete_restricted_evidence_to_private_kaggle": True,
+        "auto_commit_public_safe_evidence_to_github": True,
+        "raw_images_to_github": False,
+        "checkpoints_to_github": False,
+        "secrets_to_persistent_artifacts": False,
+        "github_publication_requires_final_qa_terminal": True,
+    }
+    for key, value in expected_automation.items():
+        if automation.get(key) != value:
+            raise TrackBError(f"Track-B v2 automation policy drift: {key}")
     dino_pre = lock.get("candidate_generation", {}).get("dino_feature_preprocessing", {})
     if dino_pre.get("entrypoint") != "cropcop_je.data.ctc_v2_eval_transform" or dino_pre.get("ctc_v2_config_sha256") != CTC_V2_CONFIG_SHA256:
         raise TrackBError("DINO audit preprocessing contract drift")
