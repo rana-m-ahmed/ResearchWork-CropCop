@@ -6,7 +6,7 @@ on:
       - trackb-r07-infrastructure-20260919
     paths:
       - ".github/workflows/trackb-infrastructure-ci.yml"
-      - "journal_extension/amendments/track_bc_r07_downstream_v1.json"
+      - "journal_extension/amendments/track_bc_r07_downstream_v2.json"
       - "journal_extension/track_b_r07/**"
       - "journal_extension/src/cropcop_je/trackb_r07*.py"
       - "journal_extension/scripts/*trackb*.py"
@@ -34,7 +34,7 @@ jobs:
 
       - name: Compile Track-B Python
         run: |
-          python -m py_compile             journal_extension/src/cropcop_je/trackb_r07.py             journal_extension/src/cropcop_je/trackb_r07_audit.py             journal_extension/src/cropcop_je/trackb_r07_analysis.py             journal_extension/scripts/run_trackb_r07.py             journal_extension/scripts/build_trackb_core_package.py             journal_extension/scripts/build_trackb_historical_compare.py             journal_extension/scripts/prepare_trackb_core_input.py             journal_extension/scripts/prepare_trackb_candidate_input.py             journal_extension/scripts/prepare_trackb_historical_source_input.py             journal_extension/scripts/validate_trackb_infrastructure.py             journal_extension/scripts/generate_trackb_core_builder_notebook.py             journal_extension/scripts/generate_trackb_r07_notebook.py             journal_extension/scripts/generate_trackb_historical_compare_notebook.py
+          python -m py_compile             journal_extension/src/cropcop_je/trackb_r07.py             journal_extension/src/cropcop_je/trackb_r07_audit.py             journal_extension/src/cropcop_je/trackb_r07_analysis.py             journal_extension/src/cropcop_je/trackb_r07_ops.py             journal_extension/scripts/run_trackb_r07.py             journal_extension/scripts/run_trackb_r07_master.py             journal_extension/scripts/build_trackb_core_package.py             journal_extension/scripts/build_trackb_historical_compare.py             journal_extension/scripts/prepare_trackb_core_input.py             journal_extension/scripts/prepare_trackb_candidate_input.py             journal_extension/scripts/prepare_trackb_historical_source_input.py             journal_extension/scripts/validate_trackb_infrastructure.py             journal_extension/scripts/generate_trackb_core_builder_notebook.py             journal_extension/scripts/generate_trackb_r07_notebook.py             journal_extension/scripts/generate_trackb_master_notebook.py             journal_extension/scripts/generate_trackb_historical_compare_notebook.py
 
       - name: Run targeted Track-B tests
         run: python -m unittest -v tests.test_trackb_r07
@@ -45,7 +45,7 @@ jobs:
           python journal_extension/scripts/generate_trackb_master_notebook.py
           python journal_extension/scripts/generate_trackb_r07_notebook.py
           python journal_extension/scripts/generate_trackb_historical_compare_notebook.py
-          git diff --exit-code --             journal_extension/kaggle/trackb_build_core_package.ipynb             journal_extension/kaggle/trackb_r07_end_to_end.ipynb             journal_extension/kaggle/trackb_build_historical_compare.ipynb
+          git diff --exit-code --             journal_extension/kaggle/trackb_build_core_package.ipynb             journal_extension/kaggle/trackb_r07_master.ipynb             journal_extension/kaggle/trackb_r07_end_to_end.ipynb             journal_extension/kaggle/trackb_build_historical_compare.ipynb
 
       - name: Run static infrastructure validator
         run: python journal_extension/scripts/validate_trackb_infrastructure.py --repo-root .
