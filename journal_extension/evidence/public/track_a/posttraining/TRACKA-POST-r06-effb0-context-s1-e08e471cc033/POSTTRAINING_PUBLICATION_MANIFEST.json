@@ -1,0 +1,19 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "experiment_id": "R06-EFFB0-CONTEXT-S1",
+  "private_material_published": false,
+  "public_file_count": 6,
+  "public_file_sha256": {
+    "DIRECT_STATE_EVIDENCE_GATE.json": "d8eae34cd1812e8c06369db1283e69c9c1ae532c7651254005327e6fd9c0ce3a",
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "5197bae3083a5180466a16a5c7548c915eacf0058072b16ed06d4e90145cf3ba",
+    "POSTTRAINING_STATE_COMPLETION.json": "b11ccdb26a1c65f2a86e7bc7c87cc0164889ecc3b01303a121a3e23e7793f5dc",
+    "XAI_EVIDENCE_GATE.json": "54bdd9545021be9031bcd881aeb09af8ba4e6d3e20b4edccbfa29613a4bb3914",
+    "efficiency.json": "9670023038156ce4d53475d6f58daf25c73bb9411dd2ad022df05f591786bfcc",
+    "robustness_and_replay.json": "f0d455bbf872f62d7b608e5c637c9205c071f652bdda0d74512607c66fb58acf"
+  },
+  "publication_kind": "track_a_posttraining_state",
+  "publication_manifest_sha256": "e06f4ed0f904ab005904e542b5e3082d349ae557fd5657b12426467616779013",
+  "run_id": "TRACKA-POST-r06-effb0-context-s1-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS"
+}

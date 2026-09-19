@@ -1,0 +1,15 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "experiment_id": "R06-EFFB0-CONTEXT-S1",
+  "external_surface_accessed": false,
+  "input_resolution": 256,
+  "model_state_tensor_bytes_fp32": 16813528,
+  "schema_version": "1.2",
+  "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "selected_checkpoint_sha256": "882e1e45e1d18a8ed8168aab266ce5a66a9b57a74e2a8d98acf692207d2210c7",
+  "source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "total_parameter_count": 4161268,
+  "trainable_parameter_count": 4161268,
+  "training_performed": false,
+  "v1_test_accessed": false
+}
