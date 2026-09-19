@@ -230,6 +230,8 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         "checkpoints_to_github": False,
         "secrets_to_persistent_artifacts": False,
         "github_publication_requires_final_qa_terminal": True,
+        "github_push_permission_preflight": True,
+        "external_source_reachability_preflight": True,
     }
     for key, value in expected_automation.items():
         if automation.get(key) != value:
