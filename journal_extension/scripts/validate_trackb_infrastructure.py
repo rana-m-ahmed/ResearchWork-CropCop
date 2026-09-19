@@ -186,6 +186,7 @@ def main() -> int:
         "configure_runtime_secrets",
         "download_kaggle_dataset",
         "verify_authenticated_kaggle_owner",
+        "verify_kaggle_source_access",
         "verify_github_repository_push_access",
         "probe_external_sources",
         "historical_dataset_slug",
