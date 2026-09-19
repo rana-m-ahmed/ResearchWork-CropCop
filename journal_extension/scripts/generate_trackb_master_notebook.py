@@ -30,13 +30,14 @@ One-time Kaggle setup:
 - enable Internet;
 - select **T4 x2**.
 
-Do **not** manually attach or publish Track-B input/evidence datasets. The controller acquires the frozen source assets, builds/reuses the private historical cache, acquires GVLiD v5 and Irish Potato Version 01 from their authoritative public repositories, runs the prediction-blind audits and protected R07 evaluation, auto-detects the Kaggle owner authenticated by the API token, archives restricted evidence to private Kaggle Datasets under that owner, and publishes only audited public-safe evidence to GitHub.
+Do **not** manually attach or publish Track-B input/evidence datasets.
+
+The notebook creates a clean isolated Track-B Python environment under /kaggle/working, installs the frozen scientific stack there (including the official PyTorch 2.12.1 / torchvision 0.27.1 CUDA 12.6 wheels), then runs the automated Track-B controller from that environment. Kaggle's preinstalled Torch stack is deliberately left untouched.
 
 The consumed V1 test remains forbidden. The classifier family/seeds are frozen. GVLiD is the confirmatory field cohort; Irish Potato is the complementary harder stress cohort. Candidate substitution after any external prediction is forbidden.
 """),
         code("""from pathlib import Path
-import importlib.metadata as metadata
-import shutil, subprocess, sys
+import json, os, shutil, subprocess, sys
 
 WORK = Path('/kaggle/working')
 REPO = WORK / 'ResearchWork-CropCop-trackb-v2'
@@ -52,42 +53,75 @@ subprocess.run(
 HEAD = subprocess.check_output(['git', '-C', str(REPO), 'rev-parse', 'HEAD'], text=True).strip()
 print('Track-B source head:', HEAD)
 
-expected = {
-    'torch': '2.12.1',
-    'torchvision': '0.27.1',
-    'numpy': '2.5.2',
-    'Pillow': '12.3.0',
-    'opencv-python-headless': '4.12.0.88',
-}
-observed = {name: metadata.version(name) for name in expected}
-print('Scientific runtime:', observed)
-if observed != expected:
-    raise RuntimeError(
-        'Scientific dependency mismatch. This notebook intentionally fails closed rather than '
-        'hot-swapping torch/torchvision inside an active Kaggle kernel. '
-        f'Expected {expected}, observed {observed}.'
-    )
+from kaggle_secrets import UserSecretsClient
+_secret_client = UserSecretsClient()
+for _name in ('KAGGLE_API_TOKEN', 'CROPCOP_GITHUB_TOKEN'):
+    _value = (_secret_client.get_secret(_name) or '').strip()
+    if not _value:
+        raise RuntimeError(f'Required Kaggle secret is empty: {_name}')
+    if any(ch.isspace() for ch in _value):
+        raise RuntimeError(f'Required Kaggle secret contains whitespace/newline: {_name}')
+    os.environ[_name] = _value
+del _value, _secret_client
+print('Required secrets loaded into process environment: PASS')
+"""),
+        code("""BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'
+VENV_ROOT = WORK / 'trackb_runtime_env'
+BOOTSTRAP_RECEIPT = WORK / 'TRACKB_RUNTIME_BOOTSTRAP.json'
+
+if not BOOTSTRAP.is_file():
+    raise RuntimeError(f'Track-B runtime bootstrap missing: {BOOTSTRAP}')
+
+subprocess.run(
+    [
+        sys.executable,
+        str(BOOTSTRAP),
+        '--venv-root', str(VENV_ROOT),
+        '--receipt', str(BOOTSTRAP_RECEIPT),
+    ],
+    cwd=REPO,
+    check=True,
+    env=os.environ.copy(),
+)
+
+bootstrap = json.loads(BOOTSTRAP_RECEIPT.read_text())
+if bootstrap.get('status') != 'PASS':
+    raise RuntimeError('Track-B isolated runtime bootstrap did not PASS')
+VENV_PY = Path(bootstrap['venv_python'])
+if not VENV_PY.is_file():
+    raise RuntimeError(f'Isolated Track-B Python missing: {VENV_PY}')
+print(json.dumps({
+    'runtime_status': bootstrap['status'],
+    'runtime_mode': bootstrap['mode'],
+    'python': bootstrap['probe']['python'],
+    'versions': bootstrap['probe']['versions'],
+    'torch_cuda_version': bootstrap['probe']['torch_cuda_version'],
+    'cuda_available': bootstrap['probe']['cuda_available'],
+    'cuda_devices': bootstrap['probe']['cuda_devices'],
+}, indent=2, sort_keys=True))
 """),
         code("""MASTER = REPO / 'journal_extension/scripts/run_trackb_r07_master.py'
 if not MASTER.is_file():
     raise RuntimeError(f'Automated Track-B controller missing: {MASTER}')
 
+WORKSPACE = WORK / 'trackb_master'
+if WORKSPACE.exists():
+    shutil.rmtree(WORKSPACE)
+
 subprocess.run(
     [
-        sys.executable,
+        str(VENV_PY),
         str(MASTER),
         '--repo-root', str(REPO),
-        '--workspace', '/kaggle/working/trackb_master',
+        '--workspace', str(WORKSPACE),
         '--device', 'cuda:0',
     ],
     cwd=REPO,
     check=True,
+    env=os.environ.copy(),
 )
 """),
-        code("""import json
-from pathlib import Path
-
-OUT = Path('/kaggle/working/trackb_master/trackb_r07')
+        code("""OUT = Path('/kaggle/working/trackb_master/trackb_r07')
 receipt = json.loads((OUT / 'TRACKB_AUTOMATION_RECEIPT.json').read_text())
 closure = json.loads((OUT / 'TRACKB_FINAL_CLOSURE.json').read_text())
 qa = json.loads((OUT / 'TRACKB_FINAL_QA.json').read_text())
@@ -101,6 +135,7 @@ print(json.dumps({
     'automation_status': receipt['status'],
     'track_b_status': closure['status'],
     'closure_sha256': closure['closure_sha256'],
+    'final_qa_sha256': qa['qa_sha256'],
     'github_public_evidence': receipt['github_public_evidence'],
     'private_kaggle_evidence': receipt['private_kaggle_evidence'],
 }, indent=2, sort_keys=True))
