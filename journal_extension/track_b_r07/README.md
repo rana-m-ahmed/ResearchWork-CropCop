@@ -123,8 +123,7 @@ The controller automatically garbage-collects large source downloads between sta
 GitHub publication is an operational dissemination layer, not part of the scientific
 estimator. The notebook proves Git write access before compute. After terminal
 `TRACK_B_CLOSED` + QA PASS, the complete restricted evidence is archived to the
-private Kaggle evidence dataset first. GitHub public-safe publication then receives
-four attempts with bounded retry delays.
+private Kaggle evidence dataset first. Both private Kaggle publication and GitHub public-safe publication receive four attempts with bounded retry delays.
 
 If GitHub becomes unavailable after scientific closure, Track B does **not** discard
 or reinterpret results. The automation receipt records
