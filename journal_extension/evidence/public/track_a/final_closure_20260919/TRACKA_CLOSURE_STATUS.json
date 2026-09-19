@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0",
+  "status": "GO_AFTER_REQUIRED_ARCHIVAL_RECOVERY",
+  "audit_kind": "track_a_final_closure_preseal",
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "training_science_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "closure_authority_id": "EAAI-JE-TRACKA-POSTTRAINING-CLOSURE-V1",
+  "campaign_id": "CROPCOP-TRACKA-POSTTRAINING-CLOSURE-V1",
+  "scientific_semantics_change_authorized": false,
+  "scientific_execution": {
+    "expected_state_count": 21,
+    "observed_public_state_branches": 21,
+    "direct_states": 12,
+    "auxiliary_states": 9,
+    "completion_status_pass": 21,
+    "publication_manifest_pass": 21,
+    "private_roundtrip_verified": 21,
+    "v1_test_accessed_count": 0,
+    "external_surface_accessed_count": 0,
+    "posttraining_fit_or_adaptation_count": 0,
+    "branches_zero_behind_analysis_source": 21,
+    "branches_with_unexpected_paths": 0
+  },
+  "frozen_selector_dry_run": {
+    "status": "SELECTED",
+    "selection_stage": "frozen_lexicographic",
+    "journal_primary_family": "R07",
+    "co_primary_families": [],
+    "pareto_frontier": [
+      "R04",
+      "R06",
+      "R07"
+    ],
+    "downstream_weight_from_xai": false,
+    "official_seal_executed": false
+  },
+  "auxiliary_dry_run": {
+    "r05_teacher_minus_r04_direct": {
+      "mean_validation_accuracy_delta": 0.00008145975887911365,
+      "mean_validation_macro_f1_delta": -0.0024696442102595992,
+      "mean_validation_balanced_accuracy_delta": -0.0022047993844903635,
+      "mean_validation_nll_delta": -0.011118301253089075
+    },
+    "r12_logits_minus_feature": {
+      "mean_validation_accuracy_delta": 0.0003869338546757713,
+      "mean_validation_macro_f1_delta": 0.0023667036344124184,
+      "mean_validation_balanced_accuracy_delta": 0.0027325279375332765,
+      "mean_validation_nll_delta": -0.011066382791663415
+    },
+    "hypothesis_tests_authorized": false,
+    "official_seal_executed": false
+  },
+  "protected_surfaces": {
+    "v1_test": "CLOSED",
+    "track_b_predictions": "CLOSED",
+    "track_c_candidate_results": "CLOSED"
+  },
+  "blocking_inputs": [
+    {
+      "id": "TRACKA-CLOSE-B1",
+      "severity": "S0",
+      "description": "Original terminal account execution manifests are not currently available to this audit environment.",
+      "required_originals": [
+        "K1 ACCOUNT_GPU_COMPLETION.json",
+        "K2 ACCOUNT_GPU_COMPLETION.json",
+        "K3 ACCOUNT_GPU_COMPLETION.json"
+      ],
+      "expected_export_locations": [
+        "TRACKA_GPU_K1_e08e471cc033.zip/ACCOUNT_GPU_COMPLETION.json",
+        "TRACKA_GPU_K2_e08e471cc033.zip/ACCOUNT_GPU_COMPLETION.json",
+        "TRACKA_GPU_K3_e08e471cc033.zip/ACCOUNT_GPU_COMPLETION.json"
+      ],
+      "reason": "audit_tracka_v12_posttraining_evidence.py requires the original K1/K2/K3 terminal manifests and byte-compares their embedded completion payloads with the 21 published state completions.",
+      "reconstruction_permitted": false
+    }
+  ],
+  "track_a_closed": false,
+  "downstream_handoff_authorized": false,
+  "next_gate": "Recover the three original ACCOUNT_GPU_COMPLETION.json files, run the frozen global evidence audit, then run close_tracka_v12.py on exact e08e471 checkout."
+}
