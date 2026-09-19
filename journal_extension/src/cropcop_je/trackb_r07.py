@@ -234,6 +234,17 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
     for key, value in expected_automation.items():
         if automation.get(key) != value:
             raise TrackBError(f"Track-B v2 automation policy drift: {key}")
+    if automation.get("kaggle_dataset_owner_default") != "AUTO":
+        raise TrackBError("Track-B v2 private Kaggle owner must default to AUTO")
+    if automation.get("kaggle_dataset_owner_mode") != "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT":
+        raise TrackBError("Track-B v2 private Kaggle owner must be inferred from the active API token")
+    kaggle_policy = lock.get("kaggle", {})
+    if kaggle_policy.get("internet_required_during_claim_run") is not True:
+        raise TrackBError("Track-B v2 automated master requires Internet for orchestration/publication")
+    if kaggle_policy.get("internet_role") != "ORCHESTRATION_AND_EVIDENCE_PUBLICATION_ONLY":
+        raise TrackBError("Track-B v2 Internet role drift")
+    if kaggle_policy.get("protected_inference_network_dependency") is not False:
+        raise TrackBError("Track-B v2 protected inference must not have a network dependency")
     dino_pre = lock.get("candidate_generation", {}).get("dino_feature_preprocessing", {})
     if dino_pre.get("entrypoint") != "cropcop_je.data.ctc_v2_eval_transform" or dino_pre.get("ctc_v2_config_sha256") != CTC_V2_CONFIG_SHA256:
         raise TrackBError("DINO audit preprocessing contract drift")
