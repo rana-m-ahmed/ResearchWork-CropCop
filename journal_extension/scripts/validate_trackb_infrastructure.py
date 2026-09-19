@@ -133,6 +133,8 @@ def main() -> int:
         "publish_private_kaggle_dataset",
         "acquire_gvlid_v5",
         "acquire_irish_potato",
+        "detect_authenticated_kaggle_owner",
+        "verify_authenticated_kaggle_owner",
         "raw_external_images_included",
     ):
         if required not in ops_text:
@@ -144,7 +146,9 @@ def main() -> int:
     for required in (
         "configure_runtime_secrets",
         "download_kaggle_dataset",
-        "KAGGLE_HISTORICAL_DATASET",
+        "verify_authenticated_kaggle_owner",
+        "historical_dataset_slug",
+        "evidence_dataset_slug",
         "publish_public_trackb_evidence",
         "publish_private_kaggle_dataset",
         "gvlid_v5",
@@ -154,6 +158,18 @@ def main() -> int:
             raise TrackBError(f"master controller missing automated operation: {required}")
     if "agrivision_v2" in master_runner_text.lower() or "agrivision_bd" in master_runner_text.lower():
         raise TrackBError("master controller still references retired Agri-Vision candidate")
+    if '"--kaggle-owner", default=KAGGLE_OWNER_DEFAULT' not in master_runner_text:
+        raise TrackBError("master controller does not expose the authenticated-owner policy surface")
+    automation = lock.get("automation", {})
+    if automation.get("kaggle_dataset_owner_default") != "AUTO":
+        raise TrackBError("execution lock does not default private Kaggle ownership to AUTO")
+    if automation.get("kaggle_dataset_owner_mode") != "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT":
+        raise TrackBError("execution lock does not require authenticated Kaggle owner auto-detection")
+    kaggle_policy = lock.get("kaggle", {})
+    if kaggle_policy.get("internet_required_during_claim_run") is not True:
+        raise TrackBError("automated master requires Internet for orchestration/publication")
+    if kaggle_policy.get("protected_inference_network_dependency") is not False:
+        raise TrackBError("protected inference must not depend scientifically on network access")
 
     if "build_trackb_historical_compare.py" not in hist_text or "code_attestation" not in hist_text:
         raise TrackBError("historical comparison notebook is not bound to the attested builder")
