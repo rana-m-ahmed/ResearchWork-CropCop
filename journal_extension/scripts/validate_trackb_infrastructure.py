@@ -52,13 +52,14 @@ def main() -> int:
     audit_module = root / "journal_extension/src/cropcop_je/trackb_r07_audit.py"
     ops_module = root / "journal_extension/src/cropcop_je/trackb_r07_ops.py"
     master_runner = root / "journal_extension/scripts/run_trackb_r07_master.py"
+    runtime_bootstrap = root / "journal_extension/scripts/bootstrap_trackb_runtime.py"
     core_builder = root / "journal_extension/scripts/build_trackb_core_package.py"
     hist_builder = root / "journal_extension/scripts/build_trackb_historical_compare.py"
     hist_source_prep = root / "journal_extension/scripts/prepare_trackb_historical_source_input.py"
 
     for path in (
         authority_path, lock_path, attestation_path, final_nb, master_nb, core_nb, hist_nb, runner,
-        audit_module, ops_module, master_runner, core_builder, hist_builder, hist_source_prep,
+        audit_module, ops_module, master_runner, runtime_bootstrap, core_builder, hist_builder, hist_source_prep,
     ):
         if not path.is_file():
             raise TrackBError(f"required Track-B infrastructure file missing: {path.relative_to(root)}")
@@ -118,12 +119,18 @@ def main() -> int:
         "KAGGLE_API_TOKEN",
         "CROPCOP_GITHUB_TOKEN",
         "run_trackb_r07_master.py",
+        "bootstrap_trackb_runtime.py",
+        "trackb_runtime_env",
         "PASS_AUTOMATED_TRACK_B_COMPLETE",
     ):
         if required not in master_text:
             raise TrackBError(f"master notebook missing automation binding: {required}")
     if "agrivision_v2" in master_text.lower() or "agrivision_bd" in master_text.lower():
         raise TrackBError("master notebook still references retired Agri-Vision candidate")
+    if "metadata.version(" in master_text:
+        raise TrackBError("master notebook still depends on Kaggle live-kernel package versions")
+    if "str(VENV_PY)" not in master_text:
+        raise TrackBError("master notebook does not execute Track B with the isolated runtime Python")
 
     ops_text = ops_module.read_text(encoding="utf-8")
     for required in (
@@ -147,6 +154,21 @@ def main() -> int:
         raise TrackBError("Track-B operations module exposes public Kaggle dataset publication")
     if '_safe_extract_zip(archive, data_root / class_name)' in ops_text:
         raise TrackBError("Irish Potato acquisition still trusts archive-internal directory layout")
+
+    bootstrap_text = runtime_bootstrap.read_text(encoding="utf-8")
+    for required in (
+        'TORCH_INDEX = "https://download.pytorch.org/whl/cu126"',
+        '"torch": "2.12.1"',
+        '"torchvision": "0.27.1"',
+        '"timm": "1.0.26"',
+        "--no-cache-dir",
+        "cuda_available",
+        "live_kernel_packages_modified",
+    ):
+        if required not in bootstrap_text:
+            raise TrackBError(f"isolated runtime bootstrap missing frozen guard: {required}")
+    if "--system-site-packages" in bootstrap_text:
+        raise TrackBError("isolated Track-B runtime must not inherit Kaggle system site-packages")
 
     master_runner_text = master_runner.read_text(encoding="utf-8")
     for required in (
@@ -247,6 +269,7 @@ def main() -> int:
         "core_builder_notebook": core_info,
         "historical_builder_notebook": hist_info,
         "single_master_automation_surface": True,
+        "isolated_runtime_bootstrap": True,
         "automatic_private_kaggle_archival": True,
         "automatic_public_safe_github_publication": True,
         "track_b_v2_candidates": ["gvlid_grape", "irish_potato"],
