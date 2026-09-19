@@ -5,11 +5,11 @@
   "public_file_count": 3,
   "public_file_sha256": {
     "AUXILIARY_STATE_EVIDENCE_GATE.json": "e053090bfff9c66c7795f9724b2aba1ffa6a93cbeabba4625695448ce4bbf7f1",
-    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "1eb2be8791ce2b153cda50c0916d864f983135df691c9a7cdb4ec5649c639709",
-    "POSTTRAINING_STATE_COMPLETION.json": "fb1767bf221ad8f2ab136f80a26e1e899ff660bc53ba620cd28a16020012ca41"
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "7a86b73900e718a7814bfbd5dd1b9237900589098c7b27ead5cc0d8e285ca02a",
+    "POSTTRAINING_STATE_COMPLETION.json": "224ca19af7c28becc3583f9b3f1378daacf48fb675a4ec9d8e12b007b25329d2"
   },
   "publication_kind": "track_a_posttraining_state",
-  "publication_manifest_sha256": "2f0fb61fc0032255e5d4ace4184b6b401474546f9666dc9a1968bf2087221780",
+  "publication_manifest_sha256": "6522ba52e37a5c0ab1d1f55a7a4c3df48a664a4afe534c15f94fac6d7154e785",
   "run_id": "TRACKA-POST-r05-mnv4-teacher-s2-e08e471cc033",
   "schema_version": "1.0",
   "status": "PASS"
