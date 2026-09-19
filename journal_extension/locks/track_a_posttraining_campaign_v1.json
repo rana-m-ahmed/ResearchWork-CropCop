@@ -1,0 +1,235 @@
+{
+  "schema_version": "1.0",
+  "campaign_id": "CROPCOP-TRACKA-POSTTRAINING-CLOSURE-V1",
+  "status": "PRE_EXECUTION_LOCK",
+  "parent_training_science_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "required_analysis_branch": "tracka-posttraining-closure-prep-20260918",
+  "scientific_semantics_change_authorized": false,
+  "execution_model": {
+    "kaggle_accounts": [
+      "K1",
+      "K2",
+      "K3"
+    ],
+    "gpus_per_account": 2,
+    "child_gpu_visibility": "exactly_one_T4",
+    "cross_gpu_gradient_synchronization": false,
+    "distributed_data_parallel": false,
+    "scheduling_basis": "static pre-results queues frozen before post-training metrics are opened",
+    "state_attempt_policy": "append-only attempts; never overwrite an incomplete or failed attempt",
+    "terminal_reuse_policy": "reuse only after hash/self-consistency validation of the terminal PASS artifact"
+  },
+  "account_owners": {
+    "K1": "ranamuhammadahmed6",
+    "K2": "ranaabdulrehmannn",
+    "K3": "sabahatabbas"
+  },
+  "continuation_account_binding": {
+    "R12-MNV4-LOGITS-S2": "K1",
+    "R12-MNV4-LOGITS-S3": "K1",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3": "K1",
+    "R12-MNV4-FEATURE-S2": "K2",
+    "R12-MNV4-FEATURE-S3": "K2",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1": "K2",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2": "K2",
+    "R06-EFFB0-CONTEXT-S2": "K3",
+    "R06-EFFB0-CONTEXT-S3": "K3",
+    "R07-CNXTT-CONTEXT-S2": "K3",
+    "R07-CNXTT-CONTEXT-S3": "K3"
+  },
+  "historical_placement_preferences": {
+    "R04-MNV4-DIRECT-S1": [
+      "K1",
+      "K2",
+      "K3"
+    ],
+    "R05-MNV4-TEACHER-S1": [
+      "K1",
+      "K2",
+      "K3"
+    ],
+    "R12-MNV4-LOGITS-S1": [
+      "K1",
+      "K2",
+      "K3"
+    ],
+    "R12-MNV4-FEATURE-S1": [
+      "K1",
+      "K2",
+      "K3"
+    ],
+    "R04-MNV4-DIRECT-S2": [
+      "K2",
+      "K3",
+      "K1"
+    ],
+    "R05-MNV4-TEACHER-S2": [
+      "K2",
+      "K3",
+      "K1"
+    ],
+    "R06-EFFB0-CONTEXT-S1": [
+      "K2",
+      "K1",
+      "K3"
+    ],
+    "R04-MNV4-DIRECT-S3": [
+      "K3",
+      "K1",
+      "K2"
+    ],
+    "R05-MNV4-TEACHER-S3": [
+      "K3",
+      "K1",
+      "K2"
+    ],
+    "R07-CNXTT-CONTEXT-S1": [
+      "K3",
+      "K2",
+      "K1"
+    ]
+  },
+  "historical_relocation_policy": {
+    "authorized": true,
+    "timing": "artifact-availability only, before any new post-training metric is opened",
+    "allowed_reason": "preferred account cannot cryptographically verify the exact canonical historical run/checkpoint/dependencies",
+    "forbidden_reasons": [
+      "validation metric",
+      "robustness result",
+      "XAI result",
+      "runtime speed result",
+      "model quality impression"
+    ],
+    "resolution_algorithm": "for each historical state in lexicographic experiment_id order, choose the first account in its frozen preference list with availability PASS",
+    "required_artifact": "TRACKA_POSTTRAINING_PLACEMENT_FREEZE.json"
+  },
+  "stage_order": [
+    "SOURCE_AND_ENVIRONMENT_PREFLIGHT",
+    "ARTIFACT_AVAILABILITY",
+    "PLACEMENT_FREEZE",
+    "TERMINAL_METADATA_RECOVERY",
+    "PRIVATE_EVIDENCE_TARGET_PREFLIGHT",
+    "ACCOUNT_READINESS",
+    "GLOBAL_READINESS",
+    "DIRECT_EVIDENCE",
+    "XAI_EVIDENCE",
+    "AUXILIARY_EVIDENCE",
+    "ACCOUNT_EVIDENCE_COMPLETION",
+    "GLOBAL_EVIDENCE_AUDIT",
+    "AUXILIARY_ANALYSIS",
+    "DIRECT_SELECTION",
+    "COMPREHENSIVE_CLOSURE",
+    "FINAL_CLOSURE_AUDIT"
+  ],
+  "stage_start_guards_seconds": {
+    "DIRECT_EVIDENCE": 9000,
+    "XAI_EVIDENCE": 7200,
+    "AUXILIARY_EVIDENCE": 3600,
+    "PRIVATE_DURABILITY_SYNC": 1800,
+    "PUBLICATION": 1200
+  },
+  "evidence_durability": {
+    "private_dataset_scope": "one private Kaggle evidence dataset per scientific state",
+    "locator_template": "{owner}/cropcop-ta-{state_key}-{analysis_sha12}",
+    "require_private": true,
+    "require_owner_match": true,
+    "require_generation_roundtrip": true,
+    "require_manifest_sha256": true,
+    "public_git_destination_prefix": "journal_extension/evidence/public/track_a/posttraining",
+    "public_git_branch_run_id_template": "TRACKA-POST-{experiment_slug}-{analysis_sha12}",
+    "public_files_must_pass_allowlist_audit": true,
+    "private_target_preflight_required_before_account_readiness": true,
+    "private_target_auto_creation_policy": "explicit per-account opt-in only; authenticated owner must match; created target must settle authoritatively private before readiness",
+    "dataset_slug_contract": {
+      "allowed_characters": "lowercase alphanumeric and hyphen",
+      "minimum_length": 3,
+      "maximum_length": 50,
+      "source": "Kaggle dataset metadata contract",
+      "unique_within_campaign": true
+    },
+    "state_slug_keys": {
+      "R04-MNV4-DIRECT-S1": "r04-direct-s1",
+      "R04-MNV4-DIRECT-S2": "r04-direct-s2",
+      "R04-MNV4-DIRECT-S3": "r04-direct-s3",
+      "R05-MNV4-TEACHER-S1": "r05-teacher-s1",
+      "R05-MNV4-TEACHER-S2": "r05-teacher-s2",
+      "R05-MNV4-TEACHER-S3": "r05-teacher-s3",
+      "R06-EFFB0-CONTEXT-S1": "r06-effb0-s1",
+      "R06-EFFB0-CONTEXT-S2": "r06-effb0-s2",
+      "R06-EFFB0-CONTEXT-S3": "r06-effb0-s3",
+      "R07-CNXTT-CONTEXT-S1": "r07-cnxtt-s1",
+      "R07-CNXTT-CONTEXT-S2": "r07-cnxtt-s2",
+      "R07-CNXTT-CONTEXT-S3": "r07-cnxtt-s3",
+      "R12-MNV4-LOGITS-S1": "r12-logits-s1",
+      "R12-MNV4-LOGITS-S2": "r12-logits-s2",
+      "R12-MNV4-LOGITS-S3": "r12-logits-s3",
+      "R12-MNV4-FEATURE-S1": "r12-feature-s1",
+      "R12-MNV4-FEATURE-S2": "r12-feature-s2",
+      "R12-MNV4-FEATURE-S3": "r12-feature-s3",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S1": "r13-vit-s1",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S2": "r13-vit-s2",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S3": "r13-vit-s3"
+    },
+    "stage_level_continuation": {
+      "required": true,
+      "generation_kinds": [
+        "partial",
+        "final"
+      ],
+      "partial_sync_timing": "immediately after every newly computed terminal stage PASS before any subsequent stage begins",
+      "restore_timing": "before stage reuse/launch on every account session when state is not already locally complete",
+      "restore_conflict_policy": "existing local file must match restored byte size and SHA-256 or fail closed",
+      "redundant_resync_policy": "verified restored terminal stages are reused without creating another partial generation",
+      "final_generation_requirement": "state completion requires generation_kind=final with successful download-and-rehash round trip"
+    }
+  },
+  "required_state_outputs": {
+    "direct": [
+      "public_evidence/DIRECT_STATE_EVIDENCE_GATE.json",
+      "public_evidence/robustness_and_replay.json",
+      "public_evidence/efficiency.json",
+      "public_xai/XAI_EVIDENCE_GATE.json"
+    ],
+    "auxiliary": [
+      "public_evidence/AUXILIARY_STATE_EVIDENCE_GATE.json"
+    ]
+  },
+  "protected_surfaces": {
+    "DS-V1-TEST-CONSUMED": "CLOSED",
+    "TRACK-B-PREDICTIONS": "CLOSED",
+    "TRACK-C-CANDIDATE-RESULTS": "CLOSED"
+  },
+  "stop_conditions": [
+    "analysis checkout differs from frozen analysis SHA",
+    "dataset/class map hash drift",
+    "checkpoint/run-record lineage mismatch",
+    "account private-dataset owner mismatch",
+    "private evidence target is absent, unsettled, non-private, duplicated, or owned by a different Kaggle account",
+    "public evidence audit rejects a file",
+    "restored partial evidence conflicts with local bytes or provenance",
+    "duplicate state execution with conflicting terminal evidence",
+    "attempt to start a stage without sufficient session budget",
+    "any protected surface marker is open",
+    "evidence inventory is incomplete before selector",
+    "selector or comprehensive closure implementation differs from frozen analysis checkout"
+  ],
+  "final_exit_criteria": {
+    "exact_scientific_state_count": 21,
+    "direct_state_count": 12,
+    "auxiliary_state_count": 9,
+    "recovered_continuation_state_count": 11,
+    "historical_state_count": 10,
+    "unique_selected_checkpoint_count": 21,
+    "direct_evidence_complete": 12,
+    "xai_evidence_complete": 12,
+    "auxiliary_evidence_complete": 9,
+    "account_completion_manifests": 3,
+    "global_evidence_audit": "PASS",
+    "auxiliary_analysis": "PASS",
+    "direct_selection": "PASS",
+    "comprehensive_closure": "PASS",
+    "final_closure_audit": "PASS",
+    "private_evidence_target_preflight_accounts": 3,
+    "final_private_generation_roundtrip_verified_state_count": 21
+  }
+}

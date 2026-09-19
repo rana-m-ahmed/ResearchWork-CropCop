@@ -1,0 +1,887 @@
+from __future__ import annotations
+
+import csv
+import json
+import shutil
+import tarfile
+import tempfile
+import zipfile
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
+from typing import Any, Iterable
+
+from .hashing import sha256_file, sha256_json
+
+MANIFEST_SHA256 = "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2"
+CLASS_MAP_SHA256 = "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2"
+EXPECTED_TRAIN = 76376
+EXPECTED_VAL = 16368
+EXPECTED_TEST = 16363
+EXPECTED_CLASSES = 120
+
+FINAL_V1_DATASET_SLUG = "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1"
+FINAL_V1_MOUNTED_ROOT = Path(
+    "/kaggle/input/datasets/ranamuhammadahmed6/"
+    "cropcop-finalized-v8-11-2026-1/CropCop_Final_v1"
+)
+FINAL_V1_ALTERNATE_MOUNTED_ROOT = Path(
+    "/kaggle/input/cropcop-finalized-v8-11-2026-1/CropCop_Final_v1"
+)
+FINAL_V1_MANIFEST_RELATIVE = Path("audit/final_manifest.csv")
+FINAL_V1_CLASS_MAP_RELATIVE = Path("audit/class_to_idx.json")
+FINAL_V1_IMAGE_ROOT_RELATIVE = Path("dataset")
+
+SCIENCE_SOURCE_SHA = "56023042e57758591df9babb3438f191dbe10312"
+_DISCOVERY_KEYWORDS = (
+    "tracka",
+    "track-a",
+    "science",
+    "r12",
+    "r13",
+    "secondary",
+    "principal",
+)
+_SCIENCE_CODE_TOKENS = (
+    SCIENCE_SOURCE_SHA,
+    "tracka_v12",
+    "run_tracka_v12",
+    "TRACKA_V12",
+)
+_IDENTITY_NAME_HINTS = (
+    "manifest",
+    "class",
+    "index",
+    "label",
+    "map",
+    "final",
+    "cropcop",
+)
+
+
+class FinalV1ResolutionError(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True)
+class FinalV1Resolution:
+    source_kind: str
+    source_ref: str | None
+    root: Path
+    manifest: Path
+    class_map: Path
+    image_root: Path
+    train_rows: int
+    val_rows: int
+    test_rows: int
+
+    def certificate(self) -> dict[str, Any]:
+        payload = {
+            "schema_version": "1.0",
+            "status": "PASS",
+            "resolution_kind": "cropcop_final_v1_exact_identity",
+            "source_kind": self.source_kind,
+            "source_ref": self.source_ref,
+            "root": str(self.root),
+            "manifest": str(self.manifest),
+            "class_map": str(self.class_map),
+            "image_root": str(self.image_root),
+            "manifest_sha256": sha256_file(self.manifest),
+            "class_map_sha256": sha256_file(self.class_map),
+            "split_counts": {
+                "train": self.train_rows,
+                "val": self.val_rows,
+                "test": self.test_rows,
+            },
+            "num_classes": EXPECTED_CLASSES,
+            "v1_test_image_bytes_opened": False,
+            "selection_metrics_opened": False,
+        }
+        payload["certificate_sha256"] = sha256_json(payload)
+        return payload
+
+
+def _json_object(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise FinalV1ResolutionError(f"JSON object required: {path}")
+    return payload
+
+
+def _candidate_identity_files(root: Path) -> Iterable[Path]:
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        suffix = path.suffix.casefold()
+        if suffix not in {".csv", ".json"}:
+            continue
+        try:
+            size = path.stat().st_size
+        except OSError:
+            continue
+        if size > 256 * 1024 * 1024:
+            continue
+        yield path
+
+
+def _exact_identity_pair(root: Path) -> tuple[Path, Path] | None:
+    manifests: list[Path] = []
+    class_maps: list[Path] = []
+    for path in _candidate_identity_files(root):
+        digest = sha256_file(path)
+        if digest == MANIFEST_SHA256:
+            manifests.append(path.resolve())
+        if digest == CLASS_MAP_SHA256:
+            class_maps.append(path.resolve())
+    if len(manifests) != 1 or len(class_maps) != 1:
+        return None
+    return manifests[0], class_maps[0]
+
+
+def _manifest_rows(manifest: Path) -> tuple[list[dict[str, str]], dict[str, int]]:
+    rows: list[dict[str, str]] = []
+    counts = {"train": 0, "val": 0, "test": 0}
+    with manifest.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        required = {"record_key", "portable_relpath", "split", "label"}
+        missing = required.difference(reader.fieldnames or [])
+        if missing:
+            raise FinalV1ResolutionError(
+                f"Final-V1 manifest missing required columns: {sorted(missing)}"
+            )
+        for row in reader:
+            split = str(row.get("split", "")).strip()
+            if split in counts:
+                counts[split] += 1
+            rows.append({k: str(v or "") for k, v in row.items()})
+    expected = {"train": EXPECTED_TRAIN, "val": EXPECTED_VAL, "test": EXPECTED_TEST}
+    if counts != expected:
+        raise FinalV1ResolutionError(
+            f"Final-V1 split count mismatch: observed={counts}, expected={expected}"
+        )
+    return rows, counts
+
+
+def _class_map_contract(path: Path) -> None:
+    payload = _json_object(path)
+    num_classes = payload.get("num_classes")
+    if num_classes is not None and int(num_classes) != EXPECTED_CLASSES:
+        raise FinalV1ResolutionError(
+            f"Final-V1 class-map class count mismatch: {num_classes}"
+        )
+    c2i = payload.get("class_to_idx")
+    i2c = payload.get("idx_to_class")
+    observed = None
+    if isinstance(c2i, dict):
+        observed = len(c2i)
+    elif isinstance(i2c, (dict, list)):
+        observed = len(i2c)
+    if observed is not None and observed != EXPECTED_CLASSES:
+        raise FinalV1ResolutionError(
+            f"Final-V1 class-map cardinality mismatch: {observed}"
+        )
+
+
+def _candidate_image_roots(bundle_root: Path, manifest: Path) -> list[Path]:
+    roots: list[Path] = []
+    for value in (
+        bundle_root.resolve(),
+        manifest.parent.resolve(),
+        *[p.resolve() for p in bundle_root.iterdir() if p.is_dir()],
+    ):
+        if value not in roots:
+            roots.append(value)
+    for child in list(roots):
+        try:
+            for p in child.iterdir():
+                if p.is_dir():
+                    rp = p.resolve()
+                    if rp not in roots:
+                        roots.append(rp)
+        except OSError:
+            pass
+    return roots
+
+
+def _resolve_image_root(bundle_root: Path, manifest: Path, rows: list[dict[str, str]]) -> Path:
+    protected = [row for row in rows if row["split"] in {"train", "val"}]
+    sample = protected[:64] + protected[-64:]
+    viable: list[Path] = []
+    for root in _candidate_image_roots(bundle_root, manifest):
+        if all((root / row["portable_relpath"]).is_file() for row in sample):
+            viable.append(root)
+    exact: list[Path] = []
+    for root in viable:
+        missing = 0
+        for row in protected:
+            rel = row["portable_relpath"]
+            if not rel or not (root / rel).is_file():
+                missing += 1
+                break
+        if missing == 0:
+            exact.append(root)
+    if not exact:
+        raise FinalV1ResolutionError(
+            "Final-V1 identity files found but no image root resolves all frozen Train/Val paths"
+        )
+    exact.sort(key=lambda p: (len(p.parts), str(p)))
+    return exact[0]
+
+
+def _safe_extract_zip(archive: Path, destination: Path) -> None:
+    with zipfile.ZipFile(archive, "r") as handle:
+        members = handle.infolist()
+        if len(members) > 300000:
+            raise FinalV1ResolutionError(f"archive member-count limit exceeded: {archive}")
+        total = 0
+        root = destination.resolve()
+        for member in members:
+            total += int(member.file_size)
+            if total > 64 * 1024 * 1024 * 1024:
+                raise FinalV1ResolutionError(f"archive expansion-size limit exceeded: {archive}")
+            target = (destination / member.filename).resolve()
+            if target != root and root not in target.parents:
+                raise FinalV1ResolutionError(f"unsafe ZIP member path: {member.filename}")
+        handle.extractall(destination)
+
+
+def _safe_extract_tar(archive: Path, destination: Path) -> None:
+    with tarfile.open(archive, "r:*") as handle:
+        members = handle.getmembers()
+        if len(members) > 300000:
+            raise FinalV1ResolutionError(f"archive member-count limit exceeded: {archive}")
+        total = 0
+        root = destination.resolve()
+        for member in members:
+            if member.issym() or member.islnk():
+                raise FinalV1ResolutionError(f"archive links are not allowed: {member.name}")
+            total += int(member.size or 0)
+            if total > 64 * 1024 * 1024 * 1024:
+                raise FinalV1ResolutionError(f"archive expansion-size limit exceeded: {archive}")
+            target = (destination / member.name).resolve()
+            if target != root and root not in target.parents:
+                raise FinalV1ResolutionError(f"unsafe TAR member path: {member.name}")
+        handle.extractall(destination)
+
+
+def _expand_nested_archives(root: Path) -> list[Path]:
+    expanded_roots: list[Path] = []
+    archive_root = root / ".cropcop_final_v1_expanded"
+    archives = [
+        path for path in root.rglob("*")
+        if path.is_file()
+        and path.parent != archive_root
+        and (
+            path.suffix.casefold() == ".zip"
+            or path.suffix.casefold() in {".tar", ".tgz", ".gz", ".bz2", ".xz"}
+            or path.name.casefold().endswith((".tar.gz", ".tar.bz2", ".tar.xz"))
+        )
+    ]
+    # Only inspect a small number of archives, prioritizing Final/CropCop-like names.
+    archives.sort(
+        key=lambda p: (
+            0 if any(token in p.name.casefold() for token in ("final", "cropcop", "dataset", "v1")) else 1,
+            p.stat().st_size,
+            str(p),
+        )
+    )
+    for index, archive in enumerate(archives[:8]):
+        destination = archive_root / f"{index:02d}_{archive.stem}"
+        destination.mkdir(parents=True, exist_ok=False)
+        try:
+            if zipfile.is_zipfile(archive):
+                _safe_extract_zip(archive, destination)
+            elif tarfile.is_tarfile(archive):
+                _safe_extract_tar(archive, destination)
+            else:
+                shutil.rmtree(destination, ignore_errors=True)
+                continue
+        except Exception:
+            shutil.rmtree(destination, ignore_errors=True)
+            continue
+        expanded_roots.append(destination.resolve())
+    return expanded_roots
+
+
+def _validate_final_v1_root_once(
+    root: Path,
+    *,
+    source_kind: str,
+    source_ref: str | None,
+) -> FinalV1Resolution:
+    pair = _exact_identity_pair(root)
+    if pair is None:
+        raise FinalV1ResolutionError(
+            f"root does not contain one exact Final-V1 manifest/class-map pair: {root}"
+        )
+    manifest, class_map = pair
+    rows, counts = _manifest_rows(manifest)
+    _class_map_contract(class_map)
+    image_root = _resolve_image_root(root, manifest, rows)
+    return FinalV1Resolution(
+        source_kind=source_kind,
+        source_ref=source_ref,
+        root=root,
+        manifest=manifest,
+        class_map=class_map,
+        image_root=image_root,
+        train_rows=counts["train"],
+        val_rows=counts["val"],
+        test_rows=counts["test"],
+    )
+
+
+def validate_final_v1_root(
+    root: str | Path,
+    *,
+    source_kind: str,
+    source_ref: str | None = None,
+) -> FinalV1Resolution:
+    root = Path(root).resolve()
+    try:
+        return _validate_final_v1_root_once(
+            root,
+            source_kind=source_kind,
+            source_ref=source_ref,
+        )
+    except FinalV1ResolutionError as direct_error:
+        expanded = _expand_nested_archives(root)
+        matches: list[FinalV1Resolution] = []
+        for expanded_root in expanded:
+            try:
+                matches.append(
+                    _validate_final_v1_root_once(
+                        expanded_root,
+                        source_kind=f"{source_kind}_nested_archive",
+                        source_ref=source_ref,
+                    )
+                )
+            except FinalV1ResolutionError:
+                continue
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            identities = [
+                {
+                    "root": str(row.root),
+                    "manifest_sha256": sha256_file(row.manifest),
+                    "class_map_sha256": sha256_file(row.class_map),
+                }
+                for row in matches
+            ]
+            raise FinalV1ResolutionError(
+                f"multiple nested archives independently satisfy Final-V1 identity: {identities}"
+            )
+        raise direct_error
+
+
+def _select_exact_class_map_matches(matches: list[Path], root: Path) -> Path:
+    if not matches:
+        raise FinalV1ResolutionError(
+            f"no frozen class-map JSON found under {root}"
+        )
+
+    def preference(path: Path) -> tuple[int, int, str]:
+        try:
+            rel = path.resolve().relative_to(root.resolve()).as_posix().casefold()
+        except ValueError:
+            rel = path.name.casefold()
+        preferred = {
+            "audit/class_index.json": 0,
+            "audit/class_map.json": 1,
+            "class_index.json": 2,
+            "class_map.json": 3,
+        }.get(rel, 10)
+        return (preferred, len(path.parts), rel)
+
+    return sorted(set(path.resolve() for path in matches), key=preference)[0]
+
+
+def _validate_known_split_paths(
+    image_root: Path,
+    rows: list[dict[str, str]],
+) -> None:
+    protected = [row for row in rows if row["split"] in {"train", "val"}]
+    if len(protected) != EXPECTED_TRAIN + EXPECTED_VAL:
+        raise FinalV1ResolutionError(
+            "protected Train/Val row-count drift before image-path validation"
+        )
+
+    missing: list[dict[str, str]] = []
+    for row in protected:
+        split = row["split"]
+        rel_text = row["portable_relpath"].strip()
+        rel = PurePosixPath(rel_text)
+        if (
+            not rel_text
+            or rel.is_absolute()
+            or "." in rel.parts
+            or ".." in rel.parts
+        ):
+            raise FinalV1ResolutionError(
+                f"unsafe frozen dataset path for record {row.get('record_key')}: {rel_text!r}"
+            )
+        if not rel_text.startswith(split + "/"):
+            raise FinalV1ResolutionError(
+                f"frozen path/split mismatch for record {row.get('record_key')}: "
+                f"split={split!r}, path={rel_text!r}"
+            )
+        if not (image_root / rel_text).is_file():
+            if len(missing) < 25:
+                missing.append({
+                    "record_key": row.get("record_key", ""),
+                    "split": split,
+                    "portable_relpath": rel_text,
+                })
+    if missing:
+        raise FinalV1ResolutionError(
+            "canonical Final-V1 image root is missing Train/Val files; "
+            f"first_missing={missing}"
+        )
+
+
+def validate_known_final_v1_root(
+    root: str | Path,
+    *,
+    source_kind: str,
+    source_ref: str | None = FINAL_V1_DATASET_SLUG,
+) -> FinalV1Resolution:
+    root = Path(root).resolve()
+    if not root.is_dir():
+        raise FinalV1ResolutionError(f"known Final-V1 root is missing: {root}")
+
+    manifest = (root / FINAL_V1_MANIFEST_RELATIVE).resolve()
+    class_map = (root / FINAL_V1_CLASS_MAP_RELATIVE).resolve()
+    image_root = (root / FINAL_V1_IMAGE_ROOT_RELATIVE).resolve()
+
+    if not manifest.is_file():
+        raise FinalV1ResolutionError(f"known Final-V1 manifest is missing: {manifest}")
+    observed_manifest = sha256_file(manifest)
+    if observed_manifest != MANIFEST_SHA256:
+        raise FinalV1ResolutionError(
+            f"known Final-V1 manifest SHA mismatch: expected={MANIFEST_SHA256}, "
+            f"observed={observed_manifest}, path={manifest}"
+        )
+
+    if not class_map.is_file():
+        raise FinalV1ResolutionError(f"known Final-V1 class map is missing: {class_map}")
+    observed_class_map = sha256_file(class_map)
+    if observed_class_map != CLASS_MAP_SHA256:
+        raise FinalV1ResolutionError(
+            f"known Final-V1 class-map SHA mismatch: expected={CLASS_MAP_SHA256}, "
+            f"observed={observed_class_map}, path={class_map}"
+        )
+
+    if not image_root.is_dir():
+        raise FinalV1ResolutionError(f"known Final-V1 image root is missing: {image_root}")
+
+    rows, counts = _manifest_rows(manifest)
+    _class_map_contract(class_map)
+    _validate_known_split_paths(image_root, rows)
+
+    return FinalV1Resolution(
+        source_kind=source_kind,
+        source_ref=source_ref,
+        root=root,
+        manifest=manifest,
+        class_map=class_map,
+        image_root=image_root,
+        train_rows=counts["train"],
+        val_rows=counts["val"],
+        test_rows=counts["test"],
+    )
+
+
+def scan_attached_inputs(input_root: str | Path = "/kaggle/input") -> list[FinalV1Resolution]:
+    root = Path(input_root)
+    if not root.is_dir():
+        return []
+    results: list[FinalV1Resolution] = []
+    for child in sorted(p for p in root.iterdir() if p.is_dir()):
+        try:
+            results.append(
+                validate_final_v1_root(
+                    child,
+                    source_kind="attached_kaggle_input",
+                    source_ref=child.name,
+                )
+            )
+        except FinalV1ResolutionError:
+            continue
+    return results
+
+
+def _api():
+    from kaggle.api.kaggle_api_extended import KaggleApi
+
+    api = KaggleApi()
+    api.authenticate()
+    return api
+
+
+def _ref(value: object) -> str:
+    return str(getattr(value, "ref", "") or "").strip()
+
+
+def _kernel_pull_text(root: Path) -> str:
+    chunks: list[str] = []
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        if path.name == "kernel-metadata.json":
+            continue
+        if path.suffix.casefold() not in {".py", ".ipynb", ".md", ".txt"}:
+            continue
+        try:
+            if path.stat().st_size > 16 * 1024 * 1024:
+                continue
+            chunks.append(path.read_text(encoding="utf-8", errors="ignore"))
+        except OSError:
+            continue
+    return "\n".join(chunks)
+
+
+def recent_kernel_dataset_sources(
+    api,
+    *,
+    max_pages: int = 6,
+    page_size: int = 100,
+) -> tuple[list[str], list[str]]:
+    kernels_seen: list[str] = []
+    preferred: list[object] = []
+    fallback: list[object] = []
+    for page in range(1, max_pages + 1):
+        rows = api.kernels_list(
+            mine=True,
+            page=page,
+            page_size=page_size,
+            sort_by="dateRun",
+        ) or []
+        if not rows:
+            break
+        for row in rows:
+            ref = _ref(row)
+            if not ref:
+                continue
+            kernels_seen.append(ref)
+            title = str(getattr(row, "title", "") or "")
+            haystack = f"{ref} {title}".casefold()
+            if any(token in haystack for token in _DISCOVERY_KEYWORDS):
+                preferred.append(row)
+            elif len(fallback) < 60:
+                fallback.append(row)
+
+    science_sources: list[str] = []
+    preferred_sources: list[str] = []
+    fallback_sources: list[str] = []
+    seen_science: set[str] = set()
+    seen_preferred: set[str] = set()
+    seen_fallback: set[str] = set()
+
+    to_pull = preferred[:140] + fallback[:60]
+    for row in to_pull:
+        ref = _ref(row)
+        if not ref:
+            continue
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            try:
+                api.kernels_pull(ref, path=td, metadata=True, quiet=True)
+                meta_path = root / "kernel-metadata.json"
+                meta = _json_object(meta_path)
+            except Exception:
+                continue
+
+            code_text = _kernel_pull_text(root)
+            code_lower = code_text.casefold()
+            is_science = (
+                SCIENCE_SOURCE_SHA.casefold() in code_lower
+                or "tracka_v12" in code_lower
+                or "run_tracka_v12" in code_lower
+            )
+            title = str(getattr(row, "title", "") or "")
+            title_haystack = f"{ref} {title}".casefold()
+            is_preferred = any(token in title_haystack for token in _DISCOVERY_KEYWORDS)
+
+            for source in meta.get("dataset_sources") or []:
+                value = str(source or "").strip()
+                if "/" not in value:
+                    continue
+                key = value.casefold()
+                if is_science:
+                    if key not in seen_science:
+                        seen_science.add(key)
+                        science_sources.append(value)
+                elif is_preferred:
+                    if key not in seen_preferred:
+                        seen_preferred.add(key)
+                        preferred_sources.append(value)
+                else:
+                    if key not in seen_fallback:
+                        seen_fallback.add(key)
+                        fallback_sources.append(value)
+
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for collection in (science_sources, preferred_sources, fallback_sources):
+        for value in collection:
+            key = value.casefold()
+            if key not in seen:
+                seen.add(key)
+                ordered.append(value)
+    return ordered, kernels_seen
+
+
+def mine_dataset_refs(
+    api,
+    *,
+    max_pages: int = 12,
+    page_size: int = 100,
+) -> list[str]:
+    refs: list[str] = []
+    seen: set[str] = set()
+    for page in range(1, max_pages + 1):
+        response = api.dataset_list_with_response(
+            mine=True,
+            page=page,
+            page_size=page_size,
+            sort_by="updated",
+        )
+        rows = getattr(response, "datasets", None) or []
+        if not rows:
+            break
+        for row in rows:
+            value = _ref(row)
+            if value and value.casefold() not in seen:
+                seen.add(value.casefold())
+                refs.append(value)
+        if len(rows) < page_size:
+            break
+    return refs
+
+
+def _dataset_files(api, dataset_ref: str) -> list[object]:
+    files: list[object] = []
+    token = None
+    while True:
+        response = api.dataset_list_files(
+            dataset_ref,
+            page_token=token,
+            page_size=100,
+        )
+        rows = getattr(response, "files", None) or []
+        files.extend(rows)
+        token = getattr(response, "next_page_token", None)
+        if not token:
+            break
+    return files
+
+
+def _candidate_remote_identity_names(api, dataset_ref: str) -> list[str]:
+    names: list[str] = []
+    scored: list[tuple[int, str]] = []
+    for row in _dataset_files(api, dataset_ref):
+        name = str(getattr(row, "name", "") or "").strip()
+        if not name:
+            continue
+        suffix = Path(name).suffix.casefold()
+        if suffix not in {".csv", ".json"}:
+            continue
+        size = int(getattr(row, "total_bytes", 0) or 0)
+        if size and size > 256 * 1024 * 1024:
+            continue
+        lname = name.casefold()
+        score = sum(1 for token in _IDENTITY_NAME_HINTS if token in lname)
+        scored.append((-score, name))
+    for _, name in sorted(scored):
+        if name not in names:
+            names.append(name)
+    return names[:40]
+
+
+def _download_remote_file(api, dataset_ref: str, file_name: str, destination: Path) -> list[Path]:
+    destination.mkdir(parents=True, exist_ok=True)
+    before = {p.resolve() for p in destination.rglob("*") if p.is_file()}
+    api.dataset_download_file(
+        dataset_ref,
+        file_name,
+        path=str(destination),
+        force=True,
+        quiet=True,
+    )
+    after = [p.resolve() for p in destination.rglob("*") if p.is_file()]
+    return [p for p in after if p not in before] or after
+
+
+def remote_dataset_matches_identity(api, dataset_ref: str) -> bool:
+    found_manifest = False
+    found_class_map = False
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        for name in _candidate_remote_identity_names(api, dataset_ref):
+            probe_dir = root / f"probe_{len(list(root.iterdir())):03d}"
+            try:
+                downloaded = _download_remote_file(api, dataset_ref, name, probe_dir)
+            except Exception:
+                continue
+            for path in downloaded:
+                if not path.is_file() or path.stat().st_size > 256 * 1024 * 1024:
+                    continue
+                digest = sha256_file(path)
+                found_manifest = found_manifest or digest == MANIFEST_SHA256
+                found_class_map = found_class_map or digest == CLASS_MAP_SHA256
+            if found_manifest and found_class_map:
+                return True
+    return False
+
+
+def hydrate_known_final_v1_dataset(api, destination: str | Path) -> FinalV1Resolution:
+    destination = Path(destination).resolve()
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.mkdir(parents=True, exist_ok=False)
+    api.dataset_download_files(
+        FINAL_V1_DATASET_SLUG,
+        path=str(destination),
+        force=True,
+        quiet=True,
+        unzip=True,
+    )
+
+    candidates = [destination / "CropCop_Final_v1", destination]
+    try:
+        candidates.extend(
+            child / "CropCop_Final_v1"
+            for child in destination.iterdir()
+            if child.is_dir()
+        )
+    except OSError:
+        pass
+
+    errors: list[str] = []
+    for candidate in candidates:
+        if not candidate.is_dir():
+            continue
+        try:
+            return validate_known_final_v1_root(
+                candidate,
+                source_kind="downloaded_known_kaggle_dataset",
+                source_ref=FINAL_V1_DATASET_SLUG,
+            )
+        except FinalV1ResolutionError as exc:
+            errors.append(f"{candidate}: {exc}")
+    raise FinalV1ResolutionError(
+        "known Final-V1 Kaggle dataset downloaded but canonical root validation failed: "
+        + " | ".join(errors[-6:])
+    )
+
+
+def hydrate_remote_dataset(api, dataset_ref: str, destination: str | Path) -> FinalV1Resolution:
+    destination = Path(destination).resolve()
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.mkdir(parents=True, exist_ok=False)
+    api.dataset_download_files(
+        dataset_ref,
+        path=str(destination),
+        force=True,
+        quiet=True,
+        unzip=True,
+    )
+    return validate_final_v1_root(
+        destination,
+        source_kind="historical_kaggle_dataset",
+        source_ref=dataset_ref,
+    )
+
+
+def _final_v1_candidate_score(dataset_ref: str, *, kernel_rank: int | None) -> tuple[int, int, str]:
+    name = dataset_ref.casefold()
+    score = 0
+    if "finalized" in name:
+        score += 600
+    if "final-v1" in name or "final_v1" in name or "finalv1" in name:
+        score += 550
+    if "120-class" in name or "120_class" in name or "120class" in name:
+        score += 450
+    if "cropcop" in name:
+        score += 120
+    if "dataset" in name:
+        score += 40
+
+    for token, penalty in (
+        ("checkpoint", 700),
+        ("model", 500),
+        ("readiness", 450),
+        ("qa", 400),
+        ("audit", 350),
+        ("cicps", 600),
+        ("agri-", 250),
+        ("g1a", 300),
+        ("g1-", 300),
+        ("g2", 300),
+    ):
+        if token in name:
+            score -= penalty
+
+    # Kernel provenance is stronger than an owned-dataset inventory fallback.
+    provenance_bonus = 300 if kernel_rank is not None else 0
+    rank_penalty = kernel_rank if kernel_rank is not None else 10_000
+    return (-(score + provenance_bonus), rank_penalty, name)
+
+
+def _ordered_remote_candidates(kernel_refs: list[str], mine_refs: list[str]) -> list[str]:
+    kernel_rank = {value.casefold(): index for index, value in enumerate(kernel_refs)}
+    merged: list[str] = []
+    seen: set[str] = set()
+    for value in [*kernel_refs, *mine_refs]:
+        key = value.casefold()
+        if key not in seen:
+            seen.add(key)
+            merged.append(value)
+    return sorted(
+        merged,
+        key=lambda value: _final_v1_candidate_score(
+            value,
+            kernel_rank=kernel_rank.get(value.casefold()),
+        ),
+    )
+
+
+def resolve_final_v1(
+    *,
+    output_root: str | Path,
+    attached_input_root: str | Path = "/kaggle/input",
+    api_factory=_api,
+) -> tuple[FinalV1Resolution, dict[str, Any]]:
+    mounted_errors: list[str] = []
+    for candidate in (FINAL_V1_MOUNTED_ROOT, FINAL_V1_ALTERNATE_MOUNTED_ROOT):
+        if not candidate.is_dir():
+            continue
+        try:
+            resolution = validate_known_final_v1_root(
+                candidate,
+                source_kind="canonical_kaggle_mount",
+                source_ref=FINAL_V1_DATASET_SLUG,
+            )
+            return resolution, {
+                "resolution_strategy": "canonical_mounted_root",
+                "canonical_dataset_slug": FINAL_V1_DATASET_SLUG,
+                "canonical_root": str(candidate),
+                "mounted_errors": mounted_errors,
+                "api_download_performed": False,
+            }
+        except FinalV1ResolutionError as exc:
+            mounted_errors.append(f"{candidate}: {exc}")
+
+    # Deterministic authenticated fallback: download ONE known canonical slug.
+    # Deliberately do not scan unrelated attached inputs or historical kernels.
+    api = api_factory()
+    resolution = hydrate_known_final_v1_dataset(api, output_root)
+    return resolution, {
+        "resolution_strategy": "canonical_slug_download",
+        "canonical_dataset_slug": FINAL_V1_DATASET_SLUG,
+        "canonical_root": str(resolution.root),
+        "mounted_errors": mounted_errors,
+        "api_download_performed": True,
+    }
+

@@ -1,0 +1,303 @@
+{
+  "authority_id": "EAAI-JE-TRACKA-POSTTRAINING-CLOSURE-V1",
+  "auxiliary_state_count": 9,
+  "candidate_families": [
+    "R04",
+    "R06",
+    "R07",
+    "R13"
+  ],
+  "direct_candidate_state_count": 12,
+  "forbidden_actions": [
+    "new architecture",
+    "new seed",
+    "hyperparameter retuning",
+    "model replacement after analysis",
+    "selector modification",
+    "XAI-weighted selection",
+    "V1-test access",
+    "Track-B prediction access",
+    "Track-C candidate-result access",
+    "training or optimizer advance during posttraining evidence"
+  ],
+  "handoff_rule": "Only a PASS comprehensive 21-state closure may authorize downstream Track B/Track C handoff. A CO_PRIMARY_TIE keeps both handoffs closed until the separately frozen deployment-feasibility tie gate resolves it.",
+  "later_v1_test_rule": "Do not open the consumed V1 test during Track-A closure. Before any later one-shot use, reconcile the original ten-state continuity authority with the strengthened selected-primary-only rule in a separate explicit authority artifact.",
+  "parent_training_science_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "placement_policy": "Keep each of the 11 continuation states on the Kaggle account that owns its private durability dataset. Assign historical states only after artifact-availability preflight. Freeze the final three-account state partition before any new post-training metric is opened; placement is engineering-only and not scientific identity.",
+  "posttraining_execution_order": [
+    "recover and certify 11 new terminal run records",
+    "resolve all 10 historical artifact roots and exact run records",
+    "seal 21-state POSTTRAINING_READINESS_GATE",
+    "run 12 direct selected-checkpoint clean replay/robustness/efficiency",
+    "run 12 direct frozen Grad-CAM++ audits",
+    "run 9 auxiliary selected-checkpoint replays",
+    "seal auxiliary three-seed descriptive analysis",
+    "seal direct scientific-primary selection",
+    "seal comprehensive 21-state Track-A closure"
+  ],
+  "pre_analysis_gate": {
+    "analysis_may_start_before_pass": false,
+    "required_auxiliary_states": 9,
+    "required_checks": [
+      "each Kaggle account locally verifies every private selected checkpoint assigned to it",
+      "all run records terminal PASS",
+      "all selected checkpoint bytes hash-verified",
+      "all new-state recovery certificates PASS",
+      "all historical lineages equal immutable Wave closures",
+      "G1A validates on each account executing evidence",
+      "frozen dataset hashes match",
+      "all executor dependencies exist",
+      "three account-local readiness gates PASS and their union is exactly 21 states",
+      "global readiness aggregate contains exactly 12 direct, 9 auxiliary, 11 recovered and 10 historical states"
+    ],
+    "required_direct_states": 12,
+    "required_state_count": 21,
+    "required_unique_selected_checkpoints": 21,
+    "distributed_readiness": {
+      "account_gate": "track_a_v12_posttraining_account_readiness",
+      "global_gate": "track_a_v12_posttraining_global_readiness",
+      "account_ids": [
+        "K1",
+        "K2",
+        "K3"
+      ],
+      "private_checkpoint_material_may_cross_accounts": false,
+      "global_gate_consumes_public_safe_account_certificates_only": true
+    }
+  },
+  "protected_surfaces": {
+    "external_predictions": "CLOSED",
+    "track_c_candidate_runtime": "CLOSED",
+    "v1_test": "CLOSED"
+  },
+  "purpose": "Close Track A reproducibly after all 21 scientific training states are terminal, without reopening training or protected surfaces.",
+  "schema_version": "1.0",
+  "scientific_semantics_change_authorized": false,
+  "state_count": 21,
+  "state_inventory": {
+    "R04-MNV4-DIRECT-S1": {
+      "role": "direct",
+      "run_id": "JE-R04-MNV4-DIRECT-S1-f171309fc7e9-A01",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "63a5ba04a278fcc5a0a333bfc38a21ab4718df5530c9b4f99bc81ef13011251c",
+      "selected_epoch": 28,
+      "training_generation": "historical"
+    },
+    "R04-MNV4-DIRECT-S2": {
+      "role": "direct",
+      "run_id": "JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "66a3e5f4a90d363c3f6b4ea342ae804af666414851f874238fd3ad83397cd32a",
+      "selected_epoch": 25,
+      "training_generation": "historical"
+    },
+    "R04-MNV4-DIRECT-S3": {
+      "role": "direct",
+      "run_id": "JE-R04-MNV4-DIRECT-S3-f171309fc7e9-A01",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "fa200d6add9c25856b1bdaa4d05961a0d1e4050e1204ab2a3103474b9c4a8ed2",
+      "selected_epoch": 28,
+      "training_generation": "historical"
+    },
+    "R05-MNV4-TEACHER-S1": {
+      "role": "auxiliary",
+      "run_id": "JE-R05-MNV4-TEACHER-S1-f171309fc7e9-A01",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "331b4eb79bd7d02fb1f2887918ff5266e3c600814d51533a6730ab8b8ce7f5fa",
+      "selected_epoch": 29,
+      "training_generation": "historical"
+    },
+    "R05-MNV4-TEACHER-S2": {
+      "role": "auxiliary",
+      "run_id": "JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "157375477b04cf36095f8b66dff557760c44839373c77691738bca7e9de8468c",
+      "selected_epoch": 30,
+      "training_generation": "historical"
+    },
+    "R05-MNV4-TEACHER-S3": {
+      "role": "auxiliary",
+      "run_id": "JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "0df653f67fe6a0f6a3c4d47fd8746ab563ef92d7182e36598602eba24b518d56",
+      "selected_epoch": 28,
+      "training_generation": "historical"
+    },
+    "R06-EFFB0-CONTEXT-S1": {
+      "role": "direct",
+      "run_id": "JE-R06-EFFB0-CONTEXT-S1-8904b100d223-A01",
+      "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+      "selected_checkpoint_sha256": "882e1e45e1d18a8ed8168aab266ce5a66a9b57a74e2a8d98acf692207d2210c7",
+      "selected_epoch": 26,
+      "training_generation": "historical"
+    },
+    "R06-EFFB0-CONTEXT-S2": {
+      "durable_checkpoint_locator": "sabahatabbas/cropcop-r06-effb0-context-s2-3f5983ed-56023042",
+      "role": "direct",
+      "run_id": "JE-R06-EFFB0-CONTEXT-S2-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "f0de7831758a18339d1e1f9de60686e48725aa29fe12f0187c1dd8f446085c39",
+      "terminal_account_id": "K3",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K3-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    },
+    "R06-EFFB0-CONTEXT-S3": {
+      "durable_checkpoint_locator": "sabahatabbas/cropcop-r06-effb0-context-s3-a9bf0e72-56023042",
+      "role": "direct",
+      "run_id": "JE-R06-EFFB0-CONTEXT-S3-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "fa895a5a6c3ae81c15ab2af3969556ccbd4eabc8bf87cfac540a9f39ed6854ba",
+      "terminal_account_id": "K3",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K3-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    },
+    "R07-CNXTT-CONTEXT-S1": {
+      "role": "direct",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01",
+      "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+      "selected_checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+      "selected_epoch": 27,
+      "training_generation": "historical"
+    },
+    "R07-CNXTT-CONTEXT-S2": {
+      "durable_checkpoint_locator": "sabahatabbas/cropcop-r07-cnxtt-context-s2-abce1197-56023042",
+      "role": "direct",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S2-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
+      "terminal_account_id": "K3",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K3-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    },
+    "R07-CNXTT-CONTEXT-S3": {
+      "durable_checkpoint_locator": "sabahatabbas/cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
+      "role": "direct",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S3-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37",
+      "terminal_account_id": "K3",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K3-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    },
+    "R12-MNV4-FEATURE-S1": {
+      "role": "auxiliary",
+      "run_id": "JE-R12-MNV4-FEATURE-S1-8904b100d223-A01",
+      "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+      "selected_checkpoint_sha256": "e5d3b691e9f90602a2785dcdbe4c1c40e482a56c7f72741c708504377eea8950",
+      "selected_epoch": 30,
+      "training_generation": "historical"
+    },
+    "R12-MNV4-FEATURE-S2": {
+      "durable_checkpoint_locator": "ranaabdulrehmannn/cropcop-r12-mnv4-feature-s2-6dd42c66-56023042",
+      "role": "auxiliary",
+      "run_id": "JE-R12-MNV4-FEATURE-S2-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "e87f7e5ac4d29c48b53a8bedb99d19fc807840891d60582f0f766edceb472620",
+      "terminal_account_id": "K2",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K2-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    },
+    "R12-MNV4-FEATURE-S3": {
+      "durable_checkpoint_locator": "ranaabdulrehmannn/cropcop-r12-mnv4-feature-s3-286f2926-56023042",
+      "role": "auxiliary",
+      "run_id": "JE-R12-MNV4-FEATURE-S3-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "756efe872c4042f718936a94d4ca360f5be6843f31072eb6d650dc6fc4b163f4",
+      "terminal_account_id": "K2",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K2-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    },
+    "R12-MNV4-LOGITS-S1": {
+      "role": "auxiliary",
+      "run_id": "JE-R12-MNV4-LOGITS-S1-8904b100d223-A01",
+      "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+      "selected_checkpoint_sha256": "2377007e4f9ccc35c31ff9583ac6196e183bb03b1aa45ed0b8f58779abbc1827",
+      "selected_epoch": 30,
+      "training_generation": "historical"
+    },
+    "R12-MNV4-LOGITS-S2": {
+      "durable_checkpoint_locator": "ranamuhammadahmed6/cropcop-r12-mnv4-logits-s2-f04a6089-56023042",
+      "role": "auxiliary",
+      "run_id": "JE-R12-MNV4-LOGITS-S2-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "725db4da414795a5082867bf73cf8366814233c6a9546264659186456ffffe32",
+      "terminal_account_id": "K1",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K1-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    },
+    "R12-MNV4-LOGITS-S3": {
+      "durable_checkpoint_locator": "ranamuhammadahmed6/cropcop-r12-mnv4-logits-s3-0c97a693-56023042",
+      "role": "auxiliary",
+      "run_id": "JE-R12-MNV4-LOGITS-S3-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "b81f3e8de8acbda55c13b687412b09186bb128a921bea949af6be2bc9795fd06",
+      "terminal_account_id": "K1",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K1-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1": {
+      "durable_checkpoint_locator": "ranaabdulrehmannn/cropcop-r13-vit-dlittle-diff-con-696948b9-56023042",
+      "role": "direct",
+      "run_id": "JE-R13-VIT-DLITTLE-DIFF-CONTEXT-S1-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "b27f494490d37dcf200e3b7f4aafb3fa731ab55f9b5d570c75fd3f36e0938968",
+      "terminal_account_id": "K2",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K2-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2": {
+      "durable_checkpoint_locator": "ranaabdulrehmannn/cropcop-r13-vit-dlittle-diff-con-e7237dfe-56023042",
+      "role": "direct",
+      "run_id": "JE-R13-VIT-DLITTLE-DIFF-CONTEXT-S2-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "68c2bbb867874cb553a4702844dbceb187f09fac48051249cc048495ddf0f786",
+      "terminal_account_id": "K2",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K2-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3": {
+      "durable_checkpoint_locator": "ranamuhammadahmed6/cropcop-r13-vit-dlittle-diff-con-c2bd5ef6-56023042",
+      "role": "direct",
+      "run_id": "JE-R13-VIT-DLITTLE-DIFF-CONTEXT-S3-56023042e577-A01",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "c10a93d5a6a264c80992a1d4d8b1a19daa732dfc9e68d2b8e7c96fb2dba73b67",
+      "terminal_account_id": "K1",
+      "terminal_account_report_branch": "run-evidence/TRACKA-V12-ACCOUNT-K1-56023042e577",
+      "terminal_metadata_recovery_required": true,
+      "training_generation": "v1.2_continuation"
+    }
+  },
+  "status": "PRE_EXECUTION_LOCK",
+  "terminal_metadata_recovery": {
+    "allowed_sources": [
+      "terminal public account report",
+      "generation-aware private selected checkpoint/index",
+      "frozen config/CTC/source authority"
+    ],
+    "applicable_states": [
+      "R06-EFFB0-CONTEXT-S2",
+      "R06-EFFB0-CONTEXT-S3",
+      "R07-CNXTT-CONTEXT-S2",
+      "R07-CNXTT-CONTEXT-S3",
+      "R12-MNV4-FEATURE-S2",
+      "R12-MNV4-FEATURE-S3",
+      "R12-MNV4-LOGITS-S2",
+      "R12-MNV4-LOGITS-S3",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+      "R13-VIT-DLITTLE-DIFF-CONTEXT-S3"
+    ],
+    "forbidden": "inventing fields, recomputing training, using downstream outcomes, or silently treating reconstructed metadata as the original Git-published run record",
+    "required_output": "RECOVERED_TERMINAL_RUN_RECORD.json + TERMINAL_RECOVERY_CERTIFICATE.json"
+  }
+}

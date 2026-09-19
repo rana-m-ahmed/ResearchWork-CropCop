@@ -16,7 +16,11 @@ from cropcop_je.tracka_v12_g1a import (  # noqa: E402
     R12_CONSUMERS,
     R13_CONSUMERS,
     R13_MODEL_ID,
+    R13_PARITY_CONTRACT_ID_V121,
+    R13_PARITY_CONTRACT_SHA256_V121,
+    R13_PARITY_PREEXECUTION_EVIDENCE_SHA256_V121,
     R13_PARITY_TOLERANCE,
+    R13_PARITY_TOLERANCE_V121,
     R13_PRETRAINED_BYTES,
     R13_PRETRAINED_SHA256,
     SEEDS,
@@ -44,7 +48,12 @@ def valid_seal() -> dict:
             "timm_version": "1.0.26",
             "pretrained_sha256": R13_PRETRAINED_SHA256,
             "pretrained_bytes": R13_PRETRAINED_BYTES,
-            "parity_max_abs": R13_PARITY_TOLERANCE,
+            "parity_contract_id": R13_PARITY_CONTRACT_ID_V121,
+            "parity_contract_sha256": R13_PARITY_CONTRACT_SHA256_V121,
+            "parity_preexecution_calibration_evidence_sha256": R13_PARITY_PREEXECUTION_EVIDENCE_SHA256_V121,
+            "historical_v1_2_required_max_abs_difference": R13_PARITY_TOLERANCE,
+            "required_max_abs_difference": R13_PARITY_TOLERANCE_V121,
+            "parity_max_abs": 3.4332275390625e-05,
             "states": {},
         },
     }
@@ -107,7 +116,7 @@ class TrackAV12G1AContractTests(unittest.TestCase):
         self.assert_rejected(lambda x: x["r13"].__setitem__("model_id", R13_MODEL_ID + "-drift"))
 
     def test_r13_parity_above_tolerance_fails(self):
-        self.assert_rejected(lambda x: x["r13"].__setitem__("parity_max_abs", R13_PARITY_TOLERANCE * 1.01))
+        self.assert_rejected(lambda x: x["r13"].__setitem__("parity_max_abs", R13_PARITY_TOLERANCE_V121 * 1.01))
 
     def test_wrong_r13_seed_consumer_fails(self):
         self.assert_rejected(lambda x: x["r13"]["states"]["S1"].__setitem__("authorized_consumers", [R13_CONSUMERS["S2"]]))

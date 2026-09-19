@@ -145,6 +145,42 @@ def _publication_env(token: str) -> dict[str, str]:
     return env
 
 
+def _verify_destination_snapshot(dest_root: Path, approved: list[Path]) -> None:
+    expected_names = [path.name for path in approved]
+    if len(expected_names) != len(set(expected_names)):
+        raise PublicationError(
+            f"duplicate public evidence basenames would overwrite each other: {expected_names}"
+        )
+
+    observed_names = sorted(
+        path.relative_to(dest_root).as_posix()
+        for path in dest_root.rglob("*")
+        if path.is_file()
+    )
+    expected_sorted = sorted(expected_names)
+    if observed_names != expected_sorted:
+        raise PublicationError(
+            "destination public-evidence snapshot differs from explicit allowlist: "
+            f"observed={observed_names}, expected={expected_sorted}"
+        )
+
+    for src in approved:
+        dst = dest_root / src.name
+        if not dst.is_file() or dst.read_bytes() != src.read_bytes():
+            raise PublicationError(
+                f"destination public-evidence bytes differ from approved source: {src.name}"
+            )
+
+
+def _verify_staged_subset(changed_paths: list[str], allowed_paths: list[str]) -> None:
+    unexpected = sorted(set(changed_paths) - set(allowed_paths))
+    if unexpected:
+        raise PublicationError(
+            "staged file set contains paths outside explicit allowlist: "
+            f"unexpected={unexpected}, allowed={sorted(allowed_paths)}"
+        )
+
+
 def publish_to_github_branch(
     *,
     repo_dir: str | Path,
@@ -159,6 +195,12 @@ def publish_to_github_branch(
         raise PublicationError("Git credential absent; CROPCOP_GITHUB_TOKEN/GITHUB_TOKEN not set")
 
     approved = audit_public_files([Path(p) for p in files])
+    approved_names = [path.name for path in approved]
+    if len(approved_names) != len(set(approved_names)):
+        raise PublicationError(
+            f"duplicate public evidence basenames would overwrite each other: {approved_names}"
+        )
+
     repo_dir = Path(repo_dir).resolve()
     branch = f"run-evidence/{run_id}"
 
@@ -246,6 +288,10 @@ def publish_to_github_branch(
             for src in approved:
                 shutil.copy2(src, dest_root / src.name)
 
+            # The worktree snapshot must contain exactly the approved public files and
+            # byte-match their audited sources. This is the security invariant.
+            _verify_destination_snapshot(dest_root, approved)
+
             staged = [
                 str((Path(destination_prefix) / run_id / p.name).as_posix())
                 for p in approved
@@ -260,10 +306,13 @@ def publish_to_github_branch(
                 env=env,
                 context="evidence staged-file verification",
             ).stdout.splitlines()
-            if sorted(diff) != sorted(staged):
-                raise PublicationError(
-                    f"staged file set differs from explicit allowlist: staged={diff}, expected={staged}"
-                )
+
+            # A pre-existing evidence branch can already contain one or more approved
+            # files with identical bytes. Git correctly omits those unchanged paths
+            # from the staged diff, so the diff is allowed to be a subset of the
+            # explicit allowlist. Any changed path outside the allowlist still fails
+            # closed.
+            _verify_staged_subset(diff, staged)
             if not diff:
                 return branch
 
