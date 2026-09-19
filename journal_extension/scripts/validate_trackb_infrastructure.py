@@ -220,9 +220,10 @@ def main() -> int:
     protected = runner_text.find('"gvlid_grape": _protected_inference(')
     if min(audit_call, second_audit_call, firewall, protected) < 0 or not (audit_call < second_audit_call < firewall < protected):
         raise TrackBError("runner chronology no longer guarantees both v2 audits before protected inference")
-    for retired in ("agrivision_v2", "agrivision_bd", "Tomato Mosaic -> tomato_mosaic_virus"):
-        if retired.lower() in runner_text.lower():
-            raise TrackBError(f"runner still references retired Track-B v1 candidate surface: {retired}")
+    if "agrivision" in runner_text.lower():
+        raise TrackBError("executable runner still contains a retired Agri-Vision code path/token")
+    if "Tomato Mosaic -> tomato_mosaic_virus".lower() in runner_text.lower():
+        raise TrackBError("executable runner still contains the retired Tomato Mosaic semantic gate")
 
     result = {
         "schema_version": "1.0",
