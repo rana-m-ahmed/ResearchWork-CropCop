@@ -1,0 +1,38 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "classwise_pass": true,
+  "efficiency_pass": true,
+  "experiment_id": "R06-EFFB0-CONTEXT-S3",
+  "external_surface_accessed": false,
+  "optimizer_state_advanced": false,
+  "public_evidence_sha256": {
+    "efficiency.json": "5df42d527cf2c3cbb3f98154c0bc96e6863c217f4b0c7a90b64a053384bdb00f",
+    "robustness_and_replay.json": "6e599a3a10917249247559c242ff183fbd98165ac4a2c4c5b6ba54a47e7357ef"
+  },
+  "replay_gate": {
+    "absolute_metric_differences": {
+      "validation_accuracy": 0.0,
+      "validation_balanced_accuracy": 0.0,
+      "validation_macro_f1": 0.0,
+      "validation_nll": 1.9064944067892498e-11
+    },
+    "all_metric_replay_max_abs_diff": 1.9064944067892498e-11,
+    "metric_match_tolerance": 1e-06,
+    "optimizer_state_advanced": false,
+    "protected_external_surface_accessed": false,
+    "status": "PASS",
+    "training_performed": false,
+    "v1_test_accessed": false
+  },
+  "robustness_pass": true,
+  "run_id": "JE-R06-EFFB0-CONTEXT-S3-56023042e577-A01",
+  "schema_version": "1.2",
+  "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "selected_checkpoint_epoch": 26,
+  "selected_checkpoint_file_sha256": "fa895a5a6c3ae81c15ab2af3969556ccbd4eabc8bf87cfac540a9f39ed6854ba",
+  "selected_checkpoint_sha256": "fa895a5a6c3ae81c15ab2af3969556ccbd4eabc8bf87cfac540a9f39ed6854ba",
+  "source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "status": "PASS",
+  "training_performed": false,
+  "v1_test_accessed": false
+}

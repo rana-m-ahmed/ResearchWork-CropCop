@@ -1,0 +1,19 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "confirmed_version_number": 4,
+  "dataset_locator": "sabahatabbas/cropcop-ta-r06-effb0-s3-e08e471cc033",
+  "evidence_file_count": 80,
+  "evidence_manifest_sha256": "549581dc136870da206fb2c5db42e47fb124052ffe3ae65ed62440fe30efa54d",
+  "experiment_id": "R06-EFFB0-CONTEXT-S3",
+  "generation_kind": "final",
+  "generation_roundtrip_verified": true,
+  "owner_matches_authenticated_user": true,
+  "previous_version_number": 3,
+  "private_dataset_verified": true,
+  "roundtrip_marker_sha256": "48aaa0c53e163973892fe76b4bf0335be2c3973225e3124f4c2edd69004be4cb",
+  "run_id": "TRACKA-POST-r06-effb0-context-s3-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS",
+  "sync_certificate_sha256": "0ce78124c11bf90706687c9b6040420ef1f85ac7157ed852582dd28368d9899f",
+  "sync_kind": "track_a_posttraining_private_evidence"
+}
