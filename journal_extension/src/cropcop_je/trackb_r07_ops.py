@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 import urllib.parse
 import urllib.request
 import zipfile
@@ -385,7 +386,7 @@ def publish_private_kaggle_dataset(
     title: str,
     version_message: str,
     license_name: str = "other",
-) -> dict[str, str | bool]:
+) -> dict[str, str | bool | int]:
     folder = Path(folder).resolve()
     if not folder.is_dir() or not any(folder.iterdir()):
         raise TrackBOpsError(f"private Kaggle publication folder is empty: {folder}")
@@ -397,19 +398,56 @@ def publish_private_kaggle_dataset(
         "licenses": [{"name": license_name}],
     }
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
-    existed = kaggle_dataset_exists(slug)
-    if existed:
-        run_checked(
-            ["kaggle", "datasets", "version", "-p", str(folder), "-m", version_message, "-q", "-r", "zip"],
-            timeout=7200,
-        )
-    else:
-        # Dataset creation intentionally uses the CLI default private visibility.
-        run_checked(
-            ["kaggle", "datasets", "create", "-p", str(folder), "-q", "-r", "zip"],
-            timeout=7200,
-        )
-    return {"slug": slug, "created": not existed, "versioned": existed}
+
+    existed_initially = kaggle_dataset_exists(slug)
+    errors: list[str] = []
+    for attempt, delay in enumerate((0, 5, 15, 30), start=1):
+        if delay:
+            time.sleep(delay)
+        try:
+            exists_now = kaggle_dataset_exists(slug)
+            if exists_now:
+                run_checked(
+                    [
+                        "kaggle", "datasets", "version",
+                        "-p", str(folder),
+                        "-m", version_message,
+                        "-q", "-r", "zip",
+                    ],
+                    timeout=7200,
+                )
+                action = "version"
+            else:
+                # Dataset creation intentionally uses the CLI default private visibility.
+                run_checked(
+                    [
+                        "kaggle", "datasets", "create",
+                        "-p", str(folder),
+                        "-q", "-r", "zip",
+                    ],
+                    timeout=7200,
+                )
+                action = "create"
+            return {
+                "slug": slug,
+                "created": action == "create" and not existed_initially,
+                "versioned": action == "version" or existed_initially,
+                "attempts": attempt,
+            }
+        except Exception as exc:
+            message = redact(str(exc))
+            errors.append(f"attempt={attempt} {type(exc).__name__}: {message[-1200:]}")
+            if attempt < 4:
+                print(
+                    f"Private Kaggle publication attempt {attempt}/4 failed; retrying: "
+                    f"{type(exc).__name__}: {message[-500:]}",
+                    flush=True,
+                )
+
+    raise TrackBOpsError(
+        "private Kaggle dataset publication failed after 4 attempts: "
+        + " | ".join(errors[-4:])
+    )
 
 
 def _urlopen_json(url: str, *, timeout: int = 120) -> dict:
