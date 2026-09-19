@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "status": "GO_AFTER_REQUIRED_ARCHIVAL_RECOVERY",
-  "audit_kind": "track_a_final_closure_preseal",
+  "status": "PASS",
+  "audit_kind": "track_a_final_closure_status",
   "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
   "training_science_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
   "closure_authority_id": "EAAI-JE-TRACKA-POSTTRAINING-CLOSURE-V1",
@@ -21,7 +21,27 @@
     "branches_zero_behind_analysis_source": 21,
     "branches_with_unexpected_paths": 0
   },
-  "frozen_selector_dry_run": {
+  "terminal_account_manifests": {
+    "K1": {
+      "status": "PASS",
+      "assigned": 5,
+      "completed": 5,
+      "file_sha256": "d8d86f8974b8152fc0520252b866036eaf65fd0e7b32e1609e6bb2d6d72ac98a"
+    },
+    "K2": {
+      "status": "PASS",
+      "assigned": 8,
+      "completed": 8,
+      "file_sha256": "d161ce2adb123b880c6973b74ebe465663bbdd34084e3138863ed2f9ccea21ed"
+    },
+    "K3": {
+      "status": "PASS",
+      "assigned": 8,
+      "completed": 8,
+      "file_sha256": "b4621061457199202cc3e557fd665e099fa8a3ad0bc9de642a173e1046dc38d0"
+    }
+  },
+  "selection": {
     "status": "SELECTED",
     "selection_stage": "frozen_lexicographic",
     "journal_primary_family": "R07",
@@ -31,50 +51,39 @@
       "R06",
       "R07"
     ],
-    "downstream_weight_from_xai": false,
-    "official_seal_executed": false
+    "xai_selector_weight": false
   },
-  "auxiliary_dry_run": {
-    "r05_teacher_minus_r04_direct": {
-      "mean_validation_accuracy_delta": 0.00008145975887911365,
-      "mean_validation_macro_f1_delta": -0.0024696442102595992,
-      "mean_validation_balanced_accuracy_delta": -0.0022047993844903635,
-      "mean_validation_nll_delta": -0.011118301253089075
-    },
-    "r12_logits_minus_feature": {
-      "mean_validation_accuracy_delta": 0.0003869338546757713,
-      "mean_validation_macro_f1_delta": 0.0023667036344124184,
-      "mean_validation_balanced_accuracy_delta": 0.0027325279375332765,
-      "mean_validation_nll_delta": -0.011066382791663415
-    },
+  "auxiliary_results": {
+    "r05_teacher_minus_r04_direct_macro_f1_delta_pp": -0.24696442102595992,
+    "r12_logits_minus_feature_macro_f1_delta_pp": 0.23667036344124184,
     "hypothesis_tests_authorized": false,
-    "official_seal_executed": false
+    "multiple_comparison_p_values_authorized": false
+  },
+  "immutable_bindings": {
+    "global_readiness_file_sha256": "db7ccc76b0e980c70d7dae44ce95a6d9f3e9872e2ac0bd5f9ce1a0d44060520c",
+    "wave1_file_sha256": "f1a10405b2b049c763512b2562814f1fe603d9e6335f4231347e546300c89803",
+    "wave2_file_sha256": "29a8f045729a36b126da8f470e91789569fc342c6dc051c9882e12661a68aee2",
+    "final_audit_file_sha256": "683ffbd505280a909dcbe74d216d8611263113d14f06dfd6f6c1b127cb4df2e9",
+    "final_audit_self_hash": "1c7d98fa47a12ae6eaa53e1c6e91b4e6eef2d04bb717c2d58c7ae2ebae2b51c6",
+    "comprehensive_closure_file_sha256": "d425f188ba7038eb108d9a68b5ba93b5454cb31e54755b1ceb03b9bb0a2e8907",
+    "closure_bundle_sha256": "79ed2adc8140b1bccd4c904c90914f17a5235e7b9822a5660ca33bf2ca2d3200"
+  },
+  "qa": {
+    "primary_final_builder_checks_passed": 797,
+    "secondary_validation_status": "PASS",
+    "secondary_validation_error_count": 0
   },
   "protected_surfaces": {
-    "v1_test": "CLOSED",
-    "track_b_predictions": "CLOSED",
-    "track_c_candidate_results": "CLOSED"
+    "v1_test": "CLOSED_DURING_TRACK_A",
+    "track_b_predictions": "CLOSED_DURING_SELECTION",
+    "track_c_candidate_results": "CLOSED_DURING_SELECTION"
   },
-  "blocking_inputs": [
-    {
-      "id": "TRACKA-CLOSE-B1",
-      "severity": "S0",
-      "description": "Original terminal account execution manifests are not currently available to this audit environment.",
-      "required_originals": [
-        "K1 ACCOUNT_GPU_COMPLETION.json",
-        "K2 ACCOUNT_GPU_COMPLETION.json",
-        "K3 ACCOUNT_GPU_COMPLETION.json"
-      ],
-      "expected_export_locations": [
-        "TRACKA_GPU_K1_e08e471cc033.zip/ACCOUNT_GPU_COMPLETION.json",
-        "TRACKA_GPU_K2_e08e471cc033.zip/ACCOUNT_GPU_COMPLETION.json",
-        "TRACKA_GPU_K3_e08e471cc033.zip/ACCOUNT_GPU_COMPLETION.json"
-      ],
-      "reason": "audit_tracka_v12_posttraining_evidence.py requires the original K1/K2/K3 terminal manifests and byte-compares their embedded completion payloads with the 21 published state completions.",
-      "reconstruction_permitted": false
-    }
-  ],
-  "track_a_closed": false,
-  "downstream_handoff_authorized": false,
-  "next_gate": "Recover the three original ACCOUNT_GPU_COMPLETION.json files, run the frozen global evidence audit, then run close_tracka_v12.py on exact e08e471 checkout."
+  "track_a_closed": true,
+  "downstream_handoff_authorized": true,
+  "track_b_handoff_authorized": true,
+  "track_c_handoff_authorized": true,
+  "deployment_tie_gate_required": false,
+  "sealed_primary_family": "R07",
+  "execution_note": "Frozen closure logic was deterministically reproduced from the exact e08e471 source; Git ancestry/path integrity was independently verified through the connected GitHub source because raw git network access is unavailable in the sandbox.",
+  "next_stage": "Proceed to Track B external/generalization evidence and Track C real-device/runtime evidence using only the sealed R07 scientific-primary family."
 }
