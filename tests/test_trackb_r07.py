@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -29,6 +30,7 @@ from cropcop_je.trackb_r07 import (
 from cropcop_je.hashing import sha256_json
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
 from cropcop_je.trackb_r07_audit import ImageAuditRecord, representative_manifest
+from cropcop_je.trackb_r07_ops import load_kaggle_secret
 
 
 class TrackBR07Tests(unittest.TestCase):
@@ -261,6 +263,15 @@ class TrackBR07Tests(unittest.TestCase):
             "ORCHESTRATION_AND_EVIDENCE_PUBLICATION_ONLY",
         )
         self.assertFalse(lock["kaggle"]["protected_inference_network_dependency"])
+        self.assertEqual(lock["software"]["timm"], "1.0.26")
+        bootstrap = lock["runtime_bootstrap"]
+        self.assertEqual(bootstrap["mode"], "ISOLATED_VIRTUAL_ENVIRONMENT")
+        self.assertEqual(bootstrap["pytorch_wheel_index"], "https://download.pytorch.org/whl/cu126")
+        self.assertTrue(bootstrap["live_kernel_torch_replacement_forbidden"])
+        self.assertEqual(
+            bootstrap["secrets_handoff"],
+            "PARENT_KAGGLE_KERNEL_TO_CHILD_ENVIRONMENT_ONLY",
+        )
 
         drifted = dict(lock)
         drifted["automation"] = dict(automation)
@@ -279,6 +290,18 @@ class TrackBR07Tests(unittest.TestCase):
         drifted_network["kaggle"]["protected_inference_network_dependency"] = True
         with self.assertRaises(TrackBError):
             validate_execution_lock(drifted_network)
+
+    def test_secret_loader_prefers_environment_for_isolated_runtime(self):
+        key = "TRACKB_TEST_SECRET"
+        previous = os.environ.get(key)
+        try:
+            os.environ[key] = "sentinel-token"
+            self.assertEqual(load_kaggle_secret(key), "sentinel-token")
+        finally:
+            if previous is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = previous
 
     def test_gvlid_seal_contract_accepts_exact_four_class_scope(self):
         h = "b" * 64
