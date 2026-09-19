@@ -5,11 +5,11 @@
   "public_file_count": 3,
   "public_file_sha256": {
     "AUXILIARY_STATE_EVIDENCE_GATE.json": "84be5fd743a31242307c6412aba791ee78fb9025ea548b93620cc01a532df085",
-    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "bd1dec3ab98172790955df0d1177af299df76f66aae258715f160aa2694db2ef",
-    "POSTTRAINING_STATE_COMPLETION.json": "075cb2740a0b095211b1e389df500951db255a43b58b61ab798590cab59d6ce2"
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "0946649463dec805522bc001eeb6cd08dec66e9c475c2b61e1c0fac5b761f31e",
+    "POSTTRAINING_STATE_COMPLETION.json": "8da93d684bf455b52d319875741b556e14ef523941194cfedd594d312da53ace"
   },
   "publication_kind": "track_a_posttraining_state",
-  "publication_manifest_sha256": "22bdbd4654591f35862ca18f024a99a00966f5989a6ee514914c575839fc528d",
+  "publication_manifest_sha256": "5ce71133dc62262c051cef78b9ba13a852681fed92db430c83a6b368e7b07ec9",
   "run_id": "TRACKA-POST-r12-mnv4-feature-s2-e08e471cc033",
   "schema_version": "1.0",
   "status": "PASS"
