@@ -218,7 +218,8 @@
     "github_push_preflight_before_runtime_repair": true,
     "private_evidence_archive_before_github_publication": true,
     "github_publication_retry_attempts": 4,
-    "github_publication_failure_preserves_scientific_closure": true
+    "github_publication_failure_preserves_scientific_closure": true,
+    "private_kaggle_publication_retry_attempts": 4
   },
   "runtime_bootstrap": {
     "mode": "PROVEN_KAGGLE_LOCK_REPAIR_FRESH_SUBPROCESS",
