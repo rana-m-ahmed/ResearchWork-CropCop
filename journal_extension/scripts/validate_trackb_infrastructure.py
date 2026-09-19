@@ -144,6 +144,7 @@ def main() -> int:
         "acquire_irish_potato",
         "detect_authenticated_kaggle_owner",
         "verify_authenticated_kaggle_owner",
+        "verify_kaggle_source_access",
         "verify_github_repository_push_access",
         "probe_external_sources",
         "normalized_image_count",
