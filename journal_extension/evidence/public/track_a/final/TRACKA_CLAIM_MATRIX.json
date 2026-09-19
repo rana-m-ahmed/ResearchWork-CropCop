@@ -1,0 +1,72 @@
+{
+  "artifact_kind": "track_a_claim_matrix",
+  "authorized": [
+    {
+      "basis": "TRACKA_FINAL_CLOSURE_AUDIT.json",
+      "claim": "Track A contains 21 terminal scientific states: 12 direct and 9 auxiliary.",
+      "claim_id": "TA-C01"
+    },
+    {
+      "basis": "TRACKA_DIRECT_SELECTION.json",
+      "claim": "The frozen selector selected R07 as the Track-A scientific-primary family under the common CropCop downstream protocol.",
+      "claim_id": "TA-C02"
+    },
+    {
+      "basis": "TRACKA_AUXILIARY_ANALYSIS.json",
+      "claim": "The matched three-seed teacher-guided MobileNetV4 condition did not show a consistent aggregate macro-F1 advantage over direct MobileNetV4 training.",
+      "claim_id": "TA-C03",
+      "mean_macro_f1_teacher_minus_direct": -0.0024696442102595992
+    },
+    {
+      "basis": "TRACKA_AUXILIARY_ANALYSIS.json",
+      "claim": "R12 logits and feature-transfer conditions are descriptive mechanism ablations; differences are reported without post-hoc hypothesis testing.",
+      "claim_id": "TA-C04",
+      "mean_macro_f1_logits_minus_feature": 0.0023667036344124184
+    },
+    {
+      "basis": "TRACKA_DIRECT_SELECTION.json",
+      "claim": "Direct candidate selection used clean validation, tail-class, corruption-robustness and model-state efficiency evidence; XAI was audited but not weighted in selection.",
+      "claim_id": "TA-C05"
+    },
+    {
+      "basis": "TRACKA_POSTTRAINING_GLOBAL_EVIDENCE_AUDIT.json",
+      "claim": "All 21 published post-training states preserve private-evidence round-trip verification and protected-surface closure.",
+      "claim_id": "TA-C06"
+    }
+  ],
+  "claim_matrix_sha256": "1549205e9bf51a94106514febbafb1c130fca7fe4d14becaebcf4bfa82bb1444",
+  "forbidden": [
+    {
+      "claim": "causal architecture-only superiority",
+      "claim_id": "TA-F01"
+    },
+    {
+      "claim": "teacher guidance materially or consistently improves CropCop",
+      "claim_id": "TA-F02"
+    },
+    {
+      "claim": "field, geographic, source-independent or smartphone generalization from Track A",
+      "claim_id": "TA-F03"
+    },
+    {
+      "claim": "physical-device latency, memory, thermal or energy performance from Track A",
+      "claim_id": "TA-F04"
+    },
+    {
+      "claim": "new V1-test-based selection or tuning",
+      "claim_id": "TA-F05"
+    },
+    {
+      "claim": "post-hoc p-values or multiple-comparison significance for R05/R12 auxiliary analysis",
+      "claim_id": "TA-F06"
+    },
+    {
+      "claim": "XAI maps constitute causal or biological localization validation",
+      "claim_id": "TA-F07"
+    }
+  ],
+  "schema_version": "1.0",
+  "status": "LOCKED",
+  "track_b_handoff_authorized": true,
+  "track_c_handoff_authorized": true
+}

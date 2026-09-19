@@ -1,0 +1,349 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "claim_boundary": "best frozen pretrained candidate system under the common CropCop downstream protocol; no causal architecture-superiority claim",
+  "closure_kind": "track_a_direct_model_selection",
+  "closure_sha256": "2e1cf24febd954f2a132d9291ce1490dfbc7a1bdb0f5f6525bcb148490c5acd4",
+  "closure_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "direct_state_inventory": [
+    "R04-MNV4-DIRECT-S1",
+    "R04-MNV4-DIRECT-S2",
+    "R04-MNV4-DIRECT-S3",
+    "R06-EFFB0-CONTEXT-S1",
+    "R06-EFFB0-CONTEXT-S2",
+    "R06-EFFB0-CONTEXT-S3",
+    "R07-CNXTT-CONTEXT-S1",
+    "R07-CNXTT-CONTEXT-S2",
+    "R07-CNXTT-CONTEXT-S3",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3"
+  ],
+  "evidence_index_sha256": "2dbc5e52e9ed8707d2017364d41f74b90fa798fa811b1eb78bdb9f3f693e2957",
+  "evidence_sha256": {
+    "R04-MNV4-DIRECT-S1": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "4f554d39b6872da630b2d131559d4d1d741f349d97be4bdda553cf90d8b505b1",
+      "efficiency": "d137316544be5869338c9bea71ad3f4c9b7fd24281ee5e527424346b6b9c9400",
+      "robustness_replay": "49081ab6bd0d53e0dcee92733646e261e53ae4e5dbf85c3aaa8fb4798d8f9c42",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "63a5ba04a278fcc5a0a333bfc38a21ab4718df5530c9b4f99bc81ef13011251c",
+      "xai_gate": "99569662f1f8d02dbd801ef46f2869404343fefbf32d8f348a12d518d93396df"
+    },
+    "R04-MNV4-DIRECT-S2": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "78fd6df086269af5ed8e11f6aa9f06da2b393a9d6d3d54c77554dbe4be0e795a",
+      "efficiency": "3d7b6ba479d5a77d9d1e629725edc306b45a9f3a42ef4f15171dc483a71d2cb6",
+      "robustness_replay": "7d74c8ea9e3f1573fed23e60b4811b2598351468fcf57c182a3f87b33eea4f0d",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "66a3e5f4a90d363c3f6b4ea342ae804af666414851f874238fd3ad83397cd32a",
+      "xai_gate": "b9eecebb8d0857709c70986efceb18beeab0088712ccfad1fdf932ea113cb12d"
+    },
+    "R04-MNV4-DIRECT-S3": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "3389359184129e5fcc3f66ce640e20573dd290bb865e0cccece1b95589e6e475",
+      "efficiency": "35648b7902bb4cefad4ec289126611242a3e957391e68c378b926e1b48704082",
+      "robustness_replay": "83335a4fca47ca9895b191c38e1b07420e61d73a5682f90aa5d1b9f85cbd6c3f",
+      "scientific_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+      "selected_checkpoint_sha256": "fa200d6add9c25856b1bdaa4d05961a0d1e4050e1204ab2a3103474b9c4a8ed2",
+      "xai_gate": "f90c74f73db85a7d95340869b122568e1c358a5b50547339cec6589621816128"
+    },
+    "R06-EFFB0-CONTEXT-S1": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "d8eae34cd1812e8c06369db1283e69c9c1ae532c7651254005327e6fd9c0ce3a",
+      "efficiency": "9670023038156ce4d53475d6f58daf25c73bb9411dd2ad022df05f591786bfcc",
+      "robustness_replay": "f0d455bbf872f62d7b608e5c637c9205c071f652bdda0d74512607c66fb58acf",
+      "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+      "selected_checkpoint_sha256": "882e1e45e1d18a8ed8168aab266ce5a66a9b57a74e2a8d98acf692207d2210c7",
+      "xai_gate": "54bdd9545021be9031bcd881aeb09af8ba4e6d3e20b4edccbfa29613a4bb3914"
+    },
+    "R06-EFFB0-CONTEXT-S2": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "9d595665a524bd5fb111474619ccde2990b61e4ccba5350adeb4665c7086b29c",
+      "efficiency": "5d0e69bc505682db10968cfcc5422c0f63050f95902cd15f37f5c72e95562100",
+      "robustness_replay": "fc407b65117fb7ed48ab9adaec7114761d291c7ab2f0e77e9c8a512dbcb62b04",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "f0de7831758a18339d1e1f9de60686e48725aa29fe12f0187c1dd8f446085c39",
+      "xai_gate": "66c323f28240bd5cf63b2e11d405a09242e6e3e20548340b3ddfdb204c4ad73f"
+    },
+    "R06-EFFB0-CONTEXT-S3": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "7c505efa9ff38664aba535913db92abfb01ffbf16b63d25d4e89a741ee245899",
+      "efficiency": "5df42d527cf2c3cbb3f98154c0bc96e6863c217f4b0c7a90b64a053384bdb00f",
+      "robustness_replay": "6e599a3a10917249247559c242ff183fbd98165ac4a2c4c5b6ba54a47e7357ef",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "fa895a5a6c3ae81c15ab2af3969556ccbd4eabc8bf87cfac540a9f39ed6854ba",
+      "xai_gate": "fa0ed6e6b7e4443f3c5930e0ce9389b1d77807ef48093d33d8ecf1d94db802d4"
+    },
+    "R07-CNXTT-CONTEXT-S1": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "4d5c6813fb936e8e0c12dae491a4b8ce9d8b73129a161d3fc53dc79029959182",
+      "efficiency": "57c0001de8a1934e014176a677da43ff9227964619e6355069ee687e029dae4e",
+      "robustness_replay": "c900d43a1e40fa164d645a1bb636aca29f28242b1aab4e3f8029291150c47094",
+      "scientific_source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+      "selected_checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+      "xai_gate": "38477b5d78fc7b6654761d6f95c719a480a1e3186e2f428f98dcb506a2fe391a"
+    },
+    "R07-CNXTT-CONTEXT-S2": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "921ff132266d956f6e8d9faa76f5341d3deb610c1026154653e76bd40d7fd71c",
+      "efficiency": "039f73eacd5f695403cc7cb1868a1ecbb721b8c883a7aab3e251e5ad3346bb63",
+      "robustness_replay": "538e4b26658cca6172662f8495e805fd8052141c9c204049e918c42b29477625",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
+      "xai_gate": "b23481043047da898edf753dfd9972a9cd3ea4b4e9f98fa6879b9b285ae48231"
+    },
+    "R07-CNXTT-CONTEXT-S3": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "4a0b349398bec83dd1255783218aa13ff5eb8fe59fa86e1daaa1f96721f3c228",
+      "efficiency": "7d4db029b86dafa00f8f48a69f245878e0435875e392b4ced2727a0c5cca55e6",
+      "robustness_replay": "37e2099405701483f844d80b8660a47a11d149a32763ee29f6b1095f7b364d0b",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37",
+      "xai_gate": "6b4d3b4403727bee79ee249ee3da6aa9aa0a555c0b218bed17ad593544b74c54"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "c5c3a9c89d4fdaa3320dcce92d3965bb3cc87ecbd52d6cb50d9bc50e50e1744f",
+      "efficiency": "01f692a2781db9785e828f6fabd140840be820563befec675a50e989d2e8b69b",
+      "robustness_replay": "845ff659b8642b1252467c89aa176f49e580421a322409173037221d513d30fa",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "b27f494490d37dcf200e3b7f4aafb3fa731ab55f9b5d570c75fd3f36e0938968",
+      "xai_gate": "14f10eff3474925cd33691e110e02fb5c7201b413de5192e27c618a0336d90cc"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "71ac0b63bcf8a2ef50da0f02114cf7d68e26e15ba13d5dba6fe3eff801b70380",
+      "efficiency": "15ae8312c73389d64ab78908c6a2934f408ecfd66ce89f50f7c011418da63181",
+      "robustness_replay": "a4280e2fd431e19ffdfb501bf7a49f12985af994641151a97d989c4b4fcc4c42",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "68c2bbb867874cb553a4702844dbceb187f09fac48051249cc048495ddf0f786",
+      "xai_gate": "ee3c7e0d4f88ff7e319ea25fa2a9f45d13c1d202905a9c689a2cee6eee9ea47a"
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3": {
+      "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "direct_gate": "75a6ccfc2120c5323875ea01ee66109e8ee2fc67d0dfda5ea6a16197db01cfb2",
+      "efficiency": "ec5b125c9942c52979e57465cfb808b6ccfb0300f150f80e5f78fc1ff426f2de",
+      "robustness_replay": "2847fb9c33b84c79a7c371bdffcf65ef92a813f60d81704749fbb97b5171e050",
+      "scientific_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "selected_checkpoint_sha256": "c10a93d5a6a264c80992a1d4d8b1a19daa732dfc9e68d2b8e7c96fb2dba73b67",
+      "xai_gate": "2f3f8562fe1326c6373cbd5c76bfc51212b80bae58aa717a79e89f932c591d1f"
+    }
+  },
+  "external_predictions_opened": false,
+  "note": "This artifact seals the scientific-primary selection among the 12 direct candidate states only. Track B/C remain closed until the separate comprehensive Track-A closure also verifies the R05 teacher-effect comparator and all six R12 mechanism states. Neither Track-B nor Track-C evidence participated in this selection.",
+  "schema_version": "1.0",
+  "science_selection_sealed": true,
+  "selection": {
+    "co_primary_families": [],
+    "journal_primary_family": "R07",
+    "pareto_frontier": [
+      "R04",
+      "R06",
+      "R07"
+    ],
+    "selection_stage": "frozen_lexicographic",
+    "status": "SELECTED"
+  },
+  "selector_rows": [
+    {
+      "bottom_12_class_mean_f1": 0.7586486630137661,
+      "family": "R04",
+      "mean_balanced_accuracy": 0.9593267867021344,
+      "mean_corruption_degradation_pp": 3.81359254350348,
+      "mean_validation_macro_f1": 0.9598438550336276,
+      "mean_validation_nll": 0.12059466368180212,
+      "model_state_tensor_bytes_fp32": 34625160,
+      "sample_sd_validation_macro_f1": 0.001639078359497051,
+      "total_parameter_count": 8588232,
+      "worst_seed_validation_macro_f1": 0.9579954271437358
+    },
+    {
+      "bottom_12_class_mean_f1": 0.7913834288431079,
+      "family": "R06",
+      "mean_balanced_accuracy": 0.9661752526093634,
+      "mean_corruption_degradation_pp": 3.8507057524832917,
+      "mean_validation_macro_f1": 0.9663862523954164,
+      "mean_validation_nll": 0.08167414593592848,
+      "model_state_tensor_bytes_fp32": 16813528,
+      "sample_sd_validation_macro_f1": 0.0006380664704465103,
+      "total_parameter_count": 4161268,
+      "worst_seed_validation_macro_f1": 0.9657250751129591
+    },
+    {
+      "bottom_12_class_mean_f1": 0.8015285176061283,
+      "family": "R07",
+      "mean_balanced_accuracy": 0.9665142810821591,
+      "mean_corruption_degradation_pp": 2.974573057008328,
+      "mean_validation_macro_f1": 0.9668086146251177,
+      "mean_validation_nll": 0.10028902446643,
+      "model_state_tensor_bytes_fp32": 111649632,
+      "sample_sd_validation_macro_f1": 0.0017563408909317076,
+      "total_parameter_count": 27912408,
+      "worst_seed_validation_macro_f1": 0.9648243840537297
+    },
+    {
+      "bottom_12_class_mean_f1": 0.763692681825655,
+      "family": "R13",
+      "mean_balanced_accuracy": 0.9607859334775718,
+      "mean_corruption_degradation_pp": 4.456848500489786,
+      "mean_validation_macro_f1": 0.9617073060536009,
+      "mean_validation_nll": 0.10016170486516984,
+      "model_state_tensor_bytes_fp32": 88941024,
+      "sample_sd_validation_macro_f1": 0.0016139573861934711,
+      "total_parameter_count": 22235256,
+      "worst_seed_validation_macro_f1": 0.9604340634186521
+    }
+  ],
+  "state_gates": {
+    "R04-MNV4-DIRECT-S1": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R04-MNV4-DIRECT-S2": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R04-MNV4-DIRECT-S3": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R06-EFFB0-CONTEXT-S1": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R06-EFFB0-CONTEXT-S2": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R06-EFFB0-CONTEXT-S3": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R07-CNXTT-CONTEXT-S1": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R07-CNXTT-CONTEXT-S2": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R07-CNXTT-CONTEXT-S3": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    },
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3": {
+      "classwise_pass": true,
+      "efficiency_pass": true,
+      "external_surface_accessed": false,
+      "replay_pass": true,
+      "robustness_pass": true,
+      "selected_checkpoint_verified": true,
+      "terminal": true,
+      "v1_test_accessed": false
+    }
+  },
+  "status": "PASS",
+  "track_a_comprehensive_closed": false,
+  "track_b_handoff_authorized": false,
+  "track_c_candidate_runtime_opened": false,
+  "track_c_handoff_authorized": false,
+  "v1_test_accessed": false,
+  "xai_methodological_warnings": [],
+  "xai_target_paths_by_family_seed": {
+    "R04": {
+      "S1": "blocks.4.0.conv",
+      "S2": "blocks.4.0.conv",
+      "S3": "blocks.4.0.conv"
+    },
+    "R06": {
+      "S1": "features.8.0",
+      "S2": "features.8.0",
+      "S3": "features.8.0"
+    },
+    "R07": {
+      "S1": "features.7.2.block.0",
+      "S2": "features.7.2.block.0",
+      "S3": "features.7.2.block.0"
+    },
+    "R13": {
+      "S1": "blocks.13.norm1",
+      "S2": "blocks.13.norm1",
+      "S3": "blocks.13.norm1"
+    }
+  },
+  "xai_used_as_weighted_selector": false
+}

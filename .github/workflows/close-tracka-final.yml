@@ -1,0 +1,402 @@
+name: Close Track-A final evidence unit
+
+on:
+  push:
+    branches:
+      - tracka-final-closure-20260919
+  pull_request:
+    branches:
+      - tracka-posttraining-closure-prep-20260918
+    paths:
+      - '.github/workflows/close-tracka-final.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tracka-final-closure-20260919
+  cancel-in-progress: false
+
+jobs:
+  close-track-a:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Build isolated frozen-science worktree
+        shell: bash
+        env:
+          ANALYSIS_SHA: e08e471cc033902694622c12ceef03a19707b6dc
+        run: |
+          set -euo pipefail
+          git cat-file -e "$ANALYSIS_SHA^{commit}"
+          git worktree add --detach /tmp/tracka_science "$ANALYSIS_SHA"
+          cp journal_extension/scripts/audit_tracka_v12_posttraining_evidence.py /tmp/tracka_science/journal_extension/scripts/
+          cp journal_extension/scripts/close_tracka_v12.py /tmp/tracka_science/journal_extension/scripts/
+          test "$(git -C /tmp/tracka_science rev-parse HEAD)" = "$ANALYSIS_SHA"
+          for path in             journal_extension/scripts/seal_tracka_v12_selection.py             journal_extension/scripts/seal_tracka_v12_auxiliary_analysis.py             journal_extension/scripts/seal_tracka_v12_comprehensive_closure.py             journal_extension/src/cropcop_je/tracka_v12_analysis.py             journal_extension/src/cropcop_je/tracka_v12_evidence.py; do
+            test "$(git rev-parse "$ANALYSIS_SHA:$path")" = "$(git -C /tmp/tracka_science rev-parse "HEAD:$path")"
+          done
+
+      - name: Materialize immutable readiness gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tracka_inputs
+          branches=(
+            run-evidence/TRACKA-PREGPU-READINESS-GLOBAL-e08e471cc033
+            run-evidence/TRACKA-PREGPU-READINESS-K1-e08e471cc033
+            run-evidence/TRACKA-PREGPU-READINESS-K2-e08e471cc033
+            run-evidence/TRACKA-PREGPU-READINESS-K3-e08e471cc033
+          )
+          for b in "${branches[@]}"; do
+            git fetch origin "refs/heads/$b:refs/remotes/origin/$b"
+          done
+          git show "refs/remotes/origin/run-evidence/TRACKA-PREGPU-READINESS-GLOBAL-e08e471cc033:journal_extension/evidence/public/track_a/pregpu/TRACKA-PREGPU-READINESS-GLOBAL-e08e471cc033/POSTTRAINING_READINESS_GATE.json" > /tmp/tracka_inputs/global_readiness.json
+          for a in K1 K2 K3; do
+            git show "refs/remotes/origin/run-evidence/TRACKA-PREGPU-READINESS-${a}-e08e471cc033:journal_extension/evidence/public/track_a/pregpu/TRACKA-PREGPU-READINESS-${a}-e08e471cc033/${a}_POSTTRAINING_ACCOUNT_READINESS.json" > "/tmp/tracka_inputs/${a}_readiness.json"
+          done
+
+      - name: Reconstruct account aggregation from immutable published completions
+        shell: bash
+        env:
+          ANALYSIS_SHA: e08e471cc033902694622c12ceef03a19707b6dc
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, subprocess
+          from pathlib import Path
+
+          analysis = "e08e471cc033902694622c12ceef03a19707b6dc"
+          repo = Path.cwd()
+          root = Path("/tmp/tracka_inputs")
+
+          def load(path):
+              return json.loads(Path(path).read_text(encoding="utf-8"))
+
+          def sha(path):
+              return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+          def slug(exp):
+              return exp.lower()
+
+          for account in ("K1","K2","K3"):
+              readiness_path = root / f"{account}_readiness.json"
+              readiness = load(readiness_path)
+              if readiness.get("status") != "PASS" or readiness.get("analysis_source_git_commit") != analysis:
+                  raise SystemExit(f"{account} readiness invalid")
+              states = {}
+              for exp in sorted(readiness["states"]):
+                  run_id = f"TRACKA-POST-{slug(exp)}-e08e471cc033"
+                  branch = f"run-evidence/{run_id}"
+                  remote = f"refs/remotes/origin/{branch}"
+                  subprocess.run(["git","fetch","origin",f"refs/heads/{branch}:{remote}"],cwd=repo,check=True)
+                  if subprocess.run(["git","merge-base","--is-ancestor",analysis,remote],cwd=repo).returncode != 0:
+                      raise SystemExit(f"evidence branch is not descended from frozen analysis source: {branch}")
+                  path = f"journal_extension/evidence/public/track_a/posttraining/{run_id}/POSTTRAINING_STATE_COMPLETION.json"
+                  raw = subprocess.check_output(["git","show",f"{remote}:{path}"],cwd=repo)
+                  completion = json.loads(raw)
+                  if completion.get("status") != "PASS":
+                      raise SystemExit(f"completion not PASS: {exp}")
+                  if completion.get("experiment_id") != exp:
+                      raise SystemExit(f"completion identity mismatch: {exp}")
+                  if completion.get("analysis_source_git_commit") != analysis:
+                      raise SystemExit(f"analysis-source mismatch: {exp}")
+                  if completion.get("private_generation_roundtrip_verified") is not True:
+                      raise SystemExit(f"private roundtrip missing: {exp}")
+                  if completion.get("publication_branch") != branch:
+                      raise SystemExit(f"publication branch mismatch: {exp}")
+                  if completion.get("v1_test_accessed") is not False or completion.get("external_surface_accessed") is not False:
+                      raise SystemExit(f"protected surface marker invalid: {exp}")
+                  states[exp] = {"status":"PASS","completion":completion}
+
+              payload = {
+                  "schema_version":"1.0",
+                  "status":"PASS",
+                  "manifest_kind":"track_a_posttraining_account_execution_reconstructed_for_closure",
+                  "account_id":account,
+                  "analysis_source_git_commit":analysis,
+                  "assigned_state_count":len(states),
+                  "completed_state_count":len(states),
+                  "states":states,
+                  "v1_test_accessed":False,
+                  "external_surface_accessed":False,
+                  "reconstructed_for_closure":True,
+                  "reconstruction_basis":"immutable account-readiness partition plus published POSTTRAINING_STATE_COMPLETION.json artifacts",
+                  "source_account_readiness_sha256":sha(readiness_path),
+              }
+              canonical = json.dumps(payload,sort_keys=True,separators=(",",":")).encode()
+              payload["manifest_sha256"] = hashlib.sha256(canonical).hexdigest()
+              out = root / f"{account}_completion_reconstructed.json"
+              out.write_text(json.dumps(payload,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+              print(account, len(states), payload["manifest_sha256"])
+          PY
+
+      - name: Independent global 21-state evidence audit
+        shell: bash
+        env:
+          ANALYSIS_SHA: e08e471cc033902694622c12ceef03a19707b6dc
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/tracka_global_audit
+          python /tmp/tracka_science/journal_extension/scripts/audit_tracka_v12_posttraining_evidence.py             --repo-root /tmp/tracka_science             --analysis-source-git-commit "$ANALYSIS_SHA"             --global-readiness /tmp/tracka_inputs/global_readiness.json             --account-completion /tmp/tracka_inputs/K1_completion_reconstructed.json             --account-completion /tmp/tracka_inputs/K2_completion_reconstructed.json             --account-completion /tmp/tracka_inputs/K3_completion_reconstructed.json             --output-dir /tmp/tracka_global_audit
+
+      - name: Execute frozen Track-A closure controller
+        shell: bash
+        env:
+          ANALYSIS_SHA: e08e471cc033902694622c12ceef03a19707b6dc
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/tracka_final
+          python /tmp/tracka_science/journal_extension/scripts/close_tracka_v12.py             --repo-root /tmp/tracka_science             --analysis-source-git-commit "$ANALYSIS_SHA"             --global-evidence-audit /tmp/tracka_global_audit/TRACKA_POSTTRAINING_GLOBAL_EVIDENCE_AUDIT.json             --direct-evidence-index /tmp/tracka_global_audit/TRACKA_DIRECT_EVIDENCE_INDEX.json             --auxiliary-evidence-index /tmp/tracka_global_audit/TRACKA_AUXILIARY_EVIDENCE_INDEX.json             --output-dir /tmp/tracka_final
+
+      - name: Build authority chain, claim matrix and human closure report
+        shell: bash
+        env:
+          ANALYSIS_SHA: e08e471cc033902694622c12ceef03a19707b6dc
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, subprocess
+          from pathlib import Path
+
+          repo=Path.cwd()
+          dest=repo/"journal_extension/evidence/public/track_a/final"
+          dest.mkdir(parents=True,exist_ok=True)
+          inputs=dest/"closure_inputs"
+          inputs.mkdir(parents=True,exist_ok=True)
+
+          for p in Path("/tmp/tracka_global_audit").glob("*.json"):
+              (dest/p.name).write_bytes(p.read_bytes())
+          for p in Path("/tmp/tracka_final").glob("*.json"):
+              (dest/p.name).write_bytes(p.read_bytes())
+          for account in ("K1","K2","K3"):
+              src=Path(f"/tmp/tracka_inputs/{account}_completion_reconstructed.json")
+              (inputs/src.name).write_bytes(src.read_bytes())
+
+          def load(p): return json.loads(Path(p).read_text())
+          def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          def canonical_hash(obj):
+              return hashlib.sha256(json.dumps(obj,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+
+          audit=load(dest/"TRACKA_POSTTRAINING_GLOBAL_EVIDENCE_AUDIT.json")
+          sel=load(dest/"TRACKA_DIRECT_SELECTION.json")
+          aux=load(dest/"TRACKA_AUXILIARY_ANALYSIS.json")
+          comp=load(dest/"TRACKA_COMPREHENSIVE_CLOSURE.json")
+          final=load(dest/"TRACKA_FINAL_CLOSURE_AUDIT.json")
+
+          if final.get("status")!="PASS" or final.get("track_a_closed") is not True:
+              raise SystemExit("final closure audit not PASS")
+          if comp.get("status")!="PASS" or comp.get("track_a_comprehensive_closed") is not True:
+              raise SystemExit("comprehensive closure not PASS")
+          if comp.get("selection",{}).get("status")!="SELECTED":
+              raise SystemExit("Track-A did not resolve to a single scientific primary")
+          if comp.get("track_b_handoff_authorized") is not True or comp.get("track_c_handoff_authorized") is not True:
+              raise SystemExit("Track B/C handoff not authorized by comprehensive closure")
+
+          authority={
+              "schema_version":"1.0",
+              "status":"LOCKED",
+              "artifact_kind":"track_a_final_authority_chain",
+              "analysis_source_git_commit":"e08e471cc033902694622c12ceef03a19707b6dc",
+              "training_science_source_git_commit":"56023042e57758591df9babb3438f191dbe10312",
+              "historical_training_source_git_commit":"f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+              "scientific_authority_id":"EAAI-JE-SDL-v2.1-QA",
+              "posttraining_closure_authority_id":"EAAI-JE-TRACKA-POSTTRAINING-CLOSURE-V1",
+              "campaign_id":"CROPCOP-TRACKA-POSTTRAINING-CLOSURE-V1",
+              "state_count":21,
+              "direct_state_count":12,
+              "auxiliary_state_count":9,
+              "evidence_audit_sha256":sha(dest/"TRACKA_POSTTRAINING_GLOBAL_EVIDENCE_AUDIT.json"),
+              "direct_selection_sha256":sha(dest/"TRACKA_DIRECT_SELECTION.json"),
+              "auxiliary_analysis_sha256":sha(dest/"TRACKA_AUXILIARY_ANALYSIS.json"),
+              "comprehensive_closure_sha256":sha(dest/"TRACKA_COMPREHENSIVE_CLOSURE.json"),
+              "final_closure_audit_sha256":sha(dest/"TRACKA_FINAL_CLOSURE_AUDIT.json"),
+              "account_completion_reconstruction":{
+                  a:sha(inputs/f"{a}_completion_reconstructed.json") for a in ("K1","K2","K3")
+              },
+              "account_completion_reconstruction_note":"The original account-level aggregation files were not persisted to Git. They are deterministically reconstructed only as closure inputs from immutable account-readiness partitions and each state's published completion certificate. No scientific metric, checkpoint identity, role, or outcome is invented or changed.",
+              "protected_surfaces":{"v1_test":"CLOSED","track_b_predictions":"CLOSED_DURING_SELECTION","track_c_candidate_results":"CLOSED_DURING_SELECTION"},
+              "training_reperformed":False,
+              "selector_modified":False,
+              "xai_weighted_selection":False,
+              "historical_locks_modified":False,
+              "downstream_handoff_authorized":True,
+          }
+          authority["authority_chain_sha256"]=canonical_hash(authority)
+          (dest/"TRACKA_FINAL_AUTHORITY_CHAIN.json").write_text(json.dumps(authority,indent=2,sort_keys=True)+"\n")
+
+          selection=comp["selection"]
+          pair=aux["paired_analyses"]["R05_teacher_minus_R04_direct"]["metric_deltas"]
+          r12=aux["paired_analyses"]["R12_logits_minus_feature"]["metric_deltas"]
+          claims={
+              "schema_version":"1.0",
+              "status":"LOCKED",
+              "artifact_kind":"track_a_claim_matrix",
+              "authorized":[
+                  {"claim_id":"TA-C01","claim":"Track A contains 21 terminal scientific states: 12 direct and 9 auxiliary.","basis":"TRACKA_FINAL_CLOSURE_AUDIT.json"},
+                  {"claim_id":"TA-C02","claim":f"The frozen selector selected {selection['journal_primary_family']} as the Track-A scientific-primary family under the preregistered common downstream protocol.","basis":"TRACKA_DIRECT_SELECTION.json"},
+                  {"claim_id":"TA-C03","claim":"The matched three-seed teacher-guided MobileNetV4 condition did not show a consistent aggregate macro-F1 advantage over direct MobileNetV4 training.","basis":"TRACKA_AUXILIARY_ANALYSIS.json","mean_macro_f1_delta":pair["validation_macro_f1"]["mean"]},
+                  {"claim_id":"TA-C04","claim":"R12 logits and feature-transfer conditions are descriptive mechanism ablations; their differences are reported without post-hoc hypothesis testing.","basis":"TRACKA_AUXILIARY_ANALYSIS.json","mean_macro_f1_logits_minus_feature":r12["validation_macro_f1"]["mean"]},
+                  {"claim_id":"TA-C05","claim":"Direct candidate selection used clean validation, tail-class, corruption-robustness and model-state efficiency evidence; XAI was audited but not weighted in selection.","basis":"TRACKA_DIRECT_SELECTION.json"},
+                  {"claim_id":"TA-C06","claim":"All 21 published post-training states preserve private-evidence round-trip verification and protected-surface closure.","basis":"TRACKA_POSTTRAINING_GLOBAL_EVIDENCE_AUDIT.json"},
+              ],
+              "forbidden":[
+                  {"claim_id":"TA-F01","claim":"causal architecture-only superiority"},
+                  {"claim_id":"TA-F02","claim":"teacher guidance materially or consistently improves CropCop"},
+                  {"claim_id":"TA-F03","claim":"field, geographic, source-independent or smartphone generalization from Track A"},
+                  {"claim_id":"TA-F04","claim":"physical-device latency, memory, thermal or energy performance from Track A"},
+                  {"claim_id":"TA-F05","claim":"new V1-test-based selection or tuning"},
+                  {"claim_id":"TA-F06","claim":"post-hoc p-values or multiple-comparison significance for auxiliary R05/R12 analyses"},
+                  {"claim_id":"TA-F07","claim":"XAI maps constitute causal or biological localization validation"},
+              ],
+              "track_b_handoff_authorized":True,
+              "track_c_handoff_authorized":True,
+          }
+          claims["claim_matrix_sha256"]=canonical_hash(claims)
+          (dest/"TRACKA_CLAIM_MATRIX.json").write_text(json.dumps(claims,indent=2,sort_keys=True)+"\n")
+
+          rows=sel["selector_rows"]
+          cond=aux["conditions"]
+          report=f"""# CropCop Track-A Final Closure Report
+
+**Status:** LOCKED / PASS  
+**Frozen analysis source:** `e08e471cc033902694622c12ceef03a19707b6dc`  
+**Scientific states:** 21/21  
+**Direct states:** 12/12  
+**Auxiliary states:** 9/9  
+**Private evidence round-trips:** 21/21  
+**V1 test access during closure:** 0  
+**External prediction access during selection:** 0  
+**Track-C candidate-result access during selection:** 0  
+**New training or optimizer advance during post-training closure:** 0  
+
+## 1. Terminal decision
+
+**GO - TRACK A CLOSED.**  
+**GO - sealed Track-B and Track-C handoff authorized.**  
+No further Track-A model-science compute is authorized under the current authority.
+
+The frozen deterministic selector returned **{selection['status']}** and selected **{selection['journal_primary_family']}** as the scientific-primary family. The claim is bounded to the best frozen pretrained candidate system under the common CropCop downstream protocol; it is not a causal architecture-superiority claim.
+
+## 2. Evidence integrity
+
+The final closure was produced by the repository's frozen closure logic against all 21 immutable published evidence branches. The independent global audit verified exact state inventory, publication manifests, completion chains, direct/auxiliary evidence contracts, private durability round-trips, source lineage, and protected-surface markers before the selector or auxiliary analysis was allowed to run.
+
+The original account-level aggregation JSON files were not Git-persisted. For closure only, K1/K2/K3 aggregation manifests were deterministically reconstructed from the already-frozen account-readiness partitions plus each state's immutable published `POSTTRAINING_STATE_COMPLETION.json`. These reconstructed files carry no new scientific measurement and are preserved under `closure_inputs/`.
+
+## 3. Direct candidate selection
+
+| Family | Mean macro-F1 | Worst-seed macro-F1 | Bottom-12 class mean F1 | Mean corruption degradation (pp) | FP32 state bytes | Parameters |
+|---|---:|---:|---:|---:|---:|---:|
+""" + "\n".join(
+              f"| {r['family']} | {r['mean_validation_macro_f1']:.6f} | {r['worst_seed_validation_macro_f1']:.6f} | {r['bottom_12_class_mean_f1']:.6f} | {r['mean_corruption_degradation_pp']:.3f} | {r['model_state_tensor_bytes_fp32']:,} | {r['total_parameter_count']:,} |"
+              for r in rows
+          ) + f"""
+
+The frozen selector's Pareto/lexicographic procedure selected **{selection['journal_primary_family']}**. XAI was not used as a weighted selector.
+
+## 4. Matched teacher/direct result
+
+Three-seed validation macro-F1:
+- R04 direct: **{cond['R04_direct']['three_seed']['validation_macro_f1']['mean']:.6f} +/- {cond['R04_direct']['three_seed']['validation_macro_f1']['sample_sd']:.6f}**
+- R05 teacher: **{cond['R05_teacher']['three_seed']['validation_macro_f1']['mean']:.6f} +/- {cond['R05_teacher']['three_seed']['validation_macro_f1']['sample_sd']:.6f}**
+- Teacher minus direct mean delta: **{pair['validation_macro_f1']['mean']:.6f}**
+
+Therefore the journal extension must not claim that teacher guidance consistently improves aggregate performance.
+
+## 5. R12 mechanism ablation
+
+Three-seed validation macro-F1:
+- logits: **{cond['R12_logits']['three_seed']['validation_macro_f1']['mean']:.6f} +/- {cond['R12_logits']['three_seed']['validation_macro_f1']['sample_sd']:.6f}**
+- feature: **{cond['R12_feature']['three_seed']['validation_macro_f1']['mean']:.6f} +/- {cond['R12_feature']['three_seed']['validation_macro_f1']['sample_sd']:.6f}**
+- logits minus feature mean delta: **{r12['validation_macro_f1']['mean']:.6f}**
+
+These are descriptive mechanism results. The frozen authority does not authorize post-hoc hypothesis tests or multiple-comparison p-values.
+
+## 6. Review alignment achieved by Track A
+
+Track A now provides the model-science evidence requested by the journal-extension review in the areas that belong to this track: matched direct MobileNetV4 control, three-seed major comparisons, compact mechanism ablations, representative same-split direct candidates, reproducible selected-checkpoint replay, long-tail/classwise evidence, corruption robustness, model-state efficiency and bounded XAI sanity checks.
+
+Track A deliberately does **not** claim to close independent external validity or physical-device deployment. Those are the next protected tracks.
+
+## 7. Permanent claim boundary
+
+Authorized wording is recorded in `TRACKA_CLAIM_MATRIX.json`. In particular:
+- do not claim causal architecture superiority;
+- do not claim teacher-guidance benefit unsupported by the three-seed result;
+- do not claim field or smartphone generalization;
+- do not claim physical-device performance;
+- do not open the consumed V1 test for Track-A selection;
+- do not turn XAI audits into causal localization claims.
+
+## 8. Next action
+
+Proceed to **Track B (external validity)** and **Track C (runtime/device)** using only the sealed Track-A scientific primary authorized by `TRACKA_COMPREHENSIVE_CLOSURE.json`.
+
+The global manuscript evidence freeze remains downstream of Track B/C terminal evidence.
+"""
+          (dest/"TRACKA_FINAL_CLOSURE_REPORT.md").write_text(report,encoding="utf-8")
+
+          manifest={
+              "schema_version":"1.0",
+              "status":"PASS",
+              "artifact_kind":"track_a_final_closure_manifest",
+              "files":{p.name:sha(p) for p in sorted(dest.glob("*")) if p.is_file()},
+              "closure_input_files":{p.name:sha(p) for p in sorted(inputs.glob("*.json"))},
+              "track_a_closed":True,
+              "track_b_handoff_authorized":True,
+              "track_c_handoff_authorized":True,
+          }
+          manifest["manifest_sha256"]=canonical_hash(manifest)
+          (dest/"TRACKA_FINAL_CLOSURE_MANIFEST.json").write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"selection":selection,"final_audit":final,"manifest":manifest},indent=2,sort_keys=True))
+          PY
+
+      - name: Final consistency gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=Path("journal_extension/evidence/public/track_a/final")
+          final=json.loads((d/"TRACKA_FINAL_CLOSURE_AUDIT.json").read_text())
+          comp=json.loads((d/"TRACKA_COMPREHENSIVE_CLOSURE.json").read_text())
+          claims=json.loads((d/"TRACKA_CLAIM_MATRIX.json").read_text())
+          manifest=json.loads((d/"TRACKA_FINAL_CLOSURE_MANIFEST.json").read_text())
+          assert final["status"]=="PASS" and final["track_a_closed"] is True
+          assert final["scientific_state_count"]==21
+          assert final["private_evidence_roundtrip_verified_state_count"]==21
+          assert final["v1_test_accessed"] is False
+          assert comp["status"]=="PASS" and comp["track_a_comprehensive_closed"] is True
+          assert comp["selection"]["status"]=="SELECTED"
+          assert comp["track_b_handoff_authorized"] is True
+          assert comp["track_c_handoff_authorized"] is True
+          assert claims["track_b_handoff_authorized"] is True and claims["track_c_handoff_authorized"] is True
+          assert manifest["status"]=="PASS" and manifest["track_a_closed"] is True
+          print("TRACK_A_FINAL_CLOSURE_CONSISTENCY_PASS")
+          PY
+
+      - name: Commit immutable closure products
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add journal_extension/evidence/public/track_a/final
+          if git diff --cached --quiet; then
+            echo "Closure products already current."
+            exit 0
+          fi
+          git commit -m "evidence: seal final Track-A closure [skip ci]"
+          git push origin HEAD:tracka-final-closure-20260919

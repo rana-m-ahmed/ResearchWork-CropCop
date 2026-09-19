@@ -1,0 +1,36 @@
+{
+  "account_completion_reconstruction": {
+    "K1": "55ecb777659e3187bfa4cc395df00efcc66d76168d25b5964e7a91333067834d",
+    "K2": "4bea0927059ef8c841a16c7c062a1fca335ac9a48e1e2a3eb66e94e607ba659f",
+    "K3": "3998ae73dd72af6a879989e3b89d6fe74a36592e76d0d024e9aefd31a7e5d711"
+  },
+  "account_completion_reconstruction_note": "The original account-level aggregation files were not persisted to Git. For closure only, they are deterministically reconstructed from immutable account-readiness partitions and each state's already-published completion certificate. No scientific metric, checkpoint, role, or outcome is invented or changed.",
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "artifact_kind": "track_a_final_authority_chain",
+  "authority_chain_sha256": "dc29edbdfde6686b6c28316b64be640d29d747e76c4a243f91bee15b00c9a58d",
+  "auxiliary_analysis_sha256": "3fbcdc8086f099f7fcd98855addbde9b32536cc5a9393d46aee75b8f12b44b14",
+  "auxiliary_state_count": 9,
+  "campaign_id": "CROPCOP-TRACKA-POSTTRAINING-CLOSURE-V1",
+  "comprehensive_closure_sha256": "54bb6db58fa4efd946b94626f873a31b021fd58501d4b4638472624ef96ec09d",
+  "direct_selection_sha256": "4048bb651a39f7fabb3703de7ac92c5ab4ce46c1299c4e8ad3ac0b64066847f2",
+  "direct_state_count": 12,
+  "downstream_handoff_authorized": true,
+  "final_closure_audit_sha256": "222cd641adc1f8d59161a2e94bfcda18f656a6e065223404916e058452040eb8",
+  "global_evidence_audit_sha256": "f8bb3b038af01154006244974b866d54cc653da6dcf1bcb8740a1e8ecfe7f5a0",
+  "historical_locks_modified": false,
+  "historical_training_source_git_commit": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+  "posttraining_closure_authority_id": "EAAI-JE-TRACKA-POSTTRAINING-CLOSURE-V1",
+  "protected_surfaces": {
+    "track_b_predictions": "CLOSED_DURING_SELECTION",
+    "track_c_candidate_results": "CLOSED_DURING_SELECTION",
+    "v1_test": "CLOSED"
+  },
+  "schema_version": "1.0",
+  "scientific_authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "scientific_state_count": 21,
+  "selector_modified": false,
+  "status": "LOCKED",
+  "training_reperformed": false,
+  "training_science_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "xai_weighted_selection": false
+}

@@ -1,0 +1,22 @@
+{
+  "r04_robustness_replay": {
+    "R04-MNV4-DIRECT-S1": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S1/robustness_and_replay.json",
+    "R04-MNV4-DIRECT-S2": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S2/robustness_and_replay.json",
+    "R04-MNV4-DIRECT-S3": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S3/robustness_and_replay.json"
+  },
+  "schema_version": "1.0",
+  "states": {
+    "R04-MNV4-DIRECT-S1": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S1/DIRECT_STATE_EVIDENCE_GATE.json",
+    "R04-MNV4-DIRECT-S2": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S2/DIRECT_STATE_EVIDENCE_GATE.json",
+    "R04-MNV4-DIRECT-S3": "/tmp/cropcop_tracka_final_closure/global_audit/states/R04-MNV4-DIRECT-S3/DIRECT_STATE_EVIDENCE_GATE.json",
+    "R05-MNV4-TEACHER-S1": "/tmp/cropcop_tracka_final_closure/global_audit/states/R05-MNV4-TEACHER-S1/AUXILIARY_STATE_EVIDENCE_GATE.json",
+    "R05-MNV4-TEACHER-S2": "/tmp/cropcop_tracka_final_closure/global_audit/states/R05-MNV4-TEACHER-S2/AUXILIARY_STATE_EVIDENCE_GATE.json",
+    "R05-MNV4-TEACHER-S3": "/tmp/cropcop_tracka_final_closure/global_audit/states/R05-MNV4-TEACHER-S3/AUXILIARY_STATE_EVIDENCE_GATE.json",
+    "R12-MNV4-FEATURE-S1": "/tmp/cropcop_tracka_final_closure/global_audit/states/R12-MNV4-FEATURE-S1/AUXILIARY_STATE_EVIDENCE_GATE.json",
+    "R12-MNV4-FEATURE-S2": "/tmp/cropcop_tracka_final_closure/global_audit/states/R12-MNV4-FEATURE-S2/AUXILIARY_STATE_EVIDENCE_GATE.json",
+    "R12-MNV4-FEATURE-S3": "/tmp/cropcop_tracka_final_closure/global_audit/states/R12-MNV4-FEATURE-S3/AUXILIARY_STATE_EVIDENCE_GATE.json",
+    "R12-MNV4-LOGITS-S1": "/tmp/cropcop_tracka_final_closure/global_audit/states/R12-MNV4-LOGITS-S1/AUXILIARY_STATE_EVIDENCE_GATE.json",
+    "R12-MNV4-LOGITS-S2": "/tmp/cropcop_tracka_final_closure/global_audit/states/R12-MNV4-LOGITS-S2/AUXILIARY_STATE_EVIDENCE_GATE.json",
+    "R12-MNV4-LOGITS-S3": "/tmp/cropcop_tracka_final_closure/global_audit/states/R12-MNV4-LOGITS-S3/AUXILIARY_STATE_EVIDENCE_GATE.json"
+  }
+}
