@@ -28,7 +28,9 @@ from cropcop_je.trackb_r07 import (
     CLASS_MAP_SHA256,
     DATASET_MANIFEST_SHA256,
     DINO_AUDIT_SHA256,
+    DINO_FACTORY_MANIFEST_SHA256,
     R07_CHECKPOINTS,
+    R07_RUN_RECORDS,
     TrackBError,
     assign_candidate_grade,
     build_candidate_seal,
@@ -672,10 +674,25 @@ def _preflight(core, historical, output_root: Path, device: str):
         expected_count=VAL_COUNT,
     )
 
+    if sha256_file(resolve_bundle_file(core, "dino_factory_manifest")) != DINO_FACTORY_MANIFEST_SHA256:
+        raise TrackBError("core DINO factory-manifest identity mismatch")
+
     replay = {}
     for seed in ("S1", "S2", "S3"):
         model, _payload = load_r07_checkpoint(resolve_bundle_file(core, f"r07_{seed.lower()}"), seed_label=seed)
-        run_record = _json_file(core, f"r07_{seed.lower()}_run_record")
+        run_record_path = resolve_bundle_file(core, f"r07_{seed.lower()}_run_record")
+        if sha256_file(run_record_path) != R07_RUN_RECORDS[seed]["sha256"]:
+            raise TrackBError(f"R07 {seed} authoritative replay-record SHA mismatch")
+        run_record = load_json(run_record_path)
+        if str(run_record.get("run_id", "")) != R07_RUN_RECORDS[seed]["run_id"]:
+            raise TrackBError(f"R07 {seed} authoritative replay-record ID mismatch")
+        selected_sha = (
+            ((run_record.get("artifact_locators") or {}).get("selected_checkpoint") or {}).get("sha256")
+            or (run_record.get("result_summary") or {}).get("selected_checkpoint_sha256")
+            or run_record.get("selected_checkpoint_sha256")
+        )
+        if str(selected_sha) != R07_CHECKPOINTS[seed]:
+            raise TrackBError(f"R07 {seed} replay record/checkpoint identity mismatch")
         expected_metrics = run_record.get("result_summary", {}).get("selected_metrics") or {}
         predictions, summary = clean_replay(model, val_rows, val_root, torch.device(device), batch_size=32, num_workers=4)
         gate = validate_selected_checkpoint_replay(summary, expected_metrics)
