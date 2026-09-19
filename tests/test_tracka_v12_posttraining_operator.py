@@ -4,6 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +16,7 @@ for path in (SCRIPTS, SRC):
 
 from cropcop_je.hashing import sha256_file, sha256_json  # noqa: E402
 import run_tracka_v12_posttraining_account as operator  # noqa: E402
+import run_tracka_v12_xai_filesystem_wrapper as xai_wrapper  # noqa: E402
 from cropcop_je.tracka_v12_posttraining_operator import required_stage_args, validate_state_operator_spec  # noqa: E402
 
 ANALYSIS = "a" * 40
@@ -182,6 +184,36 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
                     readiness_state=readiness,
                     analysis_sha=ANALYSIS,
                 )
+
+    def test_xai_stage_entrypoint_override_is_runtime_only(self):
+        repo = Path("/repo")
+        with patch.dict("os.environ", {"CROPCOP_TRACKA_XAI_ENTRYPOINT": "/tmp/xai-wrapper.py"}):
+            self.assertEqual(
+                operator.stage_script_path(repo, "xai"),
+                Path("/tmp/xai-wrapper.py"),
+            )
+            self.assertEqual(
+                operator.stage_script_path(repo, "direct"),
+                repo / operator.STAGE_SCRIPT["direct"],
+            )
+
+    def test_xai_filesystem_wrapper_creates_nested_panel_parents_and_rejects_escape(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "panel"
+            seen = []
+
+            def fake_save(_image, fp, *args, **kwargs):
+                seen.append(Path(fp))
+                return None
+
+            wrapped = xai_wrapper.guarded_panel_save(fake_save, root)
+            nested = root / "main::val" / "money_plant_healthy" / "sample.jpg.png"
+            wrapped(object(), nested, format="PNG")
+            self.assertTrue(nested.parent.is_dir())
+            self.assertEqual(seen, [nested.resolve()])
+
+            with self.assertRaises(RuntimeError):
+                wrapped(object(), root / ".." / "escape.png", format="PNG")
 
     def test_terminal_direct_attempt_reused_only_when_all_gates_hold(self):
         with tempfile.TemporaryDirectory() as td:
