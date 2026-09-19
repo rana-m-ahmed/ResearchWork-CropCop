@@ -33,6 +33,7 @@ from cropcop_je.trackb_r07_ops import (
     publish_public_trackb_evidence,
     run_checked,
     utc_now,
+    verify_authenticated_kaggle_owner,
 )
 
 
@@ -193,9 +194,7 @@ def main() -> int:
 
     repo_root = Path(args.repo_root).resolve()
     workspace = Path(args.workspace).resolve()
-    kaggle_owner = str(args.kaggle_owner).strip()
-    historical_dataset = historical_dataset_slug(kaggle_owner)
-    evidence_dataset = evidence_dataset_slug(kaggle_owner)
+    requested_kaggle_owner = str(args.kaggle_owner).strip()
     if workspace.exists() and any(workspace.iterdir()):
         raise TrackBOpsError(f"master workspace must be empty for a clean run: {workspace}")
     workspace.mkdir(parents=True, exist_ok=True)
@@ -208,6 +207,9 @@ def main() -> int:
     stage("0 :: secrets and platform")
     secret_presence = configure_runtime_secrets()
     kaggle_cli = ensure_kaggle_cli()
+    kaggle_owner = verify_authenticated_kaggle_owner(requested_kaggle_owner)
+    historical_dataset = historical_dataset_slug(kaggle_owner)
+    evidence_dataset = evidence_dataset_slug(kaggle_owner)
     source_git_sha = run_checked(["git", "-C", str(repo_root), "rev-parse", "HEAD"], timeout=120).stdout.strip()
     if not source_git_sha:
         raise TrackBOpsError("could not bind repository HEAD")
