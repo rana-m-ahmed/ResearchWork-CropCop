@@ -45,15 +45,17 @@ def main() -> int:
     lock_path = root / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v1.json"
     attestation_path = root / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v1.json"
     final_nb = root / "journal_extension/kaggle/trackb_r07_end_to_end.ipynb"
+    core_nb = root / "journal_extension/kaggle/trackb_build_core_package.ipynb"
     hist_nb = root / "journal_extension/kaggle/trackb_build_historical_compare.ipynb"
     runner = root / "journal_extension/scripts/run_trackb_r07.py"
     audit_module = root / "journal_extension/src/cropcop_je/trackb_r07_audit.py"
+    core_builder = root / "journal_extension/scripts/build_trackb_core_package.py"
     hist_builder = root / "journal_extension/scripts/build_trackb_historical_compare.py"
     hist_source_prep = root / "journal_extension/scripts/prepare_trackb_historical_source_input.py"
 
     for path in (
-        authority_path, lock_path, attestation_path, final_nb, hist_nb, runner,
-        audit_module, hist_builder, hist_source_prep,
+        authority_path, lock_path, attestation_path, final_nb, core_nb, hist_nb, runner,
+        audit_module, core_builder, hist_builder, hist_source_prep,
     ):
         if not path.is_file():
             raise TrackBError(f"required Track-B infrastructure file missing: {path.relative_to(root)}")
@@ -69,8 +71,10 @@ def main() -> int:
     attestation = verify_code_attestation(root, attestation_path)
 
     final_info = _compile_notebook(final_nb)
+    core_info = _compile_notebook(core_nb)
     hist_info = _compile_notebook(hist_nb)
     final_text = final_info.pop("text")
+    core_text = core_info.pop("text")
     hist_text = hist_info.pop("text")
     lowered = final_text.lower()
     for forbidden in ("git push", "github_token", "gh_token", "ds-v1-test-consumed", "--split test"):
@@ -79,6 +83,32 @@ def main() -> int:
     for required in ("run_trackb_r07.py", "--mode", "all", "TRACKB_FINAL_QA.json", "TRACK_B_CLOSED"):
         if required not in final_text:
             raise TrackBError(f"final Track-B notebook missing expected controller binding: {required}")
+    for required in (
+        "build_trackb_core_package.py",
+        "16368",
+        "sec-je-r07-cnxtt-context-s1-8904b100d223-a01",
+        "cropcop-r07-cnxtt-context-s2-abce1197-56023042",
+        "cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
+        "cropcop-secondary-g1-8904b100",
+    ):
+        if required not in core_text:
+            raise TrackBError(f"core package notebook missing frozen operator binding: {required}")
+    if "run_trackb_r07.py" in core_text or "_protected_inference" in core_text:
+        raise TrackBError("core package notebook exposes protected classifier execution")
+
+    core_builder_text = core_builder.read_text(encoding="utf-8")
+    for required in (
+        "VAL_COUNT = 16368",
+        "R07_RUN_RECORDS",
+        "DINO_FACTORY_MANIFEST_SHA256",
+        "consumed_test_image_bytes_copied",
+        "v1_validation",
+    ):
+        if required not in core_builder_text:
+            raise TrackBError(f"core package builder missing safety/identity guard: {required}")
+    if "copytree(image_root" in core_builder_text or "dataset/test" in core_builder_text:
+        raise TrackBError("core builder contains a broad or explicit consumed-test copy path")
+
     if "build_trackb_historical_compare.py" not in hist_text or "code_attestation" not in hist_text:
         raise TrackBError("historical comparison notebook is not bound to the attested builder")
     for required in (
@@ -137,7 +167,9 @@ def main() -> int:
         "code_attestation_sha256": sha256_file(attestation_path),
         "attested_file_count": len(attestation.get("files", [])),
         "final_notebook": final_info,
+        "core_builder_notebook": core_info,
         "historical_builder_notebook": hist_info,
+        "core_builder_validation_only_surface": True,
         "prediction_blind_audit_module": True,
         "both_candidate_audits_before_protected_inference": True,
         "git_push_from_claim_notebook": False,
