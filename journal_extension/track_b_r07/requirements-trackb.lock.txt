@@ -8,4 +8,5 @@ Pillow==12.3.0
 transformers==5.0.0
 huggingface-hub==1.30.0
 safetensors==0.8.0
-opencv-python-headless==4.12.0.88
+opencv-python-headless==4.13.0.92
+kaggle==2.2.4
