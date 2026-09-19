@@ -120,7 +120,7 @@ def main() -> int:
         "CROPCOP_GITHUB_TOKEN",
         "run_trackb_r07_master.py",
         "bootstrap_trackb_runtime.py",
-        "trackb_runtime_env",
+        "requirements-trackb.lock.txt",
         "PASS_AUTOMATED_TRACK_B_COMPLETE",
     ):
         if required not in master_text:
