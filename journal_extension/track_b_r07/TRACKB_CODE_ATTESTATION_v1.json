@@ -42,12 +42,12 @@
       "path": "journal_extension/scripts/prepare_trackb_historical_source_input.py"
     },
     {
-      "git_blob_sha1": "3cbd66479a31ec6142fc7b0dec368a17c64cdc9f",
+      "git_blob_sha1": "500b73858251b80578364d0d06c9fc46541e771e",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/run_trackb_r07.py"
     },
     {
-      "git_blob_sha1": "55fd1dd87e2fbc20dc103718794ae99ed724a019",
+      "git_blob_sha1": "ef718d49376c9d456157cd2410cb11a1e27f9c9e",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/validate_trackb_infrastructure.py"
     },
