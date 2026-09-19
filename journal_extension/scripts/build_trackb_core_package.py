@@ -261,7 +261,7 @@ def main() -> int:
         "--v1-validation-root", "v1_validation",
         "--downstream-authority", "repository/journal_extension/amendments/track_bc_r07_downstream_v2.json",
         "--execution-lock", "repository/journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v2.json",
-        "--code-attestation", "repository/journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v1.json",
+        "--code-attestation", "repository/journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v2.json",
         "--class-map", "authority/v1/class_to_idx.json",
         "--v1-manifest", "authority/v1/final_manifest.csv",
         "--r07-s1", "models/r07_s1.pt",
