@@ -1,0 +1,16 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "experiment_id": "R12-MNV4-LOGITS-S1",
+  "private_material_published": false,
+  "public_file_count": 3,
+  "public_file_sha256": {
+    "AUXILIARY_STATE_EVIDENCE_GATE.json": "6b5433b5a4e5c9263c47ef9f3c6c53cdb36943eb33751e77cd157e4f38ca7918",
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "014feb03f176c46cbeb6f53b965b596c5c314ee80476bdb8f0b3852b99bb58fa",
+    "POSTTRAINING_STATE_COMPLETION.json": "291ab6125f8ee2eeb0946b6fae19a78fb2cfb56ae9e71f046b1c1ce0332be9c5"
+  },
+  "publication_kind": "track_a_posttraining_state",
+  "publication_manifest_sha256": "00ec89a1f5b7a11f698279b8e34ad83020518a8448cf9f795babb2ce77dad5e6",
+  "run_id": "TRACKA-POST-r12-mnv4-logits-s1-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS"
+}

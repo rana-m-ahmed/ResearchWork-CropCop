@@ -1,0 +1,19 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "confirmed_version_number": 3,
+  "dataset_locator": "ranaabdulrehmannn/cropcop-ta-r12-logits-s1-e08e471cc033",
+  "evidence_file_count": 9,
+  "evidence_manifest_sha256": "c62495357990016142bae460184708c77048ee03a5a1f060e30c8d2600b3cf16",
+  "experiment_id": "R12-MNV4-LOGITS-S1",
+  "generation_kind": "final",
+  "generation_roundtrip_verified": true,
+  "owner_matches_authenticated_user": true,
+  "previous_version_number": 2,
+  "private_dataset_verified": true,
+  "roundtrip_marker_sha256": "165101d606e239fdfd9f42dba17af5ee2e2955f93e62b820e8553e8fe985888a",
+  "run_id": "TRACKA-POST-r12-mnv4-logits-s1-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS",
+  "sync_certificate_sha256": "404b0edce33eb3b22249334a95f2829900edaa0de87f724591263c2c6aa6902d",
+  "sync_kind": "track_a_posttraining_private_evidence"
+}
