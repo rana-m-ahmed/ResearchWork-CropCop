@@ -67,7 +67,7 @@
       "path": "journal_extension/scripts/run_trackb_r07.py"
     },
     {
-      "git_blob_sha1": "4a79688cb34baa27dd1253e6b2f7af5e5c6e2c5f",
+      "git_blob_sha1": "67282b7ac43e0f45c5261217ce8a75251be5e6cd",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/validate_trackb_infrastructure.py"
     },
@@ -147,7 +147,7 @@
       "path": "journal_extension/src/cropcop_je/trackb_r07_audit.py"
     },
     {
-      "git_blob_sha1": "0a32a96b0e31733c106a76bfcad64533c690fa18",
+      "git_blob_sha1": "0e03703a7cd7be99ff815f4582a1ac0048dc775c",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py"
     },
@@ -169,6 +169,6 @@
   ],
   "hash_algorithm": "git_blob_sha1",
   "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
-  "schema_version": "2.3",
+  "schema_version": "2.4",
   "scope": "load-bearing Track-B v2 scientific execution, authenticated-owner Kaggle automation, safe GitHub evidence publication, deterministic core assembly, safe historical comparison, input preparation, and canonical notebooks"
 }
