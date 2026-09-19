@@ -1,0 +1,156 @@
+{
+  "schema_version": "2.0",
+  "report_id": "TRACKB_EXECUTION_READINESS_v2",
+  "generated_date": "2026-09-19",
+  "status": "PASS_READY_FOR_INPUT_MATERIALIZATION",
+  "gate": "PASS — TRACK B IMPLEMENTATION + OPERATOR QA COMPLETE; INPUT MATERIALIZATION MAY BEGIN",
+  "scope": "Track-B R07 implementation, authority, operator, static/CI QA, and source-identity readiness. This is not a protected external inference result and is not TRACK_B_CLOSED.",
+  "repository": {
+    "repository": "rana-m-ahmed/ResearchWork-CropCop",
+    "branch": "trackb-r07-infrastructure-20260919",
+    "audited_implementation_head": "1a2c91e0d5e7e20d3e8f252a92bbe7ee64cb3c9b",
+    "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+    "ahead_by": 34,
+    "behind_by": 0,
+    "historical_track_a_files_mutated": false
+  },
+  "ci": {
+    "workflow": "Track B Infrastructure QA",
+    "run_id": 35461390715,
+    "head_sha": "1a2c91e0d5e7e20d3e8f252a92bbe7ee64cb3c9b",
+    "conclusion": "success",
+    "verified_steps": [
+      "Python source compile",
+      "19 targeted Track-B unit/loophole tests",
+      "canonical notebook regeneration with zero diff",
+      "static Track-B infrastructure validator"
+    ]
+  },
+  "authority": {
+    "downstream_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v1",
+    "execution_lock_id": "TRACKB_R07_EXECUTION_LOCK_v1",
+    "code_attestation_id": "TRACKB_CODE_ATTESTATION_v1",
+    "code_attestation_sha256": "06f91abc1bfe430f21fcf1ed3fa77d6432eb0a7028227298a059fb17efa634b9",
+    "attested_file_count": 29,
+    "selected_family": "R07-CNXTT-CONTEXT",
+    "required_seeds": [
+      "S1",
+      "S2",
+      "S3"
+    ],
+    "v1_test_status": "CLOSED_FORBIDDEN",
+    "new_training_authorized": false
+  },
+  "frozen_identities": {
+    "dataset_manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "r07": {
+      "S1": {
+        "run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01",
+        "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+        "run_record_sha256": "0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516",
+        "kaggle_dataset": "sabahatabbas/sec-je-r07-cnxtt-context-s1-8904b100d223-a01"
+      },
+      "S2": {
+        "run_id": "JE-R07-CNXTT-CONTEXT-S2-56023042e577-A01",
+        "checkpoint_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
+        "run_record_sha256": "0e48fdc0907a44042110f146ec27f796ea3d185fad1e2fc008cd1332bfd0ae15",
+        "kaggle_dataset": "sabahatabbas/cropcop-r07-cnxtt-context-s2-abce1197-56023042"
+      },
+      "S3": {
+        "run_id": "JE-R07-CNXTT-CONTEXT-S3-56023042e577-A01",
+        "checkpoint_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37",
+        "run_record_sha256": "6ba1f3a7348f5c4ba0347621edef0e75e311b89bd38ff13ec4288cd81cf70050",
+        "kaggle_dataset": "sabahatabbas/cropcop-r07-cnxtt-context-s3-f13ca687-56023042"
+      }
+    },
+    "dino_audit": {
+      "checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+      "factory_manifest_sha256": "df70164ef227878353dde5430e8e0386b8853b53a2b66c20602e4cecd4dab7f1",
+      "kaggle_dataset": "ranamuhammadahmed6/cropcop-secondary-g1-8904b100",
+      "required_version": 2
+    }
+  },
+  "operator_readiness": {
+    "core": {
+      "status": "READY_TO_EXECUTE",
+      "notebook": "journal_extension/kaggle/trackb_build_core_package.ipynb",
+      "builder": "journal_extension/scripts/build_trackb_core_package.py",
+      "final_v1_dataset": "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1",
+      "validation_rows": 16368,
+      "test_image_bytes_copied": false,
+      "discovery": "checkpoint, run-record and DINO files are selected by authoritative SHA-256; filenames are not trusted"
+    },
+    "historical_compare": {
+      "status": "READY_TO_EXECUTE_SAFE_ROUTE",
+      "notebook": "journal_extension/kaggle/trackb_build_historical_compare.ipynb",
+      "coverage_scope": "V1_TRAIN_VAL_ONLY",
+      "image_count": 92744,
+      "maximum_evidence_grade": "EXT-S",
+      "v1_test_image_bytes_accessed": false,
+      "full_ext_i_route": "DORMANT_REQUIRES_FORMAL_PRE_TEST_PROVENANCE_BINDING"
+    },
+    "final_claim": {
+      "status": "IMPLEMENTED_SELF_GATED",
+      "notebook": "journal_extension/kaggle/trackb_r07_end_to_end.ipynb",
+      "required_input_roles": [
+        "core",
+        "historical_compare",
+        "irish_potato",
+        "agrivision_v2"
+      ],
+      "protected_inference_authorized_only_after": "B0 replay PASS + both candidate audits terminal + eligible candidate seals"
+    }
+  },
+  "external_candidates": {
+    "irish_potato": {
+      "doi": "10.5281/zenodo.8286529",
+      "version": "01",
+      "expected_original_images": 58709,
+      "source_structure_verified": true,
+      "package_materialized": false,
+      "next_action": "Acquire exact Zenodo Version 01 ZIPs, archive acquisition/license-access metadata, run prepare_trackb_candidate_input.py, publish immutable role=irish_potato input."
+    },
+    "agrivision_v2": {
+      "doi": "10.17632/8t6k37ztxc.2",
+      "version": "2",
+      "eligible_subtree": "Original_Images",
+      "expected_original_images": 5266,
+      "source_structure_verified": true,
+      "package_materialized": false,
+      "semantic_record_frozen": false,
+      "next_action": "Acquire exact Mendeley v2 originals, freeze prediction-blind Tomato Mosaic -> tomato_mosaic_virus semantic evidence record, run prepare_trackb_candidate_input.py, publish immutable role=agrivision_v2 input."
+    }
+  },
+  "environment": {
+    "exact_lock": "journal_extension/track_b_r07/requirements-trackb.lock.txt",
+    "py312_dependency_versions_publicly_available_as_of_2026_09_19": true,
+    "scientific_device": "cuda:0",
+    "target_accelerator": "T4x2",
+    "final_claim_internet_required": false
+  },
+  "scientific_boundaries": {
+    "current_executable_external_grade_ceiling": "EXT-S",
+    "reason": "The safe post-closure historical comparison route uses only V1 train+validation. Reopening consumed V1-test image bytes to reconstruct the full 117,546 historical surface is forbidden.",
+    "full_ext_i_possible_only_if": "A complete pre-test cryptographically bound 117,546-image comparison representation is genuinely recovered and formally rebound before candidate audit.",
+    "protected_external_inference_executed": false,
+    "track_b_closed": false,
+    "negative_results_preserved": true,
+    "candidate_shopping_forbidden": true,
+    "mapped_logit_renormalization_forbidden": true
+  },
+  "execution_order": [
+    "Run trackb_build_core_package.ipynb and publish immutable role=core.",
+    "Run trackb_build_historical_compare.ipynb from the immutable core + frozen Final-V1 source; publish immutable role=historical_compare.",
+    "Acquire, verify and package Irish Potato Version 01; publish immutable role=irish_potato.",
+    "Acquire, verify and package Agri-Vision v2 Original_Images and freeze semantic record; publish immutable role=agrivision_v2.",
+    "Attach exactly the four immutable roles to trackb_r07_end_to_end.ipynb on Kaggle T4x2 and perform one clean Save & Run All.",
+    "Audit produced TRACKB_FINAL_QA.json and TRACKB_FINAL_CLOSURE.json before any manuscript use."
+  ],
+  "not_yet_done": [
+    "No protected external R07 predictions have been produced.",
+    "No candidate has yet been sealed from the actual acquired bytes.",
+    "No historical_compare Kaggle package has yet been materialized from the safe route.",
+    "TRACK_B_CLOSED has not been issued."
+  ]
+}
