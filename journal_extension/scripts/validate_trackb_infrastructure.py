@@ -155,6 +155,8 @@ def main() -> int:
         "evidence_dataset_slug",
         "publish_public_trackb_evidence",
         "publish_private_kaggle_dataset",
+        "stage(\"2.5 :: release redundant model-source downloads\")",
+        "source_roots[\"final_v1\"]",
         "gvlid_v5",
         "irish_potato",
     ):
