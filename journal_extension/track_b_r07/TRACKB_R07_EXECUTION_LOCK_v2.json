@@ -51,7 +51,10 @@
     "output_root": "/kaggle/working/trackb_r07",
     "single_clean_notebook": true,
     "technical_retry_policy": "rerun the unchanged frozen notebook/configuration from the beginning",
-    "git_push_scope": "PUBLIC_SAFE_EVIDENCE_ONLY_AFTER_TERMINAL_QA"
+    "git_push_scope": "PUBLIC_SAFE_EVIDENCE_ONLY_AFTER_TERMINAL_QA",
+    "internet_required_for_master_automation": true,
+    "operator_facing_notebook": "journal_extension/kaggle/trackb_r07_master.ipynb",
+    "manual_dataset_attachment_required": false
   },
   "geometric_acceptance": {
     "bfmatcher_norm": "HAMMING",
@@ -199,6 +202,10 @@
     "raw_images_to_github": false,
     "checkpoints_to_github": false,
     "secrets_to_persistent_artifacts": false,
-    "github_publication_requires_final_qa_terminal": true
+    "github_publication_requires_final_qa_terminal": true,
+    "kaggle_dataset_owner_default": "sabahatabbas",
+    "kaggle_dataset_owner_must_match_active_token_for_create_or_version": true,
+    "private_historical_dataset_slug_template": "{owner}/cropcop-trackb-historical-r07-v2",
+    "private_evidence_dataset_slug_template": "{owner}/cropcop-trackb-r07-evidence"
   }
 }
