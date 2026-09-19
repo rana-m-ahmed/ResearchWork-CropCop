@@ -10,7 +10,9 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from cropcop_je.trackb_r07 import (
+    DINO_FACTORY_MANIFEST_SHA256,
     R07_CHECKPOINTS,
+    R07_RUN_RECORDS,
     TrackBError,
     assign_candidate_grade,
     build_candidate_seal,
@@ -223,6 +225,22 @@ class TrackBR07Tests(unittest.TestCase):
             f.write_text("print('drift')\n", encoding="utf-8")
             with self.assertRaises(TrackBError):
                 verify_code_attestation(root, ap)
+
+    def test_execution_lock_binds_replay_records_and_dino_factory(self):
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v1.json")
+        validate_execution_lock(lock)
+        ids = lock["identities"]
+        self.assertEqual(ids["dino_factory_manifest_sha256"], DINO_FACTORY_MANIFEST_SHA256)
+        for seed in ("S1", "S2", "S3"):
+            self.assertEqual(
+                ids[f"r07_{seed.lower()}_run_record_sha256"],
+                R07_RUN_RECORDS[seed]["sha256"],
+            )
+        drifted = dict(lock)
+        drifted["identities"] = dict(ids)
+        drifted["identities"]["r07_s2_run_record_sha256"] = "0" * 64
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted)
 
     def test_execution_lock_forbids_postclosure_full_raw_rebuild(self):
         lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v1.json")
