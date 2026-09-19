@@ -76,6 +76,40 @@ def configure_runtime_secrets() -> dict[str, bool]:
     return {"KAGGLE_API_TOKEN": True, "CROPCOP_GITHUB_TOKEN": True}
 
 
+def verify_github_repository_push_access(repository_full_name: str) -> dict[str, str | bool]:
+    token = (os.environ.get("CROPCOP_GITHUB_TOKEN") or "").strip()
+    if not token:
+        raise TrackBOpsError("CROPCOP_GITHUB_TOKEN is not configured")
+    if "/" not in repository_full_name:
+        raise TrackBOpsError(f"invalid GitHub repository name: {repository_full_name!r}")
+    url = f"https://api.github.com/repos/{repository_full_name}"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "CropCop-TrackB/2.0",
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as response:
+            obj = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        raise TrackBOpsError("GitHub token/repository permission preflight failed") from exc
+    permissions = obj.get("permissions") or {}
+    if permissions.get("push") is not True:
+        raise TrackBOpsError(
+            f"GitHub token lacks push permission for {repository_full_name}; "
+            "fix CROPCOP_GITHUB_TOKEN before starting Track-B compute"
+        )
+    return {
+        "repository": repository_full_name,
+        "authenticated": True,
+        "push": True,
+    }
+
+
 def _secret_values() -> list[str]:
     return [
         value for value in (
@@ -372,6 +406,51 @@ def _mendeley_download_links(html: str) -> list[str]:
         except Exception:
             pass
     return sorted(links)
+
+
+def probe_external_sources() -> dict[str, object]:
+    record = _urlopen_json("https://zenodo.org/api/records/8286529")
+    metadata = record.get("metadata") or {}
+    if str(metadata.get("version", "")) != "01":
+        raise TrackBOpsError("Irish Potato source probe observed a non-01 Zenodo version")
+    file_names = {str(row.get("key", "")) for row in (record.get("files") or [])}
+    required_files = {"earlyblt.zip", "healthy.zip", "lateblt.zip"}
+    if not required_files.issubset(file_names):
+        raise TrackBOpsError(
+            f"Irish Potato source probe is missing required archives: {sorted(required_files - file_names)}"
+        )
+
+    page_url = "https://data.mendeley.com/datasets/wkymf8bhcg/5"
+    req = urllib.request.Request(
+        page_url,
+        headers={"User-Agent": "Mozilla/5.0 CropCop-TrackB/2.0"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=180) as response:
+            html = response.read().decode("utf-8", errors="replace")
+    except Exception as exc:
+        raise TrackBOpsError("GVLiD v5 Mendeley source page is unreachable") from exc
+    links = _mendeley_download_links(html)
+    if not links:
+        raise TrackBOpsError(
+            "GVLiD v5 source probe found no deterministic public-file download URL; "
+            "do not start Track-B compute or substitute a mirror"
+        )
+    import hashlib
+    return {
+        "status": "PASS",
+        "irish_potato": {
+            "doi": "10.5281/zenodo.8286529",
+            "version": "01",
+            "required_archives_present": True,
+        },
+        "gvlid_v5": {
+            "doi": "10.17632/wkymf8bhcg.5",
+            "version": "5",
+            "source_page_sha256": hashlib.sha256(html.encode("utf-8")).hexdigest(),
+            "deterministic_download_link_count": len(links),
+        },
+    }
 
 
 def _normalized_label(name: str) -> str | None:
