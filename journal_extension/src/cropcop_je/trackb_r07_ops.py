@@ -285,6 +285,8 @@ def acquire_irish_potato(destination: str | Path) -> dict:
         raise TrackBOpsError(f"Zenodo record lacks required ZIP files: {sorted(set(expected).difference(by_name))}")
     data_root = destination / "data"
     transport = []
+    observed_support = {}
+    image_suffixes = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
     for name in ("earlyblt.zip", "healthy.zip", "lateblt.zip"):
         row = by_name[name]
         links = row.get("links") or {}
@@ -294,9 +296,28 @@ def acquire_irish_potato(destination: str | Path) -> dict:
         archive = destination / "_transport" / name
         receipt = _stream_download(str(url), archive)
         class_name = name[:-4]
-        _safe_extract_zip(archive, data_root / class_name)
-        transport.append({"name": name, **receipt})
+        extracted_root = destination / "_extracted" / class_name
+        _safe_extract_zip(archive, extracted_root)
+        images = sorted(
+            path for path in extracted_root.rglob("*")
+            if path.is_file() and path.suffix.lower() in image_suffixes
+        )
+        expected_count = int(expected[name])
+        if len(images) != expected_count:
+            raise TrackBOpsError(
+                f"Zenodo {name} image-count drift: expected {expected_count}, found {len(images)}"
+            )
+        class_root = data_root / class_name
+        class_root.mkdir(parents=True, exist_ok=False)
+        for index, src in enumerate(images):
+            target = class_root / f"{index:06d}_{src.name}"
+            shutil.move(str(src), str(target))
+        observed_support[class_name] = len(images)
+        transport.append({"name": name, **receipt, "normalized_image_count": len(images)})
         archive.unlink(missing_ok=True)
+        shutil.rmtree(extracted_root, ignore_errors=True)
+    shutil.rmtree(destination / "_transport", ignore_errors=True)
+    shutil.rmtree(destination / "_extracted", ignore_errors=True)
     licence = metadata.get("license") or {}
     licence_text = str(licence.get("id") or licence.get("title") or "").strip()
     if not licence_text:
@@ -310,6 +331,7 @@ def acquire_irish_potato(destination: str | Path) -> dict:
         "known_historical_contributor_relationship": False,
         "lineage_review_status": "RESIDUAL_UNCERTAINTY",
         "acquisition_transport": transport,
+        "observed_class_support": observed_support,
         "zenodo_record_id": str(record.get("id", "")),
     }
     (destination / "SOURCE_METADATA.json").write_text(json.dumps(source, indent=2) + "\n", encoding="utf-8")
