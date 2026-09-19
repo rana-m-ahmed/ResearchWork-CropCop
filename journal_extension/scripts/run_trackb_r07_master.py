@@ -247,6 +247,11 @@ def main() -> int:
     if core_manifest.get("role") != "core":
         raise TrackBOpsError("core builder did not produce role=core")
 
+    stage("2.5 :: release redundant model-source downloads")
+    for key in ("r07_s1", "r07_s2", "r07_s3", "dino_bundle"):
+        shutil.rmtree(source_roots[key], ignore_errors=True)
+    print("disk after model-source cleanup:", disk_gb(workspace), flush=True)
+
     stage("3 :: historical comparison cache")
     historical_root = inputs_root / "historical_compare"
     used_cache = False
@@ -277,6 +282,8 @@ def main() -> int:
         )
     receipt["historical_cache_reused"] = used_cache
     receipt["historical_cache_slug"] = historical_dataset
+
+    shutil.rmtree(source_roots["final_v1"], ignore_errors=True)
 
     stage("4 :: garbage-collect source-model downloads")
     # The immutable core now contains exactly the validation surface/checkpoints/audit encoder needed by B0.
