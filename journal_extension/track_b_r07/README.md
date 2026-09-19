@@ -15,9 +15,31 @@ One-time Kaggle setup:
 - add secret `KAGGLE_API_TOKEN`;
 - add secret `CROPCOP_GITHUB_TOKEN`.
 
-No Track-B input dataset needs to be manually uploaded or attached. The master notebook clones the Track-B branch, verifies the scientific dependency lock, loads both secrets, identifies the Kaggle account authenticated by the API token, and runs `run_trackb_r07_master.py`.
+No Track-B input dataset needs to be manually uploaded or attached. The master notebook clones the frozen Track-B source, loads both secrets, and applies `requirements-trackb.lock.txt` directly to Kaggle's active Python interpreter **before any scientific package import**. This deliberately reuses the clean-session execution pattern already qualified during Track A. The repaired stack is verified from a fresh child interpreter with CUDA before `run_trackb_r07_master.py` is launched in another fresh subprocess.
+
+Do not create a Python `venv` on Kaggle for Track B: the Kaggle system interpreter may not provide a working `ensurepip` path. Do not manually install Torch either; the master notebook owns the one-time exact-lock repair.
 
 The older `trackb_r07_end_to_end.ipynb` is retained only as an inspectable internal claim-engine/recovery surface. It is not the supported operator workflow.
+
+## Kaggle runtime lock
+
+Track B reuses the already-qualified Track-A clean-session package-repair pattern rather than a virtual environment. The scientific stack is repaired once from `requirements-trackb.lock.txt`, then all scientific imports/execution occur only in fresh subprocesses.
+
+Frozen execution packages include:
+
+- Python 3.12.13
+- torch 2.12.1
+- torchvision 0.27.1
+- timm 1.0.26
+- NumPy 2.5.2
+- Pillow 12.3.0
+- transformers 5.0.0
+- huggingface-hub 1.30.0
+- safetensors 0.8.0
+- opencv-python-headless 4.13.0.92
+- Kaggle CLI 2.2.4
+
+OpenCV 4.13.0.92 is a pre-results technical compatibility re-lock from 4.12.0.88 because the older wheel conflicts with the frozen NumPy 2.5.2 dependency on Python 3.12. No protected external prediction preceded this re-lock.
 
 ## Frozen scientific cohorts
 
@@ -72,9 +94,9 @@ Track B evaluates exactly R07-S1/S2/S3. The historical DINOv3 ConvNeXt-Tiny chec
 
 The master controller performs these stages in order:
 
-1. verify Kaggle/GitHub secrets and exact runtime dependencies;
+1. load Kaggle/GitHub secrets, repair any stock Kaggle package drift to the exact Track-B lock, and verify the repaired stack/CUDA from a fresh subprocess;
 2. auto-detect the Kaggle owner authenticated by `KAGGLE_API_TOKEN`;
-3. verify access to the frozen Final-V1, R07-S1/S2/S3, and DINO source datasets;
+3. verify access to every frozen Final-V1, R07-S1/S2/S3, and DINO source dataset before large downloads begin;
 4. automatically download those frozen assets;
 5. build the immutable `core` package containing only the allowed validation replay surface and frozen model/audit identities;
 6. build or reuse an exact private `historical_compare` cache over V1 train+validation only;
