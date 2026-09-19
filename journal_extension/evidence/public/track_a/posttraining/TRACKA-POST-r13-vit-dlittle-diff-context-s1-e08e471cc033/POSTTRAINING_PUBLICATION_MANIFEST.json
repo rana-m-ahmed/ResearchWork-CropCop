@@ -1,0 +1,19 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+  "private_material_published": false,
+  "public_file_count": 6,
+  "public_file_sha256": {
+    "DIRECT_STATE_EVIDENCE_GATE.json": "c5c3a9c89d4fdaa3320dcce92d3965bb3cc87ecbd52d6cb50d9bc50e50e1744f",
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "f2566b319509e4dce5eeef89ae37a61098af78de9b36d71ebb0e142553b7d14a",
+    "POSTTRAINING_STATE_COMPLETION.json": "9d6a25a48a388420258deb3e58c435510e05dcd5c6e003ede7fa9e13fd139f94",
+    "XAI_EVIDENCE_GATE.json": "14f10eff3474925cd33691e110e02fb5c7201b413de5192e27c618a0336d90cc",
+    "efficiency.json": "01f692a2781db9785e828f6fabd140840be820563befec675a50e989d2e8b69b",
+    "robustness_and_replay.json": "845ff659b8642b1252467c89aa176f49e580421a322409173037221d513d30fa"
+  },
+  "publication_kind": "track_a_posttraining_state",
+  "publication_manifest_sha256": "15376abcd6283f303db300fdcba60e0a952f1a3eaac2c26c34e3714ecdc414b0",
+  "run_id": "TRACKA-POST-r13-vit-dlittle-diff-context-s1-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS"
+}

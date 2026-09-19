@@ -1,0 +1,31 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "completion_kind": "track_a_posttraining_state",
+  "completion_sha256": "3493dcc0e6306ed751de37608cd9c1954a3e3cba638e6471a1ffab32b15bf3d3",
+  "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+  "external_surface_accessed": false,
+  "optimizer_state_advanced": false,
+  "posttraining_public_run_id": "TRACKA-POST-r13-vit-dlittle-diff-context-s1-e08e471cc033",
+  "private_evidence_dataset_locator": "ranaabdulrehmannn/cropcop-ta-r13-vit-s1-e08e471cc033",
+  "private_generation_roundtrip_verified": true,
+  "private_sync_certificate_sha256": "f2566b319509e4dce5eeef89ae37a61098af78de9b36d71ebb0e142553b7d14a",
+  "publication_branch": "run-evidence/TRACKA-POST-r13-vit-dlittle-diff-context-s1-e08e471cc033",
+  "role": "direct",
+  "run_id": "JE-R13-VIT-DLITTLE-DIFF-CONTEXT-S1-56023042e577-A01",
+  "schema_version": "1.0",
+  "stage_gates": {
+    "direct": {
+      "basename": "DIRECT_STATE_EVIDENCE_GATE.json",
+      "logical_relative_path": "direct/public_evidence/DIRECT_STATE_EVIDENCE_GATE.json",
+      "sha256": "c5c3a9c89d4fdaa3320dcce92d3965bb3cc87ecbd52d6cb50d9bc50e50e1744f"
+    },
+    "xai": {
+      "basename": "XAI_EVIDENCE_GATE.json",
+      "logical_relative_path": "xai/public_xai/XAI_EVIDENCE_GATE.json",
+      "sha256": "14f10eff3474925cd33691e110e02fb5c7201b413de5192e27c618a0336d90cc"
+    }
+  },
+  "status": "PASS",
+  "training_or_adaptation_performed": false,
+  "v1_test_accessed": false
+}
