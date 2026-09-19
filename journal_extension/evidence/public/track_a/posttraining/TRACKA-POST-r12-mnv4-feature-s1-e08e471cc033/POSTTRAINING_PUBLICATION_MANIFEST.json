@@ -1,0 +1,16 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "experiment_id": "R12-MNV4-FEATURE-S1",
+  "private_material_published": false,
+  "public_file_count": 3,
+  "public_file_sha256": {
+    "AUXILIARY_STATE_EVIDENCE_GATE.json": "b53dbdf66da0c71cb97dec14a064ab9bf9b780723c2fa9056f9bd60ec5fddba2",
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "f5c801b195da6146d92e465bac26a6ee03559c105be2d1c701b95684edaa9f7e",
+    "POSTTRAINING_STATE_COMPLETION.json": "fa4a5119fd5f8662743de1c4644eb4e9a6e5c312e2aa191838dcedb28caaeeaa"
+  },
+  "publication_kind": "track_a_posttraining_state",
+  "publication_manifest_sha256": "4495449ce05ec3536aa37faf6e23f65adcb6f4acdf1d568e81fd388563875840",
+  "run_id": "TRACKA-POST-r12-mnv4-feature-s1-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS"
+}
