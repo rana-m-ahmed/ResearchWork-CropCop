@@ -17,6 +17,21 @@ TRACK_A_FINAL_AUDIT_SELF_HASH = "1c7d98fa47a12ae6eaa53e1c6e91b4e6eef2d04bb717c2d
 DATASET_MANIFEST_SHA256 = "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2"
 CLASS_MAP_SHA256 = "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2"
 DINO_AUDIT_SHA256 = "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79"
+DINO_FACTORY_MANIFEST_SHA256 = "df70164ef227878353dde5430e8e0386b8853b53a2b66c20602e4cecd4dab7f1"
+R07_RUN_RECORDS = {
+    "S1": {
+        "run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01",
+        "sha256": "0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516",
+    },
+    "S2": {
+        "run_id": "JE-R07-CNXTT-CONTEXT-S2-56023042e577-A01",
+        "sha256": "0e48fdc0907a44042110f146ec27f796ea3d185fad1e2fc008cd1332bfd0ae15",
+    },
+    "S3": {
+        "run_id": "JE-R07-CNXTT-CONTEXT-S3-56023042e577-A01",
+        "sha256": "6ba1f3a7348f5c4ba0347621edef0e75e311b89bd38ff13ec4288cd81cf70050",
+    },
+}
 REPLAY_TOLERANCE = 1e-6
 CTC_V2_CONFIG_SHA256 = "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4"
 R07_CHECKPOINTS = {
@@ -149,9 +164,13 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         "dataset_manifest_sha256": DATASET_MANIFEST_SHA256,
         "class_map_sha256": CLASS_MAP_SHA256,
         "dino_audit_encoder_sha256": DINO_AUDIT_SHA256,
+        "dino_factory_manifest_sha256": DINO_FACTORY_MANIFEST_SHA256,
         "r07_s1_sha256": R07_CHECKPOINTS["S1"],
         "r07_s2_sha256": R07_CHECKPOINTS["S2"],
         "r07_s3_sha256": R07_CHECKPOINTS["S3"],
+        "r07_s1_run_record_sha256": R07_RUN_RECORDS["S1"]["sha256"],
+        "r07_s2_run_record_sha256": R07_RUN_RECORDS["S2"]["sha256"],
+        "r07_s3_run_record_sha256": R07_RUN_RECORDS["S3"]["sha256"],
         "ctc_v2_config_sha256": CTC_V2_CONFIG_SHA256,
     }
     for key, value in expected.items():
