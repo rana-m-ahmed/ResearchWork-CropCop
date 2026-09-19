@@ -163,22 +163,64 @@ def ensure_kaggle_cli() -> str:
     return version
 
 
-def detect_authenticated_kaggle_owner() -> str:
-    result = run_checked(["kaggle", "datasets", "list", "--mine", "-v"], timeout=180)
-    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    owners = set()
+def _owners_from_csv(text: str) -> set[str]:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    owners: set[str] = set()
     for line in lines[1:]:
         ref = line.split(",", 1)[0].strip().strip('"')
         if "/" in ref:
             owner = ref.split("/", 1)[0].strip()
             if owner:
                 owners.add(owner)
-    if len(owners) != 1:
+    return owners
+
+
+def detect_authenticated_kaggle_owner() -> str:
+    # Prefer owned datasets because Track B needs dataset create/version permission.
+    datasets = run_checked(["kaggle", "datasets", "list", "--mine", "-v"], timeout=180)
+    owners = _owners_from_csv(datasets.stdout)
+    if len(owners) == 1:
+        return next(iter(owners))
+    if len(owners) > 1:
         raise TrackBOpsError(
-            "could not uniquely infer the authenticated Kaggle owner from 'datasets list --mine'. "
-            f"Observed owners={sorted(owners)}. Supply --kaggle-owner only if this account has no existing datasets."
+            f"authenticated Kaggle identity is ambiguous across owned datasets: {sorted(owners)}"
         )
-    return next(iter(owners))
+
+    # Fresh accounts may own no datasets yet but will own the notebook currently
+    # running Track B. The kernels surface gives us a second authenticated owner
+    # signal without requiring any extra user input.
+    kernels = run_checked(["kaggle", "kernels", "list", "--mine", "-v"], timeout=180)
+    owners = _owners_from_csv(kernels.stdout)
+    if len(owners) == 1:
+        return next(iter(owners))
+    raise TrackBOpsError(
+        "could not uniquely infer the authenticated Kaggle owner from owned datasets "
+        f"or notebooks; observed owners={sorted(owners)}. Supply --kaggle-owner explicitly."
+    )
+
+
+def verify_kaggle_source_access(source_datasets: dict[str, str]) -> dict[str, str]:
+    verified: dict[str, str] = {}
+    failures: dict[str, str] = {}
+    for role, slug in source_datasets.items():
+        proc = subprocess.run(
+            ["kaggle", "datasets", "files", slug, "--page-size", "1"],
+            env=dict(os.environ),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=180,
+        )
+        if proc.returncode == 0:
+            verified[role] = slug
+        else:
+            failures[role] = redact((proc.stderr or proc.stdout or "").strip())[-1200:]
+    if failures:
+        raise TrackBOpsError(
+            "Kaggle token cannot access all frozen Track-B source datasets: "
+            + json.dumps(failures, sort_keys=True)
+        )
+    return verified
 
 
 def verify_authenticated_kaggle_owner(expected_owner: str) -> str:
