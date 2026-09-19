@@ -21,7 +21,7 @@ class TrackBOpsError(RuntimeError):
     pass
 
 
-KAGGLE_OWNER_DEFAULT = "sabahatabbas"
+KAGGLE_OWNER_DEFAULT = "AUTO"
 
 
 def historical_dataset_slug(owner: str) -> str:
@@ -122,6 +122,34 @@ def ensure_kaggle_cli() -> str:
     return version
 
 
+def detect_authenticated_kaggle_owner() -> str:
+    result = run_checked(["kaggle", "datasets", "list", "--mine", "-v"], timeout=180)
+    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    owners = set()
+    for line in lines[1:]:
+        ref = line.split(",", 1)[0].strip().strip('"')
+        if "/" in ref:
+            owner = ref.split("/", 1)[0].strip()
+            if owner:
+                owners.add(owner)
+    if len(owners) != 1:
+        raise TrackBOpsError(
+            "could not uniquely infer the authenticated Kaggle owner from 'datasets list --mine'. "
+            f"Observed owners={sorted(owners)}. Supply --kaggle-owner only if this account has no existing datasets."
+        )
+    return next(iter(owners))
+
+
+def verify_authenticated_kaggle_owner(expected_owner: str) -> str:
+    expected_owner = str(expected_owner).strip()
+    observed = detect_authenticated_kaggle_owner()
+    if expected_owner and expected_owner.upper() != "AUTO" and observed != expected_owner:
+        raise TrackBOpsError(
+            f"authenticated Kaggle owner mismatch: expected={expected_owner}, observed={observed}"
+        )
+    return observed
+
+
 def download_kaggle_dataset(slug: str, destination: str | Path) -> Path:
     destination = Path(destination).resolve()
     if destination.exists():
@@ -194,7 +222,7 @@ def publish_private_kaggle_dataset(
             timeout=7200,
         )
     else:
-        # Kaggle CLI dataset creation is private unless --public/-u is explicitly supplied.
+        # Dataset creation intentionally uses the CLI default private visibility.
         run_checked(
             ["kaggle", "datasets", "create", "-p", str(folder), "-q", "-r", "zip"],
             timeout=7200,
