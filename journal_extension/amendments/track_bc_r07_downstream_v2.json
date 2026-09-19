@@ -141,5 +141,28 @@
     "Track-B v1 candidate pair Irish Potato + Agri-Vision",
     "manual multi-notebook/private-dataset publication workflow",
     "Track-B v1 authority/lock identifiers for future execution"
-  ]
+  ],
+  "track_b_rules": {
+    "all_three_r07_seeds_required": true,
+    "candidate_shopping_forbidden": true,
+    "mapping_change_after_prediction_forbidden": true,
+    "new_training_forbidden": true,
+    "seed_replacement_forbidden": true,
+    "track_b_results_cannot_reopen_architecture_selection": true,
+    "track_c_feedback_into_track_b_forbidden": true,
+    "v1_test_access_forbidden": true
+  },
+  "downstream_separation": {
+    "track_b_and_track_c_protected_results_cannot_reopen_model_or_seed_selection": true,
+    "track_b_evaluates_all_three_frozen_r07_states": true,
+    "track_c_uses_single_preselected_r07_s1_representative": true
+  },
+  "track_c_deployment_representative": {
+    "state": "R07-S1",
+    "experiment_id": "R07-CNXTT-CONTEXT-S1",
+    "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "selection_basis": "frozen Track-A development evidence before any Track-B/Track-C protected outcome",
+    "track_b_results_may_change_representative": false,
+    "track_c_results_may_change_representative": false
+  }
 }
