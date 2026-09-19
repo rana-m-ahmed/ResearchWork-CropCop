@@ -311,7 +311,6 @@ def _audit_candidate(
     expected_doi: str,
     expected_version: str,
     eligible_subtree: str | None,
-    semantic_gate_required: bool,
     scope: str,
     expected_label_support: dict[str, int] | None,
     workers: int,
@@ -349,24 +348,6 @@ def _audit_candidate(
         unresolved_lineage = bool(known_relation is True or lineage_status != "PASS_NO_KNOWN_RELATIONSHIP")
     except Exception:
         source_ok = False
-    semantic_ok = True
-    semantic_record_hash = None
-    semantic_record = {}
-    if semantic_gate_required:
-        try:
-            semantic_path = resolve_bundle_file(bundle, "mapping_semantic_record")
-            semantic_record = load_json(semantic_path)
-            semantic_ok = (
-                semantic_record.get("status") == "PASS"
-                and semantic_record.get("mapping") == "Tomato Mosaic -> tomato_mosaic_virus"
-                and bool(str(semantic_record.get("evidence_source", "")).strip())
-                and bool(str(semantic_record.get("rationale", "")).strip())
-                and bool(str(semantic_record.get("verified_at", "")).strip())
-            )
-            semantic_record_hash = sha256_file(semantic_path)
-        except Exception:
-            semantic_ok = False
-
     data_root = _resolve_dir(bundle, "data_root")
     all_items = discover_candidate_images(data_root, eligible_subtree=eligible_subtree, allowed_labels=None)
     if len(all_items) != int(expected_count):
@@ -387,7 +368,7 @@ def _audit_candidate(
     mapped_records = [r for r in records if r.source_label in mapped_source_labels]
     if candidate_id in {"irish_potato", "gvlid_grape"} and any(label not in mapped_source_labels for _path, label in all_items):
         source_ok = False
-    mapping_ok = semantic_ok and len(set(mapping.values())) == len(mapping) and all(target in class_map for target in mapping.values())
+    mapping_ok = len(set(mapping.values())) == len(mapping) and all(target in class_map for target in mapping.values())
 
     # Prediction-blind family construction over all eligible originals.
     exact_within = exact_duplicate_pairs(records)
@@ -518,7 +499,6 @@ def _audit_candidate(
         "observed_source_label_support": observed_label_support,
         "expected_source_label_support": expected_label_support,
         "source_identity_ok": source_ok,
-        "semantic_mapping_ok": semantic_ok,
         "source_metadata_record_sha256": source_metadata_hash,
         "source_url": source_metadata.get("source_url"),
         "retrieved_at": source_metadata.get("retrieved_at"),
@@ -526,9 +506,6 @@ def _audit_candidate(
         "lineage_review_status": source_metadata.get("lineage_review_status"),
         "known_historical_contributor_relationship": source_metadata.get("known_historical_contributor_relationship"),
         "unresolved_lineage": unresolved_lineage,
-        "mapping_semantic_record_sha256": semantic_record_hash,
-        "mapping_semantic_evidence_source": semantic_record.get("evidence_source") if semantic_gate_required else None,
-        "mapping_semantic_rationale": semantic_record.get("rationale") if semantic_gate_required else None,
         "raw_manifest_sha256": sha256_file(raw_manifest_path),
         "mapping": mapping,
         "mapping_sha256": sha256_json(mapping),
@@ -565,7 +542,6 @@ def _audit_candidate(
         "candidate_input_manifest_sha256": sha256_file(bundle.manifest_path),
         "source_manifest_sha256": sha256_file(raw_manifest_path),
         "source_metadata_record_sha256": source_metadata_hash,
-        "mapping_semantic_record_sha256": semantic_record_hash,
         "decode_failure_ledger_sha256": sha256_file(candidate_out / "decode_failures.jsonl"),
         "mapping_sha256": sha256_json(mapping),
         "family_graph_sha256": sha256_file(candidate_out / "families.jsonl"),
@@ -953,7 +929,7 @@ def main() -> int:
         bundle=inputs["gvlid_v5"], historical_bundle=historical, core_bundle=core,
         output_root=output_root, class_map=class_map, mapping=grape_mapping,
         expected_count=3477, expected_doi="10.17632/wkymf8bhcg.5", expected_version="5",
-        eligible_subtree=None, semantic_gate_required=False, scope=lock["candidate_a"]["scope"],
+        eligible_subtree=None, scope=lock["candidate_a"]["scope"],
         expected_label_support=None,
         workers=args.workers, device=args.device,
         dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
@@ -963,7 +939,7 @@ def main() -> int:
         bundle=inputs["irish_potato"], historical_bundle=historical, core_bundle=core,
         output_root=output_root, class_map=class_map, mapping=potato_mapping,
         expected_count=58709, expected_doi="10.5281/zenodo.8286529", expected_version="01",
-        eligible_subtree=None, semantic_gate_required=False, scope=lock["candidate_b"]["scope"],
+        eligible_subtree=None, scope=lock["candidate_b"]["scope"],
         expected_label_support=lock["candidate_b"].get("expected_source_support"),
         workers=args.workers, device=args.device,
         dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
