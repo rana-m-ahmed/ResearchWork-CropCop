@@ -29,7 +29,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "f1e824e8b6fbd9c55e97056ba4da78deaf2992fbd55bf309de7b74e90fed8deb",
+  "code_attestation_sha256": "b611c2e83ea26b279870b18beb22134aa30f907be86a72332f57dbbd8e9b116b",
   "experiment_ids": [
     "TB2-AUDIT-GVLID",
     "TB2-AUDIT-POTATO",
