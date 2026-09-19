@@ -22,7 +22,7 @@
       "path": "journal_extension/kaggle/trackb_r07_end_to_end.ipynb"
     },
     {
-      "git_blob_sha1": "993e3c23a6251c19255af00354f58b332d6f74d0",
+      "git_blob_sha1": "cc43e735214a1b5f61a26f1e9c00734ccea77d8c",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/kaggle/trackb_r07_master.ipynb"
     },
@@ -62,7 +62,7 @@
       "path": "journal_extension/scripts/prepare_trackb_historical_source_input.py"
     },
     {
-      "git_blob_sha1": "f62adde4f482ed6640f5b3ce7515bf91ab490cdd",
+      "git_blob_sha1": "5d11f00a46446164e7cc6ff0df67be751a4ca99f",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/run_trackb_r07_master.py"
     },
@@ -72,7 +72,7 @@
       "path": "journal_extension/scripts/run_trackb_r07.py"
     },
     {
-      "git_blob_sha1": "28077ebf131ac12b674c88cf689144d2d1d9d142",
+      "git_blob_sha1": "ef6d58f01f22957aa1ac5fa1dc31b74138a8684d",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/validate_trackb_infrastructure.py"
     },
@@ -152,12 +152,12 @@
       "path": "journal_extension/src/cropcop_je/trackb_r07_audit.py"
     },
     {
-      "git_blob_sha1": "732ec0a41670a2750b1e0ea46618694672beb3ea",
+      "git_blob_sha1": "822665f490861cfc4e5686e0f1bc7bfab8ae02cc",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py"
     },
     {
-      "git_blob_sha1": "178516548e22d51a4093bc51f7f3d53731856191",
+      "git_blob_sha1": "82484cf69bb2b323b85f4d2d00309b368bfb97d8",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/src/cropcop_je/trackb_r07.py"
     },
@@ -174,6 +174,6 @@
   ],
   "hash_algorithm": "git_blob_sha1",
   "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
-  "schema_version": "2.9",
-  "scope": "load-bearing Track-B v2 scientific execution, proven Kaggle exact-lock repair with fresh-subprocess validation, authenticated-owner Kaggle automation, safe GitHub evidence publication, deterministic core assembly, safe historical comparison, input preparation, and canonical notebooks"
+  "schema_version": "3.0",
+  "scope": "load-bearing Track-B v2 scientific execution, proven Kaggle exact-lock repair, fail-fast Git dry-run write authorization, archive-first evidence durability with bounded Kaggle/GitHub publication retries, authenticated-owner Kaggle automation, safe GitHub evidence publication, deterministic core assembly, safe historical comparison, input preparation, and canonical notebooks"
 }
