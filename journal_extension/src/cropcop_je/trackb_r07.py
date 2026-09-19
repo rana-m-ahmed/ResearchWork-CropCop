@@ -264,6 +264,11 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         "secrets_to_persistent_artifacts": False,
         "github_publication_requires_final_qa_terminal": True,
         "github_push_permission_preflight": True,
+        "github_push_preflight_transport": "GIT_PUSH_DRY_RUN_SAME_AS_PUBLICATION",
+        "github_push_preflight_before_runtime_repair": True,
+        "private_evidence_archive_before_github_publication": True,
+        "github_publication_retry_attempts": 4,
+        "github_publication_failure_preserves_scientific_closure": True,
         "external_source_reachability_preflight": True,
     }
     for key, value in expected_automation.items():
