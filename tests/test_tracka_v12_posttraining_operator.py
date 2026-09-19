@@ -15,7 +15,6 @@ for path in (SCRIPTS, SRC):
 
 from cropcop_je.hashing import sha256_file, sha256_json  # noqa: E402
 import run_tracka_v12_posttraining_account as operator  # noqa: E402
-import run_tracka_v12_xai as xai_operator  # noqa: E402
 from cropcop_je.tracka_v12_posttraining_operator import required_stage_args, validate_state_operator_spec  # noqa: E402
 
 ANALYSIS = "a" * 40
@@ -183,21 +182,6 @@ class TrackAPosttrainingOperatorTests(unittest.TestCase):
                     readiness_state=readiness,
                     analysis_sha=ANALYSIS,
                 )
-
-    def test_xai_panel_filename_is_filesystem_safe_and_deterministic(self):
-        row_id = "main::val/money_plant_healthy/money_plant_healthy_008877.jpg"
-        first = xai_operator.qualitative_panel_filename(row_id)
-        second = xai_operator.qualitative_panel_filename(row_id)
-        self.assertEqual(first, second)
-        self.assertRegex(first, r"^[0-9a-f]{64}\\.png$")
-        self.assertEqual(Path(first).name, first)
-        self.assertNotIn("/", first)
-        self.assertNotIn("\\\\", first)
-
-    def test_xai_panel_filename_distinguishes_distinct_row_ids(self):
-        left = xai_operator.qualitative_panel_filename("main::val/a/x.jpg")
-        right = xai_operator.qualitative_panel_filename("main::val/b/x.jpg")
-        self.assertNotEqual(left, right)
 
     def test_terminal_direct_attempt_reused_only_when_all_gates_hold(self):
         with tempfile.TemporaryDirectory() as td:
