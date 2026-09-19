@@ -240,6 +240,26 @@ def bootstrap(requirements: Path, receipt_path: Path) -> dict[str, object]:
             timeout=7200,
             capture=False,
         )
+        if removed_opencv_variants:
+            # OpenCV wheel variants share the cv2 namespace. Removing one variant can
+            # delete shared files even when headless metadata remains installed, so
+            # restore the frozen headless wheel explicitly without perturbing NumPy.
+            _run(
+                [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "--disable-pip-version-check",
+                    "--no-input",
+                    "--no-cache-dir",
+                    "--force-reinstall",
+                    "--no-deps",
+                    "opencv-python-headless==4.13.0.92",
+                ],
+                timeout=1200,
+                capture=False,
+            )
 
     # Never trust modules already present in the notebook process after pip repair.
     # The scientific stack is imported and verified only in a fresh child interpreter.
