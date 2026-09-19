@@ -117,12 +117,14 @@
     "autosaved_working_disk_gb": 20,
     "clean_save_and_run_all_required": true,
     "ddp": false,
-    "internet_required_during_claim_run": false,
+    "internet_required_during_claim_run": true,
     "multi_gpu_training": false,
     "runtime_margin_policy": "preflight must project completion with material margin; optimize implementation, never scientific thresholds",
     "scientific_device": "cuda:0",
     "session_hard_limit_hours": 12,
-    "target_accelerator": "T4x2"
+    "target_accelerator": "T4x2",
+    "internet_role": "ORCHESTRATION_AND_EVIDENCE_PUBLICATION_ONLY",
+    "protected_inference_network_dependency": false
   },
   "lock_id": "TRACKB_R07_EXECUTION_LOCK_v2",
   "metrics": {
