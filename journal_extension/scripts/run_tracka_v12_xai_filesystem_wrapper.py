@@ -5,7 +5,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import run_tracka_v12_xai as frozen_xai
 
 FROZEN_XAI_GIT_BLOB_SHA1 = "9f5edd2efdf3608ddbdfa78978417a5e9cd1f9f5"
 
@@ -58,6 +57,8 @@ def guarded_panel_save(original_save, panel_root: Path):
 
 
 def main() -> int:
+    import run_tracka_v12_xai as frozen_xai
+
     repo = Path(cli_value("--repo-root")).resolve()
     output = Path(cli_value("--output-dir")).resolve()
     verify_frozen_xai_executor(repo)
