@@ -1,0 +1,19 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "experiment_id": "R07-CNXTT-CONTEXT-S3",
+  "private_material_published": false,
+  "public_file_count": 6,
+  "public_file_sha256": {
+    "DIRECT_STATE_EVIDENCE_GATE.json": "4a0b349398bec83dd1255783218aa13ff5eb8fe59fa86e1daaa1f96721f3c228",
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "344399aa8279b63c284832e255a98ea80db769f64d0a210e73deca53b8f3c018",
+    "POSTTRAINING_STATE_COMPLETION.json": "b5d0c17184acce0061639b3319ffd39925c867f217d3d23ec0b0c0e4d48a9294",
+    "XAI_EVIDENCE_GATE.json": "6b4d3b4403727bee79ee249ee3da6aa9aa0a555c0b218bed17ad593544b74c54",
+    "efficiency.json": "7d4db029b86dafa00f8f48a69f245878e0435875e392b4ced2727a0c5cca55e6",
+    "robustness_and_replay.json": "37e2099405701483f844d80b8660a47a11d149a32763ee29f6b1095f7b364d0b"
+  },
+  "publication_kind": "track_a_posttraining_state",
+  "publication_manifest_sha256": "150086028fa8e704e4c2155562b22b740e80cb0ca1023a6824e2d4525ade6c07",
+  "run_id": "TRACKA-POST-r07-cnxtt-context-s3-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS"
+}
