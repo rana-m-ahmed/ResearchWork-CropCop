@@ -66,7 +66,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "9e7d8a2e410844c10d417a4dc3aad044d79b5065cc8a9131691243244de21319",
+  "code_attestation_sha256": "e6a4a56cb6c1c8c9446d983102486c312ee88254243a8a51f8b4b7f35fcc3280",
   "experiment_ids": [
     "TB2-AUDIT-POTATO",
     "TB2-AUDIT-AGRIVISION",
