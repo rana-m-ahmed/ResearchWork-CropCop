@@ -620,6 +620,10 @@ def _preflight(core, historical, output_root: Path, device: str):
         "cuda_devices": [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())],
     }
     expected = execution_lock["software"]
+    if str(environment["python"]) != str(expected["python"]):
+        raise TrackBError(
+            f"locked Python drift: expected {expected['python']}, got {environment['python']}"
+        )
     for key in ("torch", "torchvision", "timm", "numpy", "Pillow", "kaggle", "transformers", "huggingface_hub", "safetensors"):
         if str(environment[key]) != str(expected[key]):
             raise TrackBError(f"locked dependency drift: {key}: expected {expected[key]}, got {environment[key]}")
