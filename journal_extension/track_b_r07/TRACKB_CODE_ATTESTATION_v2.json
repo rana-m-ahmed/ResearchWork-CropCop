@@ -32,7 +32,7 @@
       "path": "journal_extension/scripts/_bootstrap.py"
     },
     {
-      "git_blob_sha1": "2a6b7b35ad8e9ed0d83199d664db35daa1fefbb2",
+      "git_blob_sha1": "b51bd2b5afb9823f675a3913681bd0f3b3a07679",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/bootstrap_trackb_runtime.py"
     },
@@ -67,12 +67,12 @@
       "path": "journal_extension/scripts/run_trackb_r07_master.py"
     },
     {
-      "git_blob_sha1": "9d0010d543a6ba1ba000f14bd9d458fa1a2fa4fc",
+      "git_blob_sha1": "a6bcb1a7989e41fe02617477757e906f78900e16",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/run_trackb_r07.py"
     },
     {
-      "git_blob_sha1": "b85ee4e526e40bab1895e7ac428c08184ac548c7",
+      "git_blob_sha1": "28077ebf131ac12b674c88cf689144d2d1d9d142",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/validate_trackb_infrastructure.py"
     },
@@ -174,6 +174,6 @@
   ],
   "hash_algorithm": "git_blob_sha1",
   "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
-  "schema_version": "2.8",
+  "schema_version": "2.9",
   "scope": "load-bearing Track-B v2 scientific execution, proven Kaggle exact-lock repair with fresh-subprocess validation, authenticated-owner Kaggle automation, safe GitHub evidence publication, deterministic core assembly, safe historical comparison, input preparation, and canonical notebooks"
 }
