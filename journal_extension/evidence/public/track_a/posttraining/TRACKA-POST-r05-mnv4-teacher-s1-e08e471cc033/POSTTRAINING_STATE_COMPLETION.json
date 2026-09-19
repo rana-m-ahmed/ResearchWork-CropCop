@@ -1,0 +1,26 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "completion_kind": "track_a_posttraining_state",
+  "completion_sha256": "ada2d5ab08b15c380cefab93ea5dc857e79f2d11c40b581d127b5d00aa462fc1",
+  "experiment_id": "R05-MNV4-TEACHER-S1",
+  "external_surface_accessed": false,
+  "optimizer_state_advanced": false,
+  "posttraining_public_run_id": "TRACKA-POST-r05-mnv4-teacher-s1-e08e471cc033",
+  "private_evidence_dataset_locator": "ranaabdulrehmannn/cropcop-ta-r05-teacher-s1-e08e471cc033",
+  "private_generation_roundtrip_verified": true,
+  "private_sync_certificate_sha256": "c08773d6af0aa96ab1485c2f17c9c759536057ca08988c85e572fa65461ada58",
+  "publication_branch": "run-evidence/TRACKA-POST-r05-mnv4-teacher-s1-e08e471cc033",
+  "role": "auxiliary",
+  "run_id": "JE-R05-MNV4-TEACHER-S1-f171309fc7e9-A01",
+  "schema_version": "1.0",
+  "stage_gates": {
+    "auxiliary": {
+      "basename": "AUXILIARY_STATE_EVIDENCE_GATE.json",
+      "logical_relative_path": "auxiliary/public_evidence/AUXILIARY_STATE_EVIDENCE_GATE.json",
+      "sha256": "fc7ad8cd214decc38e8152043524ac785f862b6c6e3233939a062793df0b993f"
+    }
+  },
+  "status": "PASS",
+  "training_or_adaptation_performed": false,
+  "v1_test_accessed": false
+}

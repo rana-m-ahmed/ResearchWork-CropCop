@@ -1,0 +1,19 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "confirmed_version_number": 3,
+  "dataset_locator": "ranaabdulrehmannn/cropcop-ta-r05-teacher-s1-e08e471cc033",
+  "evidence_file_count": 9,
+  "evidence_manifest_sha256": "f5c524e768bcfbf95a55e7e0741b064ea090f0a0c0c311bb04f89377f48bdd3e",
+  "experiment_id": "R05-MNV4-TEACHER-S1",
+  "generation_kind": "final",
+  "generation_roundtrip_verified": true,
+  "owner_matches_authenticated_user": true,
+  "previous_version_number": 2,
+  "private_dataset_verified": true,
+  "roundtrip_marker_sha256": "d386f3e44886d05161b78a392ede5eaae44d264e9a7e22e5e5ee050b14e9d6fe",
+  "run_id": "TRACKA-POST-r05-mnv4-teacher-s1-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS",
+  "sync_certificate_sha256": "e31d365eccdd8fdb2c26252be71a03cf68c570b6c0c6d66817dddf3d0a419aaf",
+  "sync_kind": "track_a_posttraining_private_evidence"
+}

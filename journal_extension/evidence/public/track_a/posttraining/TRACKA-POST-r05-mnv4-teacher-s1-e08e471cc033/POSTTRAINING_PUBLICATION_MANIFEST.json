@@ -1,0 +1,16 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "experiment_id": "R05-MNV4-TEACHER-S1",
+  "private_material_published": false,
+  "public_file_count": 3,
+  "public_file_sha256": {
+    "AUXILIARY_STATE_EVIDENCE_GATE.json": "fc7ad8cd214decc38e8152043524ac785f862b6c6e3233939a062793df0b993f",
+    "POSTTRAINING_PRIVATE_SYNC_CERTIFICATE.json": "c08773d6af0aa96ab1485c2f17c9c759536057ca08988c85e572fa65461ada58",
+    "POSTTRAINING_STATE_COMPLETION.json": "e63e594d80c2afe21f4d35401c6bf32b355a3beb49b0a00fdec72758b798edea"
+  },
+  "publication_kind": "track_a_posttraining_state",
+  "publication_manifest_sha256": "bcc9108279003246f48a66463fb698e0617da1d3cb7b6ea104f121b903c2d9de",
+  "run_id": "TRACKA-POST-r05-mnv4-teacher-s1-e08e471cc033",
+  "schema_version": "1.0",
+  "status": "PASS"
+}
