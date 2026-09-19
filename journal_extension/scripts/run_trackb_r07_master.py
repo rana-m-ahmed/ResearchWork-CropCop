@@ -17,9 +17,10 @@ from cropcop_je.trackb_r07 import (
     load_json,
 )
 from cropcop_je.trackb_r07_ops import (
-    KAGGLE_EVIDENCE_DATASET,
-    KAGGLE_HISTORICAL_DATASET,
+    KAGGLE_OWNER_DEFAULT,
     SOURCE_DATASETS,
+    evidence_dataset_slug,
+    historical_dataset_slug,
     TrackBOpsError,
     acquire_gvlid_v5,
     acquire_irish_potato,
@@ -186,11 +187,15 @@ def main() -> int:
     ap.add_argument("--repo-root", required=True)
     ap.add_argument("--workspace", default="/kaggle/working/trackb_master")
     ap.add_argument("--device", default="cuda:0")
+    ap.add_argument("--kaggle-owner", default=KAGGLE_OWNER_DEFAULT)
     ap.add_argument("--force-rebuild-historical", action="store_true")
     args = ap.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
     workspace = Path(args.workspace).resolve()
+    kaggle_owner = str(args.kaggle_owner).strip()
+    historical_dataset = historical_dataset_slug(kaggle_owner)
+    evidence_dataset = evidence_dataset_slug(kaggle_owner)
     if workspace.exists() and any(workspace.iterdir()):
         raise TrackBOpsError(f"master workspace must be empty for a clean run: {workspace}")
     workspace.mkdir(parents=True, exist_ok=True)
@@ -214,6 +219,7 @@ def main() -> int:
         "secret_presence": secret_presence,
         "kaggle_cli": kaggle_cli,
         "initial_disk_gb": disk_gb(workspace),
+        "kaggle_owner": kaggle_owner,
         "protected_external_predictions_before_controller": False,
     }
     print(json.dumps({k: v for k, v in receipt.items() if k != "secret_presence"} | {"secret_presence": secret_presence}, indent=2))
@@ -235,9 +241,9 @@ def main() -> int:
     stage("3 :: historical comparison cache")
     historical_root = inputs_root / "historical_compare"
     used_cache = False
-    if not args.force_rebuild_historical and kaggle_dataset_exists(KAGGLE_HISTORICAL_DATASET):
+    if not args.force_rebuild_historical and kaggle_dataset_exists(historical_dataset):
         cache_download = workspace / "hist_cache_download"
-        download_kaggle_dataset(KAGGLE_HISTORICAL_DATASET, cache_download)
+        download_kaggle_dataset(historical_dataset, cache_download)
         if validate_historical_cache(cache_download, core_root):
             normalize_downloaded_package(cache_download, historical_root)
             used_cache = True
@@ -255,13 +261,13 @@ def main() -> int:
             raise TrackBOpsError("fresh historical comparison package failed cache contract")
         publish_private_kaggle_dataset(
             folder=historical_root,
-            slug=KAGGLE_HISTORICAL_DATASET,
+            slug=historical_dataset,
             title="CropCop Track B R07 Historical Comparison Cache v2",
             version_message=f"safe V1 train+val comparison for {source_git_sha[:12]}",
             license_name="other",
         )
     receipt["historical_cache_reused"] = used_cache
-    receipt["historical_cache_slug"] = KAGGLE_HISTORICAL_DATASET
+    receipt["historical_cache_slug"] = historical_dataset
 
     stage("4 :: garbage-collect source-model downloads")
     # The immutable core now contains exactly the validation surface/checkpoints/audit encoder needed by B0.
@@ -311,7 +317,7 @@ def main() -> int:
     restricted = prepare_private_evidence_folder(output_root, workspace / "restricted_archive")
     private_receipt = publish_private_kaggle_dataset(
         folder=restricted,
-        slug=KAGGLE_EVIDENCE_DATASET,
+        slug=evidence_dataset,
         title="CropCop Track B R07 Restricted Evidence",
         version_message=f"Track-B closure {closure['closure_sha256'][:16]}",
         license_name="other",
