@@ -1,0 +1,99 @@
+{
+  "authority": {
+    "code_attestation_id": "TRACKB_CODE_ATTESTATION_v1",
+    "code_attestation_sha256": "51bf5e71c114d2d2a11406548dea41842fa658c9012b22ac1f168f859fc644d3",
+    "ctc_v2_config_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+    "downstream_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v1",
+    "execution_lock_id": "TRACKB_R07_EXECUTION_LOCK_v1",
+    "execution_lock_sha256": "b7d12a51844b6f27a9c67c3cef9c0aeb15afb5b73b5ae73842999fdfe16cd6a0",
+    "track_a_replay_tolerance": 1e-06
+  },
+  "base_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+  "branch": "trackb-r07-infrastructure-20260919",
+  "execution_authorization": {
+    "candidate_source_packaging": "AUTHORIZED",
+    "historical_compare_build": "AUTHORIZED",
+    "kaggle_input_preparation": "AUTHORIZED",
+    "protected_external_inference": "NOT_YET_AUTHORIZED",
+    "reason": "Protected inference requires the immutable input packages, successful B0 replay, terminal audits, and candidate seals in the final notebook."
+  },
+  "gate": "PASS \u2014 TRACK B INFRASTRUCTURE FROZEN FOR KAGGLE INPUT PREPARATION",
+  "gate_id": "TRACKB_INFRASTRUCTURE_QA_v1",
+  "implementation_commit": "fecf5ab512e547857dabbe17befe01140e826ad0",
+  "implementation_tree_sha": "f6205b17267fd9dd0fb1d90aa6148007a366d09c",
+  "kaggle_readiness": {
+    "claim_run_policy": "single clean Save & Run All",
+    "final_claim_notebook": "journal_extension/kaggle/trackb_r07_end_to_end.ipynb",
+    "git_credentials_required_in_notebook": false,
+    "historical_index_notebook": "journal_extension/kaggle/trackb_build_historical_compare.ipynb",
+    "internet_required_during_claim_run": false,
+    "required_input_roles": [
+      "core",
+      "historical_compare",
+      "irish_potato",
+      "agrivision_v2"
+    ],
+    "scientific_device": "cuda:0",
+    "second_gpu_required": false,
+    "target_accelerator": "T4x2"
+  },
+  "next_required_inputs": [
+    "immutable Track-B core Kaggle package containing exact S1/S2/S3 checkpoint bytes, DINO audit checkpoint/factory evidence, class map, validation replay surface and authority files",
+    "cryptographically bound historical comparison package; full 117546-image surface preferred for EXT-I eligibility",
+    "immutable Irish Potato Version 01 source package with observed acquisition metadata/license record",
+    "immutable Agri-Vision Bangladesh v2 Original_Images package with prediction-blind Tomato Mosaic semantic-verification record"
+  ],
+  "not_started": [
+    "protected external R07 inference",
+    "consumed V1 test access",
+    "new model training",
+    "Track-C runtime/device execution"
+  ],
+  "qa": {
+    "git_change_boundary": {
+      "ahead_by": 1,
+      "behind_by": 0,
+      "files_added": 19,
+      "files_deleted": 0,
+      "files_modified": 0,
+      "historical_authority_files_mutated": false,
+      "status": "PASS"
+    },
+    "github_blob_attestation": "PASS",
+    "github_ci": {
+      "combined_status_count": 0,
+      "interpretation": "No CI PASS claim is made from the implementation branch at this point.",
+      "status": "NOT_RUN_OR_NO_STATUS",
+      "workflow_run_count": 0
+    },
+    "notebook_generator_byte_reproduction": "PASS",
+    "notebook_schema_and_code_compile": "PASS",
+    "python_compile": "PASS",
+    "unit_tests": {
+      "failed": 0,
+      "passed": 17,
+      "status": "PASS"
+    }
+  },
+  "schema_version": "1.0",
+  "scientific_guards_verified": [
+    "all three frozen R07 seeds are mandatory for claim-producing inference",
+    "candidate audit and grade/seal precede any external R07 prediction",
+    "EXT-X cannot authorize protected inference",
+    "any accepted historical family link permanently blocks EXT-I",
+    "partial historical comparison caps the maximum grade at EXT-S",
+    "known historical contributor relationship yields EXT-X",
+    "residual lineage uncertainty caps the maximum grade at EXT-S",
+    "minimum 50 independent families per required mapped class is enforced",
+    "Agri-Vision Tomato Mosaic semantic mapping failure yields EXT-X with no fallback remap",
+    "native 120-way predictions are preserved without mapped-subset renormalization",
+    "predictions outside the mapped ground-truth scope remain errors",
+    "same ordered representative rows and targets are required for S1/S2/S3",
+    "family bootstrap uses the fixed seed and shared resampling indices across S1/S2/S3",
+    "code drift is detected by Git-blob attestation",
+    "consumed V1 test surface is forbidden",
+    "no new training path is exposed by Track B"
+  ],
+  "scope": "Track-B R07 infrastructure only; no protected external classifier inference has been executed.",
+  "status": "PASS"
+}
