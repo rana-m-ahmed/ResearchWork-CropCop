@@ -1,0 +1,27 @@
+{
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "error_count": 0,
+  "external_predictions_opened_before_selection": false,
+  "final_audit_self_hash": "1c7d98fa47a12ae6eaa53e1c6e91b4e6eef2d04bb717c2d58c7ae2ebae2b51c6",
+  "journal_primary_family": "R07",
+  "qa_kind": "track_a_final_closure_secondary_independent_validation",
+  "schema_version": "1.0",
+  "selection_terminal_status": "SELECTED",
+  "status": "PASS",
+  "track_a_closed": true,
+  "track_b_handoff_authorized": true,
+  "track_c_candidate_results_opened_before_selection": false,
+  "track_c_handoff_authorized": true,
+  "v1_test_accessed": false,
+  "validated_scope": [
+    "artifact presence",
+    "all closure self-hashes",
+    "all cross-artifact SHA-256 bindings",
+    "21/12/9 inventories",
+    "frozen selector exact outcome and selector rows",
+    "auxiliary contrast exact values",
+    "protected-surface and downstream-blindness flags",
+    "all 21 state public-file hashes",
+    "closure ZIP CRC and duplicate-name check"
+  ]
+}

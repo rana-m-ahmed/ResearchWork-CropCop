@@ -1,0 +1,63 @@
+{
+  "account_manifest_sha256": {
+    "K1": "d8d86f8974b8152fc0520252b866036eaf65fd0e7b32e1609e6bb2d6d72ac98a",
+    "K2": "d161ce2adb123b880c6973b74ebe465663bbdd34084e3138863ed2f9ccea21ed",
+    "K3": "b4621061457199202cc3e557fd665e099fa8a3ad0bc9de642a173e1046dc38d0"
+  },
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "auxiliary_state_count": 9,
+  "closure_artifact_sha256": {
+    "TRACKA_AUXILIARY_ANALYSIS.json": "b4520bc9126c56e337efa5f62539553a4bc7ac682e01cce85c4d55c5110fba07",
+    "TRACKA_AUXILIARY_EVIDENCE_INDEX.json": "c1de9e625bae9f3d8f5179ce195621903f7f9cc2cea59f7144173815136cde70",
+    "TRACKA_COMPREHENSIVE_CLOSURE.json": "d425f188ba7038eb108d9a68b5ba93b5454cb31e54755b1ceb03b9bb0a2e8907",
+    "TRACKA_DIRECT_EVIDENCE_INDEX.json": "d8df5b62009dda92628ad735d552aae0bfc005cf6238435df5397b98b76e60d9",
+    "TRACKA_DIRECT_SELECTION.json": "1f27808146306dab7cd360cc96bee56ee0ac8e7b1878c809d1b791314e010b28",
+    "TRACKA_FINAL_CLOSURE_AUDIT.json": "683ffbd505280a909dcbe74d216d8611263113d14f06dfd6f6c1b127cb4df2e9",
+    "TRACKA_POSTTRAINING_GLOBAL_EVIDENCE_AUDIT.json": "35b156e4b36a7460cd252f8dbec7b415a702caeadbc16b2ae6923608af83fa9a"
+  },
+  "direct_state_count": 12,
+  "execution_mode": "frozen-logic deterministic reproduction; Git ancestry/source identity verified through connected GitHub because raw git network is unavailable in sandbox",
+  "external_predictions_opened_before_selection": false,
+  "final_builder_checks_passed": 797,
+  "global_readiness_file_sha256": "db7ccc76b0e980c70d7dae44ce95a6d9f3e9872e2ac0bd5f9ce1a0d44060520c",
+  "primary_closure_checks_passed_before_final_cross_validation": 786,
+  "qa_kind": "track_a_final_closure_independent_verification",
+  "schema_version": "1.0",
+  "scientific_state_count": 21,
+  "secondary_validation_error_count": 0,
+  "secondary_validation_scope": [
+    "artifact presence",
+    "all closure self-hashes",
+    "all cross-artifact SHA-256 bindings",
+    "21/12/9 inventories",
+    "frozen selector exact outcome and selector rows",
+    "auxiliary contrast exact values",
+    "protected-surface and downstream-blindness flags",
+    "all 21 state public-file hashes",
+    "closure ZIP CRC and duplicate-name check"
+  ],
+  "secondary_validation_status": "PASS",
+  "selected_primary_family": "R07",
+  "selector_status": "SELECTED",
+  "self_hashes": {
+    "auxiliary_analysis": "e7b7ca2c66a5c1c87bc26361fb2273cc52b2e9afe159c24fae53dd1df90ee1c3",
+    "comprehensive_closure": "f1fb696905ccef8c548af2fe4e20f06803f877d47d987a9210fb515830eb9908",
+    "direct_selection": "1f0f836341e6371ad588172ce405d439d81656ed7411ae3f38293ed2aa5edbb9",
+    "final_audit": "1c7d98fa47a12ae6eaa53e1c6e91b4e6eef2d04bb717c2d58c7ae2ebae2b51c6",
+    "global_audit": "3419766945dfd5af7a86f8db30c4db2ca885877a2e4926615b801e0f03e11f55"
+  },
+  "status": "PASS",
+  "track_a_closed": true,
+  "track_b_handoff_authorized": true,
+  "track_c_candidate_results_opened_before_selection": false,
+  "track_c_handoff_authorized": true,
+  "training_science_source_git_commit": "56023042e57758591df9babb3438f191dbe10312",
+  "v1_test_accessed": false,
+  "wave1_file_sha256": "f1a10405b2b049c763512b2562814f1fe603d9e6335f4231347e546300c89803",
+  "wave2_file_sha256": "29a8f045729a36b126da8f470e91789569fc342c6dc051c9882e12661a68aee2",
+  "zip_sha256": {
+    "K1": "3950e3944ee6a3e880f34a97ce5d9987a306f0029781c5ee9cb31b389732f37c",
+    "K2": "35a2b4c820e3e36743d337da7c7190f22d637285c540eeb1f07dff619c9a5ee5",
+    "K3": "19711dafee28b2d6d7b6d5258e7bd011deb0023234431a0f234109f139e17336"
+  }
+}
