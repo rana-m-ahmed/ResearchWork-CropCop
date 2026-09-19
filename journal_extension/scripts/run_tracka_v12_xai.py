@@ -40,20 +40,6 @@ def mean(values):
     return sum(values) / len(values) if values else None
 
 
-def qualitative_panel_filename(stable_row_id: str) -> str:
-    """Return a deterministic filesystem-safe filename for a panel image.
-
-    The scientific stable row id remains unchanged in all evidence records.
-    Only its private PNG artifact filename is serialized through SHA-256 so
-    row ids containing path separators cannot escape/create subdirectories.
-    """
-    row_id = str(stable_row_id)
-    if not row_id:
-        raise ValueError("qualitative panel stable row id must be non-empty")
-    digest = hashlib.sha256(row_id.encode("utf-8")).hexdigest()
-    return f"{digest}.png"
-
-
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-root", default=".")
@@ -207,17 +193,9 @@ def main() -> int:
         overlay[..., 1] = np.clip(0.70 * base[..., 1], 0, 255)
         overlay[..., 2] = np.clip(0.70 * base[..., 2], 0, 255)
         panel = Image.fromarray(overlay.astype(np.uint8), mode="RGB")
-        panel_filename = qualitative_panel_filename(row_id)
-        panel_path = panel_dir / panel_filename
-        if panel_path.parent != panel_dir:
-            raise RuntimeError("qualitative panel filename escaped canonical panel directory")
+        panel_path = panel_dir / f"{row_id}.png"
         panel.save(panel_path, format="PNG", optimize=False)
-        panel_manifest.append({
-            "stable_row_id": row_id,
-            "filename": panel_filename,
-            "status": "PASS",
-            "sha256": sha256_file(panel_path),
-        })
+        panel_manifest.append({"stable_row_id": row_id, "status": "PASS", "sha256": sha256_file(panel_path)})
 
     rows_path = private / "xai_rows.jsonl"
     with rows_path.open("w", encoding="utf-8", newline="\n") as handle:
