@@ -12,13 +12,15 @@ from cropcop_je.trackb_r07 import TrackBError
 from cropcop_je.trackb_r07_audit import discover_candidate_images
 
 SPECS = {
+    "gvlid_v5": {
+        "doi":"10.17632/wkymf8bhcg.5", "version":"5", "count":3477, "subtree":None,
+        "supports":None,
+        "required_labels":["Black Rot","Esca","Healthy","Leaf Blight"],
+    },
     "irish_potato": {
         "doi":"10.5281/zenodo.8286529", "version":"01", "count":58709, "subtree":None,
         "supports":{"earlyblt":17772,"healthy":20438,"lateblt":20499},
-    },
-    "agrivision_v2": {
-        "doi":"10.17632/8t6k37ztxc.2", "version":"2", "count":5266, "subtree":"Original_Images",
-        "supports":{"Tomato Healthy":288,"Tomato Mosaic":195,"Papaya Healthy Leaf":189},
+        "required_labels":["earlyblt","healthy","lateblt"],
     },
 }
 
@@ -37,7 +39,6 @@ def main() -> int:
     ap.add_argument("--package-root", required=True)
     ap.add_argument("--data-root", required=True)
     ap.add_argument("--source-metadata-record", required=True)
-    ap.add_argument("--mapping-semantic-record")
     args=ap.parse_args()
     spec=SPECS[args.role]
     root=Path(args.package_root).resolve(); root.mkdir(parents=True,exist_ok=True)
@@ -60,22 +61,22 @@ def main() -> int:
         raise TrackBError(f"{args.role} expected {spec['count']} original images, found {len(items)}")
     supports={}
     for _p,label in items: supports[label]=supports.get(label,0)+1
-    for label,count in spec["supports"].items():
-        if supports.get(label,0) != count:
-            raise TrackBError(f"{args.role} source support mismatch for {label}: expected {count}, got {supports.get(label,0)}")
+    required_labels=set(spec["required_labels"])
+    if set(supports) != required_labels:
+        raise TrackBError(
+            f"{args.role} source labels differ from frozen scope: expected {sorted(required_labels)}, got {sorted(supports)}"
+        )
+    if spec["supports"] is not None:
+        for label,count in spec["supports"].items():
+            if supports.get(label,0) != count:
+                raise TrackBError(f"{args.role} source support mismatch for {label}: expected {count}, got {supports.get(label,0)}")
+    else:
+        # GVLiD v5 has a published one-image arithmetic discrepancy between total and a displayed
+        # class-count table. The bytes, not the inconsistent table, define the sealed support.
+        if any(int(supports[label]) < 50 for label in required_labels):
+            raise TrackBError(f"{args.role} observed support violates the 50-image pre-audit floor: {supports}")
 
     files={"source_metadata_record":{"path":meta_path.relative_to(root).as_posix(),"sha256":sha256_file(meta_path),"bytes":meta_path.stat().st_size}}
-    if args.role == "agrivision_v2":
-        if not args.mapping_semantic_record: raise TrackBError("Agri-Vision v2 requires --mapping-semantic-record")
-        sem_path=_rel(root,args.mapping_semantic_record,must_file=True)
-        sem=json.loads(sem_path.read_text(encoding="utf-8"))
-        if (
-            sem.get("status") not in {"PASS", "FAIL"} or sem.get("mapping") != "Tomato Mosaic -> tomato_mosaic_virus"
-            or not str(sem.get("evidence_source", "")).strip() or not str(sem.get("rationale", "")).strip()
-            or not str(sem.get("verified_at", "")).strip()
-        ):
-            raise TrackBError("Tomato Mosaic semantic record is incomplete or changes the frozen mapping candidate")
-        files["mapping_semantic_record"]={"path":sem_path.relative_to(root).as_posix(),"sha256":sha256_file(sem_path),"bytes":sem_path.stat().st_size}
 
     manifest={
         "schema_version":"1.0", "role":args.role, "doi":spec["doi"], "version":spec["version"],
