@@ -455,7 +455,7 @@ def _kaggle_dataset_status(slug: str) -> dict:
     return payload
 
 
-def _wait_kaggle_dataset_ready(slug: str, *, timeout_seconds: int = 900) -> dict:
+def _wait_kaggle_dataset_ready(slug: str, *, timeout_seconds: int = 3600) -> dict:
     deadline = time.monotonic() + int(timeout_seconds)
     last = {}
     while time.monotonic() < deadline:
