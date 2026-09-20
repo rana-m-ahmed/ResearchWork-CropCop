@@ -474,6 +474,68 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             with self.assertRaises(trackb_r07_ops.TrackBOpsError):
                 trackb_r07_ops._parse_gvlid_checksum_authority(ledger)
 
+    def test_gvlid_opaque_mendeley_transport_has_pinned_companion_fallback(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            'GVLID_OFFICIAL_COMPANION_COMMIT = "878a1c7098964bb52c4c4a5c30e5b53340565258"',
+            source,
+        )
+        self.assertIn(
+            'GVLID_OFFICIAL_COMPANION_ARCHIVE_URL = (',
+            source,
+        )
+        self.assertIn(
+            'skip_single_opaque_container = (',
+            source,
+        )
+        self.assertIn(
+            'materialization_route = "PINNED_OFFICIAL_COMPANION_ARCHIVE_FALLBACK"',
+            source,
+        )
+        self.assertIn(
+            '_safe_extract_gvlid_companion_tar(',
+            source,
+        )
+        self.assertIn(
+            '_verify_gvlid_checksum_authority(',
+            source,
+        )
+        self.assertLess(
+            source.index('_safe_extract_gvlid_companion_tar('),
+            source.index('supports, checksum_integrity = _normalize_gvlid_tree('),
+        )
+
+    def test_gvlid_companion_tar_extraction_is_bounded_and_path_safe(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def _safe_extract_gvlid_companion_tar(")
+        end = source.index("def _load_lineage_review", start)
+        helper = source[start:end]
+        self.assertIn('expected_image_count: int = 3477', helper)
+        self.assertIn('max_members: int = 5000', helper)
+        self.assertIn('max_uncompressed_bytes: int = 4 * 1024 * 1024 * 1024', helper)
+        self.assertIn('member_path.is_absolute()', helper)
+        self.assertIn('".." in member_path.parts', helper)
+        self.assertIn('if not member.isfile():', helper)
+        self.assertIn('duplicate/case-colliding GVLiD companion image path', helper)
+        self.assertIn('shutil.disk_usage(destination).free', helper)
+        self.assertIn('with src, target.open("xb") as out:', helper)
+
+    def test_gvlid_fallback_still_requires_full_3477_checksum_authority(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        verifier_start = source.index("def _verify_gvlid_checksum_authority(")
+        verifier_end = source.index("def _normalize_gvlid_tree(", verifier_start)
+        verifier = source[verifier_start:verifier_end]
+        self.assertIn("if verified != 3477", verifier)
+        self.assertIn("len(consumed) != len(authority)", verifier)
+        self.assertIn("missing", verifier)
+        self.assertIn("observed_sha != row[\"sha256\"]", verifier)
+
     def test_external_source_lock_uses_pinned_gvlid_companion_ledger(self):
         lock = json.loads(
             (
