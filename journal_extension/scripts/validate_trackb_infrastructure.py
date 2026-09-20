@@ -146,6 +146,11 @@ def main() -> int:
         raise TrackBError("master notebook lacks fail-fast Git write preflight")
     if "'--execution-mode', 'claim'" in master_text or '"--execution-mode", "claim"' in master_text:
         raise TrackBError("operator notebook exposes protected claim mode instead of qualification mode")
+    frozen_qualification_sha = "87249ddbd73dd7b0cf5242670ce9cc25b0c415a1"
+    if f"SOURCE_COMMIT = '{frozen_qualification_sha}'" not in master_text:
+        raise TrackBError("qualification notebook is not pinned to the audited implementation SHA")
+    if "SOURCE_REF" in master_text or "checkout', '--detach'" not in master_text:
+        raise TrackBError("qualification notebook regressed to mutable branch execution")
     git_preflight_pos = master_text.find("verify_github_repository_push_access")
     runtime_bootstrap_pos = master_text.find("bootstrap_trackb_runtime.py")
     if min(git_preflight_pos, runtime_bootstrap_pos) < 0 or git_preflight_pos > runtime_bootstrap_pos:
