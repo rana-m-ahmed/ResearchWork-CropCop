@@ -490,10 +490,13 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertIn('current_qualification_science', runner)
         self.assertIn('TRACKB_QUALIFICATION_AUTHORIZATION.json', runner)
         self.assertIn('validate_trackb_preinference_qualification.py', master)
-        self.assertIn('choices=["preflight", "qualification", "all"]', runner)
+        self.assertIn('choices=["preflight", "qualification", "claim", "all"]', runner)
+        self.assertIn('--qualification-root', runner)
+        self.assertIn('claim mode requires --qualification-root', runner)
+        self.assertIn('qualification_recomputed": False', runner)
         self.assertLess(
-            runner.index('if args.mode == "qualification":'),
-            runner.index("claim_candidates ="),
+            runner.index('if args.mode == "claim":'),
+            runner.index('stage("1-4 :: prediction-blind source verification'),
         )
         self.assertIn("--execution-mode", notebook)
         self.assertIn("qualification", notebook)
