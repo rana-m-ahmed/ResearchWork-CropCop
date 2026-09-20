@@ -51,12 +51,12 @@
     },
     {
       "path": "journal_extension/scripts/run_trackb_r07_master.py",
-      "git_blob_sha1": "c31a40d7aeb7949059ad31c90c68b273253837d1",
+      "git_blob_sha1": "481684b4bf8e34da8bda0965ddab55b83295a15b",
       "origin": "track_b_v3_remediation"
     },
     {
       "path": "journal_extension/scripts/run_trackb_r07.py",
-      "git_blob_sha1": "d02eeefc4e6854b0a4f4af7f749140031870fe97",
+      "git_blob_sha1": "af1f93215d5f58d54036969892d0a5866bf90f95",
       "origin": "track_b_v3_remediation"
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07.py",
-      "git_blob_sha1": "0ef883afc478fbf68dcda4b18fcb434c9b00cd32",
+      "git_blob_sha1": "f321286e5e35047471734d51e3227b1507269446",
       "origin": "track_b_v3_remediation"
     },
     {
