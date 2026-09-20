@@ -6,6 +6,8 @@ import importlib.metadata
 import json
 import os
 import platform
+import random
+import shutil
 import sys
 import time
 from collections import Counter
@@ -33,6 +35,7 @@ from cropcop_je.trackb_r07 import (
     R07_CHECKPOINTS,
     R07_RUN_RECORDS,
     TrackBError,
+    audit_policy_from_lock,
     assign_candidate_grade,
     build_candidate_seal,
     discover_kaggle_inputs,
@@ -43,16 +46,24 @@ from cropcop_je.trackb_r07 import (
     three_seed_summary,
     validate_downstream_authority,
     validate_execution_lock,
+    validate_prior_attempt_for_rerun,
     validate_same_prediction_surface,
     verify_candidate_seal,
     verify_code_attestation,
 )
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
+from cropcop_je.trackb_r07_ops import (
+    acquire_claim_lease,
+    publish_attempt_state,
+    read_latest_attempt_state,
+    utc_now,
+)
 from cropcop_je.trackb_r07_audit import (
     ImageAuditRecord,
     build_family_components,
     cross_hash_pairs,
     discover_candidate_images,
+    deterministic_representative_order,
     exact_duplicate_pairs,
     make_image_record,
     near_hash_pairs,
@@ -65,6 +76,52 @@ from cropcop_je.trackb_r07_audit import (
 )
 
 VAL_COUNT = 16368
+MAX_AUDIT_CANDIDATE_PAIRS = 5_000_000
+
+
+def _configure_determinism() -> dict[str, Any]:
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    import cv2
+    import numpy as np
+    import torch
+
+    seed = 0
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.use_deterministic_algorithms(True)
+    cv2.setRNGSeed(seed)
+    return {
+        "status": "PASS",
+        "seed": seed,
+        "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
+        "torch_deterministic_algorithms": bool(
+            torch.are_deterministic_algorithms_enabled()
+        ),
+        "cudnn_benchmark": bool(torch.backends.cudnn.benchmark),
+        "cudnn_deterministic": bool(torch.backends.cudnn.deterministic),
+        "opencv_rng_seed": seed,
+    }
+
+
+def _require_remaining_time(
+    deadline_epoch: float,
+    *,
+    required_seconds: int,
+    stage_name: str,
+) -> None:
+    if not deadline_epoch:
+        return
+    remaining = float(deadline_epoch) - time.time()
+    if remaining < int(required_seconds):
+        raise TrackBError(
+            f"insufficient Kaggle session budget before {stage_name}: "
+            f"remaining_seconds={remaining:.1f}, required_seconds={required_seconds}"
+        )
 
 
 def stage(name: str):
@@ -209,11 +266,18 @@ def _load_dino(core):
     return model, identity
 
 
-def _self_dino_pairs(features, row_ids: list[str], *, device: str) -> set[tuple[str, str]]:
+def _self_dino_pairs(
+    features,
+    row_ids: list[str],
+    *,
+    device: str,
+    top_k: int,
+    max_pairs: int = MAX_AUDIT_CANDIDATE_PAIRS,
+) -> set[tuple[str, str]]:
     import numpy as np
     if len(row_ids) < 2:
         return set()
-    k = min(51, len(row_ids))
+    k = min(int(top_k) + 1, len(row_ids))
     idx, _ = topk_cosine_neighbors(features, features, k=k, device=device)
     pairs = set()
     for i in range(len(row_ids)):
@@ -225,10 +289,30 @@ def _self_dino_pairs(features, row_ids: list[str], *, device: str) -> set[tuple[
             a, b = sorted((row_ids[i], row_ids[j]))
             if a != b:
                 pairs.add((a, b))
+                if len(pairs) > int(max_pairs):
+                    raise TrackBError(
+                        f"DINO within-candidate pairs exceed operational cap {max_pairs}"
+                    )
                 kept += 1
-            if kept >= 50:
+            if kept >= int(top_k):
                 break
     return pairs
+
+
+def _bounded_pair_union(
+    *pair_sets: set[tuple[str, str]],
+    max_pairs: int = MAX_AUDIT_CANDIDATE_PAIRS,
+    label: str,
+) -> set[tuple[str, str]]:
+    out: set[tuple[str, str]] = set()
+    for rows in pair_sets:
+        out.update(rows)
+        if len(out) > int(max_pairs):
+            raise TrackBError(
+                f"{label} unique candidate-pair union exceeds operational cap "
+                f"{max_pairs}: observed>{max_pairs}"
+            )
+    return out
 
 
 def _cross_exact_pairs(external_records, hist_rows):
@@ -238,20 +322,122 @@ def _cross_exact_pairs(external_records, hist_rows):
     return {(ext.row_id, hist_id) for ext in external_records for hist_id in by_sha.get(ext.sha256, [])}
 
 
-def _candidate_orb_getter(records: list[ImageAuditRecord], root: Path, workers: int):
-    by_id = {r.row_id: r for r in records}
+def _candidate_orb_getter(
+    records: list[ImageAuditRecord],
+    root: Path,
+    workers: int,
+    audit_policy,
+    cache_root: Path,
+):
+    """Build a bounded file-backed ORB cache instead of retaining all descriptors in RAM."""
+    import numpy as np
+
+    cache_root = Path(cache_root).resolve()
+    if cache_root.exists():
+        shutil.rmtree(cache_root)
+    cache_root.mkdir(parents=True, exist_ok=False)
+    chunk_root = cache_root / ".chunks"
+    chunk_root.mkdir()
+
     ordered = list(records)
-    def build(row):
-        return row.row_id, orb_features_from_path(root / row.relative_path)
-    cache: dict[str, dict[str, Any]] = {}
-    with ThreadPoolExecutor(max_workers=max(1, int(workers))) as pool:
-        for row_id, orb in pool.map(build, ordered, chunksize=8):
-            cache[row_id] = orb
-    if len(cache) != len(records):
-        raise TrackBError("candidate ORB precomputation did not cover every decoded image")
+    row_index = {row.row_id: index for index, row in enumerate(ordered)}
+    offsets = [0]
+    chunk_paths: list[Path] = []
+    chunk_size = 256
+
+    for chunk_index, start_index in enumerate(range(0, len(ordered), chunk_size)):
+        subset = ordered[start_index:start_index + chunk_size]
+
+        def build(row):
+            return orb_features_from_path(
+                root / row.relative_path,
+                max_side=audit_policy.orb_max_side,
+                nfeatures=audit_policy.orb_nfeatures,
+            )
+
+        with ThreadPoolExecutor(max_workers=max(1, int(workers))) as pool:
+            computed = list(pool.map(build, subset, chunksize=8))
+
+        shapes = np.asarray([orb["shape"] for orb in computed], dtype=np.int32)
+        counts = np.asarray([len(orb["desc"]) for orb in computed], dtype=np.int32)
+        xy = (
+            np.concatenate([orb["xy"] for orb in computed], axis=0)
+            if int(counts.sum())
+            else np.empty((0, 2), dtype=np.float32)
+        )
+        desc = (
+            np.concatenate([orb["desc"] for orb in computed], axis=0)
+            if int(counts.sum())
+            else np.empty((0, 32), dtype=np.uint8)
+        )
+        chunk_path = chunk_root / f"chunk_{chunk_index:05d}.npz"
+        np.savez(
+            chunk_path,
+            shapes=shapes,
+            counts=counts,
+            xy=xy.astype(np.float32, copy=False),
+            desc=desc.astype(np.uint8, copy=False),
+        )
+        chunk_paths.append(chunk_path)
+        for count in counts.tolist():
+            offsets.append(offsets[-1] + int(count))
+        print(
+            f"Candidate ORB cache {min(start_index + len(subset), len(ordered))}/{len(ordered)}",
+            flush=True,
+        )
+
+    offsets_arr = np.asarray(offsets, dtype=np.int64)
+    np.save(cache_root / "offsets.npy", offsets_arr)
+    total = int(offsets_arr[-1])
+    xy_mm = np.lib.format.open_memmap(
+        cache_root / "xy.npy", mode="w+", dtype=np.float32, shape=(total, 2)
+    )
+    desc_mm = np.lib.format.open_memmap(
+        cache_root / "desc.npy", mode="w+", dtype=np.uint8, shape=(total, 32)
+    )
+    shapes_mm = np.lib.format.open_memmap(
+        cache_root / "shapes.npy", mode="w+", dtype=np.int32, shape=(len(ordered), 2)
+    )
+
+    point_cursor = 0
+    row_cursor = 0
+    for chunk_path in chunk_paths:
+        data = np.load(chunk_path, allow_pickle=False)
+        n_points = len(data["xy"])
+        n_rows = len(data["shapes"])
+        xy_mm[point_cursor:point_cursor + n_points] = data["xy"]
+        desc_mm[point_cursor:point_cursor + n_points] = data["desc"]
+        shapes_mm[row_cursor:row_cursor + n_rows] = data["shapes"]
+        point_cursor += n_points
+        row_cursor += n_rows
+        del data
+    xy_mm.flush()
+    desc_mm.flush()
+    shapes_mm.flush()
+    del xy_mm, desc_mm, shapes_mm
+    shutil.rmtree(chunk_root)
+
+    offsets_mm = np.load(cache_root / "offsets.npy", mmap_mode="r")
+    xy_read = np.load(cache_root / "xy.npy", mmap_mode="r")
+    desc_read = np.load(cache_root / "desc.npy", mmap_mode="r")
+    shapes_read = np.load(cache_root / "shapes.npy", mmap_mode="r")
+
+    if offsets_mm.shape != (len(ordered) + 1,) or shapes_read.shape != (len(ordered), 2):
+        raise TrackBError("candidate packed ORB cache shape mismatch")
+    if int(offsets_mm[-1]) != len(xy_read) or len(xy_read) != len(desc_read):
+        raise TrackBError("candidate packed ORB cache offsets are inconsistent")
+
     def get(row_id: str):
-        return cache[row_id]
+        index = row_index[row_id]
+        lo, hi = int(offsets_mm[index]), int(offsets_mm[index + 1])
+        return {
+            "xy": np.asarray(xy_read[lo:hi], dtype=np.float32),
+            "desc": np.asarray(desc_read[lo:hi], dtype=np.uint8),
+            "shape": tuple(int(x) for x in shapes_read[index]),
+        }
+
     return get
+
 
 
 def _geometric_verify_pairs(
@@ -262,6 +448,7 @@ def _geometric_verify_pairs(
     get_b,
     cross: bool,
     workers: int,
+    audit_policy,
     batch_size: int = 1024,
 ):
     """Verify candidate pairs with bounded concurrency; persist accepted evidence only plus a full funnel summary."""
@@ -278,7 +465,13 @@ def _geometric_verify_pairs(
                 break
             def one(pair):
                 a, b = pair
-                return pair, verify_orb_pair(get_a(a), get_b(b))
+                seed = int.from_bytes(
+                    __import__("hashlib").sha256(f"{a}|{b}".encode("utf-8")).digest()[:4],
+                    "big",
+                )
+                return pair, verify_orb_pair(
+                    get_a(a), get_b(b), policy=audit_policy, rng_seed=seed
+                )
             for (a, b), verdict in pool.map(one, batch):
                 processed += 1
                 counts[str(verdict.get("decision_stage", "UNKNOWN"))] += 1
@@ -320,6 +513,8 @@ def _audit_candidate(
     hist_rows,
     hist_features,
     hist_orb_get,
+    audit_policy,
+    audit_scratch_root: Path,
 ) -> dict[str, Any]:
     stage(f"candidate audit :: {candidate_id}")
     candidate_out = output_root / "candidates" / candidate_id
@@ -342,6 +537,9 @@ def _audit_candidate(
         source_ok = source_ok and bool(str(source_metadata.get("license_or_access_text", "")).strip())
         source_ok = source_ok and bool(str(source_metadata.get("retrieved_at", "")).strip())
         source_ok = source_ok and bool(str(source_metadata.get("source_url", "")).strip())
+        frozen_lineage = load_json(resolve_bundle_file(core_bundle, "execution_lock")).get("external_lineage_review", {})
+        source_ok = source_ok and source_metadata.get("lineage_review_id") == frozen_lineage.get("review_id")
+        source_ok = source_ok and source_metadata.get("lineage_review_sha256") == frozen_lineage.get("sha256")
         lineage_status = str(source_metadata.get("lineage_review_status", ""))
         known_relation = source_metadata.get("known_historical_contributor_relationship")
         source_ok = source_ok and lineage_status in {"PASS_NO_KNOWN_RELATIONSHIP", "RESIDUAL_UNCERTAINTY"}
@@ -372,20 +570,45 @@ def _audit_candidate(
     mapping_ok = len(set(mapping.values())) == len(mapping) and all(target in class_map for target in mapping.values())
 
     # Prediction-blind family construction over all eligible originals.
-    exact_within = exact_duplicate_pairs(records)
-    phash_within = near_hash_pairs(records, field="phash64", radius=12)
-    dhash_within = near_hash_pairs(records, field="dhash64", radius=10)
+    exact_within = exact_duplicate_pairs(
+        records, max_pairs=MAX_AUDIT_CANDIDATE_PAIRS
+    )
+    phash_within = near_hash_pairs(
+        records,
+        field="phash64",
+        radius=audit_policy.phash_radius,
+        max_pairs=MAX_AUDIT_CANDIDATE_PAIRS,
+    )
+    dhash_within = near_hash_pairs(
+        records,
+        field="dhash64",
+        radius=audit_policy.dhash_radius,
+        max_pairs=MAX_AUDIT_CANDIDATE_PAIRS,
+    )
     image_paths = [data_root / r.relative_path for r in records]
     candidate_features = encode_audit_features(dino_model, image_paths, ctc_v2_eval_transform, device, batch_size=64)
-    dino_within = _self_dino_pairs(candidate_features, [r.row_id for r in records], device=device)
-    candidate_pair_union = phash_within | dhash_within | dino_within | exact_within
+    dino_within = _self_dino_pairs(candidate_features, [r.row_id for r in records], device=device, top_k=audit_policy.dino_top_k)
+    candidate_pair_union = _bounded_pair_union(
+        exact_within,
+        phash_within,
+        dhash_within,
+        dino_within,
+        label=f"{candidate_id}/within",
+    )
 
-    candidate_orb_get = _candidate_orb_getter(records, data_root, workers)
+    candidate_orb_get = _candidate_orb_getter(
+        records,
+        data_root,
+        workers,
+        audit_policy,
+        audit_scratch_root / candidate_id / "candidate_orb",
+    )
     accepted_within = set(exact_within)
     accepted_near_within, within_geo_summary = _geometric_verify_pairs(
         candidate_pair_union - exact_within,
         evidence_path=candidate_out / "within_geometric_accepts.jsonl",
         get_a=candidate_orb_get, get_b=candidate_orb_get, cross=False, workers=workers,
+        audit_policy=audit_policy,
     )
     accepted_within.update(accepted_near_within)
     within_generation_summary = {
@@ -403,15 +626,37 @@ def _audit_candidate(
     mapped_features = candidate_features[mapped_index]
     mapped_order = [records[i] for i in mapped_index]
     exact_cross = _cross_exact_pairs(mapped_order, hist_rows)
-    phash_cross = cross_hash_pairs(mapped_order, hist_rows, field="phash64", radius=12)
-    dhash_cross = cross_hash_pairs(mapped_order, hist_rows, field="dhash64", radius=10)
-    dino_idx, _ = topk_cosine_neighbors(mapped_features, hist_features, k=50, device=device)
-    dino_cross = {
-        (row.row_id, hist_rows[int(j)]["hist_id"])
-        for row, neighbor_row in zip(mapped_order, dino_idx)
-        for j in neighbor_row
-    }
-    cross_union = exact_cross | phash_cross | dhash_cross | dino_cross
+    phash_cross = cross_hash_pairs(
+        mapped_order,
+        hist_rows,
+        field="phash64",
+        radius=audit_policy.phash_radius,
+        max_pairs=MAX_AUDIT_CANDIDATE_PAIRS,
+    )
+    dhash_cross = cross_hash_pairs(
+        mapped_order,
+        hist_rows,
+        field="dhash64",
+        radius=audit_policy.dhash_radius,
+        max_pairs=MAX_AUDIT_CANDIDATE_PAIRS,
+    )
+    dino_idx, _ = topk_cosine_neighbors(mapped_features, hist_features, k=audit_policy.dino_top_k, device=device)
+    dino_cross: set[tuple[str, str]] = set()
+    for row, neighbor_row in zip(mapped_order, dino_idx):
+        for j in neighbor_row:
+            dino_cross.add((row.row_id, hist_rows[int(j)]["hist_id"]))
+            if len(dino_cross) > MAX_AUDIT_CANDIDATE_PAIRS:
+                raise TrackBError(
+                    "DINO cross-dataset candidate pairs exceed operational cap "
+                    f"{MAX_AUDIT_CANDIDATE_PAIRS}"
+                )
+    cross_union = _bounded_pair_union(
+        exact_cross,
+        phash_cross,
+        dhash_cross,
+        dino_cross,
+        label=f"{candidate_id}/historical",
+    )
     hist_id_to_idx = {row["hist_id"]: i for i, row in enumerate(hist_rows)}
     accepted_cross = set(exact_cross)
     def hist_get(hist_id: str):
@@ -420,6 +665,7 @@ def _audit_candidate(
         cross_union - exact_cross,
         evidence_path=candidate_out / "historical_geometric_accepts.jsonl",
         get_a=candidate_orb_get, get_b=hist_get, cross=True, workers=workers,
+        audit_policy=audit_policy,
     )
     accepted_cross.update(accepted_near_cross)
     historical_generation_summary = {
@@ -485,7 +731,10 @@ def _audit_candidate(
         known_historical_contributor_relationship=known_relation,
     )
 
-    final_reps = [row for row in representatives if row["claim_eligible"]]
+    final_reps = deterministic_representative_order(
+        [row for row in representatives if row["claim_eligible"]],
+        seed=audit_policy.external_family_order_seed,
+    )
     final_rep_path = candidate_out / "sealed_representatives.jsonl"
     audit_write_jsonl(final_rep_path, final_reps)
     source_record = {
@@ -567,9 +816,9 @@ def _audit_candidate(
             "config_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
             "source_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8"
         },
-        "bootstrap_seed": 409883112,
-        "bootstrap_replicates": 5000,
-        "external_family_order_seed": 1936263114,
+        "bootstrap_seed": audit_policy.bootstrap_seed,
+        "bootstrap_replicates": audit_policy.bootstrap_replicates,
+        "external_family_order_seed": audit_policy.external_family_order_seed,
         "prediction_count_at_seal": 0,
     }
     seal = build_candidate_seal(seal_payload)
@@ -735,7 +984,67 @@ def _preflight(core, historical, output_root: Path, device: str):
     return authority, execution_lock, class_map, hist_rows, hist_features, hist_orb_get
 
 
-def _protected_inference(candidate, core, class_map, output_root: Path, device: str):
+def _preflight_kaggle_capacity(
+    *,
+    scratch_root: Path,
+    device: str,
+    audit_policy,
+    expected_external_images: int,
+) -> dict[str, Any]:
+    import torch
+
+    if not torch.cuda.is_available():
+        raise TrackBError("Track-B candidate audit requires CUDA")
+    device_count = int(torch.cuda.device_count())
+    names = [str(torch.cuda.get_device_name(i)) for i in range(device_count)]
+    if device_count < 2 or any("T4" not in name.upper() for name in names[:2]):
+        raise TrackBError(
+            "Track-B v5 release requires the qualified Kaggle T4 x2 accelerator surface; "
+            f"observed devices={names}"
+        )
+
+    dev = torch.device(device)
+    with torch.cuda.device(dev):
+        free_vram, total_vram = torch.cuda.mem_get_info()
+    min_total_vram = 12 * 1024**3
+    min_free_vram = 8 * 1024**3
+    if int(total_vram) < min_total_vram or int(free_vram) < min_free_vram:
+        raise TrackBError(
+            "insufficient GPU memory before candidate audit: "
+            f"free={int(free_vram)}, total={int(total_vram)}, "
+            f"required_free={min_free_vram}, required_total={min_total_vram}"
+        )
+
+    # Worst-case ORB cache: xy(float32 x2) + descriptor(32 uint8) per
+    # feature, with temporary chunk + final packed arrays coexisting.
+    per_feature_bytes = 40
+    orb_payload = (
+        int(expected_external_images)
+        * int(audit_policy.orb_nfeatures)
+        * per_feature_bytes
+    )
+    required_scratch = int(orb_payload * 2.2) + 2 * 1024**3
+    free_scratch = int(shutil.disk_usage(scratch_root).free)
+    if free_scratch < required_scratch:
+        raise TrackBError(
+            "insufficient scratch disk before candidate ORB audit: "
+            f"free={free_scratch}, required={required_scratch}, "
+            f"projected_orb_payload={orb_payload}"
+        )
+
+    return {
+        "status": "PASS",
+        "cuda_device_count": device_count,
+        "cuda_devices": names,
+        "free_vram_bytes": int(free_vram),
+        "total_vram_bytes": int(total_vram),
+        "scratch_free_bytes": free_scratch,
+        "scratch_required_bytes": required_scratch,
+        "projected_orb_payload_bytes": int(orb_payload),
+    }
+
+
+def _protected_inference(candidate, core, class_map, output_root: Path, device: str, audit_policy):
     if candidate["grade"] not in {"EXT-I", "EXT-S"}:
         return None
     stage(f"5 :: protected R07 inference :: {candidate['candidate_id']}")
@@ -771,7 +1080,12 @@ def _protected_inference(candidate, core, class_map, output_root: Path, device: 
         torch.cuda.empty_cache()
     validate_same_prediction_surface(prediction_sets)
     summary = three_seed_summary(seed_metrics)
-    bootstrap = bootstrap_three_seed_macro_f1(prediction_sets, mapped_indices)
+    bootstrap = bootstrap_three_seed_macro_f1(
+        prediction_sets,
+        mapped_indices,
+        replicates=audit_policy.bootstrap_replicates,
+        seed=audit_policy.bootstrap_seed,
+    )
     analysis_dir = output_root / "analysis" / candidate["candidate_id"]
     analysis_dir.mkdir(parents=True, exist_ok=True)
     atomic_write_json(analysis_dir / "seed_metrics.json", seed_metrics)
@@ -800,7 +1114,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def _independent_candidate_qa(candidate, output_root: Path) -> dict[str, Any]:
+def _independent_candidate_qa(candidate, output_root: Path, audit_policy) -> dict[str, Any]:
     cid = candidate["candidate_id"]
     seal_path = candidate["root"] / "seal.json"
     seal = load_json(seal_path)
@@ -857,7 +1171,12 @@ def _independent_candidate_qa(candidate, output_root: Path) -> dict[str, Any]:
         persisted_summary = load_json(output_root / "analysis" / cid / "three_seed_summary.json")
         if sha256_json(summary) != sha256_json(persisted_summary):
             raise TrackBError(f"{cid}: three-seed summary does not independently recompute")
-        bootstrap = bootstrap_three_seed_macro_f1(seed_rows, mapped_indices)
+        bootstrap = bootstrap_three_seed_macro_f1(
+            seed_rows,
+            mapped_indices,
+            replicates=audit_policy.bootstrap_replicates,
+            seed=audit_policy.bootstrap_seed,
+        )
         persisted_bootstrap = load_json(output_root / "analysis" / cid / "bootstrap.json")
         if sha256_json(bootstrap) != sha256_json(persisted_bootstrap):
             raise TrackBError(f"{cid}: bootstrap does not independently reproduce")
@@ -867,11 +1186,450 @@ def _independent_candidate_qa(candidate, output_root: Path) -> dict[str, Any]:
     return result
 
 
+def _prediction_blind_science_manifest(output_root: Path, core, historical, candidates) -> dict[str, Any]:
+    """Build the stable pre-inference science identity used by qualification, claim authorization and rerun ancestry.
+
+    Deliberately excludes execution timestamps, candidate seal self-hashes, acquisition retrieval timestamps,
+    and whole transport manifests whose metadata may vary across byte-identical reacquisitions.
+    """
+    payload: dict[str, Any] = {
+        "schema_version": "2.0",
+        "authority_id": AUTHORITY_ID,
+        "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
+        "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
+        "code_attestation_sha256": sha256_file(resolve_bundle_file(core, "code_attestation")),
+        "class_map_sha256": CLASS_MAP_SHA256,
+        "dataset_manifest_sha256": DATASET_MANIFEST_SHA256,
+        "authorized_r07_checkpoint_sha256": R07_CHECKPOINTS,
+        "historical_compare": {
+            "coverage_scope": historical.manifest.get("coverage_scope"),
+            "image_count": int(historical.manifest.get("image_count", -1)),
+            "maximum_evidence_grade": historical.manifest.get("maximum_evidence_grade"),
+            "historical_manifest_sha256": sha256_file(resolve_bundle_file(historical, "historical_manifest")),
+            "dino_features_sha256": sha256_file(resolve_bundle_file(historical, "dino_features")),
+            "orb_offsets_sha256": sha256_file(resolve_bundle_file(historical, "orb_offsets")),
+            "orb_xy_sha256": sha256_file(resolve_bundle_file(historical, "orb_xy")),
+            "orb_desc_sha256": sha256_file(resolve_bundle_file(historical, "orb_desc")),
+            "orb_shapes_sha256": sha256_file(resolve_bundle_file(historical, "orb_shapes")),
+        },
+        "candidates": {},
+    }
+    for candidate in candidates:
+        cid = candidate["candidate_id"]
+        root = candidate["root"]
+        seal = candidate["seal"]
+        payload["candidates"][cid] = {
+            "candidate_id": cid,
+            "source_doi": seal["source_doi"],
+            "source_version": seal["source_version"],
+            "grade": seal["grade"],
+            "claim_mode": seal["claim_mode"],
+            "source_identity_ok": seal["source_identity_ok"],
+            "mapping_ok": seal["mapping_ok"],
+            "unresolved_lineage": seal["unresolved_lineage"],
+            "known_historical_contributor_relationship": seal["known_historical_contributor_relationship"],
+            "mapping_sha256": seal["mapping_sha256"],
+            "family_support": seal["family_support"],
+            "accepted_historical_link_count": int(seal["accepted_historical_link_count"]),
+            "historical_surface_complete": bool(seal["historical_surface_complete"]),
+            "source_manifest_sha256": sha256_file(root / "raw_manifest.csv"),
+            "decode_failure_ledger_sha256": sha256_file(root / "decode_failures.jsonl"),
+            "family_graph_sha256": sha256_file(root / "families.jsonl"),
+            "representative_manifest_sha256": sha256_file(root / "sealed_representatives.jsonl"),
+            "exclusion_ledger_sha256": sha256_file(root / "exclusions.jsonl"),
+            "accepted_within_edges_sha256": sha256_file(root / "accepted_within_edges.jsonl"),
+            "accepted_historical_edges_sha256": sha256_file(root / "accepted_historical_edges.jsonl"),
+            "within_comparison_summary_sha256": sha256_file(root / "within_comparison_summary.json"),
+            "historical_comparison_summary_sha256": sha256_file(root / "historical_comparison_summary.json"),
+        }
+    payload["qualification_science_sha256"] = sha256_json(payload)
+    atomic_write_json(output_root / "TRACKB_PREDICTION_BLIND_SCIENCE.json", payload)
+    return payload
+
+def _stable_science_manifest(output_root: Path, core, candidates) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "schema_version": "1.0",
+        "authority_id": AUTHORITY_ID,
+        "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
+        "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
+        "class_map_sha256": CLASS_MAP_SHA256,
+        "dataset_manifest_sha256": DATASET_MANIFEST_SHA256,
+        "authorized_r07_checkpoint_sha256": R07_CHECKPOINTS,
+        "candidates": {},
+    }
+    for candidate in candidates:
+        cid = candidate["candidate_id"]
+        root = candidate["root"]
+        seal = candidate["seal"]
+        row = {
+            "candidate_id": cid,
+            "source_doi": seal["source_doi"],
+            "source_version": seal["source_version"],
+            "grade": seal["grade"],
+            "claim_mode": seal["claim_mode"],
+            "mapping_sha256": seal["mapping_sha256"],
+            "family_support": seal["family_support"],
+            "accepted_historical_link_count": seal["accepted_historical_link_count"],
+            "source_manifest_sha256": sha256_file(root / "raw_manifest.csv"),
+            "family_graph_sha256": sha256_file(root / "families.jsonl"),
+            "representative_manifest_sha256": sha256_file(root / "sealed_representatives.jsonl"),
+            "exclusion_ledger_sha256": sha256_file(root / "exclusions.jsonl"),
+            "accepted_within_edges_sha256": sha256_file(root / "accepted_within_edges.jsonl"),
+            "accepted_historical_edges_sha256": sha256_file(root / "accepted_historical_edges.jsonl"),
+            "prediction_sha256": {},
+            "metric_sha256": {},
+            "analysis_sha256": {},
+        }
+        if seal["grade"] in {"EXT-I", "EXT-S"}:
+            for seed in ("S1", "S2", "S3"):
+                row["prediction_sha256"][seed] = sha256_file(
+                    output_root / "inference" / cid / seed / "predictions.jsonl"
+                )
+                row["metric_sha256"][seed] = sha256_file(
+                    output_root / "inference" / cid / seed / "metrics.json"
+                )
+            for name in ("seed_metrics.json", "three_seed_summary.json", "bootstrap.json"):
+                row["analysis_sha256"][name] = sha256_file(output_root / "analysis" / cid / name)
+        payload["candidates"][cid] = row
+    payload["trackb_science_sha256"] = sha256_json(payload)
+    atomic_write_json(output_root / "TRACKB_SCIENCE_MANIFEST.json", payload)
+    return payload
+
+
+def _load_claim_qualification(
+    *,
+    qualification_root: Path,
+    output_root: Path,
+    authorized_sha: str,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    qualification_root = Path(qualification_root).resolve()
+    required = (
+        "TRACKB_PREINFERENCE_QUALIFICATION.json",
+        "TRACKB_PREINFERENCE_QA.json",
+        "TRACKB_PREDICTION_BLIND_SCIENCE.json",
+        "TRACKB_PREDICTION_FIREWALL.json",
+    )
+    missing = [name for name in required if not (qualification_root / name).is_file()]
+    if missing:
+        raise TrackBError(f"claim qualification handoff is incomplete: missing={missing}")
+
+    qualification = load_json(
+        qualification_root / "TRACKB_PREINFERENCE_QUALIFICATION.json"
+    )
+    qualification_clean = dict(qualification)
+    observed_qualification_hash = str(
+        qualification_clean.pop("qualification_sha256", "")
+    )
+    if (
+        len(observed_qualification_hash) != 64
+        or sha256_json(qualification_clean) != observed_qualification_hash
+    ):
+        raise TrackBError("claim qualification self-hash mismatch")
+    if qualification.get("status") != "PASS_PREDICTION_BLIND_QUALIFICATION":
+        raise TrackBError("claim handoff qualification is not terminal PASS")
+    if int(qualification.get("protected_external_prediction_count", -1)) != 0:
+        raise TrackBError("claim handoff qualification contains protected predictions")
+    if qualification.get("v1_test_accessed") is not False:
+        raise TrackBError("claim handoff qualification violates V1-test closure")
+
+    science = load_json(qualification_root / "TRACKB_PREDICTION_BLIND_SCIENCE.json")
+    science_clean = dict(science)
+    observed_science_hash = str(
+        science_clean.pop("qualification_science_sha256", "")
+    )
+    if (
+        len(observed_science_hash) != 64
+        or sha256_json(science_clean) != observed_science_hash
+    ):
+        raise TrackBError("claim prediction-blind science self-hash mismatch")
+    if observed_science_hash != authorized_sha:
+        raise TrackBError(
+            "claim qualification handoff differs from the reviewed science SHA"
+        )
+    if str(qualification.get("qualification_science_sha256", "")) != authorized_sha:
+        raise TrackBError("claim qualification/science digest binding mismatch")
+
+    qa = load_json(qualification_root / "TRACKB_PREINFERENCE_QA.json")
+    if qa.get("status") != "PASS_INDEPENDENT_PREINFERENCE_QA":
+        raise TrackBError("claim handoff independent pre-inference QA is not PASS")
+    if str(qa.get("qualification_science_sha256", "")) != authorized_sha:
+        raise TrackBError("claim handoff QA science digest mismatch")
+    firewall = load_json(qualification_root / "TRACKB_PREDICTION_FIREWALL.json")
+    if firewall.get("status") != "PASS":
+        raise TrackBError("claim handoff prediction firewall is not PASS")
+    if int(firewall.get("external_predictions_before_this_attempt_firewall", -1)) != 0:
+        raise TrackBError("claim handoff firewall is not prediction-blind")
+
+    for name in required:
+        shutil.copy2(qualification_root / name, output_root / name)
+    for optional in (
+        "dino_audit_encoder_identity.json",
+        "TRACKB_CAPACITY_PREFLIGHT.json",
+    ):
+        source = qualification_root / optional
+        if source.is_file():
+            shutil.copy2(source, output_root / f"qualification_{optional}")
+
+    loaded: dict[str, dict[str, Any]] = {}
+    for cid in ("gvlid_grape", "irish_potato"):
+        src_root = qualification_root / "candidates" / cid
+        if not src_root.is_dir():
+            raise TrackBError(f"claim handoff candidate evidence missing: {cid}")
+        dst_root = output_root / "candidates" / cid
+        shutil.copytree(src_root, dst_root)
+        seal = load_json(dst_root / "seal.json")
+        verify_candidate_seal(seal)
+        expected = (qualification.get("candidates") or {}).get(cid)
+        if not isinstance(expected, dict):
+            raise TrackBError(f"claim qualification missing candidate: {cid}")
+        if seal.get("seal_sha256") != expected.get("seal_sha256"):
+            raise TrackBError(f"claim candidate seal differs from reviewed qualification: {cid}")
+        reps = _read_jsonl(dst_root / "sealed_representatives.jsonl")
+        loaded[cid] = {
+            "candidate_id": cid,
+            "root": dst_root,
+            "grade": seal["grade"],
+            "seal": seal,
+            "representatives": reps,
+        }
+
+    return loaded["gvlid_grape"], loaded["irish_potato"], science
+
+
+def _execute_protected_claim_from_qualification(
+    *,
+    args,
+    inputs,
+    core,
+    class_map,
+    audit_policy,
+    output_root: Path,
+    started: float,
+) -> int:
+    authorized_sha = str(args.authorized_qualification_science_sha256).strip().lower()
+    if (
+        len(authorized_sha) != 64
+        or any(ch not in "0123456789abcdef" for ch in authorized_sha)
+    ):
+        raise TrackBError("claim mode requires the reviewed qualification science SHA-256")
+    if not args.qualification_root:
+        raise TrackBError("claim mode requires --qualification-root")
+
+    grape, potato, prediction_blind_science = _load_claim_qualification(
+        qualification_root=Path(args.qualification_root),
+        output_root=output_root,
+        authorized_sha=authorized_sha,
+    )
+    atomic_write_json(
+        output_root / "TRACKB_QUALIFICATION_AUTHORIZATION.json",
+        {
+            "schema_version": "3.0",
+            "status": "PASS_IMMUTABLE_REVIEWED_QUALIFICATION_HANDOFF",
+            "authorized_qualification_science_sha256": authorized_sha,
+            "current_qualification_science_sha256": prediction_blind_science[
+                "qualification_science_sha256"
+            ],
+            "protected_inference_authorized": True,
+            "qualification_recomputed": False,
+        },
+    )
+
+    claim_candidates = [
+        candidate
+        for candidate in (grape, potato)
+        if candidate["grade"] in {"EXT-I", "EXT-S"}
+    ]
+    attempt_state = None
+    if claim_candidates:
+        if (
+            not args.attempt_dataset_slug
+            or not args.claim_lease_dataset_slug
+            or not args.materialization_id
+            or not args.attempt_id
+            or len(str(args.source_git_sha)) != 40
+        ):
+            raise TrackBError(
+                "protected inference requires attempt-ledger slug, claim-lease slug, "
+                "materialization identity, attempt ID, and exact source Git SHA"
+            )
+        previous = read_latest_attempt_state(args.attempt_dataset_slug)
+        rerun_gate = validate_prior_attempt_for_rerun(
+            previous,
+            current_science_preimage_sha256=authorized_sha,
+        )
+        lease_payload = {
+            "schema_version": "1.0",
+            "status": "CLAIM_LEASE_ACQUIRED",
+            "attempt_id": str(args.attempt_id),
+            "science_preimage_sha256": authorized_sha,
+            "materialization_id": str(args.materialization_id),
+            "source_git_sha": str(args.source_git_sha),
+        }
+        lease_receipt = acquire_claim_lease(
+            str(args.claim_lease_dataset_slug),
+            lease_payload,
+        )
+        atomic_write_json(output_root / "TRACKB_CLAIM_LEASE.json", lease_payload)
+        atomic_write_json(
+            output_root / "TRACKB_CLAIM_LEASE_RECEIPT.json",
+            lease_receipt,
+        )
+        attempt_state = {
+            "schema_version": "2.0",
+            "attempt_id": str(args.attempt_id),
+            "status": "PROTECTED_INFERENCE_STARTED",
+            "protected_inference_ever": True,
+            "started_at_utc": utc_now(),
+            "source_git_sha": str(args.source_git_sha),
+            "materialization_id": str(args.materialization_id),
+            "claim_lease_dataset_slug": str(args.claim_lease_dataset_slug),
+            "claim_lease_sha256": lease_receipt["lease_sha256"],
+            "science_preimage_sha256": authorized_sha,
+            "science_preimage": prediction_blind_science,
+            "qualification_recomputed": False,
+            "parent_attempt_id": rerun_gate["parent_attempt_id"],
+            "prior_attempt_with_protected_inference": rerun_gate[
+                "prior_attempt_with_protected_inference"
+            ],
+        }
+        atomic_write_json(output_root / "TRACKB_ATTEMPT_STATE.json", attempt_state)
+        attempt_receipt = publish_attempt_state(
+            args.attempt_dataset_slug,
+            attempt_state,
+        )
+        atomic_write_json(
+            output_root / "TRACKB_ATTEMPT_PUBLICATION.json",
+            attempt_receipt,
+        )
+
+    _inject_image_paths(grape, inputs["gvlid_v5"])
+    _inject_image_paths(potato, inputs["irish_potato"])
+    _protected_inference(
+        grape, core, class_map, output_root, args.device, audit_policy
+    )
+    _protected_inference(
+        potato, core, class_map, output_root, args.device, audit_policy
+    )
+
+    stage("7 :: independent closure QA")
+    qa = {
+        "schema_version": "2.0",
+        "status": "PASS",
+        "candidate_qa": {},
+        "v1_test_accessed": False,
+        "new_training_performed": False,
+        "external_predictions_before_candidate_seal": False,
+        "qualification_recomputed": False,
+    }
+    for candidate in (grape, potato):
+        qa["candidate_qa"][candidate["candidate_id"]] = _independent_candidate_qa(
+            candidate, output_root, audit_policy
+        )
+    qa["qa_sha256"] = sha256_json(
+        {k: v for k, v in qa.items() if k != "qa_sha256"}
+    )
+    atomic_write_json(output_root / "TRACKB_FINAL_QA.json", qa)
+
+    science_manifest = _stable_science_manifest(output_root, core, (grape, potato))
+    if attempt_state is not None:
+        attempt_state = {
+            **attempt_state,
+            "status": "SCIENCE_QA_PASS",
+            "science_qa_pass_at_utc": utc_now(),
+            "trackb_science_sha256": science_manifest["trackb_science_sha256"],
+            "final_qa_sha256": qa["qa_sha256"],
+        }
+        atomic_write_json(output_root / "TRACKB_ATTEMPT_STATE.json", attempt_state)
+        science_qa_receipt = publish_attempt_state(
+            args.attempt_dataset_slug, attempt_state
+        )
+        atomic_write_json(
+            output_root / "TRACKB_ATTEMPT_SCIENCE_QA_PUBLICATION.json",
+            science_qa_receipt,
+        )
+
+    _require_remaining_time(
+        args.deadline_epoch,
+        required_seconds=45 * 60,
+        stage_name="claim evidence packaging",
+    )
+    packages = _package_outputs(output_root)
+    atomic_write_json(output_root / "TRACKB_PACKAGE_MANIFEST.json", packages)
+    closure = {
+        "schema_version": "3.0",
+        "status": "TRACK_B_CLOSED",
+        "authority_id": AUTHORITY_ID,
+        "elapsed_seconds": time.time() - started,
+        "candidate_status": qa["candidate_qa"],
+        "final_qa_sha256": qa["qa_sha256"],
+        "trackb_science_sha256": science_manifest["trackb_science_sha256"],
+        "science_manifest_sha256": sha256_file(
+            output_root / "TRACKB_SCIENCE_MANIFEST.json"
+        ),
+        "package_manifest_sha256": sha256_file(
+            output_root / "TRACKB_PACKAGE_MANIFEST.json"
+        ),
+        "package_verification_status": packages["status"],
+        "v1_test_accessed": False,
+        "new_training_performed": False,
+        "external_predictions_before_candidate_seal": False,
+        "qualification_recomputed": False,
+    }
+    closure["closure_sha256"] = sha256_json(
+        {k: v for k, v in closure.items() if k != "closure_sha256"}
+    )
+    atomic_write_json(output_root / "TRACKB_FINAL_CLOSURE.json", closure)
+    print(json.dumps({**closure, "packages": packages}, indent=2, sort_keys=True))
+    return 0
+
+
+def _verify_zip_archive(path: Path) -> dict[str, Any]:
+    import hashlib
+    import zipfile
+
+    members = {}
+    with zipfile.ZipFile(path, "r") as zf:
+        bad = zf.testzip()
+        if bad is not None:
+            raise TrackBError(f"evidence ZIP CRC verification failed at member: {bad}")
+        for info in zf.infolist():
+            if info.is_dir():
+                continue
+            h = hashlib.sha256()
+            with zf.open(info, "r") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    h.update(chunk)
+            members[info.filename] = {
+                "bytes": info.file_size,
+                "sha256": h.hexdigest(),
+            }
+    if not members:
+        raise TrackBError(f"evidence ZIP is empty: {path}")
+    return {
+        "member_count": len(members),
+        "members_sha256": sha256_json(members),
+    }
+
+
 def _package_outputs(output_root: Path) -> dict[str, Any]:
     import zipfile
+
+    existing_bytes = sum(
+        int(path.stat().st_size)
+        for path in output_root.rglob("*")
+        if path.is_file()
+        and path.name not in {"TRACKB_COMPLETE_EVIDENCE.zip", "TRACKB_PUBLIC_EVIDENCE.zip"}
+    )
+    free_bytes = int(shutil.disk_usage(output_root).free)
+    required_bytes = int(existing_bytes * 1.25) + 512 * 1024 * 1024
+    if free_bytes < required_bytes:
+        raise TrackBError(
+            "insufficient disk before Track-B evidence packaging: "
+            f"free={free_bytes}, required={required_bytes}, existing={existing_bytes}"
+        )
     complete = output_root / "TRACKB_COMPLETE_EVIDENCE.zip"
     public = output_root / "TRACKB_PUBLIC_EVIDENCE.zip"
-    exclude = {complete.name, public.name}
+    exclude = {complete.name, public.name, "TRACKB_FINAL_CLOSURE.json", "TRACKB_PACKAGE_MANIFEST.json"}
     with zipfile.ZipFile(complete, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
         for path in sorted(output_root.rglob("*")):
             if path.is_file() and path.name not in exclude:
@@ -883,35 +1641,69 @@ def _package_outputs(output_root: Path) -> dict[str, Any]:
         output_root / "dino_audit_encoder_identity.json",
         output_root / "TRACKB_PREDICTION_FIREWALL.json",
         output_root / "TRACKB_FINAL_QA.json",
-        output_root / "TRACKB_FINAL_CLOSURE.json",
+        output_root / "TRACKB_SCIENCE_MANIFEST.json",
     ]:
-        if path.is_file(): public_allow.append(path)
+        if path.is_file():
+            public_allow.append(path)
     for candidate_dir in sorted((output_root / "candidates").glob("*")) if (output_root / "candidates").exists() else []:
         for name in ("audit_summary.json", "seal.json"):
             path = candidate_dir / name
-            if path.is_file(): public_allow.append(path)
+            if path.is_file():
+                public_allow.append(path)
     for analysis_dir in sorted((output_root / "analysis").glob("*")) if (output_root / "analysis").exists() else []:
         for name in ("seed_metrics.json", "three_seed_summary.json", "bootstrap.json"):
             path = analysis_dir / name
-            if path.is_file(): public_allow.append(path)
+            if path.is_file():
+                public_allow.append(path)
     with zipfile.ZipFile(public, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
         for path in public_allow:
             zf.write(path, path.relative_to(output_root).as_posix())
+
+    complete_verification = _verify_zip_archive(complete)
+    public_verification = _verify_zip_archive(public)
     return {
-        "complete_evidence_zip": {"bytes": complete.stat().st_size, "sha256": sha256_file(complete)},
-        "public_evidence_zip": {"bytes": public.stat().st_size, "sha256": sha256_file(public)},
+        "schema_version": "2.0",
+        "status": "PASS",
+        "closure_written_after_package_verification": True,
+        "complete_evidence_zip": {
+            "bytes": complete.stat().st_size,
+            "sha256": sha256_file(complete),
+            **complete_verification,
+        },
+        "public_evidence_zip": {
+            "bytes": public.stat().st_size,
+            "sha256": sha256_file(public),
+            **public_verification,
+        },
     }
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="CropCop Track B R07 end-to-end external-validation runner")
     ap.add_argument("--input-root", default="/kaggle/input")
     ap.add_argument("--output-root", default="/kaggle/working/trackb_r07")
+    ap.add_argument("--scratch-root", default="/kaggle/tmp/cropcop_trackb_r07_audit")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--workers", type=int, default=4)
-    ap.add_argument("--mode", choices=["preflight", "all"], default="all")
+    ap.add_argument(
+        "--mode",
+        choices=["preflight", "qualification", "claim", "all"],
+        default="qualification",
+    )
+    ap.add_argument("--source-git-sha", default="")
+    ap.add_argument("--attempt-dataset-slug", default="")
+    ap.add_argument("--claim-lease-dataset-slug", default="")
+    ap.add_argument("--materialization-id", default="")
+    ap.add_argument("--attempt-id", default="")
+    ap.add_argument("--authorized-qualification-science-sha256", default="")
+    ap.add_argument("--qualification-root", default="")
+    ap.add_argument("--deadline-epoch", type=float, default=0.0)
     args = ap.parse_args()
 
     output_root = Path(args.output_root).resolve()
+    audit_scratch_root = Path(args.scratch_root).resolve()
+    if audit_scratch_root.exists():
+        shutil.rmtree(audit_scratch_root)
+    audit_scratch_root.mkdir(parents=True, exist_ok=False)
     if output_root.exists() and any(output_root.iterdir()):
         raise TrackBError(f"output root must be empty for a clean claim run: {output_root}")
     output_root.mkdir(parents=True, exist_ok=True)
@@ -921,10 +1713,40 @@ def main() -> int:
     core = inputs["core"]
     historical = inputs["historical_compare"]
     authority, lock, class_map, hist_rows, hist_features, hist_orb_get = _preflight(core, historical, output_root, args.device)
+    audit_policy = audit_policy_from_lock(lock)
+    determinism = _configure_determinism()
+    atomic_write_json(output_root / "TRACKB_DETERMINISM.json", determinism)
+    capacity = _preflight_kaggle_capacity(
+        scratch_root=audit_scratch_root,
+        device=args.device,
+        audit_policy=audit_policy,
+        expected_external_images=0 if args.mode == "claim" else 3477 + 58709,
+    )
+    atomic_write_json(output_root / "TRACKB_CAPACITY_PREFLIGHT.json", capacity)
     if args.mode == "preflight":
         atomic_write_json(output_root / "PREFLIGHT_PASS.json", {"status": "PASS", "authority_id": AUTHORITY_ID})
         return 0
+    if args.mode == "claim":
+        _require_remaining_time(
+            args.deadline_epoch,
+            required_seconds=2 * 3600,
+            stage_name="protected claim",
+        )
+        return _execute_protected_claim_from_qualification(
+            args=args,
+            inputs=inputs,
+            core=core,
+            class_map=class_map,
+            audit_policy=audit_policy,
+            output_root=output_root,
+            started=started,
+        )
 
+    _require_remaining_time(
+        args.deadline_epoch,
+        required_seconds=5 * 3600,
+        stage_name="prediction-blind qualification",
+    )
     stage("1-4 :: prediction-blind source verification, family audit, grade, and seal")
     dino_model, dino_identity = _load_dino(core)
     atomic_write_json(output_root / "dino_audit_encoder_identity.json", dino_identity)
@@ -940,6 +1762,8 @@ def main() -> int:
         expected_label_support=None,
         workers=args.workers, device=args.device,
         dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
+        audit_policy=audit_policy,
+        audit_scratch_root=audit_scratch_root,
     )
     potato = _audit_candidate(
         candidate_id="irish_potato",
@@ -950,6 +1774,8 @@ def main() -> int:
         expected_label_support=lock["candidate_b"].get("expected_source_support"),
         workers=args.workers, device=args.device,
         dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
+        audit_policy=audit_policy,
+        audit_scratch_root=audit_scratch_root,
     )
     del dino_model
     import torch
@@ -965,17 +1791,151 @@ def main() -> int:
         "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
         "candidate_terminal_grades": {grape["candidate_id"]: grape["grade"], potato["candidate_id"]: potato["grade"]},
         "candidate_seal_sha256": {grape["candidate_id"]: grape["seal"]["seal_sha256"], potato["candidate_id"]: potato["seal"]["seal_sha256"]},
-        "external_predictions_before_firewall": 0,
+        "external_predictions_before_this_attempt_firewall": 0,
+        "prediction_firewall_scope": "CURRENT_EXECUTION_ATTEMPT_ONLY",
         "v1_test_accessed": False,
         "all_three_r07_checkpoints_bound": True,
     }
     atomic_write_json(output_root / "TRACKB_PREDICTION_FIREWALL.json", firewall)
 
+    prediction_blind_science = _prediction_blind_science_manifest(
+        output_root, core, historical, (grape, potato)
+    )
+    qualification = {
+        "schema_version": "2.0",
+        "qualification_science_sha256": prediction_blind_science["qualification_science_sha256"],
+        "prediction_blind_science_manifest_sha256": sha256_file(
+            output_root / "TRACKB_PREDICTION_BLIND_SCIENCE.json"
+        ),
+        "status": "PASS_PREDICTION_BLIND_QUALIFICATION",
+        "authority_id": AUTHORITY_ID,
+        "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
+        "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
+        "code_attestation_sha256": sha256_file(resolve_bundle_file(core, "code_attestation")),
+        "historical_compare_input_manifest_sha256": sha256_file(historical.manifest_path),
+        "historical_compare_scope": historical.manifest.get("coverage_scope"),
+        "historical_compare_image_count": int(historical.manifest.get("image_count", -1)),
+        "historical_maximum_evidence_grade": historical.manifest.get("maximum_evidence_grade"),
+        "v1_test_accessed": False,
+        "new_training_performed": False,
+        "protected_external_prediction_count": 0,
+        "prediction_firewall_sha256": sha256_file(output_root / "TRACKB_PREDICTION_FIREWALL.json"),
+        "candidates": {},
+    }
+    for candidate in (grape, potato):
+        seal = candidate["seal"]
+        qualification["candidates"][candidate["candidate_id"]] = {
+            "grade": seal["grade"],
+            "claim_mode": seal["claim_mode"],
+            "seal_sha256": seal["seal_sha256"],
+            "candidate_input_manifest_sha256": seal["candidate_input_manifest_sha256"],
+            "source_manifest_sha256": seal["source_manifest_sha256"],
+            "source_metadata_record_sha256": seal["source_metadata_record_sha256"],
+            "family_graph_sha256": seal["family_graph_sha256"],
+            "representative_manifest_sha256": seal["representative_manifest_sha256"],
+            "accepted_historical_edges_sha256": seal["accepted_historical_edges_sha256"],
+            "exclusion_ledger_sha256": seal["exclusion_ledger_sha256"],
+            "decode_failure_ledger_sha256": seal["decode_failure_ledger_sha256"],
+            "family_support": seal["family_support"],
+            "accepted_historical_link_count": int(seal["accepted_historical_link_count"]),
+            "historical_surface_complete": bool(seal["historical_surface_complete"]),
+        }
+    qualification["qualification_sha256"] = sha256_json(
+        {k: v for k, v in qualification.items() if k != "qualification_sha256"}
+    )
+    atomic_write_json(output_root / "TRACKB_PREINFERENCE_QUALIFICATION.json", qualification)
+
+    if args.mode == "qualification":
+        print(json.dumps(qualification, indent=2, sort_keys=True))
+        return 0
+
+    authorized_qualification_science = str(
+        args.authorized_qualification_science_sha256
+    ).strip().lower()
+    if (
+        len(authorized_qualification_science) != 64
+        or any(ch not in "0123456789abcdef" for ch in authorized_qualification_science)
+    ):
+        raise TrackBError(
+            "protected claim execution requires a reviewed "
+            "--authorized-qualification-science-sha256"
+        )
+    current_qualification_science = prediction_blind_science["qualification_science_sha256"]
+    if current_qualification_science != authorized_qualification_science:
+        raise TrackBError(
+            "current prediction-blind science identity does not match the reviewed qualification: "
+            f"authorized={authorized_qualification_science}, current={current_qualification_science}"
+        )
+    atomic_write_json(
+        output_root / "TRACKB_QUALIFICATION_AUTHORIZATION.json",
+        {
+            "schema_version": "2.0",
+            "status": "PASS_MATCHED_REVIEWED_QUALIFICATION_SCIENCE",
+            "authorized_qualification_science_sha256": authorized_qualification_science,
+            "current_qualification_science_sha256": current_qualification_science,
+            "protected_inference_authorized": True,
+        },
+    )
+
+    claim_candidates = [candidate for candidate in (grape, potato) if candidate["grade"] in {"EXT-I", "EXT-S"}]
+    attempt_state = None
+    if claim_candidates:
+        if (
+            not args.attempt_dataset_slug
+            or not args.claim_lease_dataset_slug
+            or not args.materialization_id
+            or not args.attempt_id
+            or len(str(args.source_git_sha)) != 40
+        ):
+            raise TrackBError(
+                "protected inference requires attempt-ledger slug, claim-lease slug, "
+                "materialization identity, attempt ID, and exact source Git SHA"
+            )
+        preimage = prediction_blind_science
+        previous = read_latest_attempt_state(args.attempt_dataset_slug)
+        rerun_gate = validate_prior_attempt_for_rerun(
+            previous,
+            current_science_preimage_sha256=preimage["qualification_science_sha256"],
+        )
+        lease_payload = {
+            "schema_version": "1.0",
+            "status": "CLAIM_LEASE_ACQUIRED",
+            "attempt_id": str(args.attempt_id),
+            "science_preimage_sha256": preimage["qualification_science_sha256"],
+            "materialization_id": str(args.materialization_id),
+            "source_git_sha": str(args.source_git_sha),
+        }
+        lease_receipt = acquire_claim_lease(
+            str(args.claim_lease_dataset_slug),
+            lease_payload,
+        )
+        atomic_write_json(output_root / "TRACKB_CLAIM_LEASE.json", lease_payload)
+        atomic_write_json(output_root / "TRACKB_CLAIM_LEASE_RECEIPT.json", lease_receipt)
+
+        attempt_state = {
+            "schema_version": "1.0",
+            "attempt_id": str(args.attempt_id),
+            "status": "PROTECTED_INFERENCE_STARTED",
+            "protected_inference_ever": True,
+            "started_at_utc": utc_now(),
+            "source_git_sha": str(args.source_git_sha),
+            "materialization_id": str(args.materialization_id),
+            "claim_lease_dataset_slug": str(args.claim_lease_dataset_slug),
+            "claim_lease_sha256": lease_receipt["lease_sha256"],
+            "science_preimage_sha256": preimage["qualification_science_sha256"],
+            "science_preimage": preimage,
+            "parent_attempt_id": rerun_gate["parent_attempt_id"],
+            "prior_attempt_with_protected_inference": rerun_gate["prior_attempt_with_protected_inference"],
+        }
+        atomic_write_json(output_root / "TRACKB_ATTEMPT_STATE.json", attempt_state)
+        attempt_receipt = publish_attempt_state(args.attempt_dataset_slug, attempt_state)
+        atomic_write_json(output_root / "TRACKB_ATTEMPT_PUBLICATION.json", attempt_receipt)
+
     _inject_image_paths(grape, inputs["gvlid_v5"])
     _inject_image_paths(potato, inputs["irish_potato"])
     results = {
-        "gvlid_grape": _protected_inference(grape, core, class_map, output_root, args.device),
-        "irish_potato": _protected_inference(potato, core, class_map, output_root, args.device),
+        "gvlid_grape": _protected_inference(grape, core, class_map, output_root, args.device, audit_policy),
+        "irish_potato": _protected_inference(potato, core, class_map, output_root, args.device, audit_policy),
     }
 
     stage("7 :: independent closure QA")
@@ -988,25 +1948,45 @@ def main() -> int:
         "external_predictions_before_candidate_seal": False,
     }
     for candidate in (grape, potato):
-        qa["candidate_qa"][candidate["candidate_id"]] = _independent_candidate_qa(candidate, output_root)
+        qa["candidate_qa"][candidate["candidate_id"]] = _independent_candidate_qa(candidate, output_root, audit_policy)
     qa["qa_sha256"] = sha256_json({k: v for k, v in qa.items() if k != "qa_sha256"})
     atomic_write_json(output_root / "TRACKB_FINAL_QA.json", qa)
 
+    science_manifest = _stable_science_manifest(output_root, core, (grape, potato))
+    if attempt_state is not None:
+        attempt_state = {
+            **attempt_state,
+            "status": "SCIENCE_QA_PASS",
+            "science_qa_pass_at_utc": utc_now(),
+            "trackb_science_sha256": science_manifest["trackb_science_sha256"],
+            "final_qa_sha256": qa["qa_sha256"],
+        }
+        atomic_write_json(output_root / "TRACKB_ATTEMPT_STATE.json", attempt_state)
+        science_qa_receipt = publish_attempt_state(args.attempt_dataset_slug, attempt_state)
+        atomic_write_json(
+            output_root / "TRACKB_ATTEMPT_SCIENCE_QA_PUBLICATION.json",
+            science_qa_receipt,
+        )
+    packages = _package_outputs(output_root)
+    atomic_write_json(output_root / "TRACKB_PACKAGE_MANIFEST.json", packages)
+
     closure = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "status": "TRACK_B_CLOSED",
         "authority_id": AUTHORITY_ID,
         "elapsed_seconds": time.time() - started,
         "candidate_status": qa["candidate_qa"],
         "final_qa_sha256": qa["qa_sha256"],
+        "trackb_science_sha256": science_manifest["trackb_science_sha256"],
+        "science_manifest_sha256": sha256_file(output_root / "TRACKB_SCIENCE_MANIFEST.json"),
+        "package_manifest_sha256": sha256_file(output_root / "TRACKB_PACKAGE_MANIFEST.json"),
+        "package_verification_status": packages["status"],
         "v1_test_accessed": False,
         "new_training_performed": False,
         "external_predictions_before_candidate_seal": False,
     }
     closure["closure_sha256"] = sha256_json({k: v for k, v in closure.items() if k != "closure_sha256"})
     atomic_write_json(output_root / "TRACKB_FINAL_CLOSURE.json", closure)
-    packages = _package_outputs(output_root)
-    atomic_write_json(output_root / "TRACKB_PACKAGE_MANIFEST.json", packages)
     print(json.dumps({**closure, "packages": packages}, indent=2, sort_keys=True))
     return 0
 

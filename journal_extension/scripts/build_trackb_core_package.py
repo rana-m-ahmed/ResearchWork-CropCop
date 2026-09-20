@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import shutil
 import subprocess
 import sys
@@ -151,9 +152,24 @@ def _verify_run_record(path: Path, seed: str) -> dict:
     if str(selected_sha) != R07_CHECKPOINTS[seed]:
         raise TrackBError(f"R07 {seed} run record does not bind selected checkpoint")
     metrics = (obj.get("result_summary") or {}).get("selected_metrics") or {}
-    for key in ("accuracy", "balanced_accuracy", "macro_f1", "nll"):
-        if key not in metrics:
-            raise TrackBError(f"R07 {seed} run record lacks selected metric {key}")
+    required_metrics = (
+        "validation_accuracy",
+        "validation_balanced_accuracy",
+        "validation_macro_f1",
+        "validation_nll",
+    )
+    missing = [key for key in required_metrics if key not in metrics]
+    if missing:
+        raise TrackBError(
+            f"R07 {seed} run record lacks canonical selected replay metrics: {missing}"
+        )
+    for key in required_metrics:
+        try:
+            value = float(metrics[key])
+        except (TypeError, ValueError) as exc:
+            raise TrackBError(f"R07 {seed} selected replay metric is non-numeric: {key}") from exc
+        if not math.isfinite(value):
+            raise TrackBError(f"R07 {seed} selected replay metric is non-finite: {key}")
     return obj
 
 
@@ -259,9 +275,9 @@ def main() -> int:
         "--package-root", str(output),
         "--repository-root", "repository",
         "--v1-validation-root", "v1_validation",
-        "--downstream-authority", "repository/journal_extension/amendments/track_bc_r07_downstream_v2.json",
-        "--execution-lock", "repository/journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v2.json",
-        "--code-attestation", "repository/journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v2.json",
+        "--downstream-authority", "repository/journal_extension/amendments/track_bc_r07_downstream_v3.json",
+        "--execution-lock", "repository/journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v4.json",
+        "--code-attestation", "repository/journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v4.json",
         "--class-map", "authority/v1/class_to_idx.json",
         "--v1-manifest", "authority/v1/final_manifest.csv",
         "--r07-s1", "models/r07_s1.pt",
@@ -272,7 +288,7 @@ def main() -> int:
         "--r07-s3-run-record", "models/r07_s3_run_record.json",
         "--dino-checkpoint", "audit_encoder/DINO_TEACHER.pt",
         "--dino-factory-manifest", "audit_encoder/TEACHER_FACTORY_BUNDLE.json",
-        "--dino-factory-source-root", "repository",
+        "--dino-factory-source-root", "repository/journal_extension/teacher_factory",
     ]
     subprocess.run(cmd, cwd=repo_copy, check=True)
 

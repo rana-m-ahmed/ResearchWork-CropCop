@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
+  "status": "REMEDIATION_IN_PROGRESS",
+  "executable": false,
+  "scientific_change": false,
+  "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
+  "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
+  "runtime_source_commit": "",
+  "bindings": {
+    "code_attestation_sha256": "",
+    "execution_lock_sha256": "",
+    "materialization_lock_sha256": "",
+    "external_source_lock_sha256": "",
+    "requirements_lock_sha256": "",
+    "operator_notebook_00_blob_sha1": "",
+    "operator_notebook_01_blob_sha1": ""
+  },
+  "supported_operator_notebooks": [
+    "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
+    "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb"
+  ],
+  "required_kaggle_inputs": {
+    "readiness": [
+      "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1",
+      "sabahatabbas/sec-je-r07-cnxtt-context-s1-8904b100d223-a01",
+      "sabahatabbas/cropcop-r07-cnxtt-context-s2-abce1197-56023042",
+      "sabahatabbas/cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
+      "ranamuhammadahmed6/cropcop-secondary-g1-8904b100"
+    ],
+    "qualification": [
+      "TRACKB_INFRASTRUCTURE",
+      "TRACKB_EXTERNAL"
+    ],
+    "claim": [
+      "TRACKB_INFRASTRUCTURE",
+      "TRACKB_EXTERNAL",
+      "TRACKB_QUALIFICATION"
+    ]
+  },
+  "safety": {
+    "v1_test_accessed": false,
+    "protected_external_predictions_before_claim": 0,
+    "attached_code_must_be_authenticated_before_execution": true,
+    "full_attached_bundle_content_verification_required": true,
+    "claim_requires_single_writer_lease": true,
+    "claim_must_not_recompute_qualification": true,
+    "automatic_deletion_of_existing_authoritative_outputs_forbidden": true
+  },
+  "seal_requirements": [
+    "runtime_source_commit must be an exact 40-character commit",
+    "all bindings must be populated and verified",
+    "external source lock must permit materialization for every candidate",
+    "operator notebooks must be regenerated from the final runtime snapshot",
+    "all Track-B QA and integration tests must pass"
+  ]
+}
