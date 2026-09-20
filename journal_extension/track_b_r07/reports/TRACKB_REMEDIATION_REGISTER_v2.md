@@ -38,3 +38,11 @@ Protected external inference remains **HOLD** until:
 - qualification PASS;
 - independent Q3 PASS;
 - reviewed science digest authorization.
+
+## Additional real-Kaggle readiness remediation
+
+A real Notebook-00 run exposed a packaging ambiguity in the Final-V1 Kaggle dataset: the expected hash-valid `final_manifest.csv` and `class_to_idx.json` existed both in the image-backed `CropCop_Final_v1/audit/` tree and in `CropCop_Final_v1_CERTIFICATION_REPORTS/audit/`. The legacy core builder correctly failed closed because it required global uniqueness.
+
+The v4 readiness layer now resolves exactly one authority pair only when both hash-valid files share a directory that is structurally bound to a real `dataset/train` + `dataset/val` tree. It then exposes a temporary canonical Final-V1 view to the unchanged legacy core builder. If two image-backed authority pairs exist, readiness still fails closed.
+
+This remediation changes packaging resolution only; it does not modify Final-V1 bytes, hashes, split assignments, R07 science, or the v3 scientific attestation.
