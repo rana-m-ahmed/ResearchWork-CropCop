@@ -159,6 +159,27 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             )
 
 
+    def test_trackb_core_builder_binds_dino_factory_to_dedicated_source_root(self):
+        source = (SCRIPTS / "build_trackb_core_package.py").read_text(encoding="utf-8")
+        self.assertIn(
+            '"--dino-factory-source-root", "repository/journal_extension/teacher_factory"',
+            source,
+        )
+        self.assertNotIn(
+            '"--dino-factory-source-root", "repository",',
+            source,
+        )
+
+    def test_trackb_dino_prequalification_validates_sealed_factory_sources(self):
+        source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
+        self.assertIn("validate_teacher_factory_bundle(", source)
+        self.assertIn(
+            'repo_root / "journal_extension" / "teacher_factory"',
+            source,
+        )
+        self.assertIn('"factory_source_validation": "PASS"', source)
+
+
     def test_embedded_replay_authority_matches_frozen_trackb_contract(self):
         authority = ROOT / "journal_extension" / "track_b_r07" / "replay_authority"
         s1 = authority / "R07_S1_ORIGINAL_RUN_RECORD.json"
