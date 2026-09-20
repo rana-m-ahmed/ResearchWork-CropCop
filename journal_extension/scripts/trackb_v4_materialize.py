@@ -920,9 +920,19 @@ def main() -> int:
 
     stage("1 :: authoritative external cohorts — fail-fast sealed acquisition")
     lineage_review = repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json"
+    gvlid_authority = (
+        (source_lock.get("candidates") or {})
+        .get("gvlid_v5", {})
+        .get("checksum_authority", {})
+    )
+    gvlid_ledger = repo_root / str(gvlid_authority.get("vendored_ledger", ""))
     acquire_gvlid_v5(
         gvlid_root,
         lineage_review_path=lineage_review,
+        checksum_ledger_path=gvlid_ledger,
+        expected_checksum_ledger_git_blob_sha1=str(
+            gvlid_authority.get("official_blob_sha1", "")
+        ),
         expected_source_manifest_sha256=str(
             (external_probe.get("gvlid_v5") or {}).get("public_api_manifest_sha256", "")
         ),
