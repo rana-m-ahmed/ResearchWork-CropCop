@@ -112,16 +112,16 @@ def _preflight_historical_components(
     if str(device).startswith("cuda") and not torch.cuda.is_available():
         raise TrackBError("CUDA requested for historical preflight but unavailable")
 
-    samples: list[tuple[str, str]] = []
-    for prefix in ("train/", "val/"):
-        row = next((row for row in rows if row[1].startswith(prefix)), None)
-        if row is None:
-            raise TrackBError(f"historical preflight could not select a {prefix[:-1]} sample")
-        samples.append(row)
+    train_samples = [row for row in rows if row[1].startswith("train/")][:32]
+    val_samples = [row for row in rows if row[1].startswith("val/")][:32]
+    dino_samples = train_samples + val_samples
+    if len(train_samples) != 32 or len(val_samples) != 32:
+        raise TrackBError("historical preflight could not assemble a 64-image train/val DINO batch")
+    orb_samples = [train_samples[0], val_samples[0]]
 
     tensors = []
     orb_rows = []
-    for hist_id, rel in samples:
+    for hist_id, rel in orb_samples:
         path = (image_root / rel).resolve()
         if image_root not in path.parents and path != image_root:
             raise TrackBError(f"historical preflight image path escapes root: {rel}")
@@ -134,13 +134,18 @@ def _preflight_historical_components(
             raise TrackBError(
                 f"historical ORB preflight shape mismatch: desc={orb['desc'].shape}, xy={orb['xy'].shape}"
             )
-        with Image.open(path) as im:
-            tensors.append(ctc_v2_eval_transform(im))
         orb_rows.append({
             "hist_id": hist_id,
             "relative_path": rel,
             "orb_keypoints": int(len(orb["desc"])),
         })
+
+    for _hist_id, rel in dino_samples:
+        path = (image_root / rel).resolve()
+        if image_root not in path.parents and path != image_root:
+            raise TrackBError(f"historical DINO preflight image path escapes root: {rel}")
+        with Image.open(path) as im:
+            tensors.append(ctc_v2_eval_transform(im))
 
     dev = torch.device(device)
     model = model.to(dev).eval()
@@ -148,7 +153,7 @@ def _preflight_historical_components(
         x = torch.stack(tensors).to(dev, non_blocking=True)
         features = model.forward_features(x)
         features = model.forward_head(features, pre_logits=True)
-    if features.ndim != 2 or tuple(features.shape) != (len(samples), FEATURE_WIDTH):
+    if features.ndim != 2 or tuple(features.shape) != (len(dino_samples), FEATURE_WIDTH):
         raise TrackBError(f"historical DINO preflight feature shape mismatch: {tuple(features.shape)}")
     if not torch.isfinite(features).all():
         raise TrackBError("historical DINO preflight produced non-finite features")
@@ -169,9 +174,10 @@ def _preflight_historical_components(
         )
     return {
         "status": "PASS",
-        "sample_count": len(samples),
+        "orb_sample_count": len(orb_samples),
+        "dino_batch_probe_size": len(dino_samples),
         "samples": orb_rows,
-        "dino_feature_shape": [len(samples), FEATURE_WIDTH],
+        "dino_feature_shape": [len(dino_samples), FEATURE_WIDTH],
         "device": str(dev),
         "free_disk_bytes": free_bytes,
         "estimated_output_bound_bytes": budget_bytes,
