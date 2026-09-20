@@ -818,7 +818,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def _independent_candidate_qa(candidate, output_root: Path) -> dict[str, Any]:
+def _independent_candidate_qa(candidate, output_root: Path, audit_policy) -> dict[str, Any]:
     cid = candidate["candidate_id"]
     seal_path = candidate["root"] / "seal.json"
     seal = load_json(seal_path)
@@ -875,7 +875,12 @@ def _independent_candidate_qa(candidate, output_root: Path) -> dict[str, Any]:
         persisted_summary = load_json(output_root / "analysis" / cid / "three_seed_summary.json")
         if sha256_json(summary) != sha256_json(persisted_summary):
             raise TrackBError(f"{cid}: three-seed summary does not independently recompute")
-        bootstrap = bootstrap_three_seed_macro_f1(seed_rows, mapped_indices)
+        bootstrap = bootstrap_three_seed_macro_f1(
+            seed_rows,
+            mapped_indices,
+            replicates=audit_policy.bootstrap_replicates,
+            seed=audit_policy.bootstrap_seed,
+        )
         persisted_bootstrap = load_json(output_root / "analysis" / cid / "bootstrap.json")
         if sha256_json(bootstrap) != sha256_json(persisted_bootstrap):
             raise TrackBError(f"{cid}: bootstrap does not independently reproduce")
@@ -970,6 +975,7 @@ def main() -> int:
         expected_label_support=lock["candidate_b"].get("expected_source_support"),
         workers=args.workers, device=args.device,
         dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
+        audit_policy=audit_policy,
     )
     del dino_model
     import torch
@@ -1008,7 +1014,7 @@ def main() -> int:
         "external_predictions_before_candidate_seal": False,
     }
     for candidate in (grape, potato):
-        qa["candidate_qa"][candidate["candidate_id"]] = _independent_candidate_qa(candidate, output_root)
+        qa["candidate_qa"][candidate["candidate_id"]] = _independent_candidate_qa(candidate, output_root, audit_policy)
     qa["qa_sha256"] = sha256_json({k: v for k, v in qa.items() if k != "qa_sha256"})
     atomic_write_json(output_root / "TRACKB_FINAL_QA.json", qa)
 
