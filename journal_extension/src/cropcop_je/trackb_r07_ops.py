@@ -1241,61 +1241,91 @@ def acquire_gvlid_v5(destination: str | Path, *, lineage_review_path: str | Path
         doi="10.17632/wkymf8bhcg.5",
         version="5",
     )
-    page_url = "https://data.mendeley.com/datasets/wkymf8bhcg/5"
-    req = urllib.request.Request(page_url, headers={"User-Agent": "Mozilla/5.0 CropCop-TrackB/2.0"})
-    with urllib.request.urlopen(req, timeout=180) as response:
-        html = response.read().decode("utf-8", errors="replace")
-    page_sha = __import__("hashlib").sha256(html.encode("utf-8")).hexdigest()
-    links = _mendeley_download_links(html)
-    if not links:
-        raise TrackBOpsError(
-            "GVLiD v5 public Mendeley page did not expose deterministic public-file download URLs. "
-            "Failing closed before candidate audit; do not substitute a Kaggle/HuggingFace mirror."
-        )
+
+    records = _mendeley_public_file_records("wkymf8bhcg", version="5")
+    stable_manifest = _mendeley_stable_manifest(records)
+    manifest_sha = sha256_json(stable_manifest)
+
     transport_dir = destination / "_transport"
     extracted = destination / "_extracted"
     receipts = []
     seen_transport_sha: set[str] = set()
-    for url in links:
-        provisional = transport_dir / (hashlib.sha256(url.encode("utf-8")).hexdigest()[:20] + ".download")
-        receipt = _stream_download(url, provisional)
+
+    for index, row in enumerate(records):
+        url = str(row["download_url"])
+        relative_path = str(row["relative_path"])
+        basename = Path(relative_path).name or f"mendeley_{index:05d}"
+        safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", basename)[:120] or f"mendeley_{index:05d}"
+        provisional = transport_dir / f"{index:05d}_{safe_name}"
+        checksum = str(row.get("download_checksum") or "") or None
+        receipt = _stream_download(
+            url,
+            provisional,
+            expected_checksum=checksum,
+        )
         transport_sha = str(receipt["sha256"])
         if transport_sha in seen_transport_sha:
             provisional.unlink(missing_ok=True)
             continue
         seen_transport_sha.add(transport_sha)
-        target = transport_dir / f"{transport_sha[:20]}.zip"
-        os.replace(provisional, target)
-        receipts.append({"url": url, **{**receipt, "path": str(target)}})
+
+        record_receipt = {
+            "source_file_id": str(row.get("id") or ""),
+            "source_relative_path": relative_path,
+            "source_size": int(row.get("size", -1)),
+            "source_reported_checksum": str(row.get("reported_checksum") or ""),
+            "download_url_persisted": False,
+            **receipt,
+        }
+        record_receipt.pop("path", None)
+        receipts.append(record_receipt)
+
         try:
-            if zipfile.is_zipfile(target):
-                _safe_extract_zip(target, extracted / f"part_{transport_sha[:20]}")
+            if zipfile.is_zipfile(provisional):
+                _safe_extract_zip(
+                    provisional,
+                    extracted / f"part_{index:05d}_{transport_sha[:16]}",
+                )
             else:
-                raise TrackBOpsError(f"GVLiD public-file transport is not a ZIP archive: {target}")
+                target = extracted / "direct_files" / relative_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(provisional, target)
         finally:
-            target.unlink(missing_ok=True)
+            provisional.unlink(missing_ok=True)
+
     data_root = destination / "data"
     supports, checksum_integrity = _normalize_gvlid_tree(extracted, data_root)
     shutil.rmtree(extracted, ignore_errors=True)
+    shutil.rmtree(transport_dir, ignore_errors=True)
+
     source = {
         "doi": "10.17632/wkymf8bhcg.5",
         "version": "5",
-        "source_url": page_url,
+        "source_url": "https://data.mendeley.com/datasets/wkymf8bhcg/5",
         "retrieved_at": utc_now(),
         "license_or_access_text": "CC BY 4.0",
         "known_historical_contributor_relationship": bool(lineage_row["known_historical_contributor_relationship"]),
         "lineage_review_status": str(lineage_row["lineage_review_status"]),
         "lineage_review_id": lineage_id,
         "lineage_review_sha256": lineage_sha,
-        "source_page_sha256": page_sha,
+        "source_resolver": "MENDELEY_PUBLIC_API",
+        "source_public_api_manifest_sha256": manifest_sha,
+        "source_public_api_file_count": len(records),
         "observed_class_support": supports,
         "published_total_images": 3477,
         "published_class_count_table_status": "NOT_USED_AS_AUTHORITY_DUE_ONE_IMAGE_ARITHMETIC_DISCREPANCY",
         "source_checksum_integrity": checksum_integrity,
         "acquisition_transport": receipts,
     }
-    (destination / "SOURCE_METADATA.json").write_text(json.dumps(source, indent=2) + "\n", encoding="utf-8")
-    return {"root": str(destination), "data_root": str(data_root), "source_metadata": source}
+    (destination / "SOURCE_METADATA.json").write_text(
+        json.dumps(source, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return {
+        "root": str(destination),
+        "data_root": str(data_root),
+        "source_metadata": source,
+    }
 
 
 def create_publication_staging(output_root: str | Path, destination: str | Path) -> list[Path]:
