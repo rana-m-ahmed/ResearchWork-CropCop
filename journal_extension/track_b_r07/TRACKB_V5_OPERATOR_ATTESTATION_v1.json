@@ -5,42 +5,30 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "3f5fbd8f450ff938561a3e737ec4298fca2d7402",
-  "preseal_operator_surface_commit": "710430e29efaaf9bf2e4bcf050aa52a69f0e6ffe",
+  "runtime_source_commit": "f727c15e548def498a2ae8794a4e52e30baac2ba",
+  "preseal_operator_surface_commit": "eb9d8817755f6780d640914684f250c966b5e15a",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
     "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
-    "git_blob_sha1": "82bff21fde52b4807043b5eb03498368e140c2cb",
-    "sha256": "52e35eb0170d1466b6305645c72ad13448557be37f7366879b0b91824f005f41"
+    "git_blob_sha1": "26c7b1b93a0b86715763beef2e5a08288a3b7077",
+    "sha256": "1bb5f2b1d80f4935aa1c7f626c97e76b8c696720378982f2ab7d1517767744a4"
   },
   "operator_files": [
     {
       "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
-      "git_blob_sha1": "8825b67ca87d12381884961ce765ff4727194c52",
+      "git_blob_sha1": "276fe6fe630b4e54f958fcf2a5c4c747aaf98470",
       "role": "READINESS_AND_IMMUTABLE_MATERIALIZATION"
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "eea0a3b914cfcf72da025d6bec472a018c8f4899",
+      "git_blob_sha1": "4665391101e472d9b4e7ef15392222a60aacc2a0",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "workflow_run_id": 35529239299,
-    "workflow_run_number": 531,
-    "conclusion": "success",
-    "validated_commit": "4aa156db5a9d06c8295bd6c1e83fd6d18914edc9",
-    "compile_pass": true,
-    "targeted_tests_pass": true,
-    "notebook_cell_compile_pass": true,
-    "static_infrastructure_validator_pass": true,
-    "v5_orchestration_validator_pass": true,
-    "sealed_release_authority_validator_pass": true,
-    "deep_qa_findings_repaired": [
-      "undefined bare RUNTIME_SOURCE_COMMIT in Notebook 01",
-      "malformed EXPECTED_EXPECTED_RUNTIME_SOURCE_COMMIT introduced during first repair"
-    ]
+    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_GVLID_TRANSPORT_REPAIR",
+    "note": "Runtime and notebooks rebound after fail-closed GVLiD opaque-container repair; fresh exact-head QA required before execution."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
@@ -52,6 +40,8 @@
     "single_writer_claim_lease_required": true,
     "authoritative_output_overwrite_forbidden": true,
     "v1_test_reopen_forbidden": true,
-    "protected_external_predictions_before_claim": 0
+    "protected_external_predictions_before_claim": 0,
+    "gvlid_opaque_transport_fallback_requires_pinned_companion_commit": true,
+    "gvlid_full_3477_checksum_authority_required": true
   }
 }
