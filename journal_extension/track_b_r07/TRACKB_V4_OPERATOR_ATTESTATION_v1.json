@@ -4,8 +4,7 @@
   "status": "FROZEN_PRE_RESULTS_OPERATOR_SURFACE",
   "scientific_change": false,
   "scientific_authority": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
-  "orchestration_implementation_commit": "63d22dbe00a183712e086d0e5c9242f37f1dfd4e",
-  "repository_snapshot_commit": "63d22dbe00a183712e086d0e5c9242f37f1dfd4e",
+  "orchestration_implementation_commit": "d0898dafc4419e1db009ab24202660d40f6b3fae",
   "files": [
     {
       "path": ".github/workflows/trackb-infrastructure-ci.yml",
@@ -13,7 +12,7 @@
     },
     {
       "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
-      "git_blob_sha1": "91df8ed5b4ccc56cb8353392e377a64e7113445e"
+      "git_blob_sha1": "7f5eeb3253117bcc345c7fb3a9be1baa9744382f"
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
@@ -21,7 +20,7 @@
     },
     {
       "path": "journal_extension/scripts/build_trackb_core_package.py",
-      "git_blob_sha1": "3ee5c7e0428005ce31c2c3f80c14c14b79a5e45f"
+      "git_blob_sha1": "115b91fdfebdd8c19b91f5be32fda8383c19f328"
     },
     {
       "path": "journal_extension/scripts/recover_tracka_v12_terminal_record.py",
@@ -37,7 +36,7 @@
     },
     {
       "path": "journal_extension/scripts/trackb_v4_materialize.py",
-      "git_blob_sha1": "fae5306d716c24468ae0c9a2802fb5546a574073"
+      "git_blob_sha1": "a25d86c26b57d99c4b33db8628297efd2766b93b"
     },
     {
       "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py",
@@ -45,7 +44,7 @@
     },
     {
       "path": "journal_extension/scripts/validate_trackb_v4_orchestration.py",
-      "git_blob_sha1": "7943b8787e0a2394817fa4323cffefb7ebaa7875"
+      "git_blob_sha1": "4b50541a5b540369ab30abdf1c1707554cefb479"
     },
     {
       "path": "journal_extension/src/cropcop_je/tracka_v12.py",
@@ -65,19 +64,19 @@
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json",
-      "git_blob_sha1": "36c1c029a62e85c499687b0cf92cedd8324e2f9c"
+      "git_blob_sha1": "5dcc34b7d004f8fcebfdcd0377152b279a3f3628"
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v1.json",
-      "git_blob_sha1": "ec9f4f5d31e0efd93335922c64ecd27e5b5d0409"
+      "git_blob_sha1": "dbfde7f26523d924a20f310d061fc1ef9795f11c"
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v4.json",
-      "git_blob_sha1": "600496a124f8f344fc2c0107cfd73ed8c3eab964"
+      "git_blob_sha1": "3a8fd6eb72cfa9c2b550bc801c1ddd15d61df8c9"
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json",
-      "git_blob_sha1": "f188e3cc4d083d6ae96a9476f8f8f99e5b08b132"
+      "git_blob_sha1": "c150f0093d70e4650b2e85134db59a49a4e5b7ec"
     },
     {
       "path": "journal_extension/track_b_r07/replay_authority/R07_S1_ORIGINAL_RUN_RECORD.json",
@@ -89,7 +88,11 @@
     },
     {
       "path": "tests/test_trackb_v4_materialize.py",
-      "git_blob_sha1": "edf51afe9b148398701ba36725378e4ead128601"
+      "git_blob_sha1": "e23ecd35c393f31c45a5c752cdc409d61b07cb0e"
     }
-  ]
+  ],
+  "runtime_snapshot_binding": {
+    "policy": "NOTEBOOK_SOURCE_COMMIT_PLUS_OPERATOR_BLOB_ATTESTATION",
+    "notebook_source_commit": "685f985483049923e25a450cbc9a1d05a705e374"
+  }
 }
