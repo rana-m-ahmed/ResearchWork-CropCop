@@ -548,7 +548,7 @@ def main() -> int:
         "role_content_identity": paired["role_content_identity"],
         **result,
     }
-    (output_root / "TRACKB_V4_EXECUTION_RECEIPT.json").write_text(
+    (output_root / "TRACKB_V5_EXECUTION_RECEIPT.json").write_text(
         json.dumps(receipt, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
