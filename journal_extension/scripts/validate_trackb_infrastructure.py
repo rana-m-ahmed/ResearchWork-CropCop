@@ -126,11 +126,7 @@ def main() -> int:
         "requirements-trackb.lock.txt",
         "PASS_TRACKB_PREINFERENCE_QUALIFICATION",
         "TRACKB_PREINFERENCE_QUALIFICATION.json",
-        "TRACKB_PREDICTION_BLIND_SCIENCE.json",
         "qualification_science_sha256",
-        "_prediction_blind_science_manifest",
-        "TRACKB_QUALIFICATION_AUTHORIZATION.json",
-        "--authorized-qualification-science-sha256",
         "TRACKB_PREINFERENCE_QA.json",
         "--execution-mode",
         "qualification",
@@ -154,7 +150,7 @@ def main() -> int:
         raise TrackBError("operator notebook exposes protected claim mode instead of qualification mode")
     if "--authorized-qualification-science-sha256" in master_text:
         raise TrackBError("qualification notebook exposes protected-claim authorization input")
-    frozen_qualification_sha = "87249ddbd73dd7b0cf5242670ce9cc25b0c415a1"
+    frozen_qualification_sha = "d2796cb69daec26a94113e5909719eb353b94832"
     if f"SOURCE_COMMIT = '{frozen_qualification_sha}'" not in master_text:
         raise TrackBError("qualification notebook is not pinned to the audited implementation SHA")
     if "SOURCE_REF" in master_text or "checkout', '--detach'" not in master_text:
