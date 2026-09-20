@@ -4,9 +4,14 @@ on:
   push:
     branches:
       - trackb-r07-infrastructure-20260919
+      - trackb-r07-remediation-v3-20260920
+  pull_request:
+    branches:
+      - trackb-r07-infrastructure-20260919
     paths:
       - ".github/workflows/trackb-infrastructure-ci.yml"
       - "journal_extension/amendments/track_bc_r07_downstream_v2.json"
+      - "journal_extension/amendments/track_bc_r07_downstream_v3.json"
       - "journal_extension/track_b_r07/**"
       - "journal_extension/src/cropcop_je/trackb_r07*.py"
       - "journal_extension/scripts/*trackb*.py"
