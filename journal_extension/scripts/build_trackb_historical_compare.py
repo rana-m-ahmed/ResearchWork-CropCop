@@ -97,7 +97,14 @@ def _historical_output_budget_bytes() -> int:
     return int(dino + orb + structural + reserve)
 
 
-def _preflight_historical_components(rows, image_root: Path, model, *, device: str) -> dict:
+def _preflight_historical_components(
+    rows,
+    image_root: Path,
+    model,
+    *,
+    device: str,
+    output_root: Path,
+) -> dict:
     import numpy as np
     import torch
     from PIL import Image
@@ -151,7 +158,8 @@ def _preflight_historical_components(rows, image_root: Path, model, *, device: s
     if str(device).startswith("cuda"):
         torch.cuda.synchronize(dev)
 
-    free_bytes = int(shutil.disk_usage(image_root).free)
+    output_root.mkdir(parents=True, exist_ok=True)
+    free_bytes = int(shutil.disk_usage(output_root).free)
     budget_bytes = _historical_output_budget_bytes()
     hard_required = int(budget_bytes * 1.15)
     if free_bytes < hard_required:
@@ -355,7 +363,7 @@ def main() -> int:
     started = time.perf_counter()
     model, dino_identity = _load_dino(args)
     preflight = _preflight_historical_components(
-        rows, image_root, model, device=args.device
+        rows, image_root, model, device=args.device, output_root=out
     )
     print(json.dumps({"historical_preflight": preflight}, indent=2), flush=True)
     hist_manifest, total_keypoints = _pack_orb(
