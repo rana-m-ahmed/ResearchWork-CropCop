@@ -692,14 +692,25 @@ def publish_attempt_state(slug: str, state: dict) -> dict[str, object]:
         )
 
 
-def _urlopen_json(url: str, *, timeout: int = 120) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": "CropCop-TrackB/2.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as response:
-        payload = response.read()
-    obj = json.loads(payload.decode("utf-8"))
-    if not isinstance(obj, dict):
-        raise TrackBOpsError(f"JSON object expected from {url}")
-    return obj
+def _urlopen_json(url: str, *, timeout: int = 120, attempts: int = 4) -> dict:
+    errors: list[str] = []
+    for attempt in range(1, int(attempts) + 1):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "CropCop-TrackB/4.0"})
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                payload = response.read()
+            obj = json.loads(payload.decode("utf-8"))
+            if not isinstance(obj, dict):
+                raise TrackBOpsError(f"JSON object expected from {url}")
+            return obj
+        except Exception as exc:
+            errors.append(f"attempt={attempt} {type(exc).__name__}: {exc}")
+            if attempt < int(attempts):
+                time.sleep((2, 5, 15)[min(attempt - 1, 2)])
+    raise TrackBOpsError(
+        f"JSON metadata request failed after {attempts} attempts: {url}: "
+        + " | ".join(errors[-4:])
+    )
 
 
 def _checksum_matches(path: Path, expected: str | None) -> bool:
@@ -829,7 +840,12 @@ def _load_lineage_review(path: str | Path, *, role: str, doi: str, version: str)
     return row, sha256_file(review_path), str(review.get("review_id"))
 
 
-def acquire_irish_potato(destination: str | Path, *, lineage_review_path: str | Path) -> dict:
+def acquire_irish_potato(
+    destination: str | Path,
+    *,
+    lineage_review_path: str | Path,
+    expected_source_manifest_sha256: str | None = None,
+) -> dict:
     destination = Path(destination).resolve()
     if destination.exists():
         shutil.rmtree(destination)
@@ -850,6 +866,33 @@ def acquire_irish_potato(destination: str | Path, *, lineage_review_path: str | 
     by_name = {str(row.get("key", "")): row for row in files}
     if set(expected).difference(by_name):
         raise TrackBOpsError(f"Zenodo record lacks required ZIP files: {sorted(set(expected).difference(by_name))}")
+    source_contract_rows = []
+    for name in sorted(expected):
+        row = by_name[name]
+        checksum = str(row.get("checksum") or "").strip()
+        try:
+            declared_bytes = int(row.get("size"))
+        except (TypeError, ValueError):
+            declared_bytes = -1
+        if not checksum or declared_bytes <= 0:
+            raise TrackBOpsError(f"Zenodo source contract is incomplete for {name}")
+        source_contract_rows.append({
+            "name": name,
+            "declared_bytes": declared_bytes,
+            "checksum": checksum,
+        })
+    source_manifest = {
+        "schema_version": "1.0",
+        "record_id": "8286529",
+        "version": "01",
+        "files": source_contract_rows,
+    }
+    source_manifest_sha = sha256_json(source_manifest)
+    if expected_source_manifest_sha256 and source_manifest_sha != str(expected_source_manifest_sha256):
+        raise TrackBOpsError(
+            "Irish Potato source changed between readiness resolution and acquisition: "
+            f"expected={expected_source_manifest_sha256}, observed={source_manifest_sha}"
+        )
     data_root = destination / "data"
     transport = []
     observed_support = {}
@@ -910,25 +953,34 @@ def acquire_irish_potato(destination: str | Path, *, lineage_review_path: str | 
         "acquisition_transport": transport,
         "observed_class_support": observed_support,
         "zenodo_record_id": str(record.get("id", "")),
+        "source_manifest_sha256": source_manifest_sha,
     }
     (destination / "SOURCE_METADATA.json").write_text(json.dumps(source, indent=2) + "\n", encoding="utf-8")
     return {"root": str(destination), "data_root": str(data_root), "source_metadata": source}
 
 
-def _urlopen_json_value(url: str, *, timeout: int = 180):
-    req = urllib.request.Request(
-        url,
-        headers={"User-Agent": "Mozilla/5.0 CropCop-TrackB/3.0"},
+def _urlopen_json_value(url: str, *, timeout: int = 180, attempts: int = 4):
+    errors: list[str] = []
+    for attempt in range(1, int(attempts) + 1):
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "Mozilla/5.0 CropCop-TrackB/4.0"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                payload = response.read()
+            obj = json.loads(payload.decode("utf-8"))
+            if not isinstance(obj, (dict, list)):
+                raise TrackBOpsError(f"JSON object/list expected from {url}")
+            return obj
+        except Exception as exc:
+            errors.append(f"attempt={attempt} {type(exc).__name__}: {exc}")
+            if attempt < int(attempts):
+                time.sleep((2, 5, 15)[min(attempt - 1, 2)])
+    raise TrackBOpsError(
+        f"JSON metadata request failed after {attempts} attempts: {url}: "
+        + " | ".join(errors[-4:])
     )
-    with urllib.request.urlopen(req, timeout=timeout) as response:
-        payload = response.read()
-    try:
-        obj = json.loads(payload.decode("utf-8"))
-    except Exception as exc:
-        raise TrackBOpsError(f"invalid JSON response from {url}") from exc
-    if not isinstance(obj, (dict, list)):
-        raise TrackBOpsError(f"JSON object/list expected from {url}")
-    return obj
 
 
 def _safe_mendeley_name(row: dict, fallback: str) -> str:
@@ -1133,7 +1185,7 @@ def probe_external_sources() -> dict[str, object]:
         zenodo_rows.append({
             "name": name,
             "declared_bytes": size,
-            "checksum_present": True,
+            "checksum": checksum,
             "download_url_valid": True,
         })
 
@@ -1148,6 +1200,13 @@ def probe_external_sources() -> dict[str, object]:
     if any(not str(row.get("download_url", "")).strip() for row in records):
         raise TrackBOpsError("GVLiD public API probe found a file without a download URL")
 
+    zenodo_manifest = {
+        "schema_version": "1.0",
+        "record_id": "8286529",
+        "version": "01",
+        "files": zenodo_rows,
+    }
+
     return {
         "status": "PASS",
         "irish_potato": {
@@ -1156,6 +1215,7 @@ def probe_external_sources() -> dict[str, object]:
             "required_archives_present": True,
             "archive_count": len(zenodo_rows),
             "declared_bytes": zenodo_total_declared_bytes,
+            "source_manifest_sha256": sha256_json(zenodo_manifest),
             "transport_contract": zenodo_rows,
         },
         "gvlid_v5": {
@@ -1294,7 +1354,12 @@ def _normalize_gvlid_tree(extracted_root: Path, data_root: Path) -> tuple[dict[s
     return supports, integrity
 
 
-def acquire_gvlid_v5(destination: str | Path, *, lineage_review_path: str | Path) -> dict:
+def acquire_gvlid_v5(
+    destination: str | Path,
+    *,
+    lineage_review_path: str | Path,
+    expected_source_manifest_sha256: str | None = None,
+) -> dict:
     destination = Path(destination).resolve()
     if destination.exists():
         shutil.rmtree(destination)
@@ -1309,6 +1374,12 @@ def acquire_gvlid_v5(destination: str | Path, *, lineage_review_path: str | Path
     records = _mendeley_public_file_records("wkymf8bhcg", version="5")
     stable_manifest = _mendeley_stable_manifest(records)
     manifest_sha = sha256_json(stable_manifest)
+
+    if expected_source_manifest_sha256 and manifest_sha != str(expected_source_manifest_sha256):
+        raise TrackBOpsError(
+            "GVLiD source changed between readiness resolution and acquisition: "
+            f"expected={expected_source_manifest_sha256}, observed={manifest_sha}"
+        )
 
     transport_dir = destination / "_transport"
     extracted = destination / "_extracted"
