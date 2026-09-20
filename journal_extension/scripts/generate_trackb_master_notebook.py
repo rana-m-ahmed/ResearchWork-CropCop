@@ -41,7 +41,7 @@ import json, os, shutil, subprocess, sys
 WORK = Path('/kaggle/working')
 REPO = WORK / 'ResearchWork-CropCop-trackb-v3'
 REPO_URL = 'https://github.com/rana-m-ahmed/ResearchWork-CropCop.git'
-SOURCE_COMMIT = 'd2796cb69daec26a94113e5909719eb353b94832'
+SOURCE_COMMIT = '73e07bb23d94e67bd2ad8f9d63226cd4488caf70'
 
 if REPO.exists():
     shutil.rmtree(REPO)
