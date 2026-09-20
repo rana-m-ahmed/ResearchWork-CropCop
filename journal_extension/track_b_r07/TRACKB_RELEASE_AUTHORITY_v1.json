@@ -7,17 +7,17 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
   "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
-  "runtime_source_commit": "f727c15e548def498a2ae8794a4e52e30baac2ba",
+  "runtime_source_commit": "fd3ba767e9f6c6b4a26b6a7216086d29153cc4ef",
   "bindings": {
-    "code_attestation_sha256": "20d4780fdf4ca0fbb68506c16bb922e45167a2abbf9be4058124c9f78e124a80",
-    "execution_lock_sha256": "c9d97600fa696f13dd6c7efdac611e3a3170f9a099fdd396f133117706e5989c",
-    "materialization_lock_sha256": "3d39b2c6931852de6055c3298513c7acaa1aed095248097d81978d5e52268d98",
-    "external_source_lock_sha256": "5beaa5cfccd45c7e7fa941b2c62bd20a248c663710bfc7dadfcf7af683585417",
+    "code_attestation_sha256": "bc7f47b9f2ffce1b15d81c2ed9c1cfd068da229e0735236e39545ef055c9d6e5",
+    "execution_lock_sha256": "28f77b47b2bc237f31387c81d0f0a07ff5f0ffc255cfaddbd6860bd509779743",
+    "materialization_lock_sha256": "51cb7084af2511e6df9d6c8cee8abf734d3361e20efc65a4eeea17f3bfb6f012",
+    "external_source_lock_sha256": "f31768833c205b9e00601c83d7a8dc45777d8e52f5934948d79e5b53572b66c6",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
-    "orchestration_lock_sha256": "1bb5f2b1d80f4935aa1c7f626c97e76b8c696720378982f2ab7d1517767744a4",
-    "operator_attestation_sha256": "0b1722b1f0baca6ee6b8fe0a48414b5280b5a9ef5aef95b3b0e6a2825a04507a",
-    "operator_notebook_00_blob_sha1": "276fe6fe630b4e54f958fcf2a5c4c747aaf98470",
-    "operator_notebook_01_blob_sha1": "4665391101e472d9b4e7ef15392222a60aacc2a0"
+    "orchestration_lock_sha256": "fc6607c077012c105072ae341764bd080693e11724666fd04613e21ca98ca690",
+    "operator_attestation_sha256": "94b618efb838bdb7b8f8748c725e32a107957834d87ea6775f4a11911f00f4cf",
+    "operator_notebook_00_blob_sha1": "d5a82fb1f29e374cb93e7d7df102936263e8aac3",
+    "operator_notebook_01_blob_sha1": "a3ede0d389d4aa3fa2c251b4635a175e8b1fdfd7"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -60,8 +60,9 @@
     "V1 test remains closed: SATISFIED"
   ],
   "seal_evidence": {
-    "failure_repair": "GVLiD opaque Mendeley transport produced zero recognized images; runtime now permits only a pinned official companion fallback when zero usable Mendeley images are materialized, followed by mandatory 3477-image checksum verification.",
-    "exact_head_qa": "PENDING",
+    "failure_observed": "GVLiD checksum authority coverage mismatch: verified=0, authority=3477, missing=3477",
+    "remediation": "Mendeley v5 remains source identity authority. If provider transport yields zero usable images, byte materialization uses exact pinned official companion commit 878a1c7098964bb52c4c4a5c30e5b53340565258; partial provider fallback is forbidden; all 3477 images must pass pinned SHA-256 ledger.",
+    "final_exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
   }
