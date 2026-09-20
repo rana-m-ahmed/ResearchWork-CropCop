@@ -29,7 +29,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "137d620374502dbcf95cc648b427a9a01ae673fe225295f81f797e40323d0681",
+  "code_attestation_sha256": "9df4abc85ea02702904d1cdfc2180700a19b9d40ff2be8eb4fa0b3ee903cfefe",
   "experiment_ids": [
     "TB2-AUDIT-GVLID",
     "TB2-AUDIT-POTATO",
@@ -318,5 +318,5 @@
     "elapsed_time_excluded_from_science_identity": true,
     "publication_retry_counts_excluded_from_science_identity": true
   },
-  "operational_rebind_note": "Release-hardening rebind after long-run reliability QA: historical 64-image DINO micro-smoke, output-filesystem disk budgeting, bounded archive extraction, stronger external transport preflight, and low-peak publication round-trip ordering. Scientific identities, datasets, checkpoints, mappings, thresholds, evidence rules, seeds, and replay tolerance are unchanged."
+  "operational_rebind_note": "Release-hardening rebind after exact 64-image DINO preflight assertion. All scientific identities, datasets, checkpoints, mappings, thresholds, evidence rules, seeds, and replay tolerance remain unchanged."
 }
