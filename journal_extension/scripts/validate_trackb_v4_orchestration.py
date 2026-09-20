@@ -88,9 +88,15 @@ def main() -> int:
         raise ValidationError(
             "Notebook 00 runtime pin differs from TRACKB_ORCHESTRATION_LOCK_v5"
         )
-    if f"RUNTIME_SOURCE_COMMIT = '{runtime_source_commit}'" not in final_text:
+    if f"EXPECTED_RUNTIME_SOURCE_COMMIT = '{runtime_source_commit}'" not in final_text:
         raise ValidationError(
             "Notebook 01 runtime pin differs from TRACKB_ORCHESTRATION_LOCK_v5"
+        )
+    import re
+    bare_runtime_symbol = re.search(r"(?<!EXPECTED_)\\bRUNTIME_SOURCE_COMMIT\\b", final_text)
+    if bare_runtime_symbol:
+        raise ValidationError(
+            "Notebook 01 contains undefined/legacy bare RUNTIME_SOURCE_COMMIT reference"
         )
     if "RELEASE_ID = 'TRACKB_V5_RELEASE_AUTHORITY_v1'" not in final_text:
         raise ValidationError("Notebook 01 does not bind the v5 release authority identity")
