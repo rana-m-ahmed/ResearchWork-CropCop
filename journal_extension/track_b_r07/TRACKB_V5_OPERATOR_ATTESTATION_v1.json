@@ -6,7 +6,7 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
   "runtime_source_commit": "3f5fbd8f450ff938561a3e737ec4298fca2d7402",
-  "preseal_operator_surface_commit": "f43ec41176e0b6be1dfd7e24bc4a87fa652ee1a5",
+  "preseal_operator_surface_commit": "2694f0a2b6254bddeab3fee537a94c43b5b744b2",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
     "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
@@ -21,22 +21,16 @@
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "ae02cc3746c8876203e2fe51fb5f4b77648db8f0",
+      "git_blob_sha1": "58e0bdc3c3d2969699b3bd8322a2f33c606b1cb7",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "workflow_run_id": 35527822260,
-    "workflow_run_number": 505,
-    "conclusion": "success",
-    "validated_commit": "f43ec41176e0b6be1dfd7e24bc4a87fa652ee1a5",
-    "compile_pass": true,
-    "targeted_tests_pass": true,
-    "canonical_notebook_regeneration_pass": true,
-    "static_infrastructure_validator_pass": true,
-    "v5_preseal_orchestration_validator_pass": true,
-    "release_authority_structure_validator_pass": true
+    "prior_green_run_id": 35527961502,
+    "prior_green_run_number": 513,
+    "prior_green_conclusion": "success",
+    "note": "Prior green run established the sealed baseline. Current operator-surface fix must receive a fresh exact-head green run before execution."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
