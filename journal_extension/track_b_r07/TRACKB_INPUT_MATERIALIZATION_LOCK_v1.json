@@ -65,12 +65,12 @@
     "s1": "journal_extension/track_b_r07/replay_authority/R07_S1_ORIGINAL_RUN_RECORD.json",
     "s2_s3_terminal_account_report": "journal_extension/track_b_r07/replay_authority/TRACKA_V12_K3_PUBLIC_REPORT.json",
     "continuation_recovery": "journal_extension/scripts/recover_tracka_v12_terminal_record.py",
-    "recovery_policy": "S2/S3 run records must be cryptographically recovered and match the already-frozen Track-B run-record SHA-256 values before core construction"
+    "recovery_policy": "S2/S3 recovered records must exactly match the frozen Track-B run-record SHA-256 values before core construction"
   },
   "load_bearing_files": {
     "journal_extension/scripts/trackb_v4_materialize.py": "fae5306d716c24468ae0c9a2802fb5546a574073",
     "journal_extension/scripts/trackb_v4_execute_attached.py": "94205cd8afac27c76ba13a83a8ab969e9382ae68",
-    "journal_extension/scripts/validate_trackb_v4_orchestration.py": "53d04136bd0726c037586309912c1db38be8789f",
+    "journal_extension/scripts/validate_trackb_v4_orchestration.py": "153d64ed796e2e4d05dbb6b9bd9834b59f183341",
     "journal_extension/scripts/run_trackb_r07.py": "3437c276b789d1772039a187dce1e00fcdaea23d",
     "journal_extension/scripts/validate_trackb_preinference_qualification.py": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2",
     "journal_extension/scripts/recover_tracka_v12_terminal_record.py": "c86c1b9bc4079bcf4051dcd71fca74034a11f2ba",
