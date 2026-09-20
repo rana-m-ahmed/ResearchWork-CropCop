@@ -41,9 +41,9 @@ def main() -> int:
     args = ap.parse_args()
     root = Path(args.repo_root).resolve()
 
-    authority_path = root / "journal_extension/amendments/track_bc_r07_downstream_v2.json"
-    lock_path = root / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v2.json"
-    attestation_path = root / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v2.json"
+    authority_path = root / "journal_extension/amendments/track_bc_r07_downstream_v3.json"
+    lock_path = root / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json"
+    attestation_path = root / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json"
     final_nb = root / "journal_extension/kaggle/trackb_r07_end_to_end.ipynb"
     master_nb = root / "journal_extension/kaggle/trackb_r07_master.ipynb"
     core_nb = root / "journal_extension/kaggle/trackb_build_core_package.ipynb"
@@ -86,9 +86,12 @@ def main() -> int:
     for forbidden in ("git push", "github_token", "gh_token", "ds-v1-test-consumed", "--split test"):
         if forbidden in lowered:
             raise TrackBError(f"final Track-B notebook contains forbidden surface/action: {forbidden}")
-    for required in ("run_trackb_r07.py", "--mode", "all", "TRACKB_FINAL_QA.json", "TRACK_B_CLOSED"):
+    for required in ("run_trackb_r07.py", "--mode", "preflight", "PREFLIGHT_PASS.json"):
         if required not in final_text:
-            raise TrackBError(f"final Track-B notebook missing expected controller binding: {required}")
+            raise TrackBError(f"internal Track-B notebook missing prediction-free preflight binding: {required}")
+    for forbidden in ("--mode', 'all", "--mode\", \"all", "PROTECTED_INFERENCE_STARTED", "CROPCOP_GITHUB_TOKEN"):
+        if forbidden in final_text:
+            raise TrackBError(f"internal Track-B notebook exposes forbidden protected-run surface: {forbidden}")
     for required in (
         "build_trackb_core_package.py",
         "16368",
@@ -122,6 +125,8 @@ def main() -> int:
         "bootstrap_trackb_runtime.py",
         "requirements-trackb.lock.txt",
         "PASS_AUTOMATED_TRACK_B_COMPLETE",
+        "/kaggle/tmp/cropcop_trackb_r07",
+        "trackb_science_sha256",
     ):
         if required not in master_text:
             raise TrackBError(f"master notebook missing automation binding: {required}")
@@ -156,6 +161,12 @@ def main() -> int:
         "normalized_image_count",
         "observed_class_support",
         "raw_external_images_included",
+        "TRACKB_KAGGLE_CONTENT_MANIFEST.json",
+        "source_checksum_verified",
+        "TRACKB_EXTERNAL_LINEAGE_REVIEW_v1",
+        "attempt_dataset_slug",
+        "publish_attempt_state",
+        "read_latest_attempt_state",
     ):
         if required not in ops_text:
             raise TrackBError(f"Track-B operations module missing automation/security guard: {required}")
@@ -178,6 +189,9 @@ def main() -> int:
         "Private Kaggle publication attempt",
         "for attempt, delay in enumerate((0, 5, 15, 30), start=1)",
         "private Kaggle dataset publication failed after 4 attempts",
+        "reused_identical_remote",
+        "_verify_remote_kaggle_content",
+        "_wait_kaggle_dataset_ready",
     ):
         if required not in ops_text:
             raise TrackBError(f"private Kaggle publication retry guard missing: {required}")
@@ -224,6 +238,11 @@ def main() -> int:
         "source_roots[\"final_v1\"]",
         "gvlid_v5",
         "irish_potato",
+        "/kaggle/tmp/cropcop_trackb_r07",
+        "attempt_dataset_slug",
+        "PRIVATE_ARCHIVE_VERIFIED",
+        "PUBLICATION_COMPLETE",
+        "full_roundtrip=True",
     ):
         if required not in master_runner_text:
             raise TrackBError(f"master controller missing automated operation: {required}")
@@ -294,9 +313,26 @@ def main() -> int:
         '"maximum_evidence_grade": "EXT-S"',
         "full 117,546-image EXT-I route is dormant",
         "locked Python drift",
+        "audit_policy_from_lock",
+        "deterministic_representative_order",
+        "PROTECTED_INFERENCE_STARTED",
+        "TRACKB_SCIENCE_MANIFEST.json",
+        "trackb_science_sha256",
+        "_verify_zip_archive",
     ):
         if required not in runner_text:
             raise TrackBError(f"final runner missing safe historical-package gate: {required}")
+    package_pos = runner_text.find('packages = _package_outputs(output_root)')
+    closure_write_pos = runner_text.find('atomic_write_json(output_root / "TRACKB_FINAL_CLOSURE.json"')
+    if min(package_pos, closure_write_pos) < 0 or package_pos > closure_write_pos:
+        raise TrackBError("TRACK_B_CLOSED can be written before evidence-package verification")
+    if "external_predictions_before_firewall" in runner_text:
+        raise TrackBError("runner still exposes ambiguous cross-attempt prediction chronology field")
+    if "cache: dict[str, dict[str, Any]] = {}" in runner_text:
+        raise TrackBError("runner regressed to an all-in-RAM candidate ORB cache")
+    if "open_memmap" not in runner_text or "mmap_mode=\"r\"" not in runner_text:
+        raise TrackBError("runner lacks file-backed packed candidate ORB cache")
+
     audit_call = runner_text.find('grape = _audit_candidate(')
     second_audit_call = runner_text.find('potato = _audit_candidate(')
     firewall = runner_text.find('stage("4 :: prediction firewall")')
@@ -328,7 +364,15 @@ def main() -> int:
         "private_evidence_archived_before_github_publication": True,
         "github_publication_retry_attempts": 4,
         "private_kaggle_publication_retry_attempts": 4,
-        "track_b_v2_candidates": ["gvlid_grape", "irish_potato"],
+        "track_b_v3_candidates": ["gvlid_grape", "irish_potato"],
+        "lock_is_executable_policy_source": True,
+        "seeded_family_order_is_operational": True,
+        "source_checksums_required": True,
+        "scratch_storage_isolation_required": True,
+        "durable_attempt_ledger_required": True,
+        "closure_after_package_verification": True,
+        "stable_science_digest_required": True,
+        "private_kaggle_roundtrip_required": True,
         "retired_v1_candidate_absent": True,
         "core_builder_validation_only_surface": True,
         "prediction_blind_audit_module": True,
