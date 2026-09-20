@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import os
@@ -1434,42 +1435,93 @@ def _hardlink_or_copy(src: Path, dst: Path) -> None:
         shutil.copy2(src, dst)
 
 
-def _parse_sha256_ledger(path: Path) -> dict[str, str]:
-    entries: dict[str, str] = {}
-    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        m = re.match(r"^([0-9a-fA-F]{64})\s+[* ]?(.+?)\s*$", line)
-        if m:
-            digest, name = m.group(1), m.group(2)
-        else:
-            m = re.match(r"^(.+?)\s*[:;,]\s*([0-9a-fA-F]{64})\s*$", line)
-            if not m:
-                continue
-            name, digest = m.group(1), m.group(2)
-        key = name.strip().replace("\\", "/").lstrip("./").lower()
-        entries[key] = digest.lower()
-    if not entries:
-        raise TrackBOpsError(f"GVLiD checksum ledger contains no SHA-256 rows: {path}")
+def _git_blob_sha1(path: Path) -> str:
+    data = Path(path).read_bytes()
+    header = f"blob {len(data)}\0".encode("utf-8")
+    return hashlib.sha1(header + data).hexdigest()
+
+
+def _parse_gvlid_checksum_authority(
+    path: Path,
+) -> dict[tuple[str, str], dict[str, str]]:
+    path = Path(path).resolve()
+    if not path.is_file():
+        raise TrackBOpsError(f"GVLiD checksum authority missing: {path}")
+    entries: dict[tuple[str, str], dict[str, str]] = {}
+    with path.open(encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        if reader.fieldnames != ["filename", "sha256"]:
+            raise TrackBOpsError(
+                "GVLiD checksum authority schema drift: "
+                f"expected=['filename', 'sha256'], observed={reader.fieldnames}"
+            )
+        for line_number, row in enumerate(reader, start=2):
+            rel = str(row.get("filename") or "").strip().replace("\\", "/")
+            digest = str(row.get("sha256") or "").strip().lower()
+            if not rel or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                raise TrackBOpsError(
+                    f"invalid GVLiD checksum authority row at line {line_number}"
+                )
+            rel_path = Path(rel)
+            if rel_path.is_absolute() or ".." in rel_path.parts:
+                raise TrackBOpsError(
+                    f"unsafe GVLiD checksum authority path at line {line_number}: {rel}"
+                )
+            if len(rel_path.parts) < 3 or rel_path.parts[0].casefold() != "gvlid":
+                raise TrackBOpsError(
+                    f"unexpected GVLiD checksum authority path at line {line_number}: {rel}"
+                )
+            label = _normalized_label(rel_path.parts[-2])
+            if label is None:
+                raise TrackBOpsError(
+                    f"unrecognized GVLiD checksum authority class at line {line_number}: {rel}"
+                )
+            identity = (label, rel_path.name.casefold())
+            if identity in entries:
+                raise TrackBOpsError(
+                    "duplicate GVLiD checksum authority class/filename identity: "
+                    f"{identity}"
+                )
+            entries[identity] = {
+                "relative_path": rel.replace("\\", "/"),
+                "sha256": digest,
+            }
+
+    expected_support = {
+        "Black Rot": 808,
+        "Esca": 888,
+        "Healthy": 1109,
+        "Leaf Blight": 672,
+    }
+    support = {label: 0 for label in expected_support}
+    for label, _basename in entries:
+        support[label] += 1
+    if len(entries) != 3477 or support != expected_support:
+        raise TrackBOpsError(
+            "GVLiD checksum authority coverage drift: "
+            f"rows={len(entries)}, support={support}, expected_support={expected_support}"
+        )
     return entries
 
 
-def _verify_gvlid_checksum_ledger(extracted_root: Path, image_paths: list[Path]) -> dict[str, object]:
-    ledgers = sorted(
-        p for p in extracted_root.rglob("*")
-        if p.is_file() and p.name.lower() == "checksums.txt"
-    )
-    if not ledgers:
-        raise TrackBOpsError("GVLiD package lacks required docs/checksums.txt image-integrity ledger")
-    parsed = [_parse_sha256_ledger(path) for path in ledgers]
-    canonical = parsed[0]
-    if any(rows != canonical for rows in parsed[1:]):
-        raise TrackBOpsError("GVLiD package exposes conflicting checksum ledgers")
+def _verify_gvlid_checksum_authority(
+    extracted_root: Path,
+    image_paths: list[Path],
+    *,
+    checksum_ledger_path: Path,
+    expected_ledger_git_blob_sha1: str,
+) -> dict[str, object]:
+    observed_blob = _git_blob_sha1(checksum_ledger_path)
+    if observed_blob != str(expected_ledger_git_blob_sha1).lower():
+        raise TrackBOpsError(
+            "vendored GVLiD checksum authority blob mismatch: "
+            f"expected={expected_ledger_git_blob_sha1}, observed={observed_blob}"
+        )
 
+    authority = _parse_gvlid_checksum_authority(checksum_ledger_path)
+    consumed: set[tuple[str, str]] = set()
     verified = 0
     for image in image_paths:
-        basename = image.name.lower()
         label = None
         for parent in image.parents:
             if parent == extracted_root:
@@ -1477,37 +1529,69 @@ def _verify_gvlid_checksum_ledger(extracted_root: Path, image_paths: list[Path])
             label = _normalized_label(parent.name)
             if label:
                 break
-        candidates = []
-        for key, digest in canonical.items():
-            if key.endswith("/" + basename) or key == basename:
-                ledger_label = _normalized_label(Path(key).parent.name)
-                if label is None or ledger_label in {None, label}:
-                    candidates.append((key, digest))
-        if len(candidates) != 1:
+        if label is None:
             raise TrackBOpsError(
-                f"GVLiD checksum ledger cannot uniquely bind image {image.name}: matches={len(candidates)}"
+                f"GVLiD image cannot be assigned to a checksum-authority class: {image}"
             )
-        if sha256_file(image).lower() != candidates[0][1]:
-            raise TrackBOpsError(f"GVLiD image SHA-256 mismatch against source ledger: {image}")
+        identity = (label, image.name.casefold())
+        row = authority.get(identity)
+        if row is None:
+            raise TrackBOpsError(
+                "GVLiD image is absent from the pinned official checksum authority: "
+                f"class={label}, filename={image.name}"
+            )
+        if identity in consumed:
+            raise TrackBOpsError(
+                "multiple extracted GVLiD images map to one official checksum identity: "
+                f"class={label}, filename={image.name}"
+            )
+        observed_sha = sha256_file(image).lower()
+        if observed_sha != row["sha256"]:
+            raise TrackBOpsError(
+                "GVLiD image SHA-256 mismatch against pinned official authority: "
+                f"class={label}, filename={image.name}, expected={row['sha256']}, "
+                f"observed={observed_sha}"
+            )
+        consumed.add(identity)
         verified += 1
-    if verified != len(image_paths):
-        raise TrackBOpsError("GVLiD checksum verification coverage mismatch")
+
+    missing = sorted(set(authority).difference(consumed))
+    if verified != 3477 or len(consumed) != len(authority) or missing:
+        raise TrackBOpsError(
+            "GVLiD checksum authority coverage mismatch: "
+            f"verified={verified}, authority={len(authority)}, missing={len(missing)}"
+        )
     return {
-        "ledger_files": [p.relative_to(extracted_root).as_posix() for p in ledgers],
-        "ledger_entry_count": len(canonical),
+        "authority_kind": "PINNED_OFFICIAL_COMPANION_CHECKSUM_CSV",
+        "ledger_path": str(checksum_ledger_path),
+        "ledger_git_blob_sha1": observed_blob,
+        "ledger_sha256": sha256_file(checksum_ledger_path),
+        "ledger_entry_count": len(authority),
         "verified_image_count": verified,
+        "unconsumed_ledger_entry_count": len(missing),
         "status": "PASS",
     }
 
 
-def _normalize_gvlid_tree(extracted_root: Path, data_root: Path) -> tuple[dict[str, int], dict[str, object]]:
+def _normalize_gvlid_tree(
+    extracted_root: Path,
+    data_root: Path,
+    *,
+    checksum_ledger_path: Path,
+    expected_ledger_git_blob_sha1: str,
+) -> tuple[dict[str, int], dict[str, object]]:
     image_suffixes = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
     supports: dict[str, int] = {"Black Rot": 0, "Esca": 0, "Healthy": 0, "Leaf Blight": 0}
     images = sorted(
         path for path in extracted_root.rglob("*")
         if path.is_file() and path.suffix.lower() in image_suffixes
     )
-    integrity = _verify_gvlid_checksum_ledger(extracted_root, images)
+    integrity = _verify_gvlid_checksum_authority(
+        extracted_root,
+        images,
+        checksum_ledger_path=checksum_ledger_path,
+        expected_ledger_git_blob_sha1=expected_ledger_git_blob_sha1,
+    )
     used: set[Path] = set()
     for path in images:
         label = None
@@ -1541,6 +1625,8 @@ def acquire_gvlid_v5(
     destination: str | Path,
     *,
     lineage_review_path: str | Path,
+    checksum_ledger_path: str | Path,
+    expected_checksum_ledger_git_blob_sha1: str,
     expected_source_manifest_sha256: str | None = None,
 ) -> dict:
     destination = Path(destination).resolve()
@@ -1613,7 +1699,12 @@ def acquire_gvlid_v5(
             provisional.unlink(missing_ok=True)
 
     data_root = destination / "data"
-    supports, checksum_integrity = _normalize_gvlid_tree(extracted, data_root)
+    supports, checksum_integrity = _normalize_gvlid_tree(
+        extracted,
+        data_root,
+        checksum_ledger_path=Path(checksum_ledger_path).resolve(),
+        expected_ledger_git_blob_sha1=expected_checksum_ledger_git_blob_sha1,
+    )
     shutil.rmtree(extracted, ignore_errors=True)
     shutil.rmtree(transport_dir, ignore_errors=True)
 
@@ -1634,6 +1725,15 @@ def acquire_gvlid_v5(
         "published_total_images": 3477,
         "published_class_count_table_status": "NOT_USED_AS_AUTHORITY_DUE_ONE_IMAGE_ARITHMETIC_DISCREPANCY",
         "source_checksum_integrity": checksum_integrity,
+        "checksum_authority": {
+            "kind": "PINNED_OFFICIAL_COMPANION_CHECKSUM_CSV",
+            "official_repository": "MilindGayakwad/DNN",
+            "official_commit": "878a1c7098964bb52c4c4a5c30e5b53340565258",
+            "official_path": "docs/checksums.csv",
+            "official_git_blob_sha1": expected_checksum_ledger_git_blob_sha1,
+            "paper_documented_path": "docs/checksums.txt",
+            "format_path_discrepancy_resolved": True,
+        },
         "acquisition_transport": receipts,
     }
     (destination / "SOURCE_METADATA.json").write_text(
