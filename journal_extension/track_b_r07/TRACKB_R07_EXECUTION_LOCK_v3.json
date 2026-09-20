@@ -244,7 +244,15 @@
     "qualification_must_produce_zero_protected_external_predictions": true,
     "protected_claim_requires_matching_qualification_science_sha256": true,
     "qualification_science_identity_excludes_execution_timestamps": true,
-    "qualification_science_identity_reused_for_attempt_ancestry": true
+    "qualification_science_identity_reused_for_attempt_ancestry": true,
+    "github_token_required_modes": [
+      "claim"
+    ],
+    "github_push_preflight_modes": [
+      "claim"
+    ],
+    "qualification_requires_github_token": false,
+    "qualification_requires_github_push_preflight": false
   },
   "runtime_bootstrap": {
     "mode": "PROVEN_KAGGLE_LOCK_REPAIR_FRESH_SUBPROCESS",
