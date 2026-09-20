@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "lock_id": "TRACKB_ORCHESTRATION_LOCK_v5",
-  "status": "PRESEAL_PENDING_RUNTIME_SNAPSHOT",
+  "status": "PRE_RESULTS_OPERATIONAL_LOCK",
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "scientific_execution_lock_id": "TRACKB_R07_EXECUTION_LOCK_v4",
@@ -9,7 +9,7 @@
   "external_source_lock_id": "TRACKB_EXTERNAL_SOURCE_LOCK_v2",
   "input_materialization_lock_id": "TRACKB_INPUT_MATERIALIZATION_LOCK_v2",
   "release_authority_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "",
+  "runtime_source_commit": "3f5fbd8f450ff938561a3e737ec4298fca2d7402",
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
     "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb"
@@ -93,7 +93,7 @@
     "github_in_scientific_critical_path": false
   },
   "finalization_requirements": [
-    "runtime_source_commit is exact 40-character Git commit",
+    "runtime_source_commit is exact 40-character Git commit: SATISFIED",
     "Notebook 00 is pinned to runtime_source_commit",
     "Notebook 01 release anchor matches runtime_source_commit and release authority",
     "runtime attestation verifies against runtime_source_commit",
