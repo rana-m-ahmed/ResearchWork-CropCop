@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install CPU-safe test dependency
-        run: python -m pip install --disable-pip-version-check --no-input "numpy==2.5.2"
+        run: python -m pip install --disable-pip-version-check --no-input "numpy==2.4.6"
       - name: Compile Python sources
         run: python -m compileall -q journal_extension scripts tests
       - name: Validate repository contract
