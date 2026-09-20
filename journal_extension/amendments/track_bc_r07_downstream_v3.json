@@ -1,0 +1,210 @@
+{
+  "schema_version": "3.0",
+  "authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "status": "ACTIVE_PRE_EXECUTION",
+  "chronology": {
+    "predecessor_authority": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v2",
+    "reason": "Pre-results reliability, provenance, deterministic-identity, storage-isolation, durable-attempt, and evidence-publication hardening. Scientific cohorts, mappings, R07 states, metric definitions, audit thresholds, support floor, and historical comparison boundary are unchanged.",
+    "protected_external_predictions_before_v3": false,
+    "external_metric_results_used_to_design_v3": false,
+    "v2_candidate_selection_preserved": true
+  },
+  "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+  "parent_track_a_final_audit_self_hash": "1c7d98fa47a12ae6eaa53e1c6e91b4e6eef2d04bb717c2d58c7ae2ebae2b51c6",
+  "parent_scientific_authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "parent_scientific_authority_sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74",
+  "selected_scientific_family": "R07",
+  "dataset": {
+    "name": "CropCop_Final_v1",
+    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "v1_test_status": "CLOSED_FOR_TRACK_B"
+  },
+  "cohort_redesign": {
+    "principle": "Use only pre-external evidence to select complementary external cohorts; do not choose cohorts from external model performance.",
+    "frozen_pre_external_selection_axes": [
+      "exact ontology compatibility",
+      "source/acquisition independence",
+      "field-domain realism",
+      "public provenance and license clarity",
+      "mapped-class support",
+      "frozen R07 internal class reliability",
+      "complementarity between confirmatory and stress-test cohorts",
+      "automation/reproducible acquisition feasibility"
+    ],
+    "primary_confirmatory_candidate": {
+      "id": "gvlid_grape",
+      "role": "gvlid_v5",
+      "source": "Mendeley Data",
+      "doi": "10.17632/wkymf8bhcg.5",
+      "version": "5",
+      "article_doi": "10.1038/s41597-026-07431-9",
+      "expected_total_images": 3477,
+      "mapping": {
+        "Black Rot": "grape_black_rot",
+        "Esca": "grape_esca",
+        "Healthy": "grape_healthy",
+        "Leaf Blight": "grape_leaf_blight"
+      },
+      "scope": "SCOPE-GRAPE-4",
+      "rationale": [
+        "four exact CropCop labels",
+        "external grape imagery spanning documented in-situ vineyard and ex-situ controlled-background acquisition",
+        "expert-verified annotations and structured metadata",
+        "CC BY 4.0 public dataset",
+        "strong frozen R07 internal reliability before external inference"
+      ],
+      "source_count_anomaly_policy": "Published total is 3477 while one displayed class-count table sums to 3478; do not trust table counts. Acquire version 5, enumerate original bytes, freeze observed support before inference, and fail closed on unreconciled source identity."
+    },
+    "complementary_stress_candidate": {
+      "id": "irish_potato",
+      "role": "irish_potato",
+      "source": "Zenodo",
+      "doi": "10.5281/zenodo.8286529",
+      "version": "01",
+      "expected_total_images": 58709,
+      "mapping": {
+        "earlyblt": "potato_early_blight",
+        "healthy": "potato_healthy",
+        "lateblt": "potato_late_blight"
+      },
+      "scope": "SCOPE-POTATO-3",
+      "rationale": [
+        "large independently acquired smartphone field cohort",
+        "three exact CropCop labels",
+        "harder frozen R07 class scope retained deliberately as stress test rather than removed for attractiveness"
+      ]
+    },
+    "retired_candidate": {
+      "id": "agrivision_bd",
+      "reason": [
+        "mapped confirmatory surface is small relative to total package",
+        "Tomato Mosaic requires extra semantic adjudication",
+        "frozen R07 Tomato Mosaic is materially weaker than the new confirmatory grape scope",
+        "retirement occurred before any protected external prediction and is therefore not outcome-driven"
+      ],
+      "future_use": "May be described as a screened but not selected external candidate; it is not a fallback after observing Track-B performance."
+    },
+    "post_prediction_candidate_substitution_forbidden": true
+  },
+  "automation": {
+    "goal": "Single Kaggle master notebook with fail-closed automatic acquisition, cache/version management, protected execution, private evidence archival, and public-safe GitHub publication.",
+    "kaggle_auth_preferred_secret": "KAGGLE_API_TOKEN",
+    "github_auth_secret": "CROPCOP_GITHUB_TOKEN",
+    "private_kaggle_dataset_operations_allowed": true,
+    "github_public_evidence_auto_commit_allowed": true,
+    "secrets_must_never_be_persisted": true,
+    "raw_external_images_to_github_forbidden": true,
+    "model_weights_to_github_forbidden": true,
+    "complete_restricted_evidence_to_private_kaggle": true,
+    "public_safe_summary_evidence_to_github": true
+  },
+  "audit_encoder": {
+    "identity": "historical DINOv3 ConvNeXt-Tiny reference",
+    "role": "duplicate_family_audit_only",
+    "checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+    "classifier_outputs_forbidden": true
+  },
+  "track_b_classifier_states": {
+    "R07-S1": {
+      "experiment_id": "R07-CNXTT-CONTEXT-S1",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01",
+      "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974"
+    },
+    "R07-S2": {
+      "experiment_id": "R07-CNXTT-CONTEXT-S2",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S2-56023042e577-A01",
+      "checkpoint_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310"
+    },
+    "R07-S3": {
+      "experiment_id": "R07-CNXTT-CONTEXT-S3",
+      "run_id": "JE-R07-CNXTT-CONTEXT-S3-56023042e577-A01",
+      "checkpoint_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37"
+    }
+  },
+  "preserves": [
+    "prediction-blind external candidate audit",
+    "source/version/license binding",
+    "historical-source exclusion",
+    "exact/near-family audit",
+    "deterministic family representatives",
+    "EXT-I/EXT-S/EXT-X evidence grades",
+    "candidate seal before classifier inference",
+    "native 120-way classifier output",
+    "no mapped-subset logit renormalization",
+    "family-level bootstrap",
+    "negative and inconclusive result retention",
+    "all three frozen R07 seeds",
+    "no new training",
+    "consumed V1-test closure"
+  ],
+  "supersedes_only": [
+    "Track-B v1 candidate pair Irish Potato + Agri-Vision",
+    "manual multi-notebook/private-dataset publication workflow",
+    "Track-B v1 authority/lock identifiers for future execution"
+  ],
+  "track_b_rules": {
+    "all_three_r07_seeds_required": true,
+    "candidate_shopping_forbidden": true,
+    "mapping_change_after_prediction_forbidden": true,
+    "new_training_forbidden": true,
+    "seed_replacement_forbidden": true,
+    "track_b_results_cannot_reopen_architecture_selection": true,
+    "track_c_feedback_into_track_b_forbidden": true,
+    "v1_test_access_forbidden": true
+  },
+  "downstream_separation": {
+    "track_b_and_track_c_protected_results_cannot_reopen_model_or_seed_selection": true,
+    "track_b_evaluates_all_three_frozen_r07_states": true,
+    "track_c_uses_single_preselected_r07_s1_representative": true
+  },
+  "track_c_deployment_representative": {
+    "state": "R07-S1",
+    "experiment_id": "R07-CNXTT-CONTEXT-S1",
+    "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "selection_basis": "frozen Track-A development evidence before any Track-B/Track-C protected outcome",
+    "track_b_results_may_change_representative": false,
+    "track_c_results_may_change_representative": false
+  },
+  "external_lineage_review": {
+    "review_id": "TRACKB_EXTERNAL_LINEAGE_REVIEW_v1",
+    "sha256": "fda8ebf32ce19854679289d72a16f9a7adbe9319e9d0d90046697498f9b645b0",
+    "status": "PRE_RESULTS_FROZEN",
+    "residual_uncertainty_caps_at": "EXT-S"
+  },
+  "remediation_boundary": {
+    "changes_scientific_estimand": false,
+    "changes_candidates": false,
+    "changes_mappings": false,
+    "changes_model_states": false,
+    "changes_metric_definitions": false,
+    "changes_audit_thresholds": false,
+    "changes_support_floor": false,
+    "changes_bootstrap_parameters": false,
+    "changes_historical_surface": false,
+    "reliability_changes": [
+      "execution lock becomes the single runtime source of audit policy",
+      "frozen external-family order seed becomes operational",
+      "source acquisition is checksum-verified and transport-order hardened",
+      "large mutable inputs use non-persistent Kaggle scratch",
+      "candidate ORB cache becomes bounded file-backed storage",
+      "protected inference receives durable attempt ancestry",
+      "scientific closure is emitted only after evidence package verification",
+      "private Kaggle evidence publication is content-addressed and round-trip verified",
+      "stable scientific identity is separated from execution-instance identity"
+    ]
+  },
+  "preservation_assertions": {
+    "candidate_a": "gvlid_grape",
+    "candidate_b": "irish_potato",
+    "all_three_r07_seeds_required": true,
+    "native_output_space": 120,
+    "mapped_subset_logit_renormalization": false,
+    "minimum_independent_families_per_required_mapped_class": 50,
+    "historical_compare_scope": "V1_TRAIN_VAL_ONLY",
+    "historical_compare_image_count": 92744,
+    "maximum_evidence_grade": "EXT-S",
+    "v1_test_access_forbidden": true,
+    "new_training_forbidden": true
+  }
+}

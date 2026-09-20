@@ -9,6 +9,7 @@ import _bootstrap  # noqa: F401
 from cropcop_je.hashing import sha256_file
 from cropcop_je.trackb_r07 import (
     AUTHORITY_ID,
+    CODE_ATTESTATION_ID,
     EXECUTION_LOCK_ID,
     TrackBError,
     load_json,
@@ -32,313 +33,324 @@ def _compile_notebook(path: Path) -> dict:
         if cell.get("cell_type") == "code":
             compile(str(source), f"{path.name}:cell{index}", "exec")
             code_cells += 1
-    return {"cell_count": len(nb.get("cells", [])), "code_cell_count": code_cells, "text": "\n".join(combined)}
+    return {
+        "cell_count": len(nb.get("cells", [])),
+        "code_cell_count": code_cells,
+        "text": "\n".join(combined),
+    }
+
+
+def _require(text: str, values: tuple[str, ...], label: str) -> None:
+    missing = [value for value in values if value not in text]
+    if missing:
+        raise TrackBError(f"{label} missing required v5 guard(s): {missing}")
+
+
+def _forbid(text: str, values: tuple[str, ...], label: str) -> None:
+    found = [value for value in values if value in text]
+    if found:
+        raise TrackBError(f"{label} exposes forbidden/stale surface(s): {found}")
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Static QA gate for the lean CropCop Track-B infrastructure.")
+    ap = argparse.ArgumentParser(
+        description="Static infrastructure QA for hardened CropCop Track-B v5."
+    )
     ap.add_argument("--repo-root", default=".")
     args = ap.parse_args()
     root = Path(args.repo_root).resolve()
 
-    authority_path = root / "journal_extension/amendments/track_bc_r07_downstream_v2.json"
-    lock_path = root / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v2.json"
-    attestation_path = root / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v2.json"
-    final_nb = root / "journal_extension/kaggle/trackb_r07_end_to_end.ipynb"
-    master_nb = root / "journal_extension/kaggle/trackb_r07_master.ipynb"
-    core_nb = root / "journal_extension/kaggle/trackb_build_core_package.ipynb"
-    hist_nb = root / "journal_extension/kaggle/trackb_build_historical_compare.ipynb"
-    runner = root / "journal_extension/scripts/run_trackb_r07.py"
-    audit_module = root / "journal_extension/src/cropcop_je/trackb_r07_audit.py"
-    ops_module = root / "journal_extension/src/cropcop_je/trackb_r07_ops.py"
-    master_runner = root / "journal_extension/scripts/run_trackb_r07_master.py"
-    runtime_bootstrap = root / "journal_extension/scripts/bootstrap_trackb_runtime.py"
-    core_builder = root / "journal_extension/scripts/build_trackb_core_package.py"
-    hist_builder = root / "journal_extension/scripts/build_trackb_historical_compare.py"
-    hist_source_prep = root / "journal_extension/scripts/prepare_trackb_historical_source_input.py"
+    authority_path = root / "journal_extension/amendments/track_bc_r07_downstream_v3.json"
+    lock_path = root / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v4.json"
+    attestation_path = root / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v4.json"
+    source_lock_path = root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json"
+    release_path = root / "journal_extension/track_b_r07/TRACKB_RELEASE_AUTHORITY_v1.json"
+    nb00_path = root / "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb"
+    nb01_path = root / "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb"
 
-    for path in (
-        authority_path, lock_path, attestation_path, final_nb, master_nb, core_nb, hist_nb, runner,
-        audit_module, ops_module, master_runner, runtime_bootstrap, core_builder, hist_builder, hist_source_prep,
-    ):
+    required_files = (
+        authority_path,
+        lock_path,
+        attestation_path,
+        source_lock_path,
+        release_path,
+        nb00_path,
+        nb01_path,
+        root / "journal_extension/scripts/bootstrap_trackb_runtime.py",
+        root / "journal_extension/scripts/build_trackb_core_package.py",
+        root / "journal_extension/scripts/build_trackb_historical_compare.py",
+        root / "journal_extension/scripts/trackb_v4_materialize.py",
+        root / "journal_extension/scripts/trackb_v4_execute_attached.py",
+        root / "journal_extension/scripts/run_trackb_r07.py",
+        root / "journal_extension/scripts/validate_trackb_preinference_qualification.py",
+        root / "journal_extension/scripts/validate_trackb_v4_orchestration.py",
+        root / "journal_extension/scripts/validate_trackb_release_authority.py",
+        root / "journal_extension/src/cropcop_je/trackb_r07.py",
+        root / "journal_extension/src/cropcop_je/trackb_r07_audit.py",
+        root / "journal_extension/src/cropcop_je/trackb_r07_ops.py",
+    )
+    for path in required_files:
         if not path.is_file():
-            raise TrackBError(f"required Track-B infrastructure file missing: {path.relative_to(root)}")
+            raise TrackBError(f"required Track-B v5 infrastructure file missing: {path.relative_to(root)}")
 
     authority = load_json(authority_path)
     lock = load_json(lock_path)
-    if authority.get("authority_id") != AUTHORITY_ID or lock.get("lock_id") != EXECUTION_LOCK_ID:
-        raise TrackBError("Track-B authority/lock identity mismatch")
+    source_lock = load_json(source_lock_path)
+    release = load_json(release_path)
+
     validate_downstream_authority(authority)
     validate_execution_lock(lock)
+    if lock.get("lock_id") != EXECUTION_LOCK_ID:
+        raise TrackBError("execution lock identity differs from executable constant")
+    if source_lock.get("status") != "PASS_EXTERNAL_SOURCE_AUTHORITY":
+        raise TrackBError("external-source authority is not PASS")
+    if any(
+        not isinstance(row, dict) or row.get("materialization_permitted") is not True
+        for row in (source_lock.get("candidates") or {}).values()
+    ):
+        raise TrackBError("external-source authority contains a blocked candidate")
+    if release.get("release_id") != "TRACKB_V5_RELEASE_AUTHORITY_v1":
+        raise TrackBError("unexpected Track-B release authority identity")
+    if release.get("scientific_change") is not False:
+        raise TrackBError("Track-B v5 release authority changes frozen science")
+
     if sha256_file(attestation_path) != lock.get("code_attestation_sha256"):
-        raise TrackBError("execution lock does not bind the committed code attestation")
+        raise TrackBError("v4 execution lock does not bind the committed v4 code attestation")
     attestation = verify_code_attestation(root, attestation_path)
+    if attestation.get("attestation_id") != CODE_ATTESTATION_ID:
+        raise TrackBError("committed code attestation differs from executable constant")
 
-    final_info = _compile_notebook(final_nb)
-    master_info = _compile_notebook(master_nb)
-    core_info = _compile_notebook(core_nb)
-    hist_info = _compile_notebook(hist_nb)
-    final_text = final_info.pop("text")
-    master_text = master_info.pop("text")
-    core_text = core_info.pop("text")
-    hist_text = hist_info.pop("text")
-    lowered = final_text.lower()
-    for forbidden in ("git push", "github_token", "gh_token", "ds-v1-test-consumed", "--split test"):
-        if forbidden in lowered:
-            raise TrackBError(f"final Track-B notebook contains forbidden surface/action: {forbidden}")
-    for required in ("run_trackb_r07.py", "--mode", "all", "TRACKB_FINAL_QA.json", "TRACK_B_CLOSED"):
-        if required not in final_text:
-            raise TrackBError(f"final Track-B notebook missing expected controller binding: {required}")
-    for required in (
-        "build_trackb_core_package.py",
-        "16368",
-        "sec-je-r07-cnxtt-context-s1-8904b100d223-a01",
-        "cropcop-r07-cnxtt-context-s2-abce1197-56023042",
-        "cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
-        "cropcop-secondary-g1-8904b100",
-    ):
-        if required not in core_text:
-            raise TrackBError(f"core package notebook missing frozen operator binding: {required}")
-    if "run_trackb_r07.py" in core_text or "_protected_inference" in core_text:
-        raise TrackBError("core package notebook exposes protected classifier execution")
+    nb00 = _compile_notebook(nb00_path)
+    nb01 = _compile_notebook(nb01_path)
+    nb00_text = nb00.pop("text")
+    nb01_text = nb01.pop("text")
 
-    core_builder_text = core_builder.read_text(encoding="utf-8")
-    for required in (
-        "VAL_COUNT = 16368",
-        "R07_RUN_RECORDS",
-        "DINO_FACTORY_MANIFEST_SHA256",
-        "consumed_test_image_bytes_copied",
-        "v1_validation",
-    ):
-        if required not in core_builder_text:
-            raise TrackBError(f"core package builder missing safety/identity guard: {required}")
-    if "copytree(image_root" in core_builder_text or "dataset/test" in core_builder_text:
-        raise TrackBError("core builder contains a broad or explicit consumed-test copy path")
+    _require(
+        nb00_text,
+        (
+            "KAGGLE_API_TOKEN",
+            "trackb_v4_materialize.py",
+            "TRACKB_READINESS_RECEIPT.json",
+            "protected_external_prediction_count",
+            "v1_test_accessed",
+        ),
+        "Notebook 00",
+    )
+    _forbid(nb00_text, ("CROPCOP_GITHUB_TOKEN",), "Notebook 00")
 
-    for required in (
-        "KAGGLE_API_TOKEN",
-        "CROPCOP_GITHUB_TOKEN",
-        "run_trackb_r07_master.py",
-        "bootstrap_trackb_runtime.py",
-        "requirements-trackb.lock.txt",
-        "PASS_AUTOMATED_TRACK_B_COMPLETE",
-    ):
-        if required not in master_text:
-            raise TrackBError(f"master notebook missing automation binding: {required}")
-    if "agrivision_v2" in master_text.lower() or "agrivision_bd" in master_text.lower():
-        raise TrackBError("master notebook still references retired Agri-Vision candidate")
-    if "metadata.version(" in master_text:
-        raise TrackBError("master notebook still depends on Kaggle live-kernel package versions")
-    if "sys.executable" not in master_text or "--requirements" not in master_text:
-        raise TrackBError("master notebook does not use the proven active-interpreter lock-repair path")
-    if "VENV_PY" in master_text or "trackb_runtime_env" in master_text:
-        raise TrackBError("master notebook still exposes the failed venv execution path")
-    if "verify_github_repository_push_access" not in master_text:
-        raise TrackBError("master notebook lacks fail-fast Git write preflight")
-    git_preflight_pos = master_text.find("verify_github_repository_push_access")
-    runtime_bootstrap_pos = master_text.find("bootstrap_trackb_runtime.py")
-    if min(git_preflight_pos, runtime_bootstrap_pos) < 0 or git_preflight_pos > runtime_bootstrap_pos:
-        raise TrackBError("GitHub write preflight must execute before runtime package repair")
+    _require(
+        nb01_text,
+        (
+            "RUN_MODE = 'qualification'",
+            "TRACKB_INFRASTRUCTURE_BUNDLE.json",
+            "TRACKB_EXTERNAL_BUNDLE.json",
+            "TRACKB_QUALIFICATION_BUNDLE.json",
+            "PASS_PREEXECUTION_ATTACHED_TRUST",
+            "TRACKB_V5_EXECUTION_RECEIPT.json",
+            "Refusing to delete/overwrite existing authoritative Track-B output",
+        ),
+        "Notebook 01",
+    )
+    _forbid(
+        nb01_text,
+        (
+            "git clone",
+            "data.mendeley.com",
+            "zenodo.org/api",
+            "run_trackb_r07_master.py",
+            "shutil.rmtree(OUT)",
+            "get_secret('CROPCOP_GITHUB_TOKEN')",
+            'get_secret("CROPCOP_GITHUB_TOKEN")',
+        ),
+        "Notebook 01",
+    )
+    if "os.environ.pop('CROPCOP_GITHUB_TOKEN', None)" not in nb01_text:
+        raise TrackBError("Notebook 01 must scrub GitHub credentials before scientific execution")
 
-    ops_text = ops_module.read_text(encoding="utf-8")
-    for required in (
-        "KAGGLE_API_TOKEN",
-        "CROPCOP_GITHUB_TOKEN",
-        "publish_to_github_branch",
-        "publish_private_kaggle_dataset",
-        "acquire_gvlid_v5",
-        "acquire_irish_potato",
-        "detect_authenticated_kaggle_owner",
-        "verify_authenticated_kaggle_owner",
-        "verify_kaggle_source_access",
-        "verify_github_repository_push_access",
-        "probe_external_sources",
-        "normalized_image_count",
-        "observed_class_support",
-        "raw_external_images_included",
+    if nb01_text.index("PASS_PREEXECUTION_ATTACHED_TRUST") > nb01_text.index(
+        "BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'"
     ):
-        if required not in ops_text:
-            raise TrackBError(f"Track-B operations module missing automation/security guard: {required}")
-    if "--public" in ops_text or '"-u"' in ops_text:
-        raise TrackBError("Track-B operations module exposes public Kaggle dataset publication")
-    for required in (
-        '"push", "--dry-run"',
-        "GIT_PUSH_DRY_RUN_NO_REMOTE_REF_CREATED",
-        "GIT_ASKPASS_REQUIRE",
-        "credential.helper",
-        "_classify_github_push_failure",
-    ):
-        if required not in ops_text:
-            raise TrackBError(f"GitHub write preflight missing exact Git-transport guard: {required}")
-    if "api.github.com/repos/" in ops_text:
-        raise TrackBError("Track-B GitHub write preflight regressed to REST-only permission probing")
-    if '_safe_extract_zip(archive, data_root / class_name)' in ops_text:
-        raise TrackBError("Irish Potato acquisition still trusts archive-internal directory layout")
-    for required in (
-        "Private Kaggle publication attempt",
-        "for attempt, delay in enumerate((0, 5, 15, 30), start=1)",
-        "private Kaggle dataset publication failed after 4 attempts",
-    ):
-        if required not in ops_text:
-            raise TrackBError(f"private Kaggle publication retry guard missing: {required}")
+        raise TrackBError("Notebook 01 executes attached code before authenticating it")
 
-    bootstrap_text = runtime_bootstrap.read_text(encoding="utf-8")
-    for required in (
-        '"torch": "2.12.1"',
-        '"torchvision": "0.27.1"',
-        '"timm": "1.0.26"',
-        '"numpy": "2.5.2"',
-        '"opencv-python-headless": "4.13.0.92"',
-        '"kaggle": "2.2.4"',
-        "requirements-trackb.lock.txt",
-        '"-m",',
-        '"pip",',
-        '"install",',
-        '"--no-cache-dir"',
-        "scientific_execution_requires_fresh_subprocess",
-        "cuda_available",
-        "opencv_runtime_version",
-        "pre_install_conflicting_opencv_variants",
-        "--force-reinstall",
-        "--no-deps",
-    ):
-        if required not in bootstrap_text:
-            raise TrackBError(f"Track-B runtime repair bootstrap missing frozen guard: {required}")
-    for forbidden in ("-m\", \"venv", "-m\", \"ensurepip", "VENV_PY", "trackb_runtime_env"):
-        if forbidden in bootstrap_text:
-            raise TrackBError(f"Track-B runtime bootstrap still exposes failed venv path: {forbidden}")
+    core_builder = (
+        root / "journal_extension/scripts/build_trackb_core_package.py"
+    ).read_text(encoding="utf-8")
+    _require(
+        core_builder,
+        (
+            "TRACKB_R07_EXECUTION_LOCK_v4.json",
+            "TRACKB_CODE_ATTESTATION_v4.json",
+            "VAL_COUNT = 16368",
+            "consumed_test_image_bytes_copied",
+            "v1_validation",
+        ),
+        "core builder",
+    )
+    _forbid(
+        core_builder,
+        (
+            "TRACKB_R07_EXECUTION_LOCK_v3.json",
+            "TRACKB_CODE_ATTESTATION_v3.json",
+            "dataset/test",
+            "copytree(image_root",
+        ),
+        "core builder",
+    )
 
-    master_runner_text = master_runner.read_text(encoding="utf-8")
-    for required in (
-        "configure_runtime_secrets",
-        "download_kaggle_dataset",
-        "verify_authenticated_kaggle_owner",
-        "verify_kaggle_source_access",
-        "verify_github_repository_push_access",
-        "probe_external_sources",
-        "historical_dataset_slug",
-        "evidence_dataset_slug",
-        "publish_public_trackb_evidence",
-        "publish_private_kaggle_dataset",
-        "stage(\"2.5 :: release redundant model-source downloads\")",
-        "source_roots[\"final_v1\"]",
-        "gvlid_v5",
-        "irish_potato",
-    ):
-        if required not in master_runner_text:
-            raise TrackBError(f"master controller missing automated operation: {required}")
-    if "agrivision_v2" in master_runner_text.lower() or "agrivision_bd" in master_runner_text.lower():
-        raise TrackBError("master controller still references retired Agri-Vision candidate")
-    archive_pos = master_runner_text.find('stage("7 :: restricted evidence archive to private Kaggle")')
-    github_pos = master_runner_text.find('stage("8 :: safe GitHub evidence publication")')
-    if min(archive_pos, github_pos) < 0 or archive_pos > github_pos:
-        raise TrackBError("private evidence must be durably archived before GitHub publication")
-    for required in (
-        "TRACK_B_CLOSED_PRIVATE_EVIDENCE_ARCHIVED_GITHUB_PUBLICATION_FAILED",
-        "for attempt, delay in enumerate((0, 5, 15, 30), start=1)",
-        "scientific_closure_durable_before_github_publication",
-    ):
-        if required not in master_runner_text:
-            raise TrackBError(f"master controller missing publication durability guard: {required}")
-    if '"--kaggle-owner", default=KAGGLE_OWNER_DEFAULT' not in master_runner_text:
-        raise TrackBError("master controller does not expose the authenticated-owner policy surface")
-    automation = lock.get("automation", {})
-    if automation.get("kaggle_dataset_owner_default") != "AUTO":
-        raise TrackBError("execution lock does not default private Kaggle ownership to AUTO")
-    if automation.get("kaggle_dataset_owner_mode") != "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT":
-        raise TrackBError("execution lock does not require authenticated Kaggle owner auto-detection")
-    kaggle_policy = lock.get("kaggle", {})
-    if kaggle_policy.get("internet_required_during_claim_run") is not True:
-        raise TrackBError("automated master requires Internet for orchestration/publication")
-    if kaggle_policy.get("protected_inference_network_dependency") is not False:
-        raise TrackBError("protected inference must not depend scientifically on network access")
+    historical = (
+        root / "journal_extension/scripts/build_trackb_historical_compare.py"
+    ).read_text(encoding="utf-8")
+    _require(
+        historical,
+        (
+            'SAFE_SCOPE = "V1_TRAIN_VAL_ONLY"',
+            "SAFE_ROWS = TRAIN_ROWS + VAL_ROWS",
+            '"v1_test_image_bytes_accessed": False',
+            '"maximum_evidence_grade": "EXT-S"',
+            "dino_batch_probe_size",
+            "len(dino_samples) != 64",
+            "_historical_output_budget_bytes()",
+        ),
+        "historical builder",
+    )
+    _forbid(historical, ("EXPECTED_ROWS = 117546",), "historical builder")
 
-    if "build_trackb_historical_compare.py" not in hist_text or "code_attestation" not in hist_text:
-        raise TrackBError("historical comparison notebook is not bound to the attested builder")
-    for required in (
-        "V1_TRAIN_VAL_ONLY",
-        "92744",
-        "EXT-S",
-        "v1_test_image_bytes_accessed",
-        "--v1-manifest",
+    materializer = (
+        root / "journal_extension/scripts/trackb_v4_materialize.py"
+    ).read_text(encoding="utf-8")
+    _require(
+        materializer,
+        (
+            "authoritative external cohorts — fail-fast sealed acquisition",
+            "expected_source_manifest_sha256",
+            "_role_content_identity",
+            "role_content_identity",
+            "PASS_TRACKB_INPUT_MATERIALIZATION",
+        ),
+        "materializer",
+    )
+    if materializer.index("authoritative external cohorts — fail-fast sealed acquisition") > materializer.index(
+        "safe historical comparison"
     ):
-        if required not in hist_text:
-            raise TrackBError(f"safe historical comparison notebook missing guard: {required}")
-    if "--source-manifest" in hist_text or "historical_source package" in hist_text:
-        raise TrackBError("historical comparison notebook still exposes the obsolete full-raw source route")
+        raise TrackBError("materializer runs historical compute before external source sealing")
 
-    audit_text = audit_module.read_text(encoding="utf-8")
-    for forbidden in ("load_r07_checkpoint", "prediction_rows", "mapped_scope_metrics", "R07_CHECKPOINTS"):
-        if forbidden in audit_text:
-            raise TrackBError(f"prediction-blind audit module imports/references classifier path: {forbidden}")
+    controller = (
+        root / "journal_extension/scripts/trackb_v4_execute_attached.py"
+    ).read_text(encoding="utf-8")
+    _require(
+        controller,
+        (
+            "_validate_pairing",
+            "_validate_qualification_bundle",
+            "PASS_IMMUTABLE_PREDICTION_BLIND_QUALIFICATION",
+            "TRACKB_V5_EXECUTION_RECEIPT.json",
+            "qualification_recomputed",
+            "refusing to delete or overwrite an existing Track-B authoritative output root",
+        ),
+        "attached execution controller",
+    )
+    _forbid(controller, ("shutil.rmtree(output_root)",), "attached execution controller")
 
-    hist_builder_text = hist_builder.read_text(encoding="utf-8")
-    for required in (
-        'SAFE_ROWS = TRAIN_ROWS + VAL_ROWS',
-        'SAFE_SCOPE = "V1_TRAIN_VAL_ONLY"',
-        '"v1_test_image_bytes_accessed": False',
-        '"maximum_evidence_grade": "EXT-S"',
-    ):
-        if required not in hist_builder_text:
-            raise TrackBError(f"safe historical builder missing guard: {required}")
-    if "EXPECTED_ROWS = 117546" in hist_builder_text:
-        raise TrackBError("post-closure historical builder still authorizes raw 117,546-image reconstruction")
-    prep_text = hist_source_prep.read_text(encoding="utf-8")
-    if "Raw 117,546-image historical-source reconstruction is disabled after V1-test closure" not in prep_text:
-        raise TrackBError("obsolete full-raw historical source preparer is not fail-closed")
+    runner = (
+        root / "journal_extension/scripts/run_trackb_r07.py"
+    ).read_text(encoding="utf-8")
+    _require(
+        runner,
+        (
+            'choices=["preflight", "qualification", "claim", "all"]',
+            "_load_claim_qualification",
+            "_execute_protected_claim_from_qualification",
+            "qualification_recomputed",
+            "acquire_claim_lease",
+            "SCIENCE_QA_PASS",
+            "TRACKB_CAPACITY_PREFLIGHT.json",
+            "_configure_determinism",
+            "_require_remaining_time",
+            "PASS_PREDICTION_BLIND_QUALIFICATION",
+        ),
+        "scientific runner",
+    )
+    claim_gate = runner.index('if args.mode == "claim":')
+    audit_gate = runner.index('stage("1-4 :: prediction-blind source verification')
+    if claim_gate > audit_gate:
+        raise TrackBError("claim path does not branch before prediction-blind audit recomputation")
 
-    runner_text = runner.read_text(encoding="utf-8")
-    for required in (
-        "declared_hist_count == 92744",
-        '"coverage_scope": "V1_TRAIN_VAL_ONLY"',
-        '"maximum_evidence_grade": "EXT-S"',
-        "full 117,546-image EXT-I route is dormant",
-        "locked Python drift",
-    ):
-        if required not in runner_text:
-            raise TrackBError(f"final runner missing safe historical-package gate: {required}")
-    audit_call = runner_text.find('grape = _audit_candidate(')
-    second_audit_call = runner_text.find('potato = _audit_candidate(')
-    firewall = runner_text.find('stage("4 :: prediction firewall")')
-    protected = runner_text.find('"gvlid_grape": _protected_inference(')
-    if min(audit_call, second_audit_call, firewall, protected) < 0 or not (audit_call < second_audit_call < firewall < protected):
-        raise TrackBError("runner chronology no longer guarantees both v2 audits before protected inference")
-    if "agrivision" in runner_text.lower():
-        raise TrackBError("executable runner still contains a retired Agri-Vision code path/token")
-    if "Tomato Mosaic -> tomato_mosaic_virus".lower() in runner_text.lower():
-        raise TrackBError("executable runner still contains the retired Tomato Mosaic semantic gate")
+    ops = (
+        root / "journal_extension/src/cropcop_je/trackb_r07_ops.py"
+    ).read_text(encoding="utf-8")
+    _require(
+        ops,
+        (
+            "_download_mendeley_record",
+            "signed-URL refresh",
+            "source byte-size mismatch",
+            "duplicate/case-colliding member path",
+            "acquire_claim_lease",
+            "TRACKB_KAGGLE_CONTENT_MANIFEST.json",
+            "allow_version",
+        ),
+        "Track-B operations",
+    )
+    _forbid(ops, ('"--public"',), "Track-B operations")
+
+    audit = (
+        root / "journal_extension/src/cropcop_je/trackb_r07_audit.py"
+    ).read_text(encoding="utf-8")
+    _require(
+        audit,
+        (
+            "_CV2_RANSAC_LOCK",
+            "cv2.setRNGSeed",
+            "deterministic top-k tie resolution",
+        ),
+        "prediction-blind audit",
+    )
+    _forbid(
+        audit,
+        ("load_r07_checkpoint", "prediction_rows", "mapped_scope_metrics", "R07_CHECKPOINTS"),
+        "prediction-blind audit",
+    )
+
+    bootstrap = (
+        root / "journal_extension/scripts/bootstrap_trackb_runtime.py"
+    ).read_text(encoding="utf-8")
+    _require(
+        bootstrap,
+        (
+            '"torch": "2.12.1"',
+            '"torchvision": "0.27.1"',
+            '"timm": "1.0.26"',
+            '"numpy": "2.5.2"',
+            '"opencv-python-headless": "4.13.0.92"',
+            '"kaggle": "2.2.4"',
+            "scientific_execution_requires_fresh_subprocess",
+            "cuda_available",
+        ),
+        "runtime bootstrap",
+    )
 
     result = {
-        "schema_version": "1.0",
-        "status": "PASS",
+        "schema_version": "2.0",
+        "status": "PASS_TRACKB_V5_INFRASTRUCTURE_QA",
         "authority_id": AUTHORITY_ID,
         "execution_lock_id": EXECUTION_LOCK_ID,
+        "code_attestation_id": CODE_ATTESTATION_ID,
         "code_attestation_sha256": sha256_file(attestation_path),
         "attested_file_count": len(attestation.get("files", [])),
-        "final_notebook": final_info,
-        "master_notebook": master_info,
-        "core_builder_notebook": core_info,
-        "historical_builder_notebook": hist_info,
-        "single_master_automation_surface": True,
-        "proven_kaggle_lock_repair_bootstrap": True,
-        "automatic_private_kaggle_archival": True,
-        "automatic_public_safe_github_publication": True,
-        "git_write_preflight_uses_publication_transport": True,
-        "git_write_preflight_before_runtime_repair": True,
-        "private_evidence_archived_before_github_publication": True,
-        "github_publication_retry_attempts": 4,
-        "private_kaggle_publication_retry_attempts": 4,
-        "track_b_v2_candidates": ["gvlid_grape", "irish_potato"],
-        "retired_v1_candidate_absent": True,
-        "core_builder_validation_only_surface": True,
-        "prediction_blind_audit_module": True,
-        "both_candidate_audits_before_protected_inference": True,
-        "git_push_from_claim_notebook": False,
-        "consumed_v1_test_reference_in_claim_notebook": False,
-        "safe_historical_builder_scope": "V1_TRAIN_VAL_ONLY",
-        "safe_historical_builder_image_count": 92744,
-        "safe_historical_builder_maximum_grade": "EXT-S",
-        "full_ext_i_representation_policy": "pre_test_recovered_representation_only",
+        "external_source_authority": source_lock.get("status"),
+        "release_status": release.get("status"),
+        "release_executable": release.get("executable"),
+        "notebook_00": nb00,
+        "notebook_01": nb01,
+        "two_notebook_operator_surface": True,
+        "attached_code_authenticated_before_execution": True,
+        "full_role_content_binding": True,
+        "immutable_qualification_handoff": True,
+        "claim_recomputes_qualification": False,
+        "single_writer_claim_lease": True,
+        "durable_attempt_state_machine": True,
+        "v1_test_closed": True,
+        "protected_external_predictions_before_claim": 0,
     }
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
