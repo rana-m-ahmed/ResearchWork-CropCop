@@ -1177,6 +1177,7 @@ def main() -> int:
     ap.add_argument("--source-git-sha", default="")
     ap.add_argument("--attempt-dataset-slug", default="")
     ap.add_argument("--attempt-id", default="")
+    ap.add_argument("--authorized-qualification-sha256", default="")
     args = ap.parse_args()
 
     output_root = Path(args.output_root).resolve()
@@ -1249,48 +1250,70 @@ def main() -> int:
     }
     atomic_write_json(output_root / "TRACKB_PREDICTION_FIREWALL.json", firewall)
 
-    if args.mode == "qualification":
-        qualification = {
-            "schema_version": "1.0",
-            "status": "PASS_PREDICTION_BLIND_QUALIFICATION",
-            "authority_id": AUTHORITY_ID,
-            "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
-            "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
-            "code_attestation_sha256": sha256_file(resolve_bundle_file(core, "code_attestation")),
-            "historical_compare_input_manifest_sha256": sha256_file(historical.manifest_path),
-            "historical_compare_scope": historical.manifest.get("coverage_scope"),
-            "historical_compare_image_count": int(historical.manifest.get("image_count", -1)),
-            "historical_maximum_evidence_grade": historical.manifest.get("maximum_evidence_grade"),
-            "v1_test_accessed": False,
-            "new_training_performed": False,
-            "protected_external_prediction_count": 0,
-            "prediction_firewall_sha256": sha256_file(output_root / "TRACKB_PREDICTION_FIREWALL.json"),
-            "candidates": {},
+    qualification = {
+        "schema_version": "1.0",
+        "status": "PASS_PREDICTION_BLIND_QUALIFICATION",
+        "authority_id": AUTHORITY_ID,
+        "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
+        "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
+        "code_attestation_sha256": sha256_file(resolve_bundle_file(core, "code_attestation")),
+        "historical_compare_input_manifest_sha256": sha256_file(historical.manifest_path),
+        "historical_compare_scope": historical.manifest.get("coverage_scope"),
+        "historical_compare_image_count": int(historical.manifest.get("image_count", -1)),
+        "historical_maximum_evidence_grade": historical.manifest.get("maximum_evidence_grade"),
+        "v1_test_accessed": False,
+        "new_training_performed": False,
+        "protected_external_prediction_count": 0,
+        "prediction_firewall_sha256": sha256_file(output_root / "TRACKB_PREDICTION_FIREWALL.json"),
+        "candidates": {},
+    }
+    for candidate in (grape, potato):
+        seal = candidate["seal"]
+        qualification["candidates"][candidate["candidate_id"]] = {
+            "grade": seal["grade"],
+            "claim_mode": seal["claim_mode"],
+            "seal_sha256": seal["seal_sha256"],
+            "candidate_input_manifest_sha256": seal["candidate_input_manifest_sha256"],
+            "source_manifest_sha256": seal["source_manifest_sha256"],
+            "source_metadata_record_sha256": seal["source_metadata_record_sha256"],
+            "family_graph_sha256": seal["family_graph_sha256"],
+            "representative_manifest_sha256": seal["representative_manifest_sha256"],
+            "accepted_historical_edges_sha256": seal["accepted_historical_edges_sha256"],
+            "exclusion_ledger_sha256": seal["exclusion_ledger_sha256"],
+            "decode_failure_ledger_sha256": seal["decode_failure_ledger_sha256"],
+            "family_support": seal["family_support"],
+            "accepted_historical_link_count": int(seal["accepted_historical_link_count"]),
+            "historical_surface_complete": bool(seal["historical_surface_complete"]),
         }
-        for candidate in (grape, potato):
-            seal = candidate["seal"]
-            qualification["candidates"][candidate["candidate_id"]] = {
-                "grade": seal["grade"],
-                "claim_mode": seal["claim_mode"],
-                "seal_sha256": seal["seal_sha256"],
-                "candidate_input_manifest_sha256": seal["candidate_input_manifest_sha256"],
-                "source_manifest_sha256": seal["source_manifest_sha256"],
-                "source_metadata_record_sha256": seal["source_metadata_record_sha256"],
-                "family_graph_sha256": seal["family_graph_sha256"],
-                "representative_manifest_sha256": seal["representative_manifest_sha256"],
-                "accepted_historical_edges_sha256": seal["accepted_historical_edges_sha256"],
-                "exclusion_ledger_sha256": seal["exclusion_ledger_sha256"],
-                "decode_failure_ledger_sha256": seal["decode_failure_ledger_sha256"],
-                "family_support": seal["family_support"],
-                "accepted_historical_link_count": int(seal["accepted_historical_link_count"]),
-                "historical_surface_complete": bool(seal["historical_surface_complete"]),
-            }
-        qualification["qualification_sha256"] = sha256_json(
-            {k: v for k, v in qualification.items() if k != "qualification_sha256"}
-        )
-        atomic_write_json(output_root / "TRACKB_PREINFERENCE_QUALIFICATION.json", qualification)
+    qualification["qualification_sha256"] = sha256_json(
+        {k: v for k, v in qualification.items() if k != "qualification_sha256"}
+    )
+    atomic_write_json(output_root / "TRACKB_PREINFERENCE_QUALIFICATION.json", qualification)
+
+    if args.mode == "qualification":
         print(json.dumps(qualification, indent=2, sort_keys=True))
         return 0
+
+    authorized_qualification = str(args.authorized_qualification_sha256).strip().lower()
+    if len(authorized_qualification) != 64 or any(ch not in "0123456789abcdef" for ch in authorized_qualification):
+        raise TrackBError(
+            "protected claim execution requires a reviewed --authorized-qualification-sha256"
+        )
+    if qualification["qualification_sha256"] != authorized_qualification:
+        raise TrackBError(
+            "current prediction-blind qualification does not match the reviewed authorization: "
+            f"authorized={authorized_qualification}, current={qualification['qualification_sha256']}"
+        )
+    atomic_write_json(
+        output_root / "TRACKB_QUALIFICATION_AUTHORIZATION.json",
+        {
+            "schema_version": "1.0",
+            "status": "PASS_MATCHED_REVIEWED_QUALIFICATION",
+            "authorized_qualification_sha256": authorized_qualification,
+            "current_qualification_sha256": qualification["qualification_sha256"],
+            "protected_inference_authorized": True,
+        },
+    )
 
     claim_candidates = [candidate for candidate in (grape, potato) if candidate["grade"] in {"EXT-I", "EXT-S"}]
     attempt_state = None
