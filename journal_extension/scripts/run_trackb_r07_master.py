@@ -221,6 +221,7 @@ def main() -> int:
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--kaggle-owner", default=KAGGLE_OWNER_DEFAULT)
     ap.add_argument("--force-rebuild-historical", action="store_true")
+    ap.add_argument("--execution-mode", choices=["qualification", "claim"], default="qualification")
     args = ap.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
@@ -261,7 +262,8 @@ def main() -> int:
     attempt_id = f"TB3-{source_git_sha[:12]}-{int(time.time())}"
     receipt = {
         "schema_version": "2.0",
-        "controller": "TRACKB_R07_MASTER_v2",
+        "controller": "TRACKB_R07_MASTER_v3",
+        "execution_mode": args.execution_mode,
         "started_at_utc": utc_now(),
         "repository_head": source_git_sha,
         "secret_presence": secret_presence,
@@ -359,22 +361,63 @@ def main() -> int:
 
     stage("6 :: sealed Track-B execution")
     runner = repo_root / "journal_extension/scripts/run_trackb_r07.py"
-    run_checked(
-        [
-            sys.executable, str(runner),
-            "--input-root", str(inputs_root),
-            "--output-root", str(output_root),
-            "--scratch-root", str(scratch_root / "audit_scratch"),
-            "--device", args.device,
-            "--workers", "4",
-            "--mode", "all",
-            "--source-git-sha", source_git_sha,
+    runner_mode = "qualification" if args.execution_mode == "qualification" else "all"
+    runner_cmd = [
+        sys.executable, str(runner),
+        "--input-root", str(inputs_root),
+        "--output-root", str(output_root),
+        "--scratch-root", str(scratch_root / "audit_scratch"),
+        "--device", args.device,
+        "--workers", "4",
+        "--mode", runner_mode,
+        "--source-git-sha", source_git_sha,
+    ]
+    if args.execution_mode == "claim":
+        runner_cmd += [
             "--attempt-dataset-slug", attempt_dataset,
             "--attempt-id", attempt_id,
-        ],
-        cwd=repo_root,
-        timeout=36000,
-    )
+        ]
+    run_checked(runner_cmd, cwd=repo_root, timeout=36000)
+
+    if args.execution_mode == "qualification":
+        stage("6.5 :: independent prediction-blind qualification QA")
+        validator = repo_root / "journal_extension/scripts/validate_trackb_preinference_qualification.py"
+        run_checked(
+            [
+                sys.executable, str(validator),
+                "--input-root", str(inputs_root),
+                "--output-root", str(output_root),
+            ],
+            cwd=repo_root,
+            timeout=3600,
+        )
+        qualification = load_json(output_root / "TRACKB_PREINFERENCE_QUALIFICATION.json")
+        preqa = load_json(output_root / "TRACKB_PREINFERENCE_QA.json")
+        if (
+            qualification.get("status") != "PASS_PREDICTION_BLIND_QUALIFICATION"
+            or preqa.get("status") != "PASS_INDEPENDENT_PREINFERENCE_QA"
+            or int(preqa.get("protected_external_prediction_count", -1)) != 0
+        ):
+            raise TrackBOpsError("Track-B prediction-blind qualification did not reach terminal PASS")
+        receipt["qualification"] = {
+            "qualification_sha256": qualification["qualification_sha256"],
+            "qa_sha256": preqa["qa_sha256"],
+            "protected_external_prediction_count": 0,
+            "v1_test_accessed": False,
+        }
+        receipt["completed_at_utc"] = utc_now()
+        shutil.rmtree(scratch_root, ignore_errors=True)
+        receipt["persistent_hygiene"] = assert_persistent_output_hygiene(workspace, output_root)
+        receipt["final_disk_gb"] = disk_gb(workspace)
+        receipt["status"] = "PASS_TRACKB_PREINFERENCE_QUALIFICATION"
+        receipt["protected_external_inference_executed"] = False
+        receipt["claim_run_authorized_by_this_receipt"] = False
+        (output_root / "TRACKB_AUTOMATION_RECEIPT.json").write_text(
+            json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
+        )
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+        return 0
+
     closure = load_json(output_root / "TRACKB_FINAL_CLOSURE.json")
     qa = load_json(output_root / "TRACKB_FINAL_QA.json")
     if closure.get("status") != "TRACK_B_CLOSED" or qa.get("status") != "PASS":
