@@ -18,6 +18,7 @@ from cropcop_je.trackb_r07_ops import (
     configure_runtime_secrets,
     evidence_dataset_slug,
     prepare_private_evidence_folder,
+    publish_attempt_state,
     publish_private_kaggle_dataset,
     run_checked,
     verify_authenticated_kaggle_owner,
@@ -220,14 +221,16 @@ def _run_claim(
     device: str,
     authorized_sha: str,
     kaggle_owner: str,
+    materialization_id: str,
 ) -> dict:
     if len(authorized_sha) != 64 or any(ch not in "0123456789abcdef" for ch in authorized_sha):
         raise TrackBOpsError("claim mode requires a 64-character reviewed qualification science SHA-256")
 
     configure_runtime_secrets(require_github=False)
     owner = verify_authenticated_kaggle_owner(kaggle_owner)
-    attempt_slug = f"{owner}/cropcop-trackb-r07-attempt-ledger-v4"
-    attempt_id = f"TB4-{source_git_sha[:12]}-{int(time.time())}"
+    attempt_slug = f"{owner}/cropcop-trackb-r07-attempt-ledger-v5"
+    lease_slug = f"{owner}/cropcop-trackb-r07-claim-{authorized_sha[:16]}"
+    attempt_id = f"TB5-{source_git_sha[:12]}-{int(time.time())}"
     runner = repo_root / "journal_extension/scripts/run_trackb_r07.py"
 
     run_checked(
@@ -241,6 +244,8 @@ def _run_claim(
             "--mode", "all",
             "--source-git-sha", source_git_sha,
             "--attempt-dataset-slug", attempt_slug,
+            "--claim-lease-dataset-slug", lease_slug,
+            "--materialization-id", materialization_id,
             "--attempt-id", attempt_id,
             "--authorized-qualification-science-sha256", authorized_sha,
         ],
@@ -260,17 +265,46 @@ def _run_claim(
     private_receipt = publish_private_kaggle_dataset(
         folder=restricted,
         slug=evidence_slug,
-        title="CropCop Track B R07 Restricted Evidence v4",
+        title="CropCop Track B R07 Restricted Evidence v5",
         version_message=f"Track-B closure {str(closure['closure_sha256'])[:16]}",
         license_name="other",
         full_roundtrip=True,
     )
+
+    attempt_state_path = output_root / "TRACKB_ATTEMPT_STATE.json"
+    attempt_state = load_json(attempt_state_path)
+    attempt_state = {
+        **attempt_state,
+        "status": "PRIVATE_ARCHIVE_VERIFIED",
+        "private_archive_verified_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "private_evidence_content_digest_sha256": private_receipt["content_digest_sha256"],
+    }
+    attempt_state_path.write_text(
+        json.dumps(attempt_state, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    archive_state_receipt = publish_attempt_state(attempt_slug, attempt_state)
+
+    attempt_state = {
+        **attempt_state,
+        "status": "TRACK_B_CLOSED",
+        "track_b_closed_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "closure_sha256": closure["closure_sha256"],
+    }
+    attempt_state_path.write_text(
+        json.dumps(attempt_state, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    closed_state_receipt = publish_attempt_state(attempt_slug, attempt_state)
 
     return {
         "status": "PASS_TRACKB_CLOSED_PRIVATE_ARCHIVED",
         "owner": owner,
         "attempt_id": attempt_id,
         "attempt_dataset_slug": attempt_slug,
+        "claim_lease_dataset_slug": lease_slug,
+        "archive_state_publication": archive_state_receipt,
+        "closed_state_publication": closed_state_receipt,
         "closure_sha256": closure["closure_sha256"],
         "trackb_science_sha256": closure["trackb_science_sha256"],
         "final_qa_sha256": qa["qa_sha256"],
@@ -332,6 +366,7 @@ def main() -> int:
             device=args.device,
             authorized_sha=str(args.authorized_qualification_science_sha256).strip().lower(),
             kaggle_owner=args.kaggle_owner,
+            materialization_id=str(paired["materialization_id"]),
         )
 
     receipt = {
