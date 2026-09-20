@@ -244,7 +244,7 @@ def main() -> int:
             "_validate_qualification_bundle",
             "PASS_IMMUTABLE_PREDICTION_BLIND_QUALIFICATION",
             "TRACKB_V5_EXECUTION_RECEIPT.json",
-            "qualification_recomputed",
+            "**result",
             "refusing to delete or overwrite an existing Track-B authoritative output root",
         ),
         "attached execution controller",
