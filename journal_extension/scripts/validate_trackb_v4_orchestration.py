@@ -181,7 +181,7 @@ def main() -> int:
         (
             "PASS_IMMUTABLE_PREDICTION_BLIND_QUALIFICATION",
             "_validate_qualification_bundle",
-            "qualification_recomputed",
+            "**result",
             "TRACKB_V5_EXECUTION_RECEIPT.json",
             "refusing to delete or overwrite an existing Track-B authoritative output root",
         ),
