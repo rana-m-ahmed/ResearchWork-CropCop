@@ -221,7 +221,7 @@ class TrackBR07Tests(unittest.TestCase):
             f = root / "x.py"
             f.write_text("print('ok')\n", encoding="utf-8")
             att = {
-                "attestation_id": "TRACKB_CODE_ATTESTATION_v3",
+                "attestation_id": "TRACKB_CODE_ATTESTATION_v4",
                 "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
                 "files": [{"path": "x.py", "git_blob_sha1": git_blob_sha1(f)}],
             }
@@ -245,81 +245,69 @@ class TrackBR07Tests(unittest.TestCase):
             },
         )
 
-    def test_v3_lock_requires_automated_publication_boundaries(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+    def test_v4_lock_requires_hardened_orchestration_boundaries(self):
+        lock = load_json(
+            ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v4.json"
+        )
         validate_execution_lock(lock)
-        automation = lock["automation"]
-        self.assertTrue(automation["single_master_notebook"])
-        self.assertTrue(automation["auto_commit_public_safe_evidence_to_github"])
-        self.assertTrue(automation["auto_archive_complete_restricted_evidence_to_private_kaggle"])
-        self.assertFalse(automation["raw_images_to_github"])
-        self.assertFalse(automation["checkpoints_to_github"])
-        self.assertEqual(automation["kaggle_dataset_owner_default"], "AUTO")
-        self.assertEqual(
-            automation["kaggle_dataset_owner_mode"],
-            "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT",
-        )
-        self.assertTrue(lock["kaggle"]["internet_required_during_claim_run"])
-        self.assertEqual(
-            lock["kaggle"]["internet_role"],
-            "ORCHESTRATION_AND_EVIDENCE_PUBLICATION_ONLY",
-        )
-        self.assertFalse(lock["kaggle"]["protected_inference_network_dependency"])
-        self.assertEqual(lock["software"]["timm"], "1.0.26")
-        self.assertEqual(lock["software"]["opencv_python_headless"], "4.13.0.92")
-        self.assertEqual(lock["software"]["kaggle"], "2.2.4")
-        bootstrap = lock["runtime_bootstrap"]
-        self.assertEqual(bootstrap["mode"], "PROVEN_KAGGLE_LOCK_REPAIR_FRESH_SUBPROCESS")
-        self.assertEqual(bootstrap["python"], "3.12.13")
-        self.assertEqual(
-            bootstrap["pip_install_strategy"],
-            "ACTIVE_INTERPRETER_EXACT_LOCK_BEFORE_SCIENTIFIC_IMPORTS",
-        )
-        self.assertFalse(bootstrap["venv_required"])
-        self.assertFalse(bootstrap["ensurepip_required"])
-        self.assertEqual(
-            bootstrap["scientific_execution_process"],
-            "FRESH_SUBPROCESS_AFTER_LOCK_REPAIR",
-        )
-        self.assertTrue(bootstrap["parent_kernel_scientific_imports_after_repair_forbidden"])
-        self.assertEqual(
-            automation["github_push_preflight_transport"],
-            "GIT_PUSH_DRY_RUN_SAME_AS_PUBLICATION",
-        )
-        self.assertTrue(automation["github_push_preflight_before_runtime_repair"])
-        self.assertTrue(automation["private_evidence_archive_before_github_publication"])
-        self.assertEqual(automation["github_publication_retry_attempts"], 4)
-        self.assertEqual(automation["private_kaggle_publication_retry_attempts"], 4)
-        self.assertTrue(automation["github_publication_failure_preserves_scientific_closure"])
-        self.assertEqual(automation["operator_default_mode"], "qualification")
-        self.assertTrue(automation["independent_preinference_qa_required"])
-        self.assertTrue(automation["protected_claim_requires_post_qualification_exact_sha_freeze"])
-        self.assertTrue(automation["qualification_must_produce_zero_protected_external_predictions"])
-        self.assertTrue(automation["protected_claim_requires_matching_qualification_science_sha256"])
-        self.assertTrue(automation["qualification_science_identity_excludes_execution_timestamps"])
-        self.assertTrue(automation["qualification_science_identity_reused_for_attempt_ancestry"])
-        self.assertEqual(automation["github_token_required_modes"], ["claim"])
-        self.assertEqual(automation["github_push_preflight_modes"], ["claim"])
-        self.assertFalse(automation["qualification_requires_github_token"])
-        self.assertFalse(automation["qualification_requires_github_push_preflight"])
 
-        drifted = dict(lock)
-        drifted["automation"] = dict(automation)
-        drifted["automation"]["raw_images_to_github"] = True
+        orchestration = lock["orchestration"]
+        self.assertEqual(
+            orchestration["operator_notebook_policy"],
+            "TWO_SUPPORTED_NOTEBOOKS_ONLY",
+        )
+        self.assertTrue(orchestration["attached_code_authenticated_before_execution"])
+        self.assertTrue(orchestration["full_role_content_binding_required"])
+        self.assertTrue(orchestration["content_addressed_private_datasets"])
+        self.assertTrue(orchestration["immutable_qualification_bundle_required"])
+        self.assertFalse(orchestration["claim_recomputes_qualification"])
+        self.assertTrue(orchestration["claim_single_writer_lease_required"])
+        self.assertEqual(orchestration["qualification_protected_prediction_count"], 0)
+        self.assertFalse(orchestration["qualification_requires_github_token"])
+        self.assertFalse(orchestration["claim_requires_github_token"])
+        self.assertTrue(orchestration["v1_test_reopen_forbidden"])
+        self.assertEqual(
+            orchestration["durable_attempt_states"],
+            [
+                "PROTECTED_INFERENCE_STARTED",
+                "SCIENCE_QA_PASS",
+                "PRIVATE_ARCHIVE_VERIFIED",
+                "TRACK_B_CLOSED",
+            ],
+        )
+
+        source_integrity = lock["source_integrity"]
+        self.assertTrue(source_integrity["gvlid_pinned_official_companion_ledger_required"])
+        self.assertTrue(source_integrity["irish_potato_official_archive_checksum_required"])
+        self.assertTrue(source_integrity["external_source_manifest_toc_tou_binding_required"])
+        self.assertTrue(source_integrity["full_attached_role_content_binding_required"])
+
+        runtime = lock["runtime_policy"]
+        self.assertTrue(runtime["torch_deterministic_algorithms_required"])
+        self.assertTrue(runtime["opencv_ransac_pair_seeded"])
+        self.assertTrue(runtime["dino_topk_cutoff_ties_stable_by_reference_index"])
+        self.assertEqual(runtime["max_audit_candidate_pairs_per_surface"], 5000000)
+
+        self.assertEqual(lock["kaggle"]["target_accelerator"], "T4x2")
+        self.assertEqual(lock["kaggle"]["publication_reserve_minutes"], 90)
+        self.assertFalse(lock["kaggle"]["protected_inference_network_dependency"])
+        self.assertFalse(lock["closure_policy"]["qualification_recomputed_during_claim"])
+
+        import copy
+        drifted = copy.deepcopy(lock)
+        drifted["orchestration"]["claim_recomputes_qualification"] = True
         with self.assertRaises(TrackBError):
             validate_execution_lock(drifted)
 
-        drifted_owner = dict(lock)
-        drifted_owner["automation"] = dict(automation)
-        drifted_owner["automation"]["kaggle_dataset_owner_default"] = "someone"
+        drifted = copy.deepcopy(lock)
+        drifted["runtime_policy"]["opencv_ransac_pair_seeded"] = False
         with self.assertRaises(TrackBError):
-            validate_execution_lock(drifted_owner)
+            validate_execution_lock(drifted)
 
-        drifted_network = dict(lock)
-        drifted_network["kaggle"] = dict(lock["kaggle"])
-        drifted_network["kaggle"]["protected_inference_network_dependency"] = True
+        drifted = copy.deepcopy(lock)
+        drifted["source_integrity"]["full_attached_role_content_binding_required"] = False
         with self.assertRaises(TrackBError):
-            validate_execution_lock(drifted_network)
+            validate_execution_lock(drifted)
 
     def test_github_push_failure_classifier_distinguishes_bad_token(self):
         message = _classify_github_push_failure(
@@ -394,7 +382,7 @@ class TrackBR07Tests(unittest.TestCase):
         verify_candidate_seal(build_candidate_seal(payload))
 
     def test_execution_lock_binds_replay_records_and_dino_factory(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v4.json")
         validate_execution_lock(lock)
         ids = lock["identities"]
         self.assertEqual(ids["dino_factory_manifest_sha256"], DINO_FACTORY_MANIFEST_SHA256)
@@ -410,7 +398,7 @@ class TrackBR07Tests(unittest.TestCase):
             validate_execution_lock(drifted)
 
     def test_execution_lock_forbids_postclosure_full_raw_rebuild(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v4.json")
         validate_execution_lock(lock)
         drifted = dict(lock)
         drifted["historical_compare"] = dict(lock["historical_compare"])
@@ -438,7 +426,7 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertEqual(rows[0]["representative_raw_sha256"], "0" * 64)
 
     def test_audit_policy_is_executable_lock_source_of_truth(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v4.json")
         policy = audit_policy_from_lock(lock)
         self.assertEqual(policy.phash_radius, 12)
         self.assertEqual(policy.dhash_radius, 10)
@@ -451,7 +439,7 @@ class TrackBR07Tests(unittest.TestCase):
 
     def test_lock_rejects_operational_threshold_drift(self):
         import copy
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v4.json")
         mutations = [
             ("candidate_generation", "dino_top_k", 49),
             ("geometric_acceptance", "lowe_ratio", 0.74),
