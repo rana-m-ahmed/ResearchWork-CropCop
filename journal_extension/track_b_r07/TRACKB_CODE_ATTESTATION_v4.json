@@ -61,12 +61,12 @@
     },
     {
       "path": "journal_extension/scripts/trackb_v4_execute_attached.py",
-      "git_blob_sha1": "158ce8cd6f4c9d648d244d22b6c043c76fcc2060",
+      "git_blob_sha1": "faabd9b238836140387fbdbdb4f40f8c7af795a2",
       "origin": "track_b_v5_hardening"
     },
     {
       "path": "journal_extension/scripts/trackb_v4_materialize.py",
-      "git_blob_sha1": "a63a2ad663eff6700382d146156d2127b41ab017",
+      "git_blob_sha1": "daedda7873f8fc90935dd2104a3ebc25c58394b0",
       "origin": "track_b_v5_hardening"
     },
     {
@@ -188,7 +188,12 @@
       "path": "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json",
       "git_blob_sha1": "0d7eb75cb39c0efb339f16935f4ef01307934c93",
       "origin": "track_b_v5_source_authority"
+    },
+    {
+      "path": "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json",
+      "git_blob_sha1": "5bd4cf8327bc348f0c07fc167c722ea12c724ab4",
+      "origin": "track_b_v5_materialization_authority"
     }
   ],
-  "attestation_note": "V5 pre-results runtime re-attestation after forensic hardening. CI/release validators are intentionally excluded from the runtime attestation boundary. Scientific candidates, mappings, checkpoints, metric definitions, audit thresholds, support floor, bootstrap parameters, historical comparison scope and V1-test closure remain unchanged."
+  "attestation_note": "Final pre-snapshot v5 runtime re-attestation. Runtime/materialization code, source authorities, materialization authority, scientific runner, deterministic audit, frozen Track-A dependencies and qualification/claim handoff are bound. CI/release validators and operator notebooks are intentionally outside the runtime attestation boundary."
 }
