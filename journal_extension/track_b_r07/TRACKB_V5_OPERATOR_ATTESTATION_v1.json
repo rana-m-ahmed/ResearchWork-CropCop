@@ -27,10 +27,20 @@
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "prior_green_run_id": 35527961502,
-    "prior_green_run_number": 513,
-    "prior_green_conclusion": "success",
-    "note": "Deep QA found and repaired Notebook 01 runtime-symbol defects; fresh exact-head QA required before execution."
+    "workflow_run_id": 35529239299,
+    "workflow_run_number": 531,
+    "conclusion": "success",
+    "validated_commit": "4aa156db5a9d06c8295bd6c1e83fd6d18914edc9",
+    "compile_pass": true,
+    "targeted_tests_pass": true,
+    "notebook_cell_compile_pass": true,
+    "static_infrastructure_validator_pass": true,
+    "v5_orchestration_validator_pass": true,
+    "sealed_release_authority_validator_pass": true,
+    "deep_qa_findings_repaired": [
+      "undefined bare RUNTIME_SOURCE_COMMIT in Notebook 01",
+      "malformed EXPECTED_EXPECTED_RUNTIME_SOURCE_COMMIT introduced during first repair"
+    ]
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
