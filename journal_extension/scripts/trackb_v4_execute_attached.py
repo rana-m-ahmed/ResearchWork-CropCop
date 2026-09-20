@@ -255,6 +255,8 @@ def _build_qualification_bundle(
         "repository_source_sha": str(paired["repository_source_sha"]),
         "role_manifest_sha256": paired["role_manifest_sha256"],
         "role_content_identity": paired["role_content_identity"],
+        "external_source_lock_sha256": paired["external_source_lock_sha256"],
+        "input_materialization_lock_sha256": paired["input_materialization_lock_sha256"],
         "qualification_science_sha256": str(
             qualification_result["qualification_science_sha256"]
         ),
@@ -297,6 +299,14 @@ def _validate_qualification_bundle(
         raise TrackBOpsError("qualification bundle role-manifest binding mismatch")
     if manifest.get("role_content_identity") != paired["role_content_identity"]:
         raise TrackBOpsError("qualification bundle attached-input content binding mismatch")
+    if str(manifest.get("external_source_lock_sha256", "")) != str(
+        paired["external_source_lock_sha256"]
+    ):
+        raise TrackBOpsError("qualification bundle external-source policy binding mismatch")
+    if str(manifest.get("input_materialization_lock_sha256", "")) != str(
+        paired["input_materialization_lock_sha256"]
+    ):
+        raise TrackBOpsError("qualification bundle materialization-policy binding mismatch")
     if str(manifest.get("qualification_science_sha256", "")).lower() != authorized_sha:
         raise TrackBOpsError(
             "reviewed qualification SHA does not match the attached immutable qualification bundle"
@@ -330,6 +340,8 @@ def _validate_qualification_bundle(
         "evidence_root": evidence_root,
         "evidence_content_identity": observed_identity,
         "qualification_science_sha256": authorized_sha,
+        "external_source_lock_sha256": paired["external_source_lock_sha256"],
+        "input_materialization_lock_sha256": paired["input_materialization_lock_sha256"],
     }
 
 
