@@ -788,6 +788,18 @@ def _write_pair_receipts(
     core = load_json(core_root / "TRACKB_INPUT_MANIFEST.json")
     execution_lock = _resolve_core_file(core_root, core, "execution_lock")
     code_attestation = _resolve_core_file(core_root, core, "code_attestation")
+    external_source_lock = (
+        repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json"
+    ).resolve()
+    materialization_lock = (
+        repo_root / "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json"
+    ).resolve()
+    for policy_path, label in (
+        (external_source_lock, "external-source lock"),
+        (materialization_lock, "input-materialization lock"),
+    ):
+        if not policy_path.is_file():
+            raise TrackBOpsError(f"required {label} missing from runtime repository: {policy_path}")
     source_sha = run_checked(
         ["git", "-C", str(repo_root), "rev-parse", "HEAD"], timeout=120
     ).stdout.strip()
@@ -811,6 +823,8 @@ def _write_pair_receipts(
         "repository_source_sha": source_sha,
         "scientific_execution_lock_sha256": sha256_file(execution_lock),
         "scientific_code_attestation_sha256": sha256_file(code_attestation),
+        "external_source_lock_sha256": sha256_file(external_source_lock),
+        "input_materialization_lock_sha256": sha256_file(materialization_lock),
         "role_manifest_sha256": role_manifest_sha256,
         "role_content_identity": role_content_identity,
     }
@@ -849,6 +863,8 @@ def _write_pair_receipts(
         "role_content_identity": role_content_identity,
         "scientific_execution_lock_sha256": pairing_preimage["scientific_execution_lock_sha256"],
         "scientific_code_attestation_sha256": pairing_preimage["scientific_code_attestation_sha256"],
+        "external_source_lock_sha256": pairing_preimage["external_source_lock_sha256"],
+        "input_materialization_lock_sha256": pairing_preimage["input_materialization_lock_sha256"],
     }
 
 
