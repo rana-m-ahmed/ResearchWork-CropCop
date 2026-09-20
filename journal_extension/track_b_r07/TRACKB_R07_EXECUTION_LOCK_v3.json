@@ -29,7 +29,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "b6477a759564771e6bc0b1e154caef07eed09f9fd7044eab28748e5ab8cbbd6b",
+  "code_attestation_sha256": "de0189c5332787ac078e9afedf0abe2d167cef16259300681f76325409f3db80",
   "experiment_ids": [
     "TB2-AUDIT-GVLID",
     "TB2-AUDIT-POTATO",
@@ -317,5 +317,6 @@
     "execution_instance_identity": "closure_sha256",
     "elapsed_time_excluded_from_science_identity": true,
     "publication_retry_counts_excluded_from_science_identity": true
-  }
+  },
+  "operational_rebind_note": "Rebound after core-builder verifier correction to canonical Track-A selected_metrics keys; no scientific identity, model, data, threshold, mapping, seed, or replay tolerance changed."
 }
