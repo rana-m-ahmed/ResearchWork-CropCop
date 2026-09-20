@@ -27,7 +27,13 @@
     "source_manifest_toc_tou_binding_required": true,
     "official_source_checksums_required": true,
     "gvlid_authority": "TRACKB_EXTERNAL_SOURCE_LOCK_v2:gvlid_v5",
-    "irish_potato_authority": "TRACKB_EXTERNAL_SOURCE_LOCK_v2:irish_potato"
+    "irish_potato_authority": "TRACKB_EXTERNAL_SOURCE_LOCK_v2:irish_potato",
+    "gvlid_byte_materialization": {
+      "primary": "MENDELEY_PUBLIC_API_BYTES",
+      "fallback": "PINNED_OFFICIAL_COMPANION_COMMIT_ONLY_IF_ZERO_PROVIDER_IMAGES",
+      "partial_provider_fallback_forbidden": true,
+      "full_3477_checksum_verification_required": true
+    }
   },
   "outputs": {
     "infrastructure_dataset_prefix": "cropcop-trackb-infra-v5",
