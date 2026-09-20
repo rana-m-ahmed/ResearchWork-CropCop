@@ -6,6 +6,7 @@ import importlib.metadata
 import json
 import os
 import platform
+import random
 import shutil
 import sys
 import time
@@ -76,6 +77,51 @@ from cropcop_je.trackb_r07_audit import (
 
 VAL_COUNT = 16368
 MAX_AUDIT_CANDIDATE_PAIRS = 5_000_000
+
+
+def _configure_determinism() -> dict[str, Any]:
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    import cv2
+    import numpy as np
+    import torch
+
+    seed = 0
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.use_deterministic_algorithms(True)
+    cv2.setRNGSeed(seed)
+    return {
+        "status": "PASS",
+        "seed": seed,
+        "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
+        "torch_deterministic_algorithms": bool(
+            torch.are_deterministic_algorithms_enabled()
+        ),
+        "cudnn_benchmark": bool(torch.backends.cudnn.benchmark),
+        "cudnn_deterministic": bool(torch.backends.cudnn.deterministic),
+        "opencv_rng_seed": seed,
+    }
+
+
+def _require_remaining_time(
+    deadline_epoch: float,
+    *,
+    required_seconds: int,
+    stage_name: str,
+) -> None:
+    if not deadline_epoch:
+        return
+    remaining = float(deadline_epoch) - time.time()
+    if remaining < int(required_seconds):
+        raise TrackBError(
+            f"insufficient Kaggle session budget before {stage_name}: "
+            f"remaining_seconds={remaining:.1f}, required_seconds={required_seconds}"
+        )
 
 
 def stage(name: str):
@@ -1502,6 +1548,11 @@ def _execute_protected_claim_from_qualification(
             science_qa_receipt,
         )
 
+    _require_remaining_time(
+        args.deadline_epoch,
+        required_seconds=45 * 60,
+        stage_name="claim evidence packaging",
+    )
     packages = _package_outputs(output_root)
     atomic_write_json(output_root / "TRACKB_PACKAGE_MANIFEST.json", packages)
     closure = {
@@ -1631,6 +1682,7 @@ def main() -> int:
     ap.add_argument("--attempt-id", default="")
     ap.add_argument("--authorized-qualification-science-sha256", default="")
     ap.add_argument("--qualification-root", default="")
+    ap.add_argument("--deadline-epoch", type=float, default=0.0)
     args = ap.parse_args()
 
     output_root = Path(args.output_root).resolve()
@@ -1648,6 +1700,8 @@ def main() -> int:
     historical = inputs["historical_compare"]
     authority, lock, class_map, hist_rows, hist_features, hist_orb_get = _preflight(core, historical, output_root, args.device)
     audit_policy = audit_policy_from_lock(lock)
+    determinism = _configure_determinism()
+    atomic_write_json(output_root / "TRACKB_DETERMINISM.json", determinism)
     capacity = _preflight_kaggle_capacity(
         scratch_root=audit_scratch_root,
         device=args.device,
@@ -1659,6 +1713,11 @@ def main() -> int:
         atomic_write_json(output_root / "PREFLIGHT_PASS.json", {"status": "PASS", "authority_id": AUTHORITY_ID})
         return 0
     if args.mode == "claim":
+        _require_remaining_time(
+            args.deadline_epoch,
+            required_seconds=2 * 3600,
+            stage_name="protected claim",
+        )
         return _execute_protected_claim_from_qualification(
             args=args,
             inputs=inputs,
@@ -1669,6 +1728,11 @@ def main() -> int:
             started=started,
         )
 
+    _require_remaining_time(
+        args.deadline_epoch,
+        required_seconds=5 * 3600,
+        stage_name="prediction-blind qualification",
+    )
     stage("1-4 :: prediction-blind source verification, family audit, grade, and seal")
     dino_model, dino_identity = _load_dino(core)
     atomic_write_json(output_root / "dino_audit_encoder_identity.json", dino_identity)
