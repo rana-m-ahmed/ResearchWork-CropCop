@@ -19,12 +19,9 @@ One-time Kaggle setup:
 - add secret `KAGGLE_API_TOKEN`;
 - add secret `CROPCOP_GITHUB_TOKEN`.
 
-`CROPCOP_GITHUB_TOKEN` must be a current raw GitHub PAT that can push to
-`rana-m-ahmed/ResearchWork-CropCop`. For a fine-grained PAT, select that repository
-and grant **Contents: Read and write**. Do not store quotes, a URL, a username, or an
-expired/revoked token in the Kaggle secret.
+No Track-B input dataset needs to be manually uploaded or attached. The supported qualification notebook clones the frozen Track-B source at exact commit `d2796cb69daec26a94113e5909719eb353b94832`, loads only `KAGGLE_API_TOKEN`, applies `requirements-trackb.lock.txt` directly to Kaggle's active Python interpreter **before any scientific package import**, and launches `run_trackb_r07_master.py` in qualification mode from a fresh subprocess. Qualification intentionally skips GitHub write credentials and Git push preflight because it produces no GitHub publication and no protected R07 external predictions.
 
-No Track-B input dataset needs to be manually uploaded or attached. The master notebook clones the frozen Track-B source, loads both secrets, and immediately performs a non-mutating `git push --dry-run` to a disposable evidence probe ref using temporary `GIT_ASKPASS`. This is the same Git transport used by final evidence publication and creates no remote ref. Invalid/expired credentials therefore fail **before** the expensive runtime repair. Only after this preflight passes does the notebook apply `requirements-trackb.lock.txt` directly to Kaggle's active Python interpreter **before any scientific package import**. This deliberately reuses the clean-session execution pattern already qualified during Track A. The repaired stack is verified from a fresh child interpreter with CUDA before `run_trackb_r07_master.py` is launched in another fresh subprocess.
+For the later protected claim/publication run, `CROPCOP_GITHUB_TOKEN` must be a valid GitHub PAT with repository write permission; that claim path performs the non-mutating Git push preflight before final publication.
 
 Do not create a Python `venv` on Kaggle for Track B: the Kaggle system interpreter may not provide a working `ensurepip` path. Do not manually install Torch either; the master notebook owns the one-time exact-lock repair.
 
@@ -103,7 +100,7 @@ Track B evaluates exactly R07-S1/S2/S3. The historical DINOv3 ConvNeXt-Tiny chec
 
 The master controller performs these stages in order:
 
-1. load Kaggle/GitHub secrets and prove GitHub evidence-branch write access with a non-mutating `git push --dry-run` before dependency repair;
+1. load `KAGGLE_API_TOKEN` and verify the exact frozen source checkout for qualification;
 2. repair any stock Kaggle package drift to the exact Track-B lock and verify the repaired stack/CUDA from a fresh subprocess;
 3. auto-detect the Kaggle owner authenticated by `KAGGLE_API_TOKEN` and verify access to every frozen Final-V1, R07-S1/S2/S3, and DINO source dataset before large downloads begin;
 4. automatically download those frozen assets;
@@ -113,13 +110,12 @@ The master controller performs these stages in order:
 8. acquire GVLiD v5 and Irish Potato from their authoritative public repositories;
 9. validate/package both external candidates;
 10. run prediction-blind exact/pHash/dHash/DINO/ORB family and historical-overlap audits;
-11. freeze each candidate grade and immutable seal before any R07 forward pass;
-12. run S1/S2/S3 native 120-way inference on the same sealed representatives;
-13. compute the fixed 5,000-replicate family bootstrap with shared resamples;
-14. independently recompute QA and write a stable science manifest;
-15. build and verify complete/public evidence archives, then write the package manifest and only afterward issue local `TRACK_B_CLOSED`;
-16. round-trip verify the complete restricted evidence on private Kaggle **before** any final GitHub publication attempt;
-17. publish only audited public-safe summaries to a GitHub evidence branch, retrying transient failures four times.
+11. freeze each candidate grade and immutable seal;
+12. write `TRACKB_PREINFERENCE_QUALIFICATION.json` and stable `qualification_science_sha256`;
+13. independently verify the pre-inference qualification and assert zero protected external predictions;
+14. stop. The supported qualification notebook does **not** run S1/S2/S3 external inference or publish claim results.
+
+The later protected claim run is a separate exact-SHA execution authorized only after Q1/Q2/Q3 review and requires the reviewed `qualification_science_sha256`.
 
 The controller automatically garbage-collects large source downloads between stages rather than requiring the operator to create and reattach multiple intermediate datasets.
 
