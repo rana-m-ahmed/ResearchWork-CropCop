@@ -221,7 +221,7 @@ class TrackBR07Tests(unittest.TestCase):
             f = root / "x.py"
             f.write_text("print('ok')\n", encoding="utf-8")
             att = {
-                "attestation_id": "TRACKB_CODE_ATTESTATION_v2",
+                "attestation_id": "TRACKB_CODE_ATTESTATION_v3",
                 "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
                 "files": [{"path": "x.py", "git_blob_sha1": git_blob_sha1(f)}],
             }
@@ -232,7 +232,7 @@ class TrackBR07Tests(unittest.TestCase):
             with self.assertRaises(TrackBError):
                 verify_code_attestation(root, ap)
 
-    def test_v2_candidate_roles_are_frozen_and_agrivision_is_retired(self):
+    def test_v3_candidate_roles_preserve_frozen_v2_selection(self):
         self.assertEqual(REQUIRED_INPUT_ROLES, {"core", "historical_compare", "gvlid_v5", "irish_potato"})
         self.assertNotIn("agrivision_bd", CANDIDATE_CONTRACTS)
         self.assertEqual(
@@ -245,8 +245,8 @@ class TrackBR07Tests(unittest.TestCase):
             },
         )
 
-    def test_v2_lock_requires_automated_publication_boundaries(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+    def test_v3_lock_requires_automated_publication_boundaries(self):
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
         validate_execution_lock(lock)
         automation = lock["automation"]
         self.assertTrue(automation["single_master_notebook"])
@@ -383,7 +383,7 @@ class TrackBR07Tests(unittest.TestCase):
         verify_candidate_seal(build_candidate_seal(payload))
 
     def test_execution_lock_binds_replay_records_and_dino_factory(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
         validate_execution_lock(lock)
         ids = lock["identities"]
         self.assertEqual(ids["dino_factory_manifest_sha256"], DINO_FACTORY_MANIFEST_SHA256)
@@ -399,7 +399,7 @@ class TrackBR07Tests(unittest.TestCase):
             validate_execution_lock(drifted)
 
     def test_execution_lock_forbids_postclosure_full_raw_rebuild(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
         validate_execution_lock(lock)
         drifted = dict(lock)
         drifted["historical_compare"] = dict(lock["historical_compare"])
@@ -427,7 +427,7 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertEqual(rows[0]["representative_raw_sha256"], "0" * 64)
 
     def test_audit_policy_is_executable_lock_source_of_truth(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
         policy = audit_policy_from_lock(lock)
         self.assertEqual(policy.phash_radius, 12)
         self.assertEqual(policy.dhash_radius, 10)
@@ -440,7 +440,7 @@ class TrackBR07Tests(unittest.TestCase):
 
     def test_lock_rejects_operational_threshold_drift(self):
         import copy
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
         mutations = [
             ("candidate_generation", "dino_top_k", 49),
             ("geometric_acceptance", "lowe_ratio", 0.74),
