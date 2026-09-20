@@ -11,7 +11,7 @@ from pathlib import Path
 
 import _bootstrap  # noqa: F401
 
-from cropcop_je.hashing import sha256_file
+from cropcop_je.hashing import sha256_file, sha256_json
 from cropcop_je.trackb_r07 import TrackBError, load_json
 from cropcop_je.trackb_r07_ops import (
     TrackBOpsError,
@@ -50,6 +50,7 @@ def _read_pair_receipts(input_root: Path) -> tuple[dict, dict]:
         "scientific_execution_lock_sha256",
         "scientific_code_attestation_sha256",
         "role_manifest_sha256",
+        "role_content_identity",
     ):
         if infra.get(field) != external.get(field):
             raise TrackBOpsError(f"Track-B attached bundles are not paired: mismatch={field}")
@@ -57,6 +58,28 @@ def _read_pair_receipts(input_root: Path) -> tuple[dict, dict]:
     if len(materialization_id) != 64:
         raise TrackBOpsError("invalid Track-B materialization_id")
     return infra, external
+
+
+def _role_content_identity(root: Path) -> dict[str, object]:
+    root = Path(root).resolve()
+    rows: list[dict[str, object]] = []
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise TrackBOpsError(f"attached Track-B role contains a symlink: {path}")
+        if not path.is_file():
+            continue
+        rows.append({
+            "path": path.relative_to(root).as_posix(),
+            "bytes": int(path.stat().st_size),
+            "sha256": sha256_file(path),
+        })
+    if not rows:
+        raise TrackBOpsError(f"attached Track-B role payload is empty: {root}")
+    return {
+        "file_count": len(rows),
+        "total_bytes": sum(int(row["bytes"]) for row in rows),
+        "content_sha256": sha256_json(rows),
+    }
 
 
 def _discover_role_manifests(input_root: Path) -> dict[str, Path]:
@@ -88,6 +111,17 @@ def _validate_pairing(input_root: Path) -> dict:
             f"declared={declared}, observed={observed}"
         )
 
+    declared_content = infra.get("role_content_identity") or {}
+    observed_content = {
+        role: _role_content_identity(path.parent)
+        for role, path in roles.items()
+    }
+    if declared_content != observed_content:
+        raise TrackBOpsError(
+            "Track-B attached role payload bytes differ from the paired materialization: "
+            f"declared={declared_content}, observed={observed_content}"
+        )
+
     core_manifest = load_json(roles["core"])
     core_root = roles["core"].parent
     files = core_manifest.get("files") or {}
@@ -114,6 +148,7 @@ def _validate_pairing(input_root: Path) -> dict:
         "materialization_id": infra["materialization_id"],
         "repository_source_sha": infra["repository_source_sha"],
         "role_manifest_sha256": observed,
+        "role_content_identity": observed_content,
         "repo_root": repo_root,
         "core_manifest_path": roles["core"],
     }
@@ -303,6 +338,7 @@ def main() -> int:
         "materialization_id": paired["materialization_id"],
         "repository_source_sha": source_git_sha,
         "role_manifest_sha256": paired["role_manifest_sha256"],
+        "role_content_identity": paired["role_content_identity"],
         **result,
     }
     (output_root / "TRACKB_V4_EXECUTION_RECEIPT.json").write_text(
