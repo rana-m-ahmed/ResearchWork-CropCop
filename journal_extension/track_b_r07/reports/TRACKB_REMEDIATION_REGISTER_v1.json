@@ -3,7 +3,7 @@
   "report_id": "TRACKB_REMEDIATION_REGISTER_v1",
   "generated_date": "2026-09-20",
   "baseline_release": "ef5e2f9d4b8b542e13f33ba5446672f0e9cd60c0",
-  "audited_implementation_code_head": "64f6202dfab9d4972c14557f6506311ef5b4b614",
+  "audited_implementation_code_head": "d2796cb69daec26a94113e5909719eb353b94832",
   "branch": "trackb-r07-remediation-v3-20260920",
   "status": "PASS_IMPLEMENTATION_REMEDIATION_COMPLETE__KAGGLE_QUALIFICATION_REQUIRED",
   "protected_external_inference_executed": false,
@@ -122,27 +122,24 @@
     }
   ],
   "exact_head_ci": {
+    "qa_reference_head": "00015260fb2c85b720c044d558f622a4c79b0e99",
     "trackb_infrastructure_pr": {
-      "run_id": 35492138674,
-      "conclusion": "success"
-    },
-    "trackb_infrastructure_push": {
-      "run_id": 35492136557,
+      "run_id": 35493475660,
       "conclusion": "success"
     },
     "validate_secondary_tracka_wave": {
-      "run_id": 35492138642,
+      "run_id": 35493475669,
       "conclusion": "success"
     },
     "validate_public_evidence": {
-      "run_id": 35492138673,
+      "run_id": 35493475536,
       "conclusion": "success"
     }
   },
   "remaining_required_gates": [
-    "Q1 real Kaggle environment/transport smoke on final frozen implementation",
-    "Q2 full real prediction-blind GVLiD + Irish Potato audit qualification with zero protected R07 external predictions",
+    "Q1 real Kaggle qualification execution on frozen implementation d2796cb69daec26a94113e5909719eb353b94832",
+    "Q2 full real prediction-blind GVLiD + Irish Potato acquisition/audit qualification with zero protected R07 external predictions",
     "Q3 independent verification of Q2 evidence and no-V1-test/no-protected-prediction assertions",
-    "final exact-head code attestation/readiness freeze after Q1-Q3, before protected claim run"
+    "freeze and authorize the later protected claim run using the reviewed qualification_science_sha256"
   ]
 }
