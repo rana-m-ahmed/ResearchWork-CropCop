@@ -890,11 +890,89 @@ def _independent_candidate_qa(candidate, output_root: Path, audit_policy) -> dic
     return result
 
 
+def _stable_science_manifest(output_root: Path, core, candidates) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "schema_version": "1.0",
+        "authority_id": AUTHORITY_ID,
+        "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
+        "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
+        "class_map_sha256": CLASS_MAP_SHA256,
+        "dataset_manifest_sha256": DATASET_MANIFEST_SHA256,
+        "authorized_r07_checkpoint_sha256": R07_CHECKPOINTS,
+        "candidates": {},
+    }
+    for candidate in candidates:
+        cid = candidate["candidate_id"]
+        root = candidate["root"]
+        seal = candidate["seal"]
+        row = {
+            "candidate_id": cid,
+            "source_doi": seal["source_doi"],
+            "source_version": seal["source_version"],
+            "grade": seal["grade"],
+            "claim_mode": seal["claim_mode"],
+            "mapping_sha256": seal["mapping_sha256"],
+            "family_support": seal["family_support"],
+            "accepted_historical_link_count": seal["accepted_historical_link_count"],
+            "source_manifest_sha256": sha256_file(root / "raw_manifest.csv"),
+            "family_graph_sha256": sha256_file(root / "families.jsonl"),
+            "representative_manifest_sha256": sha256_file(root / "sealed_representatives.jsonl"),
+            "exclusion_ledger_sha256": sha256_file(root / "exclusions.jsonl"),
+            "accepted_within_edges_sha256": sha256_file(root / "accepted_within_edges.jsonl"),
+            "accepted_historical_edges_sha256": sha256_file(root / "accepted_historical_edges.jsonl"),
+            "prediction_sha256": {},
+            "metric_sha256": {},
+            "analysis_sha256": {},
+        }
+        if seal["grade"] in {"EXT-I", "EXT-S"}:
+            for seed in ("S1", "S2", "S3"):
+                row["prediction_sha256"][seed] = sha256_file(
+                    output_root / "inference" / cid / seed / "predictions.jsonl"
+                )
+                row["metric_sha256"][seed] = sha256_file(
+                    output_root / "inference" / cid / seed / "metrics.json"
+                )
+            for name in ("seed_metrics.json", "three_seed_summary.json", "bootstrap.json"):
+                row["analysis_sha256"][name] = sha256_file(output_root / "analysis" / cid / name)
+        payload["candidates"][cid] = row
+    payload["trackb_science_sha256"] = sha256_json(payload)
+    atomic_write_json(output_root / "TRACKB_SCIENCE_MANIFEST.json", payload)
+    return payload
+
+
+def _verify_zip_archive(path: Path) -> dict[str, Any]:
+    import hashlib
+    import zipfile
+
+    members = {}
+    with zipfile.ZipFile(path, "r") as zf:
+        bad = zf.testzip()
+        if bad is not None:
+            raise TrackBError(f"evidence ZIP CRC verification failed at member: {bad}")
+        for info in zf.infolist():
+            if info.is_dir():
+                continue
+            h = hashlib.sha256()
+            with zf.open(info, "r") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    h.update(chunk)
+            members[info.filename] = {
+                "bytes": info.file_size,
+                "sha256": h.hexdigest(),
+            }
+    if not members:
+        raise TrackBError(f"evidence ZIP is empty: {path}")
+    return {
+        "member_count": len(members),
+        "members_sha256": sha256_json(members),
+    }
+
+
 def _package_outputs(output_root: Path) -> dict[str, Any]:
     import zipfile
     complete = output_root / "TRACKB_COMPLETE_EVIDENCE.zip"
     public = output_root / "TRACKB_PUBLIC_EVIDENCE.zip"
-    exclude = {complete.name, public.name}
+    exclude = {complete.name, public.name, "TRACKB_FINAL_CLOSURE.json", "TRACKB_PACKAGE_MANIFEST.json"}
     with zipfile.ZipFile(complete, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
         for path in sorted(output_root.rglob("*")):
             if path.is_file() and path.name not in exclude:
@@ -906,23 +984,40 @@ def _package_outputs(output_root: Path) -> dict[str, Any]:
         output_root / "dino_audit_encoder_identity.json",
         output_root / "TRACKB_PREDICTION_FIREWALL.json",
         output_root / "TRACKB_FINAL_QA.json",
-        output_root / "TRACKB_FINAL_CLOSURE.json",
+        output_root / "TRACKB_SCIENCE_MANIFEST.json",
     ]:
-        if path.is_file(): public_allow.append(path)
+        if path.is_file():
+            public_allow.append(path)
     for candidate_dir in sorted((output_root / "candidates").glob("*")) if (output_root / "candidates").exists() else []:
         for name in ("audit_summary.json", "seal.json"):
             path = candidate_dir / name
-            if path.is_file(): public_allow.append(path)
+            if path.is_file():
+                public_allow.append(path)
     for analysis_dir in sorted((output_root / "analysis").glob("*")) if (output_root / "analysis").exists() else []:
         for name in ("seed_metrics.json", "three_seed_summary.json", "bootstrap.json"):
             path = analysis_dir / name
-            if path.is_file(): public_allow.append(path)
+            if path.is_file():
+                public_allow.append(path)
     with zipfile.ZipFile(public, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
         for path in public_allow:
             zf.write(path, path.relative_to(output_root).as_posix())
+
+    complete_verification = _verify_zip_archive(complete)
+    public_verification = _verify_zip_archive(public)
     return {
-        "complete_evidence_zip": {"bytes": complete.stat().st_size, "sha256": sha256_file(complete)},
-        "public_evidence_zip": {"bytes": public.stat().st_size, "sha256": sha256_file(public)},
+        "schema_version": "2.0",
+        "status": "PASS",
+        "closure_written_after_package_verification": True,
+        "complete_evidence_zip": {
+            "bytes": complete.stat().st_size,
+            "sha256": sha256_file(complete),
+            **complete_verification,
+        },
+        "public_evidence_zip": {
+            "bytes": public.stat().st_size,
+            "sha256": sha256_file(public),
+            **public_verification,
+        },
     }
 
 def main() -> int:
@@ -991,7 +1086,8 @@ def main() -> int:
         "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
         "candidate_terminal_grades": {grape["candidate_id"]: grape["grade"], potato["candidate_id"]: potato["grade"]},
         "candidate_seal_sha256": {grape["candidate_id"]: grape["seal"]["seal_sha256"], potato["candidate_id"]: potato["seal"]["seal_sha256"]},
-        "external_predictions_before_firewall": 0,
+        "external_predictions_before_this_attempt_firewall": 0,
+        "prediction_firewall_scope": "CURRENT_EXECUTION_ATTEMPT_ONLY",
         "v1_test_accessed": False,
         "all_three_r07_checkpoints_bound": True,
     }
@@ -1018,21 +1114,27 @@ def main() -> int:
     qa["qa_sha256"] = sha256_json({k: v for k, v in qa.items() if k != "qa_sha256"})
     atomic_write_json(output_root / "TRACKB_FINAL_QA.json", qa)
 
+    science_manifest = _stable_science_manifest(output_root, core, (grape, potato))
+    packages = _package_outputs(output_root)
+    atomic_write_json(output_root / "TRACKB_PACKAGE_MANIFEST.json", packages)
+
     closure = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "status": "TRACK_B_CLOSED",
         "authority_id": AUTHORITY_ID,
         "elapsed_seconds": time.time() - started,
         "candidate_status": qa["candidate_qa"],
         "final_qa_sha256": qa["qa_sha256"],
+        "trackb_science_sha256": science_manifest["trackb_science_sha256"],
+        "science_manifest_sha256": sha256_file(output_root / "TRACKB_SCIENCE_MANIFEST.json"),
+        "package_manifest_sha256": sha256_file(output_root / "TRACKB_PACKAGE_MANIFEST.json"),
+        "package_verification_status": packages["status"],
         "v1_test_accessed": False,
         "new_training_performed": False,
         "external_predictions_before_candidate_seal": False,
     }
     closure["closure_sha256"] = sha256_json({k: v for k, v in closure.items() if k != "closure_sha256"})
     atomic_write_json(output_root / "TRACKB_FINAL_CLOSURE.json", closure)
-    packages = _package_outputs(output_root)
-    atomic_write_json(output_root / "TRACKB_PACKAGE_MANIFEST.json", packages)
     print(json.dumps({**closure, "packages": packages}, indent=2, sort_keys=True))
     return 0
 
