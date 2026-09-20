@@ -56,5 +56,7 @@
     "journal_extension/scripts/validate_trackb_preinference_qualification.py": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2",
     "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json": "de622b10b3611cd8e5d9febb829e6a88cf70ac9b",
     "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json": "e0f13839ce6632fcdac722e7ba11108b29c6c51c"
-  }
+  },
+  "repository_snapshot_commit": "13b4d8fa19280f7ca94462e852a2c51dda416340",
+  "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY"
 }
