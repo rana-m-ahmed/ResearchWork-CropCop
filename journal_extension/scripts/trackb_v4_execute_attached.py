@@ -50,6 +50,8 @@ def _read_pair_receipts(input_root: Path) -> tuple[dict, dict]:
         "repository_source_sha",
         "scientific_execution_lock_sha256",
         "scientific_code_attestation_sha256",
+        "external_source_lock_sha256",
+        "input_materialization_lock_sha256",
         "role_manifest_sha256",
         "role_content_identity",
     ):
@@ -145,11 +147,31 @@ def _validate_pairing(input_root: Path) -> dict:
     if not (repo_root / "journal_extension").is_dir():
         raise TrackBOpsError(f"embedded Track-B repository snapshot missing: {repo_root}")
 
+    policy_files = (
+        (
+            repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json",
+            "external_source_lock_sha256",
+        ),
+        (
+            repo_root / "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json",
+            "input_materialization_lock_sha256",
+        ),
+    )
+    for policy_path, receipt_field in policy_files:
+        if not policy_path.is_file():
+            raise TrackBOpsError(f"paired policy file missing from embedded repository: {policy_path}")
+        if sha256_file(policy_path) != str(infra.get(receipt_field, "")):
+            raise TrackBOpsError(
+                f"paired policy identity mismatch: {policy_path.name}"
+            )
+
     return {
         "materialization_id": infra["materialization_id"],
         "repository_source_sha": infra["repository_source_sha"],
         "role_manifest_sha256": observed,
         "role_content_identity": observed_content,
+        "external_source_lock_sha256": infra["external_source_lock_sha256"],
+        "input_materialization_lock_sha256": infra["input_materialization_lock_sha256"],
         "repo_root": repo_root,
         "core_manifest_path": roles["core"],
     }
@@ -546,6 +568,8 @@ def main() -> int:
         "deadline_epoch": deadline_epoch,
         "role_manifest_sha256": paired["role_manifest_sha256"],
         "role_content_identity": paired["role_content_identity"],
+        "external_source_lock_sha256": paired["external_source_lock_sha256"],
+        "input_materialization_lock_sha256": paired["input_materialization_lock_sha256"],
         **result,
     }
     (output_root / "TRACKB_V5_EXECUTION_RECEIPT.json").write_text(
