@@ -296,8 +296,11 @@ def main() -> int:
     input_root = Path(args.input_root).resolve()
     output_root = Path(args.output_root).resolve()
     scratch_root = Path(args.scratch_root).resolve()
-    if output_root.exists():
-        shutil.rmtree(output_root)
+    if output_root.exists() and any(output_root.iterdir()):
+        raise TrackBOpsError(
+            f"refusing to delete or overwrite an existing Track-B authoritative output root: {output_root}"
+        )
+    output_root.mkdir(parents=True, exist_ok=True)
     if scratch_root.exists():
         shutil.rmtree(scratch_root)
     scratch_root.mkdir(parents=True, exist_ok=False)
