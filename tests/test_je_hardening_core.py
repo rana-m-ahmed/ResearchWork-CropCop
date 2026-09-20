@@ -157,7 +157,7 @@ class HardeningCoreTests(unittest.TestCase):
         kaggle = ROOT / "journal_extension" / "kaggle"
         notebooks = sorted(
             p for p in kaggle.glob("*.ipynb")
-            if not p.name.startswith("trackb_")
+            if not p.name.startswith(("trackb_", "TrackB_"))
         )
         self.assertEqual([p.name for p in notebooks], ["canonical_lane.ipynb"])
         notebook = json.loads(notebooks[0].read_text())
