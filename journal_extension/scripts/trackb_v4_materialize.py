@@ -70,6 +70,51 @@ def _resolve_attached_root(input_root: Path, basename: str) -> Path:
     return candidates[0]
 
 
+def _resolve_all_attached_roots(
+    input_root: Path,
+    basenames: dict[str, str],
+) -> dict[str, Path]:
+    wanted = set(basenames.values())
+    found: dict[str, list[Path]] = {name: [] for name in wanted}
+    for path in input_root.rglob("*"):
+        if path.is_dir() and path.name in wanted:
+            resolved = path.resolve()
+            if resolved not in found[path.name]:
+                found[path.name].append(resolved)
+    out: dict[str, Path] = {}
+    for role, basename in basenames.items():
+        direct = (input_root / basename).resolve()
+        candidates = list(found.get(basename, []))
+        if direct.is_dir() and direct not in candidates:
+            candidates.insert(0, direct)
+        if len(candidates) != 1:
+            raise TrackBOpsError(
+                f"expected exactly one attached Kaggle dataset mount named {basename!r}; "
+                f"found {[str(path) for path in candidates]}"
+            )
+        out[role] = candidates[0]
+    return out
+
+
+def _enforce_external_source_lock(repo_root: Path) -> dict:
+    path = repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json"
+    lock = load_json(path)
+    if lock.get("lock_id") != "TRACKB_EXTERNAL_SOURCE_LOCK_v2":
+        raise TrackBOpsError("unexpected Track-B external-source lock identity")
+    candidates = lock.get("candidates") or {}
+    blocked = [
+        role
+        for role, row in candidates.items()
+        if not isinstance(row, dict) or row.get("materialization_permitted") is not True
+    ]
+    if blocked:
+        raise TrackBOpsError(
+            "Track-B external source authority is fail-closed; materialization is forbidden "
+            f"until these roles are resolved: {blocked}"
+        )
+    return lock
+
+
 def _find_v1(root: Path) -> tuple[Path, Path, Path]:
     manifest_matches = [
         path.resolve()
@@ -826,17 +871,17 @@ def main() -> int:
     output_root.mkdir(parents=True, exist_ok=False)
 
     stage("0 :: attached-input discovery")
-    mounts = {
-        role: _resolve_attached_root(input_root, basename)
-        for role, basename in SOURCE_SLUG_BASENAMES.items()
-    }
+    mounts = _resolve_all_attached_roots(input_root, SOURCE_SLUG_BASENAMES)
     print(json.dumps({key: str(value) for key, value in mounts.items()}, indent=2, sort_keys=True))
 
+    source_lock = _enforce_external_source_lock(repo_root)
     stage("0.5 :: complete source qualification")
     early_owner = None
+    publication_token = None
     if not args.skip_publication:
         configure_runtime_secrets(require_github=False)
         early_owner = verify_authenticated_kaggle_owner(args.kaggle_owner)
+        publication_token = os.environ.get("KAGGLE_API_TOKEN")
     external_probe = probe_external_sources()
     if external_probe.get("status") != "PASS":
         raise TrackBOpsError(f"external-source readiness probe did not PASS: {external_probe}")
@@ -858,6 +903,10 @@ def main() -> int:
         kaggle_owner=early_owner,
     )
     print(source_qualification_path.read_text(encoding="utf-8"), flush=True)
+    # The Kaggle token is a publication credential, not a scientific input.
+    # Remove it before external normalization/core/historical subprocesses.
+    if publication_token:
+        os.environ.pop("KAGGLE_API_TOKEN", None)
 
     infra_root = output_root / "infrastructure_bundle"
     external_root = output_root / "external_bundle"
@@ -909,11 +958,17 @@ def main() -> int:
         "v1_test_accessed": False,
         "materialization": pairing,
         "source_qualification_sha256": sha256_file(source_qualification_path),
+        "external_source_lock_sha256": sha256_file(
+            repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json"
+        ),
         "publication": None,
     }
 
     if not args.skip_publication:
         stage("5 :: private Kaggle publication and full round-trip verification")
+        if not publication_token:
+            raise TrackBOpsError("Kaggle publication credential was not prequalified")
+        os.environ["KAGGLE_API_TOKEN"] = publication_token
         owner = early_owner or verify_authenticated_kaggle_owner(args.kaggle_owner)
         infra_slug = (
             f"{owner}/{INFRA_DATASET_PREFIX}-{pairing['materialization_id'][:16]}"
