@@ -7,7 +7,7 @@
   "scientific_execution_lock": "TRACKB_R07_EXECUTION_LOCK_v3",
   "orchestration_lock": "TRACKB_ORCHESTRATION_LOCK_v4",
   "materialization_lock": "TRACKB_INPUT_MATERIALIZATION_LOCK_v1",
-  "repository_snapshot_commit": "c0f762803d8cdef31adea4b55eb09cc382eb728f",
+  "repository_snapshot_commit": "066584af76704272c4ce05d0cf6795388b350f94",
   "supported_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
     "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb"
