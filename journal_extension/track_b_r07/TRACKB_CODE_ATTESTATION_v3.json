@@ -2,7 +2,7 @@
   "schema_version": "4.0",
   "attestation_id": "TRACKB_CODE_ATTESTATION_v3",
   "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
-  "scope": "load-bearing Track-B v3 scientific execution, prediction-blind qualification/Q3 verification, deterministic audit policy, source integrity, attempt chronology, evidence durability, and frozen Track-A dependencies",
+  "scope": "load-bearing Track-B v3 scientific execution, stable prediction-blind qualification/Q3 verification, reviewed-science claim authorization, deterministic audit policy, source integrity, attempt chronology, evidence durability, and frozen Track-A dependencies",
   "files": [
     {
       "path": "journal_extension/amendments/track_bc_r07_downstream_v3.json",
@@ -51,16 +51,16 @@
     },
     {
       "path": "journal_extension/scripts/run_trackb_r07_master.py",
-      "git_blob_sha1": "481684b4bf8e34da8bda0965ddab55b83295a15b",
+      "git_blob_sha1": "477ec4e3ff4ad5d7c63c86999c3af8538b807107",
       "origin": "track_b_v3_remediation"
     },
     {
       "path": "journal_extension/scripts/run_trackb_r07.py",
-      "git_blob_sha1": "af1f93215d5f58d54036969892d0a5866bf90f95",
+      "git_blob_sha1": "3437c276b789d1772039a187dce1e00fcdaea23d",
       "origin": "track_b_v3_remediation"
     },
     {
-      "git_blob_sha1": "a2b45a51065098c36ace20ba145cc933e04eb79c",
+      "git_blob_sha1": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py"
     },
@@ -146,7 +146,7 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07.py",
-      "git_blob_sha1": "f321286e5e35047471734d51e3227b1507269446",
+      "git_blob_sha1": "bd204f715a2d6f2ee324f588a8be1abb0f8396d5",
       "origin": "track_b_v3_remediation"
     },
     {
