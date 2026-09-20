@@ -55,6 +55,29 @@ def disk_gb(path: Path) -> dict[str, float]:
     }
 
 
+def assert_persistent_output_hygiene(workspace: Path, output_root: Path) -> dict[str, int]:
+    image_suffixes = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+    model_suffixes = {".pt", ".pth", ".ckpt", ".safetensors", ".pte"}
+    forbidden = []
+    for path in workspace.rglob("*"):
+        if not path.is_file():
+            continue
+        suffix = path.suffix.lower()
+        if suffix in image_suffixes or suffix in model_suffixes:
+            forbidden.append(path)
+        if path.name.endswith(".part"):
+            forbidden.append(path)
+    if forbidden:
+        raise TrackBOpsError(
+            "persistent Track-B workspace contains forbidden raw/model/partial artifacts: "
+            + ", ".join(str(p.relative_to(workspace)) for p in forbidden[:20])
+        )
+    return {
+        "persistent_file_count": sum(1 for p in workspace.rglob("*") if p.is_file()),
+        "forbidden_artifact_count": 0,
+    }
+
+
 def unique_sha(root: Path, name: str, sha: str) -> Path:
     matches = [p.resolve() for p in root.rglob(name) if p.is_file() and sha256_file(p) == sha]
     if len(matches) != 1:
@@ -192,6 +215,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Fully automated CropCop Track-B R07 Kaggle controller.")
     ap.add_argument("--repo-root", required=True)
     ap.add_argument("--workspace", default="/kaggle/working/trackb_master")
+    ap.add_argument("--scratch-root", default="/kaggle/tmp/cropcop_trackb_r07")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--kaggle-owner", default=KAGGLE_OWNER_DEFAULT)
     ap.add_argument("--force-rebuild-historical", action="store_true")
@@ -199,12 +223,16 @@ def main() -> int:
 
     repo_root = Path(args.repo_root).resolve()
     workspace = Path(args.workspace).resolve()
+    scratch_root = Path(args.scratch_root).resolve()
     requested_kaggle_owner = str(args.kaggle_owner).strip()
     if workspace.exists() and any(workspace.iterdir()):
         raise TrackBOpsError(f"master workspace must be empty for a clean run: {workspace}")
     workspace.mkdir(parents=True, exist_ok=True)
-    inputs_root = workspace / "inputs"
-    sources_root = workspace / "sources"
+    if scratch_root.exists():
+        shutil.rmtree(scratch_root)
+    scratch_root.mkdir(parents=True, exist_ok=False)
+    inputs_root = scratch_root / "inputs"
+    sources_root = scratch_root / "sources"
     output_root = workspace / "trackb_r07"
     inputs_root.mkdir()
     sources_root.mkdir()
@@ -237,7 +265,16 @@ def main() -> int:
         "github_permission_preflight": github_permission,
         "external_source_preflight": external_source_probe,
         "kaggle_source_access_preflight": source_access,
-        "initial_disk_gb": disk_gb(workspace),
+        "initial_disk_gb": {
+            "persistent_working": disk_gb(workspace),
+            "ephemeral_scratch": disk_gb(scratch_root),
+        },
+        "storage_policy": {
+            "persistent_root": str(workspace),
+            "scratch_root": str(scratch_root),
+            "raw_external_images_persistent": False,
+            "model_source_files_persistent": False,
+        },
         "kaggle_owner": kaggle_owner,
         "protected_external_predictions_before_controller": False,
     }
@@ -248,7 +285,7 @@ def main() -> int:
     for key, slug in SOURCE_DATASETS.items():
         print(f"Downloading {key}: {slug}", flush=True)
         source_roots[key] = download_kaggle_dataset(slug, sources_root / key)
-        print("disk:", disk_gb(workspace), flush=True)
+        print("scratch disk:", disk_gb(scratch_root), flush=True)
 
     stage("2 :: immutable core assembly")
     core_root = inputs_root / "core"
@@ -260,13 +297,13 @@ def main() -> int:
     stage("2.5 :: release redundant model-source downloads")
     for key in ("r07_s1", "r07_s2", "r07_s3", "dino_bundle"):
         shutil.rmtree(source_roots[key], ignore_errors=True)
-    print("disk after model-source cleanup:", disk_gb(workspace), flush=True)
+    print("scratch disk after model-source cleanup:", disk_gb(scratch_root), flush=True)
 
     stage("3 :: historical comparison cache")
     historical_root = inputs_root / "historical_compare"
     used_cache = False
     if not args.force_rebuild_historical and kaggle_dataset_exists(historical_dataset):
-        cache_download = workspace / "hist_cache_download"
+        cache_download = scratch_root / "hist_cache_download"
         download_kaggle_dataset(historical_dataset, cache_download)
         if validate_historical_cache(cache_download, core_root):
             normalize_downloaded_package(cache_download, historical_root)
@@ -299,17 +336,20 @@ def main() -> int:
     # The immutable core now contains exactly the validation surface/checkpoints/audit encoder needed by B0.
     # The historical package contains the only allowed post-closure historical representation.
     shutil.rmtree(sources_root, ignore_errors=True)
-    print("disk after source cleanup:", disk_gb(workspace), flush=True)
+    print("scratch disk after source cleanup:", disk_gb(scratch_root), flush=True)
 
     stage("5 :: automatic external source acquisition and packaging")
     gvlid_root = inputs_root / "gvlid_v5"
     potato_root = inputs_root / "irish_potato"
-    acquire_gvlid_v5(gvlid_root)
+    lineage_review = repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json"
+    if not lineage_review.is_file():
+        raise TrackBOpsError(f"frozen external-lineage review missing: {lineage_review}")
+    acquire_gvlid_v5(gvlid_root, lineage_review_path=lineage_review)
     prepare_candidate(repo_root, "gvlid_v5", gvlid_root)
-    print("GVLiD packaged; disk:", disk_gb(workspace), flush=True)
-    acquire_irish_potato(potato_root)
+    print("GVLiD packaged; scratch disk:", disk_gb(scratch_root), flush=True)
+    acquire_irish_potato(potato_root, lineage_review_path=lineage_review)
     prepare_candidate(repo_root, "irish_potato", potato_root)
-    print("Irish Potato packaged; disk:", disk_gb(workspace), flush=True)
+    print("Irish Potato packaged; scratch disk:", disk_gb(scratch_root), flush=True)
 
     stage("6 :: sealed Track-B execution")
     runner = repo_root / "journal_extension/scripts/run_trackb_r07.py"
@@ -331,7 +371,7 @@ def main() -> int:
         raise TrackBOpsError("runner returned without terminal Track-B QA/closure")
 
     stage("7 :: restricted evidence archive to private Kaggle")
-    restricted = prepare_private_evidence_folder(output_root, workspace / "restricted_archive")
+    restricted = prepare_private_evidence_folder(output_root, scratch_root / "restricted_archive")
     private_receipt = publish_private_kaggle_dataset(
         folder=restricted,
         slug=evidence_dataset,
@@ -399,6 +439,8 @@ def main() -> int:
     print(json.dumps(github_receipt, indent=2), flush=True)
 
     receipt["completed_at_utc"] = utc_now()
+    shutil.rmtree(scratch_root, ignore_errors=True)
+    receipt["persistent_hygiene"] = assert_persistent_output_hygiene(workspace, output_root)
     receipt["final_disk_gb"] = disk_gb(workspace)
     receipt["status"] = "PASS_AUTOMATED_TRACK_B_COMPLETE"
     receipt["manual_publication_steps_required"] = 0
