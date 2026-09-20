@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
-from .trackb_r07 import TrackBError
+from .trackb_r07 import TrackBAuditPolicy, TrackBError
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
@@ -349,7 +349,12 @@ def _coverage(points, shape) -> float:
     return area / max(float(h * w), 1.0)
 
 
-def verify_orb_pair(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
+def verify_orb_pair(
+    a: dict[str, Any],
+    b: dict[str, Any],
+    *,
+    policy: TrackBAuditPolicy,
+) -> dict[str, Any]:
     import cv2
     import numpy as np
 
@@ -366,21 +371,28 @@ def verify_orb_pair(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
         "coverage_b": 0.0,
         "median_symmetric_reprojection_px": None,
     }
-    if len(desc_a) < 20 or len(desc_b) < 20 or len(kp_a) < 20 or len(kp_b) < 20:
+    if (
+        len(desc_a) < policy.minimum_good_matches
+        or len(desc_b) < policy.minimum_good_matches
+        or len(kp_a) < policy.minimum_good_matches
+        or len(kp_b) < policy.minimum_good_matches
+    ):
         result["decision_stage"] = "INSUFFICIENT_DESCRIPTORS"
         return result
     matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
     pairs = matcher.knnMatch(desc_a, desc_b, k=2)
-    good = [m for m, n in pairs if m.distance < 0.75 * n.distance]
+    good = [m for m, n in pairs if m.distance < policy.lowe_ratio * n.distance]
     result["good_matches"] = len(good)
     ratio = len(good) / max(min(len(kp_a), len(kp_b)), 1)
     result["normalized_good_match_ratio"] = ratio
-    if len(good) < 20 or ratio < 0.12:
+    if len(good) < policy.minimum_good_matches or ratio < policy.minimum_normalized_good_match_ratio:
         result["decision_stage"] = "GOOD_MATCH_GATE"
         return result
     pts_a = np.float32([kp_a[m.queryIdx] for m in good])
     pts_b = np.float32([kp_b[m.trainIdx] for m in good])
-    H, mask = cv2.findHomography(pts_a, pts_b, cv2.RANSAC, 5.0)
+    H, mask = cv2.findHomography(
+        pts_a, pts_b, cv2.RANSAC, policy.homography_ransac_reprojection_px
+    )
     if H is None or mask is None:
         result["decision_stage"] = "HOMOGRAPHY_FAIL"
         return result
@@ -389,13 +401,16 @@ def verify_orb_pair(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
     inlier_ratio = inliers / len(good)
     result["homography_inliers"] = inliers
     result["inlier_ratio"] = inlier_ratio
-    if inliers < 12 or inlier_ratio < 0.35:
+    if inliers < policy.minimum_homography_inliers or inlier_ratio < policy.minimum_inlier_ratio:
         result["decision_stage"] = "INLIER_GATE"
         return result
     in_a, in_b = pts_a[mask], pts_b[mask]
     cov_a, cov_b = _coverage(in_a, a["shape"]), _coverage(in_b, b["shape"])
     result["coverage_a"], result["coverage_b"] = cov_a, cov_b
-    if cov_a < 0.10 or cov_b < 0.10:
+    if (
+        cov_a < policy.minimum_convex_hull_coverage_each_image
+        or cov_b < policy.minimum_convex_hull_coverage_each_image
+    ):
         result["decision_stage"] = "COVERAGE_GATE"
         return result
     try:
@@ -408,7 +423,7 @@ def verify_orb_pair(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
     symmetric = 0.5 * (np.linalg.norm(fwd - in_b, axis=1) + np.linalg.norm(rev - in_a, axis=1))
     median = float(np.median(symmetric))
     result["median_symmetric_reprojection_px"] = median
-    result["accepted"] = bool(median <= 3.0)
+    result["accepted"] = bool(median <= policy.maximum_median_symmetric_reprojection_px)
     result["decision_stage"] = "ACCEPT" if result["accepted"] else "REPROJECTION_GATE"
     return result
 
@@ -446,6 +461,29 @@ def representative_manifest(
             "historically_contaminated": any(row_id in contaminated_ids for row_id in component),
         })
     return out
+
+
+def deterministic_representative_order(
+    rows: list[dict[str, Any]],
+    *,
+    seed: int,
+) -> list[dict[str, Any]]:
+    """Return a deterministic seeded ordering independent of filesystem traversal."""
+    import numpy as np
+
+    canonical = sorted(
+        (dict(row) for row in rows),
+        key=lambda row: (
+            str(row.get("representative_raw_sha256", "")),
+            str(row.get("family_id", "")),
+            str(row.get("representative_row_id", "")),
+        ),
+    )
+    if not canonical:
+        return []
+    rng = np.random.Generator(np.random.PCG64(int(seed)))
+    permutation = rng.permutation(len(canonical)).tolist()
+    return [canonical[index] for index in permutation]
 
 
 def write_jsonl(path: str | Path, rows: Iterable[dict[str, Any]]) -> None:
