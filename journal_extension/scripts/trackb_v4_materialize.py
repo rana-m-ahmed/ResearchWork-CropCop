@@ -28,6 +28,7 @@ from cropcop_je.trackb_r07_ops import (
     acquire_gvlid_v5,
     acquire_irish_potato,
     configure_runtime_secrets,
+    probe_external_sources,
     publish_private_kaggle_dataset,
     run_checked,
     verify_authenticated_kaggle_owner,
@@ -403,6 +404,8 @@ def _write_source_qualification(
     final_v1: tuple[Path, Path, Path],
     r07: dict[str, object],
     dino: dict[str, object],
+    external_probe: dict[str, object],
+    kaggle_owner: str | None,
 ) -> Path:
     manifest, class_map, image_root = final_v1
     payload = {
@@ -419,6 +422,8 @@ def _write_source_qualification(
         },
         "r07": r07,
         "dino": dino,
+        "external_source_probe": external_probe,
+        "kaggle_publication_owner": kaggle_owner,
     }
     path = output_root / "TRACKB_SOURCE_QUALIFICATION.json"
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -695,6 +700,14 @@ def main() -> int:
     print(json.dumps({key: str(value) for key, value in mounts.items()}, indent=2, sort_keys=True))
 
     stage("0.5 :: complete source qualification")
+    early_owner = None
+    if not args.skip_publication:
+        configure_runtime_secrets(require_github=False)
+        early_owner = verify_authenticated_kaggle_owner(args.kaggle_owner)
+    external_probe = probe_external_sources()
+    if external_probe.get("status") != "PASS":
+        raise TrackBOpsError(f"external-source readiness probe did not PASS: {external_probe}")
+
     source_views = output_root / "_source_views"
     final_v1_authority = _find_v1(mounts["final_v1"])
     final_v1_view = _prepare_final_v1_core_view(
@@ -708,6 +721,8 @@ def main() -> int:
         final_v1=final_v1_authority,
         r07=r07_evidence,
         dino=dino_evidence,
+        external_probe=external_probe,
+        kaggle_owner=early_owner,
     )
     print(source_qualification_path.read_text(encoding="utf-8"), flush=True)
 
@@ -753,8 +768,7 @@ def main() -> int:
 
     if not args.skip_publication:
         stage("5 :: private Kaggle publication and full round-trip verification")
-        configure_runtime_secrets(require_github=False)
-        owner = verify_authenticated_kaggle_owner(args.kaggle_owner)
+        owner = early_owner or verify_authenticated_kaggle_owner(args.kaggle_owner)
         infra_slug = f"{owner}/{INFRA_DATASET_NAME}"
         external_slug = f"{owner}/{EXTERNAL_DATASET_NAME}"
         infra_pub = publish_private_kaggle_dataset(
