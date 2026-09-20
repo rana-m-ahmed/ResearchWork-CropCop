@@ -180,6 +180,39 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         self.assertIn('"factory_source_validation": "PASS"', source)
 
 
+    def test_dino_factory_manifest_validates_only_against_dedicated_source_root(self):
+        from cropcop_je.g1 import factory_bundle_hash, validate_teacher_factory_bundle
+
+        source_root = ROOT / "journal_extension" / "teacher_factory"
+        source = source_root / "historical_dino_tiny.py"
+        self.assertTrue(source.is_file())
+        manifest = {
+            "schema_version": "1.0",
+            "entrypoint": "historical_dino_tiny:build_teacher",
+            "output_order_transform": "none",
+            "files": [{
+                "path": "historical_dino_tiny.py",
+                "sha256": module.sha256_file(source),
+                "bytes": source.stat().st_size,
+            }],
+        }
+        manifest["bundle_sha256"] = factory_bundle_hash(manifest)
+
+        wrong = validate_teacher_factory_bundle(
+            manifest,
+            source_root=ROOT,
+            expected_entrypoint=manifest["entrypoint"],
+        )
+        self.assertIn("teacher factory source file missing: historical_dino_tiny.py", wrong)
+
+        correct = validate_teacher_factory_bundle(
+            manifest,
+            source_root=source_root,
+            expected_entrypoint=manifest["entrypoint"],
+        )
+        self.assertEqual(correct, [])
+
+
     def test_embedded_replay_authority_matches_frozen_trackb_contract(self):
         authority = ROOT / "journal_extension" / "track_b_r07" / "replay_authority"
         s1 = authority / "R07_S1_ORIGINAL_RUN_RECORD.json"
