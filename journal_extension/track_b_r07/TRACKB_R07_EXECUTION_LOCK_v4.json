@@ -29,7 +29,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "42049f9e65090cd20773768f2187fbd9e427fcec2dc8d2d30047bc69c6addef5",
+  "code_attestation_sha256": "20d4780fdf4ca0fbb68506c16bb922e45167a2abbf9be4058124c9f78e124a80",
   "experiment_ids": [
     "TB2-AUDIT-GVLID",
     "TB2-AUDIT-POTATO",
@@ -254,7 +254,7 @@
     "publication_retry_counts_excluded_from_science_identity": true,
     "qualification_recomputed_during_claim": false
   },
-  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the v5 hardened orchestration: source-integrity authority, deterministic audit implementation, trust-before-execute attached inputs, immutable qualification handoff, bounded resources, single-writer protected claim, durable attempt states, and content-addressed evidence publication.",
+  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the v5 hardened orchestration including the GVLiD opaque-container transport repair. Mendeley DOI/version remains source identity authority; image bytes may fall back only to the pinned official companion commit and must still pass the complete 3,477-image checksum ledger.",
   "scientific_change": false,
   "orchestration": {
     "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY",
