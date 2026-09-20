@@ -144,7 +144,9 @@ def main() -> int:
         )
 
     pop_token = final_text.index("os.environ.pop('KAGGLE_API_TOKEN', None)")
-    controller = final_text.index("trackb_v4_execute_attached.py")
+    controller = final_text.index(
+        "CONTROLLER = REPO / 'journal_extension/scripts/trackb_v4_execute_attached.py'"
+    )
     if pop_token > controller:
         raise ValidationError(
             "Notebook 01 must clear inherited Kaggle credentials before scientific controller launch"
