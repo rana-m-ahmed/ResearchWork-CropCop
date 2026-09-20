@@ -20,6 +20,7 @@ from cropcop_je.trackb_r07 import (
 from cropcop_je.trackb_r07_ops import (
     KAGGLE_OWNER_DEFAULT,
     SOURCE_DATASETS,
+    attempt_dataset_slug,
     evidence_dataset_slug,
     historical_dataset_slug,
     TrackBOpsError,
@@ -30,6 +31,7 @@ from cropcop_je.trackb_r07_ops import (
     ensure_kaggle_cli,
     kaggle_dataset_exists,
     prepare_private_evidence_folder,
+    publish_attempt_state,
     publish_private_kaggle_dataset,
     publish_public_trackb_evidence,
     probe_external_sources,
@@ -52,6 +54,29 @@ def disk_gb(path: Path) -> dict[str, float]:
         "total": round(usage.total / 1024**3, 2),
         "used": round(usage.used / 1024**3, 2),
         "free": round(usage.free / 1024**3, 2),
+    }
+
+
+def assert_persistent_output_hygiene(workspace: Path, output_root: Path) -> dict[str, int]:
+    image_suffixes = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+    model_suffixes = {".pt", ".pth", ".ckpt", ".safetensors", ".pte"}
+    forbidden = []
+    for path in workspace.rglob("*"):
+        if not path.is_file():
+            continue
+        suffix = path.suffix.lower()
+        if suffix in image_suffixes or suffix in model_suffixes:
+            forbidden.append(path)
+        if path.name.endswith(".part"):
+            forbidden.append(path)
+    if forbidden:
+        raise TrackBOpsError(
+            "persistent Track-B workspace contains forbidden raw/model/partial artifacts: "
+            + ", ".join(str(p.relative_to(workspace)) for p in forbidden[:20])
+        )
+    return {
+        "persistent_file_count": sum(1 for p in workspace.rglob("*") if p.is_file()),
+        "forbidden_artifact_count": 0,
     }
 
 
@@ -192,44 +217,72 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Fully automated CropCop Track-B R07 Kaggle controller.")
     ap.add_argument("--repo-root", required=True)
     ap.add_argument("--workspace", default="/kaggle/working/trackb_master")
+    ap.add_argument("--scratch-root", default="/kaggle/tmp/cropcop_trackb_r07")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--kaggle-owner", default=KAGGLE_OWNER_DEFAULT)
     ap.add_argument("--force-rebuild-historical", action="store_true")
+    ap.add_argument("--execution-mode", choices=["qualification", "claim"], default="qualification")
+    ap.add_argument("--authorized-qualification-science-sha256", default="")
     args = ap.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
     workspace = Path(args.workspace).resolve()
+    scratch_root = Path(args.scratch_root).resolve()
     requested_kaggle_owner = str(args.kaggle_owner).strip()
+    authorized_qualification_science_sha256 = str(args.authorized_qualification_science_sha256).strip().lower()
+    if args.execution_mode == "claim":
+        if (
+            len(authorized_qualification_science_sha256) != 64
+            or any(ch not in "0123456789abcdef" for ch in authorized_qualification_science_sha256)
+        ):
+            raise TrackBOpsError(
+                "claim mode requires a reviewed --authorized-qualification-science-sha256"
+            )
     if workspace.exists() and any(workspace.iterdir()):
         raise TrackBOpsError(f"master workspace must be empty for a clean run: {workspace}")
     workspace.mkdir(parents=True, exist_ok=True)
-    inputs_root = workspace / "inputs"
-    sources_root = workspace / "sources"
+    if scratch_root.exists():
+        shutil.rmtree(scratch_root)
+    scratch_root.mkdir(parents=True, exist_ok=False)
+    inputs_root = scratch_root / "inputs"
+    sources_root = scratch_root / "sources"
     output_root = workspace / "trackb_r07"
     inputs_root.mkdir()
     sources_root.mkdir()
 
     stage("0 :: secrets and platform")
-    secret_presence = configure_runtime_secrets()
+    claim_mode = args.execution_mode == "claim"
+    secret_presence = configure_runtime_secrets(require_github=claim_mode)
     source_git_sha = run_checked(
         ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
         timeout=120,
     ).stdout.strip()
     if not source_git_sha:
         raise TrackBOpsError("could not bind repository HEAD")
-    github_permission = verify_github_repository_push_access(
-        repo_root,
-        source_git_sha=source_git_sha,
-    )
+    if claim_mode:
+        github_permission = verify_github_repository_push_access(
+            repo_root,
+            source_git_sha=source_git_sha,
+        )
+    else:
+        github_permission = {
+            "status": "SKIPPED_QUALIFICATION_MODE",
+            "authenticated": False,
+            "push": False,
+            "source_git_sha": source_git_sha,
+        }
     kaggle_cli = ensure_kaggle_cli()
     kaggle_owner = verify_authenticated_kaggle_owner(requested_kaggle_owner)
     source_access = verify_kaggle_source_access(SOURCE_DATASETS)
     external_source_probe = probe_external_sources()
     historical_dataset = historical_dataset_slug(kaggle_owner)
     evidence_dataset = evidence_dataset_slug(kaggle_owner)
+    attempt_dataset = attempt_dataset_slug(kaggle_owner)
+    attempt_id = f"TB3-{source_git_sha[:12]}-{int(time.time())}"
     receipt = {
         "schema_version": "2.0",
-        "controller": "TRACKB_R07_MASTER_v2",
+        "controller": "TRACKB_R07_MASTER_v3",
+        "execution_mode": args.execution_mode,
         "started_at_utc": utc_now(),
         "repository_head": source_git_sha,
         "secret_presence": secret_presence,
@@ -237,9 +290,21 @@ def main() -> int:
         "github_permission_preflight": github_permission,
         "external_source_preflight": external_source_probe,
         "kaggle_source_access_preflight": source_access,
-        "initial_disk_gb": disk_gb(workspace),
+        "initial_disk_gb": {
+            "persistent_working": disk_gb(workspace),
+            "ephemeral_scratch": disk_gb(scratch_root),
+        },
+        "storage_policy": {
+            "persistent_root": str(workspace),
+            "scratch_root": str(scratch_root),
+            "raw_external_images_persistent": False,
+            "model_source_files_persistent": False,
+        },
         "kaggle_owner": kaggle_owner,
+        "attempt_id": attempt_id,
+        "attempt_dataset_slug": attempt_dataset,
         "protected_external_predictions_before_controller": False,
+        "authorized_qualification_science_sha256": authorized_qualification_science_sha256 or None,
     }
     print(json.dumps({k: v for k, v in receipt.items() if k != "secret_presence"} | {"secret_presence": secret_presence}, indent=2))
 
@@ -248,7 +313,7 @@ def main() -> int:
     for key, slug in SOURCE_DATASETS.items():
         print(f"Downloading {key}: {slug}", flush=True)
         source_roots[key] = download_kaggle_dataset(slug, sources_root / key)
-        print("disk:", disk_gb(workspace), flush=True)
+        print("scratch disk:", disk_gb(scratch_root), flush=True)
 
     stage("2 :: immutable core assembly")
     core_root = inputs_root / "core"
@@ -260,13 +325,13 @@ def main() -> int:
     stage("2.5 :: release redundant model-source downloads")
     for key in ("r07_s1", "r07_s2", "r07_s3", "dino_bundle"):
         shutil.rmtree(source_roots[key], ignore_errors=True)
-    print("disk after model-source cleanup:", disk_gb(workspace), flush=True)
+    print("scratch disk after model-source cleanup:", disk_gb(scratch_root), flush=True)
 
     stage("3 :: historical comparison cache")
     historical_root = inputs_root / "historical_compare"
     used_cache = False
     if not args.force_rebuild_historical and kaggle_dataset_exists(historical_dataset):
-        cache_download = workspace / "hist_cache_download"
+        cache_download = scratch_root / "hist_cache_download"
         download_kaggle_dataset(historical_dataset, cache_download)
         if validate_historical_cache(cache_download, core_root):
             normalize_downloaded_package(cache_download, historical_root)
@@ -299,47 +364,122 @@ def main() -> int:
     # The immutable core now contains exactly the validation surface/checkpoints/audit encoder needed by B0.
     # The historical package contains the only allowed post-closure historical representation.
     shutil.rmtree(sources_root, ignore_errors=True)
-    print("disk after source cleanup:", disk_gb(workspace), flush=True)
+    print("scratch disk after source cleanup:", disk_gb(scratch_root), flush=True)
 
     stage("5 :: automatic external source acquisition and packaging")
     gvlid_root = inputs_root / "gvlid_v5"
     potato_root = inputs_root / "irish_potato"
-    acquire_gvlid_v5(gvlid_root)
+    lineage_review = repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json"
+    if not lineage_review.is_file():
+        raise TrackBOpsError(f"frozen external-lineage review missing: {lineage_review}")
+    acquire_gvlid_v5(gvlid_root, lineage_review_path=lineage_review)
     prepare_candidate(repo_root, "gvlid_v5", gvlid_root)
-    print("GVLiD packaged; disk:", disk_gb(workspace), flush=True)
-    acquire_irish_potato(potato_root)
+    print("GVLiD packaged; scratch disk:", disk_gb(scratch_root), flush=True)
+    acquire_irish_potato(potato_root, lineage_review_path=lineage_review)
     prepare_candidate(repo_root, "irish_potato", potato_root)
-    print("Irish Potato packaged; disk:", disk_gb(workspace), flush=True)
+    print("Irish Potato packaged; scratch disk:", disk_gb(scratch_root), flush=True)
 
     stage("6 :: sealed Track-B execution")
     runner = repo_root / "journal_extension/scripts/run_trackb_r07.py"
-    run_checked(
-        [
-            sys.executable, str(runner),
-            "--input-root", str(inputs_root),
-            "--output-root", str(output_root),
-            "--device", args.device,
-            "--workers", "4",
-            "--mode", "all",
-        ],
-        cwd=repo_root,
-        timeout=36000,
-    )
+    runner_mode = "qualification" if args.execution_mode == "qualification" else "all"
+    runner_cmd = [
+        sys.executable, str(runner),
+        "--input-root", str(inputs_root),
+        "--output-root", str(output_root),
+        "--scratch-root", str(scratch_root / "audit_scratch"),
+        "--device", args.device,
+        "--workers", "4",
+        "--mode", runner_mode,
+        "--source-git-sha", source_git_sha,
+    ]
+    if args.execution_mode == "claim":
+        runner_cmd += [
+            "--attempt-dataset-slug", attempt_dataset,
+            "--attempt-id", attempt_id,
+            "--authorized-qualification-science-sha256", authorized_qualification_science_sha256,
+        ]
+    run_checked(runner_cmd, cwd=repo_root, timeout=36000)
+
+    if args.execution_mode == "qualification":
+        stage("6.5 :: independent prediction-blind qualification QA")
+        validator = repo_root / "journal_extension/scripts/validate_trackb_preinference_qualification.py"
+        run_checked(
+            [
+                sys.executable, str(validator),
+                "--input-root", str(inputs_root),
+                "--output-root", str(output_root),
+            ],
+            cwd=repo_root,
+            timeout=3600,
+        )
+        qualification = load_json(output_root / "TRACKB_PREINFERENCE_QUALIFICATION.json")
+        preqa = load_json(output_root / "TRACKB_PREINFERENCE_QA.json")
+        if (
+            qualification.get("status") != "PASS_PREDICTION_BLIND_QUALIFICATION"
+            or preqa.get("status") != "PASS_INDEPENDENT_PREINFERENCE_QA"
+            or int(preqa.get("protected_external_prediction_count", -1)) != 0
+        ):
+            raise TrackBOpsError("Track-B prediction-blind qualification did not reach terminal PASS")
+        if (
+            qualification.get("qualification_science_sha256")
+            != preqa.get("qualification_science_sha256")
+        ):
+            raise TrackBOpsError("independent Q3 science digest differs from Q2 qualification")
+        receipt["qualification"] = {
+            "qualification_sha256": qualification["qualification_sha256"],
+            "qualification_science_sha256": qualification["qualification_science_sha256"],
+            "prediction_blind_science_manifest_sha256": qualification[
+                "prediction_blind_science_manifest_sha256"
+            ],
+            "qa_sha256": preqa["qa_sha256"],
+            "protected_external_prediction_count": 0,
+            "v1_test_accessed": False,
+        }
+        receipt["completed_at_utc"] = utc_now()
+        shutil.rmtree(scratch_root, ignore_errors=True)
+        receipt["persistent_hygiene"] = assert_persistent_output_hygiene(workspace, output_root)
+        receipt["final_disk_gb"] = disk_gb(workspace)
+        receipt["status"] = "PASS_TRACKB_PREINFERENCE_QUALIFICATION"
+        receipt["protected_external_inference_executed"] = False
+        receipt["claim_run_authorized_by_this_receipt"] = False
+        (output_root / "TRACKB_AUTOMATION_RECEIPT.json").write_text(
+            json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
+        )
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+        return 0
+
     closure = load_json(output_root / "TRACKB_FINAL_CLOSURE.json")
     qa = load_json(output_root / "TRACKB_FINAL_QA.json")
     if closure.get("status") != "TRACK_B_CLOSED" or qa.get("status") != "PASS":
         raise TrackBOpsError("runner returned without terminal Track-B QA/closure")
+    attempt_state_path = output_root / "TRACKB_ATTEMPT_STATE.json"
+    attempt_state = load_json(attempt_state_path) if attempt_state_path.is_file() else None
 
     stage("7 :: restricted evidence archive to private Kaggle")
-    restricted = prepare_private_evidence_folder(output_root, workspace / "restricted_archive")
+    restricted = prepare_private_evidence_folder(output_root, scratch_root / "restricted_archive")
     private_receipt = publish_private_kaggle_dataset(
         folder=restricted,
         slug=evidence_dataset,
         title="CropCop Track B R07 Restricted Evidence",
         version_message=f"Track-B closure {closure['closure_sha256'][:16]}",
         license_name="other",
+        full_roundtrip=True,
     )
     receipt["private_kaggle_evidence"] = private_receipt
+    if attempt_state is not None:
+        attempt_state = {
+            **attempt_state,
+            "status": "PRIVATE_ARCHIVE_VERIFIED",
+            "private_archive_verified_at_utc": utc_now(),
+            "private_kaggle_evidence": private_receipt,
+            "closure_sha256": closure["closure_sha256"],
+            "trackb_science_sha256": closure["trackb_science_sha256"],
+        }
+        publish_attempt_state(attempt_dataset, attempt_state)
+        attempt_state_path.write_text(
+            json.dumps(attempt_state, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     receipt["closure_sha256"] = closure["closure_sha256"]
     receipt["final_qa_sha256"] = qa["qa_sha256"]
     receipt["scientific_closure_durable_before_github_publication"] = True
@@ -396,9 +536,23 @@ def main() -> int:
         )
 
     receipt["github_public_evidence"] = github_receipt
+    if attempt_state is not None:
+        attempt_state = {
+            **attempt_state,
+            "status": "PUBLICATION_COMPLETE",
+            "publication_complete_at_utc": utc_now(),
+            "github_public_evidence": github_receipt,
+        }
+        publish_attempt_state(attempt_dataset, attempt_state)
+        attempt_state_path.write_text(
+            json.dumps(attempt_state, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     print(json.dumps(github_receipt, indent=2), flush=True)
 
     receipt["completed_at_utc"] = utc_now()
+    shutil.rmtree(scratch_root, ignore_errors=True)
+    receipt["persistent_hygiene"] = assert_persistent_output_hygiene(workspace, output_root)
     receipt["final_disk_gb"] = disk_gb(workspace)
     receipt["status"] = "PASS_AUTOMATED_TRACK_B_COMPLETE"
     receipt["manual_publication_steps_required"] = 0
