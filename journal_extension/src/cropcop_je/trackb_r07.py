@@ -379,6 +379,10 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         "private_kaggle_publication_retry_attempts": 4,
         "github_publication_failure_preserves_scientific_closure": True,
         "external_source_reachability_preflight": True,
+        "operator_default_mode": "qualification",
+        "independent_preinference_qa_required": True,
+        "protected_claim_requires_post_qualification_exact_sha_freeze": True,
+        "qualification_must_produce_zero_protected_external_predictions": True,
     }
     for key, value in expected_automation.items():
         if automation.get(key) != value:
