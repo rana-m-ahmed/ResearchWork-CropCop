@@ -26,7 +26,7 @@
     },
     {
       "path": "journal_extension/scripts/build_trackb_core_package.py",
-      "git_blob_sha1": "71093a02465ab7e0ba221893531b9e21659132b6",
+      "git_blob_sha1": "3ee5c7e0428005ce31c2c3f80c14c14b79a5e45f",
       "origin": "track_b_v3_remediation"
     },
     {
@@ -164,5 +164,6 @@
       "git_blob_sha1": "40c1d0487ef51b907ae58ae08452c745e8925b15",
       "origin": "track_b_v3_remediation"
     }
-  ]
+  ],
+  "attestation_note": "Operational re-attestation: Track-B core builder now validates the canonical Track-A selected_metrics schema (validation_accuracy, validation_balanced_accuracy, validation_macro_f1, validation_nll). No model, checkpoint, dataset, threshold, mapping, or replay tolerance changed."
 }
