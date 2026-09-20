@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "authority_id": "GVLID_V5_CHECKSUM_AUTHORITY_v1",
+  "status": "PASS_PINNED_OFFICIAL_COMPANION_LEDGER",
+  "scientific_change": false,
+  "dataset": {
+    "doi": "10.17632/wkymf8bhcg.5",
+    "version": "5",
+    "expected_image_count": 3477
+  },
+  "paper": {
+    "doi": "10.1038/s41597-026-07431-9",
+    "documented_checksum_path": "docs/checksums.txt",
+    "observed_companion_checksum_path": "docs/checksums.csv",
+    "discrepancy_disposition": "FORMAT_FILENAME_DISCREPANCY_ONLY__LEDGER_COVERAGE_INDEPENDENTLY_VERIFIED"
+  },
+  "official_companion_repository": {
+    "repository": "MilindGayakwad/DNN",
+    "commit": "878a1c7098964bb52c4c4a5c30e5b53340565258",
+    "checksum_path": "docs/checksums.csv",
+    "checksum_git_blob_sha1": "5c953cf0381614d8e3744737bfeed98ea1162f9c"
+  },
+  "vendored_authority": {
+    "path": "journal_extension/track_b_r07/external_authority/gvlid_v5_checksums.csv",
+    "expected_git_blob_sha1": "5c953cf0381614d8e3744737bfeed98ea1162f9c"
+  },
+  "independent_structure_verification": {
+    "ledger_rows": 3477,
+    "official_image_rows": 3477,
+    "invalid_sha256_rows": 0,
+    "duplicate_paths": 0,
+    "missing_images": 0,
+    "extra_entries": 0,
+    "class_support": {
+      "Black rot": 808,
+      "esca": 888,
+      "healthy": 1109,
+      "leaf blight": 672
+    }
+  },
+  "runtime_policy": "VERIFY_MENDELEY_V5_IMAGE_BYTES_AGAINST_PINNED_VENDORED_OFFICIAL_LEDGER",
+  "protected_external_predictions_allowed": false
+}
