@@ -86,6 +86,55 @@ class InputBundle:
     manifest: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class TrackBAuditPolicy:
+    phash_radius: int
+    dhash_radius: int
+    dino_top_k: int
+    orb_max_side: int
+    orb_nfeatures: int
+    lowe_ratio: float
+    minimum_good_matches: int
+    minimum_normalized_good_match_ratio: float
+    homography_ransac_reprojection_px: float
+    minimum_homography_inliers: int
+    minimum_inlier_ratio: float
+    minimum_convex_hull_coverage_each_image: float
+    maximum_median_symmetric_reprojection_px: float
+    support_floor: int
+    bootstrap_replicates: int
+    bootstrap_seed: int
+    external_family_order_seed: int
+
+
+def audit_policy_from_lock(lock: dict[str, Any]) -> TrackBAuditPolicy:
+    """Return the single executable Track-B audit policy after full lock validation."""
+    validate_execution_lock(lock)
+    generation = lock["candidate_generation"]
+    geometry = lock["geometric_acceptance"]
+    grades = lock["grade_rules"]
+    bootstrap = lock["bootstrap"]
+    return TrackBAuditPolicy(
+        phash_radius=int(generation["phash"]["hamming_max"]),
+        dhash_radius=int(generation["dhash"]["hamming_max"]),
+        dino_top_k=int(generation["dino_top_k"]),
+        orb_max_side=int(geometry["max_image_side"]),
+        orb_nfeatures=int(geometry["orb_features_max"]),
+        lowe_ratio=float(geometry["lowe_ratio"]),
+        minimum_good_matches=int(geometry["minimum_good_matches"]),
+        minimum_normalized_good_match_ratio=float(geometry["minimum_normalized_good_match_ratio"]),
+        homography_ransac_reprojection_px=float(geometry["homography_ransac_reprojection_px"]),
+        minimum_homography_inliers=int(geometry["minimum_homography_inliers"]),
+        minimum_inlier_ratio=float(geometry["minimum_inlier_ratio"]),
+        minimum_convex_hull_coverage_each_image=float(geometry["minimum_convex_hull_coverage_each_image"]),
+        maximum_median_symmetric_reprojection_px=float(geometry["maximum_median_symmetric_reprojection_px"]),
+        support_floor=int(grades["minimum_independent_families_per_required_mapped_class"]),
+        bootstrap_replicates=int(bootstrap["replicates"]),
+        bootstrap_seed=int(bootstrap["seed"]),
+        external_family_order_seed=int(lock["external_family_order_seed"]),
+    )
+
+
 def load_json(path: str | Path) -> dict[str, Any]:
     obj = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(obj, dict):
@@ -286,9 +335,50 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         raise TrackBError("Track-B v2 Internet role drift")
     if kaggle_policy.get("protected_inference_network_dependency") is not False:
         raise TrackBError("Track-B v2 protected inference must not have a network dependency")
-    dino_pre = lock.get("candidate_generation", {}).get("dino_feature_preprocessing", {})
+    generation = lock.get("candidate_generation", {})
+    phash = generation.get("phash", {})
+    dhash = generation.get("dhash", {})
+    if phash.get("bits") != 64 or int(phash.get("hamming_max", -1)) != 12:
+        raise TrackBError("pHash candidate-generation policy drift")
+    if dhash.get("bits") != 64 or int(dhash.get("hamming_max", -1)) != 10:
+        raise TrackBError("dHash candidate-generation policy drift")
+    if generation.get("exact_raw_sha256") is not True or int(generation.get("dino_top_k", -1)) != 50:
+        raise TrackBError("candidate-generation exact/DINO policy drift")
+    dino_pre = generation.get("dino_feature_preprocessing", {})
     if dino_pre.get("entrypoint") != "cropcop_je.data.ctc_v2_eval_transform" or dino_pre.get("ctc_v2_config_sha256") != CTC_V2_CONFIG_SHA256:
         raise TrackBError("DINO audit preprocessing contract drift")
+    geometry = lock.get("geometric_acceptance", {})
+    expected_geometry = {
+        "bfmatcher_norm": "HAMMING",
+        "homography_ransac_reprojection_px": 5,
+        "lowe_ratio": 0.75,
+        "max_image_side": 800,
+        "maximum_median_symmetric_reprojection_px": 3,
+        "minimum_convex_hull_coverage_each_image": 0.1,
+        "minimum_good_matches": 20,
+        "minimum_homography_inliers": 12,
+        "minimum_inlier_ratio": 0.35,
+        "minimum_normalized_good_match_ratio": 0.12,
+        "orb_features_max": 1200,
+    }
+    for key, value in expected_geometry.items():
+        if geometry.get(key) != value:
+            raise TrackBError(f"geometric acceptance policy drift: {key}")
+    bootstrap_policy = lock.get("bootstrap", {})
+    expected_bootstrap_policy = {
+        "interval": "percentile_95",
+        "no_new_nhst_family": True,
+        "replicates": 5000,
+        "same_resample_indices_for_all_three_seeds": True,
+        "seed": 409883112,
+        "stratify_within_mapped_class": True,
+        "unit": "family_representative",
+    }
+    for key, value in expected_bootstrap_policy.items():
+        if bootstrap_policy.get(key) != value:
+            raise TrackBError(f"bootstrap policy drift: {key}")
+    if int(lock.get("external_family_order_seed", -1)) != 1936263114:
+        raise TrackBError("external family-order seed drift")
     historical = lock.get("historical_compare", {})
     safe = historical.get("safe_postclosure_route", {})
     expected_safe = {
