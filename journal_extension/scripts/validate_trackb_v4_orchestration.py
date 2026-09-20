@@ -78,6 +78,23 @@ def main() -> int:
     readiness, readiness_text = notebook_text(readiness_path)
     final, final_text = notebook_text(final_path)
 
+    orchestration = load_json(
+        repo / "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json"
+    )
+    runtime_source_commit = str(orchestration.get("runtime_source_commit", "")).strip()
+    if len(runtime_source_commit) != 40:
+        raise ValidationError("v5 orchestration lock lacks exact runtime source commit")
+    if f"SOURCE_COMMIT = '{runtime_source_commit}'" not in readiness_text:
+        raise ValidationError(
+            "Notebook 00 runtime pin differs from TRACKB_ORCHESTRATION_LOCK_v5"
+        )
+    if f"RUNTIME_SOURCE_COMMIT = '{runtime_source_commit}'" not in final_text:
+        raise ValidationError(
+            "Notebook 01 runtime pin differs from TRACKB_ORCHESTRATION_LOCK_v5"
+        )
+    if "RELEASE_ID = 'TRACKB_V5_RELEASE_AUTHORITY_v1'" not in final_text:
+        raise ValidationError("Notebook 01 does not bind the v5 release authority identity")
+
     if len(readiness.get("cells", [])) != 5:
         raise ValidationError("readiness notebook must have exactly five cells")
     if len(final.get("cells", [])) != 6:
@@ -230,6 +247,8 @@ def main() -> int:
         "release_status": release.get("status"),
         "release_executable": release.get("executable"),
         "external_source_status": external.get("status"),
+        "runtime_source_commit": runtime_source_commit,
+        "operator_runtime_binding": "PASS",
         "notebook_01_trust_before_execute": True,
         "qualification_handoff_required_for_claim": True,
         "claim_recomputes_qualification": False,
