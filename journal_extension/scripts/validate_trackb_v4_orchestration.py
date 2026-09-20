@@ -110,6 +110,10 @@ def main() -> int:
         raise ValidationError(
             "Notebook 01 contains undefined/legacy bare RUNTIME_SOURCE_COMMIT reference"
         )
+    if "EXPECTED_EXPECTED_RUNTIME_SOURCE_COMMIT" in final_text:
+        raise ValidationError(
+            "Notebook 01 contains malformed doubled runtime-source symbol"
+        )
     if "RELEASE_ID = 'TRACKB_V5_RELEASE_AUTHORITY_v1'" not in final_text:
         raise ValidationError("Notebook 01 does not bind the v5 release authority identity")
 
