@@ -6,6 +6,7 @@ import importlib.metadata
 import json
 import os
 import platform
+import shutil
 import sys
 import time
 from collections import Counter
@@ -240,24 +241,122 @@ def _cross_exact_pairs(external_records, hist_rows):
     return {(ext.row_id, hist_id) for ext in external_records for hist_id in by_sha.get(ext.sha256, [])}
 
 
-def _candidate_orb_getter(records: list[ImageAuditRecord], root: Path, workers: int, audit_policy):
-    by_id = {r.row_id: r for r in records}
+def _candidate_orb_getter(
+    records: list[ImageAuditRecord],
+    root: Path,
+    workers: int,
+    audit_policy,
+    cache_root: Path,
+):
+    """Build a bounded file-backed ORB cache instead of retaining all descriptors in RAM."""
+    import numpy as np
+
+    cache_root = Path(cache_root).resolve()
+    if cache_root.exists():
+        shutil.rmtree(cache_root)
+    cache_root.mkdir(parents=True, exist_ok=False)
+    chunk_root = cache_root / ".chunks"
+    chunk_root.mkdir()
+
     ordered = list(records)
-    def build(row):
-        return row.row_id, orb_features_from_path(
-            root / row.relative_path,
-            max_side=audit_policy.orb_max_side,
-            nfeatures=audit_policy.orb_nfeatures,
+    row_index = {row.row_id: index for index, row in enumerate(ordered)}
+    offsets = [0]
+    chunk_paths: list[Path] = []
+    chunk_size = 256
+
+    for chunk_index, start_index in enumerate(range(0, len(ordered), chunk_size)):
+        subset = ordered[start_index:start_index + chunk_size]
+
+        def build(row):
+            return orb_features_from_path(
+                root / row.relative_path,
+                max_side=audit_policy.orb_max_side,
+                nfeatures=audit_policy.orb_nfeatures,
+            )
+
+        with ThreadPoolExecutor(max_workers=max(1, int(workers))) as pool:
+            computed = list(pool.map(build, subset, chunksize=8))
+
+        shapes = np.asarray([orb["shape"] for orb in computed], dtype=np.int32)
+        counts = np.asarray([len(orb["desc"]) for orb in computed], dtype=np.int32)
+        xy = (
+            np.concatenate([orb["xy"] for orb in computed], axis=0)
+            if int(counts.sum())
+            else np.empty((0, 2), dtype=np.float32)
         )
-    cache: dict[str, dict[str, Any]] = {}
-    with ThreadPoolExecutor(max_workers=max(1, int(workers))) as pool:
-        for row_id, orb in pool.map(build, ordered, chunksize=8):
-            cache[row_id] = orb
-    if len(cache) != len(records):
-        raise TrackBError("candidate ORB precomputation did not cover every decoded image")
+        desc = (
+            np.concatenate([orb["desc"] for orb in computed], axis=0)
+            if int(counts.sum())
+            else np.empty((0, 32), dtype=np.uint8)
+        )
+        chunk_path = chunk_root / f"chunk_{chunk_index:05d}.npz"
+        np.savez(
+            chunk_path,
+            shapes=shapes,
+            counts=counts,
+            xy=xy.astype(np.float32, copy=False),
+            desc=desc.astype(np.uint8, copy=False),
+        )
+        chunk_paths.append(chunk_path)
+        for count in counts.tolist():
+            offsets.append(offsets[-1] + int(count))
+        print(
+            f"Candidate ORB cache {min(start_index + len(subset), len(ordered))}/{len(ordered)}",
+            flush=True,
+        )
+
+    offsets_arr = np.asarray(offsets, dtype=np.int64)
+    np.save(cache_root / "offsets.npy", offsets_arr)
+    total = int(offsets_arr[-1])
+    xy_mm = np.lib.format.open_memmap(
+        cache_root / "xy.npy", mode="w+", dtype=np.float32, shape=(total, 2)
+    )
+    desc_mm = np.lib.format.open_memmap(
+        cache_root / "desc.npy", mode="w+", dtype=np.uint8, shape=(total, 32)
+    )
+    shapes_mm = np.lib.format.open_memmap(
+        cache_root / "shapes.npy", mode="w+", dtype=np.int32, shape=(len(ordered), 2)
+    )
+
+    point_cursor = 0
+    row_cursor = 0
+    for chunk_path in chunk_paths:
+        data = np.load(chunk_path, allow_pickle=False)
+        n_points = len(data["xy"])
+        n_rows = len(data["shapes"])
+        xy_mm[point_cursor:point_cursor + n_points] = data["xy"]
+        desc_mm[point_cursor:point_cursor + n_points] = data["desc"]
+        shapes_mm[row_cursor:row_cursor + n_rows] = data["shapes"]
+        point_cursor += n_points
+        row_cursor += n_rows
+        del data
+    xy_mm.flush()
+    desc_mm.flush()
+    shapes_mm.flush()
+    del xy_mm, desc_mm, shapes_mm
+    shutil.rmtree(chunk_root)
+
+    offsets_mm = np.load(cache_root / "offsets.npy", mmap_mode="r")
+    xy_read = np.load(cache_root / "xy.npy", mmap_mode="r")
+    desc_read = np.load(cache_root / "desc.npy", mmap_mode="r")
+    shapes_read = np.load(cache_root / "shapes.npy", mmap_mode="r")
+
+    if offsets_mm.shape != (len(ordered) + 1,) or shapes_read.shape != (len(ordered), 2):
+        raise TrackBError("candidate packed ORB cache shape mismatch")
+    if int(offsets_mm[-1]) != len(xy_read) or len(xy_read) != len(desc_read):
+        raise TrackBError("candidate packed ORB cache offsets are inconsistent")
+
     def get(row_id: str):
-        return cache[row_id]
+        index = row_index[row_id]
+        lo, hi = int(offsets_mm[index]), int(offsets_mm[index + 1])
+        return {
+            "xy": np.asarray(xy_read[lo:hi], dtype=np.float32),
+            "desc": np.asarray(desc_read[lo:hi], dtype=np.uint8),
+            "shape": tuple(int(x) for x in shapes_read[index]),
+        }
+
     return get
+
 
 
 def _geometric_verify_pairs(
@@ -328,6 +427,7 @@ def _audit_candidate(
     hist_features,
     hist_orb_get,
     audit_policy,
+    audit_scratch_root: Path,
 ) -> dict[str, Any]:
     stage(f"candidate audit :: {candidate_id}")
     candidate_out = output_root / "candidates" / candidate_id
@@ -388,7 +488,13 @@ def _audit_candidate(
     dino_within = _self_dino_pairs(candidate_features, [r.row_id for r in records], device=device, top_k=audit_policy.dino_top_k)
     candidate_pair_union = phash_within | dhash_within | dino_within | exact_within
 
-    candidate_orb_get = _candidate_orb_getter(records, data_root, workers, audit_policy)
+    candidate_orb_get = _candidate_orb_getter(
+        records,
+        data_root,
+        workers,
+        audit_policy,
+        audit_scratch_root / candidate_id / "candidate_orb",
+    )
     accepted_within = set(exact_within)
     accepted_near_within, within_geo_summary = _geometric_verify_pairs(
         candidate_pair_union - exact_within,
@@ -1024,12 +1130,17 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="CropCop Track B R07 end-to-end external-validation runner")
     ap.add_argument("--input-root", default="/kaggle/input")
     ap.add_argument("--output-root", default="/kaggle/working/trackb_r07")
+    ap.add_argument("--scratch-root", default="/kaggle/tmp/cropcop_trackb_r07_audit")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--mode", choices=["preflight", "all"], default="all")
     args = ap.parse_args()
 
     output_root = Path(args.output_root).resolve()
+    audit_scratch_root = Path(args.scratch_root).resolve()
+    if audit_scratch_root.exists():
+        shutil.rmtree(audit_scratch_root)
+    audit_scratch_root.mkdir(parents=True, exist_ok=False)
     if output_root.exists() and any(output_root.iterdir()):
         raise TrackBError(f"output root must be empty for a clean claim run: {output_root}")
     output_root.mkdir(parents=True, exist_ok=True)
@@ -1060,6 +1171,7 @@ def main() -> int:
         workers=args.workers, device=args.device,
         dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
         audit_policy=audit_policy,
+        audit_scratch_root=audit_scratch_root,
     )
     potato = _audit_candidate(
         candidate_id="irish_potato",
@@ -1071,6 +1183,7 @@ def main() -> int:
         workers=args.workers, device=args.device,
         dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
         audit_policy=audit_policy,
+        audit_scratch_root=audit_scratch_root,
     )
     del dino_model
     import torch
