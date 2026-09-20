@@ -38,6 +38,15 @@
       "leaf blight": 672
     }
   },
-  "runtime_policy": "VERIFY_MENDELEY_V5_IMAGE_BYTES_AGAINST_PINNED_VENDORED_OFFICIAL_LEDGER",
-  "protected_external_predictions_allowed": false
+  "runtime_policy": "RESOLVE_MENDELEY_V5_AS_SOURCE_IDENTITY; VERIFY_USABLE_PROVIDER_IMAGES_AGAINST_PINNED_LEDGER; IF_AND_ONLY_IF_PROVIDER_TRANSPORT_YIELDS_ZERO_USABLE_IMAGES, MATERIALIZE_FROM_EXACT_PINNED_OFFICIAL_COMPANION_COMMIT_AND_REQUIRE_ALL_3477_LEDGER_HASHES",
+  "protected_external_predictions_allowed": false,
+  "byte_materialization_fallback": {
+    "condition": "ZERO_USABLE_IMAGES_FROM_MENDELEY_PROVIDER_TRANSPORT",
+    "source": "MilindGayakwad/DNN",
+    "commit": "878a1c7098964bb52c4c4a5c30e5b53340565258",
+    "transport": "PUBLIC_COMMIT_ADDRESSED_CODELOAD_TAR",
+    "credential_required": false,
+    "full_ledger_verification_required": true,
+    "partial_provider_fallback_forbidden": true
+  }
 }
