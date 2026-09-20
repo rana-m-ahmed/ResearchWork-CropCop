@@ -251,17 +251,26 @@ def main() -> int:
     sources_root.mkdir()
 
     stage("0 :: secrets and platform")
-    secret_presence = configure_runtime_secrets()
+    claim_mode = args.execution_mode == "claim"
+    secret_presence = configure_runtime_secrets(require_github=claim_mode)
     source_git_sha = run_checked(
         ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
         timeout=120,
     ).stdout.strip()
     if not source_git_sha:
         raise TrackBOpsError("could not bind repository HEAD")
-    github_permission = verify_github_repository_push_access(
-        repo_root,
-        source_git_sha=source_git_sha,
-    )
+    if claim_mode:
+        github_permission = verify_github_repository_push_access(
+            repo_root,
+            source_git_sha=source_git_sha,
+        )
+    else:
+        github_permission = {
+            "status": "SKIPPED_QUALIFICATION_MODE",
+            "authenticated": False,
+            "push": False,
+            "source_git_sha": source_git_sha,
+        }
     kaggle_cli = ensure_kaggle_cli()
     kaggle_owner = verify_authenticated_kaggle_owner(requested_kaggle_owner)
     source_access = verify_kaggle_source_access(SOURCE_DATASETS)
