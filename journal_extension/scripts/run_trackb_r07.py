@@ -1173,7 +1173,7 @@ def main() -> int:
     ap.add_argument("--scratch-root", default="/kaggle/tmp/cropcop_trackb_r07_audit")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--workers", type=int, default=4)
-    ap.add_argument("--mode", choices=["preflight", "all"], default="all")
+    ap.add_argument("--mode", choices=["preflight", "qualification", "all"], default="qualification")
     ap.add_argument("--source-git-sha", default="")
     ap.add_argument("--attempt-dataset-slug", default="")
     ap.add_argument("--attempt-id", default="")
@@ -1248,6 +1248,48 @@ def main() -> int:
         "all_three_r07_checkpoints_bound": True,
     }
     atomic_write_json(output_root / "TRACKB_PREDICTION_FIREWALL.json", firewall)
+
+    if args.mode == "qualification":
+        qualification = {
+            "schema_version": "1.0",
+            "status": "PASS_PREDICTION_BLIND_QUALIFICATION",
+            "authority_id": AUTHORITY_ID,
+            "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
+            "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
+            "code_attestation_sha256": sha256_file(resolve_bundle_file(core, "code_attestation")),
+            "historical_compare_input_manifest_sha256": sha256_file(historical.manifest_path),
+            "historical_compare_scope": historical.manifest.get("coverage_scope"),
+            "historical_compare_image_count": int(historical.manifest.get("image_count", -1)),
+            "historical_maximum_evidence_grade": historical.manifest.get("maximum_evidence_grade"),
+            "v1_test_accessed": False,
+            "new_training_performed": False,
+            "protected_external_prediction_count": 0,
+            "prediction_firewall_sha256": sha256_file(output_root / "TRACKB_PREDICTION_FIREWALL.json"),
+            "candidates": {},
+        }
+        for candidate in (grape, potato):
+            seal = candidate["seal"]
+            qualification["candidates"][candidate["candidate_id"]] = {
+                "grade": seal["grade"],
+                "claim_mode": seal["claim_mode"],
+                "seal_sha256": seal["seal_sha256"],
+                "source_manifest_sha256": seal["source_manifest_sha256"],
+                "source_metadata_record_sha256": seal["source_metadata_record_sha256"],
+                "family_graph_sha256": seal["family_graph_sha256"],
+                "representative_manifest_sha256": seal["representative_manifest_sha256"],
+                "accepted_historical_edges_sha256": seal["accepted_historical_edges_sha256"],
+                "exclusion_ledger_sha256": seal["exclusion_ledger_sha256"],
+                "decode_failure_ledger_sha256": seal["decode_failure_ledger_sha256"],
+                "family_support": seal["family_support"],
+                "accepted_historical_link_count": int(seal["accepted_historical_link_count"]),
+                "historical_surface_complete": bool(seal["historical_surface_complete"]),
+            }
+        qualification["qualification_sha256"] = sha256_json(
+            {k: v for k, v in qualification.items() if k != "qualification_sha256"}
+        )
+        atomic_write_json(output_root / "TRACKB_PREINFERENCE_QUALIFICATION.json", qualification)
+        print(json.dumps(qualification, indent=2, sort_keys=True))
+        return 0
 
     claim_candidates = [candidate for candidate in (grape, potato) if candidate["grade"] in {"EXT-I", "EXT-S"}]
     attempt_state = None
