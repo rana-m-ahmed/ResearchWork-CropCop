@@ -55,5 +55,5 @@ jobs:
       - name: Run Track-B v4 two-notebook validator
         run: python journal_extension/scripts/validate_trackb_v4_orchestration.py --repo-root .
 
-      - name: Validate Track-B release authority structure
-        run: python journal_extension/scripts/validate_trackb_release_authority.py --repo-root .
+      - name: Validate sealed Track-B release authority
+        run: python journal_extension/scripts/validate_trackb_release_authority.py --repo-root . --require-executable
