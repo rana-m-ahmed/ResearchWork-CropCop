@@ -5,6 +5,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 import time
@@ -771,13 +772,41 @@ def _stream_download(
     )
 
 
-def _safe_extract_zip(path: Path, destination: Path) -> None:
+def _safe_extract_zip(
+    path: Path,
+    destination: Path,
+    *,
+    max_members: int = 120000,
+    max_uncompressed_bytes: int = 20 * 1024 * 1024 * 1024,
+) -> None:
     destination.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(path) as zf:
-        for info in zf.infolist():
+        infos = [info for info in zf.infolist() if not info.is_dir()]
+        if len(infos) > int(max_members):
+            raise TrackBOpsError(
+                f"archive member-count safety limit exceeded: {len(infos)} > {max_members}"
+            )
+        total_uncompressed = 0
+        for info in infos:
             member = Path(info.filename)
             if member.is_absolute() or ".." in member.parts:
                 raise TrackBOpsError(f"unsafe archive member: {info.filename}")
+            mode = (int(info.external_attr) >> 16) & 0o170000
+            if mode and stat.S_ISLNK(mode):
+                raise TrackBOpsError(f"archive symlink member is not permitted: {info.filename}")
+            total_uncompressed += int(info.file_size)
+            if total_uncompressed > int(max_uncompressed_bytes):
+                raise TrackBOpsError(
+                    f"archive uncompressed-size safety limit exceeded: "
+                    f"{total_uncompressed} > {max_uncompressed_bytes}"
+                )
+        free_bytes = int(shutil.disk_usage(destination).free)
+        hard_required = int(total_uncompressed * 1.10) + 256 * 1024 * 1024
+        if free_bytes < hard_required:
+            raise TrackBOpsError(
+                f"insufficient disk before archive extraction: free={free_bytes}, "
+                f"hard_required={hard_required}, uncompressed_bytes={total_uncompressed}"
+            )
         zf.extractall(destination)
 
 
