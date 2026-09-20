@@ -391,7 +391,13 @@ def _geometric_verify_pairs(
                 break
             def one(pair):
                 a, b = pair
-                return pair, verify_orb_pair(get_a(a), get_b(b), policy=audit_policy)
+                seed = int.from_bytes(
+                    __import__("hashlib").sha256(f"{a}|{b}".encode("utf-8")).digest()[:4],
+                    "big",
+                )
+                return pair, verify_orb_pair(
+                    get_a(a), get_b(b), policy=audit_policy, rng_seed=seed
+                )
             for (a, b), verdict in pool.map(one, batch):
                 processed += 1
                 counts[str(verdict.get("decision_stage", "UNKNOWN"))] += 1
@@ -864,6 +870,66 @@ def _preflight(core, historical, output_root: Path, device: str):
     return authority, execution_lock, class_map, hist_rows, hist_features, hist_orb_get
 
 
+def _preflight_kaggle_capacity(
+    *,
+    scratch_root: Path,
+    device: str,
+    audit_policy,
+    expected_external_images: int,
+) -> dict[str, Any]:
+    import torch
+
+    if not torch.cuda.is_available():
+        raise TrackBError("Track-B candidate audit requires CUDA")
+    device_count = int(torch.cuda.device_count())
+    names = [str(torch.cuda.get_device_name(i)) for i in range(device_count)]
+    if device_count < 2 or any("T4" not in name.upper() for name in names[:2]):
+        raise TrackBError(
+            "Track-B v5 release requires the qualified Kaggle T4 x2 accelerator surface; "
+            f"observed devices={names}"
+        )
+
+    dev = torch.device(device)
+    with torch.cuda.device(dev):
+        free_vram, total_vram = torch.cuda.mem_get_info()
+    min_total_vram = 12 * 1024**3
+    min_free_vram = 8 * 1024**3
+    if int(total_vram) < min_total_vram or int(free_vram) < min_free_vram:
+        raise TrackBError(
+            "insufficient GPU memory before candidate audit: "
+            f"free={int(free_vram)}, total={int(total_vram)}, "
+            f"required_free={min_free_vram}, required_total={min_total_vram}"
+        )
+
+    # Worst-case ORB cache: xy(float32 x2) + descriptor(32 uint8) per
+    # feature, with temporary chunk + final packed arrays coexisting.
+    per_feature_bytes = 40
+    orb_payload = (
+        int(expected_external_images)
+        * int(audit_policy.orb_nfeatures)
+        * per_feature_bytes
+    )
+    required_scratch = int(orb_payload * 2.2) + 2 * 1024**3
+    free_scratch = int(shutil.disk_usage(scratch_root).free)
+    if free_scratch < required_scratch:
+        raise TrackBError(
+            "insufficient scratch disk before candidate ORB audit: "
+            f"free={free_scratch}, required={required_scratch}, "
+            f"projected_orb_payload={orb_payload}"
+        )
+
+    return {
+        "status": "PASS",
+        "cuda_device_count": device_count,
+        "cuda_devices": names,
+        "free_vram_bytes": int(free_vram),
+        "total_vram_bytes": int(total_vram),
+        "scratch_free_bytes": free_scratch,
+        "scratch_required_bytes": required_scratch,
+        "projected_orb_payload_bytes": int(orb_payload),
+    }
+
+
 def _protected_inference(candidate, core, class_map, output_root: Path, device: str, audit_policy):
     if candidate["grade"] not in {"EXT-I", "EXT-S"}:
         return None
@@ -1227,6 +1293,13 @@ def main() -> int:
     historical = inputs["historical_compare"]
     authority, lock, class_map, hist_rows, hist_features, hist_orb_get = _preflight(core, historical, output_root, args.device)
     audit_policy = audit_policy_from_lock(lock)
+    capacity = _preflight_kaggle_capacity(
+        scratch_root=audit_scratch_root,
+        device=args.device,
+        audit_policy=audit_policy,
+        expected_external_images=3477 + 58709,
+    )
+    atomic_write_json(output_root / "TRACKB_CAPACITY_PREFLIGHT.json", capacity)
     if args.mode == "preflight":
         atomic_write_json(output_root / "PREFLIGHT_PASS.json", {"status": "PASS", "authority_id": AUTHORITY_ID})
         return 0
