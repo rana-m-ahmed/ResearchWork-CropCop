@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -460,22 +461,74 @@ def _urlopen_json(url: str, *, timeout: int = 120) -> dict:
     return obj
 
 
-def _stream_download(url: str, destination: Path, *, timeout: int = 1800) -> dict[str, str | int]:
+def _checksum_matches(path: Path, expected: str | None) -> bool:
+    if not expected:
+        return True
+    value = str(expected).strip().lower()
+    if ":" in value:
+        algorithm, digest = value.split(":", 1)
+    else:
+        digest = value
+        algorithm = "sha256" if len(digest) == 64 else "md5" if len(digest) == 32 else ""
+    if algorithm == "sha256":
+        observed = sha256_file(path)
+    elif algorithm == "md5":
+        h = hashlib.md5()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                h.update(chunk)
+        observed = h.hexdigest()
+    else:
+        raise TrackBOpsError(f"unsupported source checksum format: {expected!r}")
+    return observed.lower() == digest.lower()
+
+
+def _stream_download(
+    url: str,
+    destination: Path,
+    *,
+    timeout: int = 1800,
+    expected_checksum: str | None = None,
+    attempts: int = 4,
+) -> dict[str, str | int | bool]:
     destination.parent.mkdir(parents=True, exist_ok=True)
-    req = urllib.request.Request(url, headers={"User-Agent": "CropCop-TrackB/2.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as response, destination.open("wb") as fh:
-        content_disposition = response.headers.get("Content-Disposition", "")
-        while True:
-            block = response.read(8 * 1024 * 1024)
-            if not block:
-                break
-            fh.write(block)
-    return {
-        "path": str(destination),
-        "bytes": destination.stat().st_size,
-        "sha256": sha256_file(destination),
-        "content_disposition": content_disposition,
-    }
+    partial = destination.with_name(destination.name + ".part")
+    errors: list[str] = []
+    for attempt in range(1, int(attempts) + 1):
+        partial.unlink(missing_ok=True)
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "CropCop-TrackB/3.0"})
+            with urllib.request.urlopen(req, timeout=timeout) as response, partial.open("wb") as fh:
+                content_disposition = response.headers.get("Content-Disposition", "")
+                while True:
+                    block = response.read(8 * 1024 * 1024)
+                    if not block:
+                        break
+                    fh.write(block)
+            if not partial.is_file() or partial.stat().st_size <= 0:
+                raise TrackBOpsError("source download produced an empty file")
+            if not _checksum_matches(partial, expected_checksum):
+                raise TrackBOpsError(
+                    f"source checksum mismatch for {destination.name}: expected={expected_checksum}"
+                )
+            os.replace(partial, destination)
+            return {
+                "path": str(destination),
+                "bytes": destination.stat().st_size,
+                "sha256": sha256_file(destination),
+                "source_checksum": str(expected_checksum or ""),
+                "source_checksum_verified": bool(expected_checksum),
+                "content_disposition": content_disposition,
+                "download_attempts": attempt,
+            }
+        except Exception as exc:
+            partial.unlink(missing_ok=True)
+            errors.append(f"attempt={attempt} {type(exc).__name__}: {exc}")
+            if attempt < int(attempts):
+                time.sleep((2, 5, 15)[min(attempt - 1, 2)])
+    raise TrackBOpsError(
+        f"source download failed after {attempts} attempts: {url}: " + " | ".join(errors[-4:])
+    )
 
 
 def _safe_extract_zip(path: Path, destination: Path) -> None:
@@ -514,7 +567,10 @@ def acquire_irish_potato(destination: str | Path) -> dict:
         if not url:
             raise TrackBOpsError(f"Zenodo file has no download URL: {name}")
         archive = destination / "_transport" / name
-        receipt = _stream_download(str(url), archive)
+        checksum = str(row.get("checksum") or "").strip()
+        if not checksum:
+            raise TrackBOpsError(f"Zenodo file lacks published checksum: {name}")
+        receipt = _stream_download(str(url), archive, expected_checksum=checksum)
         class_name = name[:-4]
         extracted_root = destination / "_extracted" / class_name
         _safe_extract_zip(archive, extracted_root)
@@ -529,8 +585,13 @@ def acquire_irish_potato(destination: str | Path) -> dict:
             )
         class_root = data_root / class_name
         class_root.mkdir(parents=True, exist_ok=False)
-        for index, src in enumerate(images):
-            target = class_root / f"{index:06d}_{src.name}"
+        for src in images:
+            raw_sha = sha256_file(src)
+            member_rel = src.relative_to(extracted_root).as_posix()
+            member_sha = hashlib.sha256(member_rel.encode("utf-8")).hexdigest()
+            target = class_root / f"{raw_sha[:16]}_{member_sha[:12]}{src.suffix.lower()}"
+            if target.exists():
+                raise TrackBOpsError(f"canonical Irish Potato member collision: {target.name}")
             shutil.move(str(src), str(target))
         observed_support[class_name] = len(images)
         transport.append({"name": name, **receipt, "normalized_image_count": len(images)})
@@ -660,13 +721,82 @@ def _hardlink_or_copy(src: Path, dst: Path) -> None:
         shutil.copy2(src, dst)
 
 
-def _normalize_gvlid_tree(extracted_root: Path, data_root: Path) -> dict[str, int]:
+def _parse_sha256_ledger(path: Path) -> dict[str, str]:
+    entries: dict[str, str] = {}
+    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        m = re.match(r"^([0-9a-fA-F]{64})\s+[* ]?(.+?)\s*$", line)
+        if m:
+            digest, name = m.group(1), m.group(2)
+        else:
+            m = re.match(r"^(.+?)\s*[:;,]\s*([0-9a-fA-F]{64})\s*$", line)
+            if not m:
+                continue
+            name, digest = m.group(1), m.group(2)
+        key = name.strip().replace("\\", "/").lstrip("./").lower()
+        entries[key] = digest.lower()
+    if not entries:
+        raise TrackBOpsError(f"GVLiD checksum ledger contains no SHA-256 rows: {path}")
+    return entries
+
+
+def _verify_gvlid_checksum_ledger(extracted_root: Path, image_paths: list[Path]) -> dict[str, object]:
+    ledgers = sorted(
+        p for p in extracted_root.rglob("*")
+        if p.is_file() and p.name.lower() == "checksums.txt"
+    )
+    if not ledgers:
+        raise TrackBOpsError("GVLiD package lacks required docs/checksums.txt image-integrity ledger")
+    parsed = [_parse_sha256_ledger(path) for path in ledgers]
+    canonical = parsed[0]
+    if any(rows != canonical for rows in parsed[1:]):
+        raise TrackBOpsError("GVLiD package exposes conflicting checksum ledgers")
+
+    verified = 0
+    for image in image_paths:
+        basename = image.name.lower()
+        label = None
+        for parent in image.parents:
+            if parent == extracted_root:
+                break
+            label = _normalized_label(parent.name)
+            if label:
+                break
+        candidates = []
+        for key, digest in canonical.items():
+            if key.endswith("/" + basename) or key == basename:
+                ledger_label = _normalized_label(Path(key).parent.name)
+                if label is None or ledger_label in {None, label}:
+                    candidates.append((key, digest))
+        if len(candidates) != 1:
+            raise TrackBOpsError(
+                f"GVLiD checksum ledger cannot uniquely bind image {image.name}: matches={len(candidates)}"
+            )
+        if sha256_file(image).lower() != candidates[0][1]:
+            raise TrackBOpsError(f"GVLiD image SHA-256 mismatch against source ledger: {image}")
+        verified += 1
+    if verified != len(image_paths):
+        raise TrackBOpsError("GVLiD checksum verification coverage mismatch")
+    return {
+        "ledger_files": [p.relative_to(extracted_root).as_posix() for p in ledgers],
+        "ledger_entry_count": len(canonical),
+        "verified_image_count": verified,
+        "status": "PASS",
+    }
+
+
+def _normalize_gvlid_tree(extracted_root: Path, data_root: Path) -> tuple[dict[str, int], dict[str, object]]:
     image_suffixes = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
     supports: dict[str, int] = {"Black Rot": 0, "Esca": 0, "Healthy": 0, "Leaf Blight": 0}
+    images = sorted(
+        path for path in extracted_root.rglob("*")
+        if path.is_file() and path.suffix.lower() in image_suffixes
+    )
+    integrity = _verify_gvlid_checksum_ledger(extracted_root, images)
     used: set[Path] = set()
-    for path in sorted(extracted_root.rglob("*")):
-        if not path.is_file() or path.suffix.lower() not in image_suffixes:
-            continue
+    for path in images:
         label = None
         for parent in path.parents:
             if parent == extracted_root.parent:
@@ -679,14 +809,19 @@ def _normalize_gvlid_tree(extracted_root: Path, data_root: Path) -> dict[str, in
         if path in used:
             raise TrackBOpsError(f"GVLiD duplicate traversal path: {path}")
         used.add(path)
-        target = data_root / label / f"{supports[label]:06d}_{path.name}"
+        raw_sha = sha256_file(path)
+        member_rel = path.relative_to(extracted_root).as_posix()
+        member_sha = hashlib.sha256(member_rel.encode("utf-8")).hexdigest()
+        target = data_root / label / f"{raw_sha[:16]}_{member_sha[:12]}{path.suffix.lower()}"
+        if target.exists():
+            raise TrackBOpsError(f"canonical GVLiD member collision: {target.name}")
         _hardlink_or_copy(path, target)
         supports[label] += 1
     if sum(supports.values()) != 3477:
         raise TrackBOpsError(f"GVLiD v5 expected 3477 images, observed {supports} total={sum(supports.values())}")
     if any(value < 50 for value in supports.values()):
         raise TrackBOpsError(f"GVLiD class support below frozen minimum: {supports}")
-    return supports
+    return supports, integrity
 
 
 def acquire_gvlid_v5(destination: str | Path) -> dict:
@@ -708,23 +843,27 @@ def acquire_gvlid_v5(destination: str | Path) -> dict:
     transport_dir = destination / "_transport"
     extracted = destination / "_extracted"
     receipts = []
-    for idx, url in enumerate(links):
-        parsed = urllib.parse.urlparse(url)
-        name = Path(parsed.path).name or f"mendeley_{idx:03d}.bin"
-        if name == "file_downloaded":
-            name = f"mendeley_{idx:03d}.zip"
-        target = transport_dir / name
-        receipt = _stream_download(url, target)
-        receipts.append({"url": url, **receipt})
+    seen_transport_sha: set[str] = set()
+    for url in links:
+        provisional = transport_dir / (hashlib.sha256(url.encode("utf-8")).hexdigest()[:20] + ".download")
+        receipt = _stream_download(url, provisional)
+        transport_sha = str(receipt["sha256"])
+        if transport_sha in seen_transport_sha:
+            provisional.unlink(missing_ok=True)
+            continue
+        seen_transport_sha.add(transport_sha)
+        target = transport_dir / f"{transport_sha[:20]}.zip"
+        os.replace(provisional, target)
+        receipts.append({"url": url, **{**receipt, "path": str(target)}})
         try:
             if zipfile.is_zipfile(target):
-                _safe_extract_zip(target, extracted / f"part_{idx:03d}")
+                _safe_extract_zip(target, extracted / f"part_{transport_sha[:20]}")
             else:
                 raise TrackBOpsError(f"GVLiD public-file transport is not a ZIP archive: {target}")
         finally:
             target.unlink(missing_ok=True)
     data_root = destination / "data"
-    supports = _normalize_gvlid_tree(extracted, data_root)
+    supports, checksum_integrity = _normalize_gvlid_tree(extracted, data_root)
     shutil.rmtree(extracted, ignore_errors=True)
     source = {
         "doi": "10.17632/wkymf8bhcg.5",
@@ -738,6 +877,7 @@ def acquire_gvlid_v5(destination: str | Path) -> dict:
         "observed_class_support": supports,
         "published_total_images": 3477,
         "published_class_count_table_status": "NOT_USED_AS_AUTHORITY_DUE_ONE_IMAGE_ARITHMETIC_DISCREPANCY",
+        "source_checksum_integrity": checksum_integrity,
         "acquisition_transport": receipts,
     }
     (destination / "SOURCE_METADATA.json").write_text(json.dumps(source, indent=2) + "\n", encoding="utf-8")
