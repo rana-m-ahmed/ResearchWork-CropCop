@@ -5,7 +5,7 @@
   "scientific_authority": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "scientific_execution_lock": "TRACKB_R07_EXECUTION_LOCK_v3",
   "scientific_code_attestation": "TRACKB_CODE_ATTESTATION_v3",
-  "orchestration_implementation_commit": "8ec16d0c1bca6196fe5fb4add892c858536d570e",
+  "orchestration_implementation_commit": "5e278c25e976806d38b984c554e2e42dc58a143c",
   "protected_external_predictions_allowed": false,
   "source_inputs": {
     "attachment_mode": "KAGGLE_ATTACHED_DATASETS_ONLY",
@@ -59,6 +59,6 @@
       "KAGGLE_API_TOKEN"
     ]
   },
-  "repository_snapshot_commit": "13b4d8fa19280f7ca94462e852a2c51dda416340",
+  "repository_snapshot_commit": "5e278c25e976806d38b984c554e2e42dc58a143c",
   "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY"
 }
