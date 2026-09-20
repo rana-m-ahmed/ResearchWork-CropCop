@@ -151,8 +151,8 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
-      "git_blob_sha1": "cec9f5c0d70100a9afbc6cb7bd04c066ac406438",
-      "origin": "track_b_v3_remediation"
+      "git_blob_sha1": "65a052ef7739d7aa0f117adc047eb38665397be7",
+      "origin": "track_b_v5_hardening_gvlid_transport"
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07.py",
@@ -195,5 +195,5 @@
       "origin": "track_b_v5_materialization_authority"
     }
   ],
-  "attestation_note": "Final pre-snapshot v5 runtime re-attestation. Runtime/materialization code, source authorities, materialization authority, scientific runner, deterministic audit, frozen Track-A dependencies and qualification/claim handoff are bound. CI/release validators and operator notebooks are intentionally outside the runtime attestation boundary."
+  "attestation_note": "Track-B v5 runtime re-attestation after GVLiD opaque-container transport repair. Frozen scientific thresholds, mappings, checkpoints, grade rules, and protected-inference policy are unchanged; only external transport materialization was hardened."
 }
