@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "5beaa5cfccd45c7e7fa941b2c62bd20a248c663710bfc7dadfcf7af683585417",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "52e35eb0170d1466b6305645c72ad13448557be37f7366879b0b91824f005f41",
-    "operator_attestation_sha256": "f55fc52b52cec228312f816729ddcddda571d56676587033e6d705026b71b993",
+    "operator_attestation_sha256": "0efa302d787023d771cdfa692b9c6befcc02a83544fc13eb99272df88a538d43",
     "operator_notebook_00_blob_sha1": "8825b67ca87d12381884961ce765ff4727194c52",
     "operator_notebook_01_blob_sha1": "eea0a3b914cfcf72da025d6bec472a018c8f4899"
   },
@@ -60,10 +60,12 @@
     "V1 test remains closed: SATISFIED"
   ],
   "seal_evidence": {
-    "preseal_operator_surface_commit": "710430e29efaaf9bf2e4bcf050aa52a69f0e6ffe",
-    "previous_green_trackb_qa_workflow_run_id": 35527961502,
-    "previous_green_trackb_qa_workflow_run_number": 513,
-    "final_exact_head_qa": "PENDING_AFTER_DEEP_QA_RUNTIME_SYMBOL_REPAIR",
+    "deep_qa_validated_commit": "4aa156db5a9d06c8295bd6c1e83fd6d18914edc9",
+    "trackb_qa_workflow_run_id": 35529239299,
+    "trackb_qa_workflow_run_number": 531,
+    "trackb_qa_conclusion": "success",
+    "notebook_cell_compile_pass": true,
+    "targeted_safety_regression_tests_pass": true,
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
   }
