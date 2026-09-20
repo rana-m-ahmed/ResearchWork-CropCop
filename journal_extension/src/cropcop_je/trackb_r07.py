@@ -386,6 +386,10 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         "protected_claim_requires_matching_qualification_science_sha256": True,
         "qualification_science_identity_excludes_execution_timestamps": True,
         "qualification_science_identity_reused_for_attempt_ancestry": True,
+        "github_token_required_modes": ["claim"],
+        "github_push_preflight_modes": ["claim"],
+        "qualification_requires_github_token": False,
+        "qualification_requires_github_push_preflight": False,
     }
     for key, value in expected_automation.items():
         if automation.get(key) != value:
