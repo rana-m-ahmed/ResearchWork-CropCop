@@ -159,10 +159,14 @@ def main() -> int:
             "zenodo.org/api",
             "run_trackb_r07_master.py",
             "shutil.rmtree(OUT)",
-            "CROPCOP_GITHUB_TOKEN",
+            "get_secret('CROPCOP_GITHUB_TOKEN')",
+            'get_secret("CROPCOP_GITHUB_TOKEN")',
         ),
         "Notebook 01",
     )
+    if "os.environ.pop('CROPCOP_GITHUB_TOKEN', None)" not in nb01_text:
+        raise TrackBError("Notebook 01 must scrub GitHub credentials before scientific execution")
+
     if nb01_text.index("PASS_PREEXECUTION_ATTACHED_TRUST") > nb01_text.index(
         "bootstrap_trackb_runtime.py"
     ):
