@@ -78,8 +78,8 @@
     "journal_extension/src/cropcop_je/tracka_v12_placement.py": "fbdd3a04c79a63542f9117cdc77b914093152e04",
     "journal_extension/track_b_r07/replay_authority/R07_S1_ORIGINAL_RUN_RECORD.json": "e578f6deb815b285c2bdd955975cc5ce19b831e6",
     "journal_extension/track_b_r07/replay_authority/TRACKA_V12_K3_PUBLIC_REPORT.json": "e40402cdf240c1bfbb88586c78b7a7bdc8ad1ec1",
-    "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json": "de622b10b3611cd8e5d9febb829e6a88cf70ac9b",
-    "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json": "e0f13839ce6632fcdac722e7ba11108b29c6c51c",
+    "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json": "f188e3cc4d083d6ae96a9476f8f8f99e5b08b132",
+    "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json": "36c1c029a62e85c499687b0cf92cedd8324e2f9c",
     "journal_extension/scripts/build_trackb_core_package.py": "3ee5c7e0428005ce31c2c3f80c14c14b79a5e45f"
   },
   "metric_schema_contract": {
@@ -91,5 +91,11 @@
     ],
     "short_aliases_accepted": false,
     "source": "frozen Track-A selected_metrics / validate_selected_checkpoint_replay"
+  },
+  "operational_rebind": {
+    "reason": "core-builder verifier corrected from obsolete short metric keys to canonical Track-A validation_* selected_metrics keys",
+    "scientific_change": false,
+    "builder_blob_sha1": "3ee5c7e0428005ce31c2c3f80c14c14b79a5e45f",
+    "code_attestation_sha256": "de0189c5332787ac078e9afedf0abe2d167cef16259300681f76325409f3db80"
   }
 }
