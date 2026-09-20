@@ -10,6 +10,9 @@ from cropcop_je.atomic_io import atomic_write_json
 from cropcop_je.hashing import sha256_file, sha256_json
 from cropcop_je.trackb_r07 import (
     AUTHORITY_ID,
+    CLASS_MAP_SHA256,
+    DATASET_MANIFEST_SHA256,
+    R07_CHECKPOINTS,
     TrackBError,
     discover_kaggle_inputs,
     load_json,
@@ -55,8 +58,9 @@ def main() -> int:
     output_root = Path(args.output_root).resolve()
     qualification_path = output_root / "TRACKB_PREINFERENCE_QUALIFICATION.json"
     firewall_path = output_root / "TRACKB_PREDICTION_FIREWALL.json"
-    if not qualification_path.is_file() or not firewall_path.is_file():
-        raise TrackBError("pre-inference qualification/firewall evidence is incomplete")
+    science_path = output_root / "TRACKB_PREDICTION_BLIND_SCIENCE.json"
+    if not qualification_path.is_file() or not firewall_path.is_file() or not science_path.is_file():
+        raise TrackBError("pre-inference qualification/firewall/science evidence is incomplete")
 
     qualification = load_json(qualification_path)
     clean = dict(qualification)
@@ -73,6 +77,16 @@ def main() -> int:
         raise TrackBError("qualification does not prove V1-test closure")
     if qualification.get("new_training_performed") is not False:
         raise TrackBError("qualification indicates new training")
+
+    prediction_blind_science = load_json(science_path)
+    science_clean = dict(prediction_blind_science)
+    observed_science_hash = str(science_clean.pop("qualification_science_sha256", ""))
+    if len(observed_science_hash) != 64 or sha256_json(science_clean) != observed_science_hash:
+        raise TrackBError("prediction-blind science manifest self-hash mismatch")
+    if str(qualification.get("qualification_science_sha256", "")) != observed_science_hash:
+        raise TrackBError("qualification does not bind the prediction-blind science digest")
+    if str(qualification.get("prediction_blind_science_manifest_sha256", "")) != sha256_file(science_path):
+        raise TrackBError("qualification does not bind the prediction-blind science manifest bytes")
 
     inputs = discover_kaggle_inputs(args.input_root)
     core = inputs["core"]
@@ -94,6 +108,29 @@ def main() -> int:
         raise TrackBError("qualification historical comparison grade ceiling drift")
     if historical.manifest.get("v1_test_image_bytes_accessed") is not False:
         raise TrackBError("qualification historical comparison touched V1-test bytes")
+
+    reconstructed_science = {
+        "schema_version": "2.0",
+        "authority_id": AUTHORITY_ID,
+        "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
+        "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
+        "code_attestation_sha256": sha256_file(resolve_bundle_file(core, "code_attestation")),
+        "class_map_sha256": CLASS_MAP_SHA256,
+        "dataset_manifest_sha256": DATASET_MANIFEST_SHA256,
+        "authorized_r07_checkpoint_sha256": R07_CHECKPOINTS,
+        "historical_compare": {
+            "coverage_scope": historical.manifest.get("coverage_scope"),
+            "image_count": int(historical.manifest.get("image_count", -1)),
+            "maximum_evidence_grade": historical.manifest.get("maximum_evidence_grade"),
+            "historical_manifest_sha256": sha256_file(resolve_bundle_file(historical, "historical_manifest")),
+            "dino_features_sha256": sha256_file(resolve_bundle_file(historical, "dino_features")),
+            "orb_offsets_sha256": sha256_file(resolve_bundle_file(historical, "orb_offsets")),
+            "orb_xy_sha256": sha256_file(resolve_bundle_file(historical, "orb_xy")),
+            "orb_desc_sha256": sha256_file(resolve_bundle_file(historical, "orb_desc")),
+            "orb_shapes_sha256": sha256_file(resolve_bundle_file(historical, "orb_shapes")),
+        },
+        "candidates": {},
+    }
 
     firewall = load_json(firewall_path)
     if firewall.get("status") != "PASS":
@@ -188,6 +225,31 @@ def main() -> int:
         if len(rep_ids) != len(set(rep_ids)):
             raise TrackBError(f"{cid}: duplicate representative IDs in sealed qualification surface")
 
+        reconstructed_science["candidates"][cid] = {
+            "candidate_id": cid,
+            "source_doi": seal["source_doi"],
+            "source_version": seal["source_version"],
+            "grade": seal["grade"],
+            "claim_mode": seal["claim_mode"],
+            "source_identity_ok": seal["source_identity_ok"],
+            "mapping_ok": seal["mapping_ok"],
+            "unresolved_lineage": seal["unresolved_lineage"],
+            "known_historical_contributor_relationship": seal["known_historical_contributor_relationship"],
+            "mapping_sha256": seal["mapping_sha256"],
+            "family_support": seal["family_support"],
+            "accepted_historical_link_count": int(seal["accepted_historical_link_count"]),
+            "historical_surface_complete": bool(seal["historical_surface_complete"]),
+            "source_manifest_sha256": sha256_file(root / "raw_manifest.csv"),
+            "decode_failure_ledger_sha256": sha256_file(root / "decode_failures.jsonl"),
+            "family_graph_sha256": sha256_file(root / "families.jsonl"),
+            "representative_manifest_sha256": sha256_file(root / "sealed_representatives.jsonl"),
+            "exclusion_ledger_sha256": sha256_file(root / "exclusions.jsonl"),
+            "accepted_within_edges_sha256": sha256_file(root / "accepted_within_edges.jsonl"),
+            "accepted_historical_edges_sha256": sha256_file(root / "accepted_historical_edges.jsonl"),
+            "within_comparison_summary_sha256": sha256_file(root / "within_comparison_summary.json"),
+            "historical_comparison_summary_sha256": sha256_file(root / "historical_comparison_summary.json"),
+        }
+
         candidate_qa[cid] = {
             "seal_sha256": seal["seal_sha256"],
             "grade": seal["grade"],
@@ -196,11 +258,19 @@ def main() -> int:
             "accepted_historical_link_count": int(seal["accepted_historical_link_count"]),
         }
 
+    reconstructed_science_hash = sha256_json(reconstructed_science)
+    if reconstructed_science != science_clean:
+        raise TrackBError("independently reconstructed prediction-blind science manifest differs")
+    if reconstructed_science_hash != observed_science_hash:
+        raise TrackBError("independently reconstructed prediction-blind science digest differs")
+
     qa = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "status": "PASS_INDEPENDENT_PREINFERENCE_QA",
         "authority_id": AUTHORITY_ID,
         "qualification_sha256": qualification["qualification_sha256"],
+        "qualification_science_sha256": observed_science_hash,
+        "prediction_blind_science_manifest_sha256": sha256_file(science_path),
         "protected_external_prediction_count": 0,
         "v1_test_accessed": False,
         "new_training_performed": False,
