@@ -75,11 +75,11 @@ Claim:
 
 The notebooks execute against embedded/orchestration snapshot:
 
-`c0f762803d8cdef31adea4b55eb09cc382eb728f`
+`066584af76704272c4ce05d0cf6795388b350f94`
 
 The load-bearing orchestration scripts were introduced at:
 
-`c0f762803d8cdef31adea4b55eb09cc382eb728f`
+`066584af76704272c4ce05d0cf6795388b350f94`
 
 ## Remaining real-world gates
 
