@@ -20,6 +20,7 @@ from cropcop_je.trackb_r07 import (
 from cropcop_je.trackb_r07_ops import (
     KAGGLE_OWNER_DEFAULT,
     SOURCE_DATASETS,
+    attempt_dataset_slug,
     evidence_dataset_slug,
     historical_dataset_slug,
     TrackBOpsError,
@@ -30,6 +31,7 @@ from cropcop_je.trackb_r07_ops import (
     ensure_kaggle_cli,
     kaggle_dataset_exists,
     prepare_private_evidence_folder,
+    publish_attempt_state,
     publish_private_kaggle_dataset,
     publish_public_trackb_evidence,
     probe_external_sources,
@@ -255,6 +257,8 @@ def main() -> int:
     external_source_probe = probe_external_sources()
     historical_dataset = historical_dataset_slug(kaggle_owner)
     evidence_dataset = evidence_dataset_slug(kaggle_owner)
+    attempt_dataset = attempt_dataset_slug(kaggle_owner)
+    attempt_id = f"TB3-{source_git_sha[:12]}-{int(time.time())}"
     receipt = {
         "schema_version": "2.0",
         "controller": "TRACKB_R07_MASTER_v2",
@@ -276,6 +280,8 @@ def main() -> int:
             "model_source_files_persistent": False,
         },
         "kaggle_owner": kaggle_owner,
+        "attempt_id": attempt_id,
+        "attempt_dataset_slug": attempt_dataset,
         "protected_external_predictions_before_controller": False,
     }
     print(json.dumps({k: v for k, v in receipt.items() if k != "secret_presence"} | {"secret_presence": secret_presence}, indent=2))
@@ -362,6 +368,9 @@ def main() -> int:
             "--device", args.device,
             "--workers", "4",
             "--mode", "all",
+            "--source-git-sha", source_git_sha,
+            "--attempt-dataset-slug", attempt_dataset,
+            "--attempt-id", attempt_id,
         ],
         cwd=repo_root,
         timeout=36000,
@@ -370,6 +379,8 @@ def main() -> int:
     qa = load_json(output_root / "TRACKB_FINAL_QA.json")
     if closure.get("status") != "TRACK_B_CLOSED" or qa.get("status") != "PASS":
         raise TrackBOpsError("runner returned without terminal Track-B QA/closure")
+    attempt_state_path = output_root / "TRACKB_ATTEMPT_STATE.json"
+    attempt_state = load_json(attempt_state_path) if attempt_state_path.is_file() else None
 
     stage("7 :: restricted evidence archive to private Kaggle")
     restricted = prepare_private_evidence_folder(output_root, scratch_root / "restricted_archive")
@@ -382,6 +393,20 @@ def main() -> int:
         full_roundtrip=True,
     )
     receipt["private_kaggle_evidence"] = private_receipt
+    if attempt_state is not None:
+        attempt_state = {
+            **attempt_state,
+            "status": "PRIVATE_ARCHIVE_VERIFIED",
+            "private_archive_verified_at_utc": utc_now(),
+            "private_kaggle_evidence": private_receipt,
+            "closure_sha256": closure["closure_sha256"],
+            "trackb_science_sha256": closure["trackb_science_sha256"],
+        }
+        publish_attempt_state(attempt_dataset, attempt_state)
+        attempt_state_path.write_text(
+            json.dumps(attempt_state, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     receipt["closure_sha256"] = closure["closure_sha256"]
     receipt["final_qa_sha256"] = qa["qa_sha256"]
     receipt["scientific_closure_durable_before_github_publication"] = True
@@ -438,6 +463,18 @@ def main() -> int:
         )
 
     receipt["github_public_evidence"] = github_receipt
+    if attempt_state is not None:
+        attempt_state = {
+            **attempt_state,
+            "status": "PUBLICATION_COMPLETE",
+            "publication_complete_at_utc": utc_now(),
+            "github_public_evidence": github_receipt,
+        }
+        publish_attempt_state(attempt_dataset, attempt_state)
+        attempt_state_path.write_text(
+            json.dumps(attempt_state, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     print(json.dumps(github_receipt, indent=2), flush=True)
 
     receipt["completed_at_utc"] = utc_now()
