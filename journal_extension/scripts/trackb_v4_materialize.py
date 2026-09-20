@@ -5,6 +5,9 @@ import json
 import shutil
 import subprocess
 import sys
+import tempfile
+import zipfile
+import hashlib
 from pathlib import Path
 
 import _bootstrap  # noqa: F401
@@ -165,6 +168,54 @@ def _prepare_candidate(repo_root: Path, role: str, package_root: Path) -> None:
         cwd=repo_root,
         timeout=3600,
     )
+
+
+def _verify_published_archive_roundtrip(slug: str, published_folder: Path) -> dict:
+    manifest_path = published_folder / "TRACKB_KAGGLE_CONTENT_MANIFEST.json"
+    if not manifest_path.is_file():
+        raise TrackBOpsError(f"local Kaggle content manifest missing after publication: {manifest_path}")
+    manifest = load_json(manifest_path)
+    expected_rows = manifest.get("files")
+    if not isinstance(expected_rows, list) or not expected_rows:
+        raise TrackBOpsError("local Kaggle content manifest has no files")
+
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        run_checked(
+            ["kaggle", "datasets", "download", "-d", slug, "-p", str(root), "-q"],
+            timeout=7200,
+        )
+        archives = sorted(root.glob("*.zip"))
+        if len(archives) != 1:
+            raise TrackBOpsError(f"expected one Kaggle round-trip ZIP for {slug}; found {archives}")
+        archive = archives[0]
+        verified = 0
+        with zipfile.ZipFile(archive) as zf:
+            info_by_name = {
+                info.filename.replace("\\", "/").lstrip("./"): info
+                for info in zf.infolist()
+                if not info.is_dir()
+            }
+            for row in expected_rows:
+                rel = str(row["path"]).replace("\\", "/").lstrip("./")
+                info = info_by_name.get(rel)
+                if info is None:
+                    raise TrackBOpsError(f"Kaggle round-trip archive missing member: {slug}/{rel}")
+                if int(info.file_size) != int(row["bytes"]):
+                    raise TrackBOpsError(f"Kaggle round-trip size mismatch: {slug}/{rel}")
+                h = hashlib.sha256()
+                with zf.open(info, "r") as handle:
+                    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                        h.update(chunk)
+                if h.hexdigest() != str(row["sha256"]):
+                    raise TrackBOpsError(f"Kaggle round-trip SHA mismatch: {slug}/{rel}")
+                verified += 1
+        return {
+            "status": "PASS",
+            "archive_sha256": sha256_file(archive),
+            "verified_file_count": verified,
+            "content_digest_sha256": manifest["content_digest_sha256"],
+        }
 
 
 def _manifest_sha(root: Path) -> str:
@@ -347,7 +398,7 @@ def main() -> int:
             title="CropCop Track B R07 Infrastructure v4",
             version_message=f"Track-B materialization {pairing['materialization_id'][:16]}",
             license_name="other",
-            full_roundtrip=True,
+            full_roundtrip=False,
         )
         external_pub = publish_private_kaggle_dataset(
             folder=external_root,
@@ -355,7 +406,13 @@ def main() -> int:
             title="CropCop Track B R07 External Cohorts v4",
             version_message=f"Track-B materialization {pairing['materialization_id'][:16]}",
             license_name="other",
-            full_roundtrip=True,
+            full_roundtrip=False,
+        )
+        infra_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
+            infra_slug, infra_root
+        )
+        external_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
+            external_slug, external_root
         )
         readiness["publication"] = {
             "owner": owner,
