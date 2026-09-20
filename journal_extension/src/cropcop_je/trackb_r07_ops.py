@@ -650,6 +650,94 @@ def publish_private_kaggle_dataset(
 
 
 
+def acquire_claim_lease(slug: str, lease: dict) -> dict[str, object]:
+    """Acquire a deterministic, create-only Kaggle lease before protected inference.
+
+    Dataset creation provides the single-writer primitive: only one claimant can
+    create the deterministic slug. Existing leases are never silently versioned.
+    """
+    if not isinstance(lease, dict):
+        raise TrackBOpsError("claim lease must be a JSON object")
+    for field in ("attempt_id", "science_preimage_sha256", "materialization_id"):
+        value = str(lease.get(field, "")).strip()
+        if not value:
+            raise TrackBOpsError(f"claim lease missing field: {field}")
+
+    def _read_remote() -> dict | None:
+        if not kaggle_dataset_exists(slug):
+            return None
+        with tempfile.TemporaryDirectory() as td:
+            try:
+                path = _download_kaggle_file(slug, "TRACKB_CLAIM_LEASE.json", Path(td))
+            except Exception as exc:
+                raise TrackBOpsError(
+                    f"claim lease dataset exists but lease state cannot be downloaded: {slug}"
+                ) from exc
+            obj = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(obj, dict):
+                raise TrackBOpsError("remote claim lease is not a JSON object")
+            return obj
+
+    existing = _read_remote()
+    if existing is not None:
+        if existing == lease:
+            return {
+                "status": "PASS_CLAIM_LEASE_ALREADY_OWNED",
+                "slug": slug,
+                "lease_sha256": sha256_json(lease),
+            }
+        raise TrackBOpsError(
+            "protected claim lease is already owned; refusing concurrent or duplicate "
+            f"protected inference: slug={slug}, existing_attempt={existing.get('attempt_id')}"
+        )
+
+    with tempfile.TemporaryDirectory() as td:
+        folder = Path(td)
+        owner, dataset = _metadata_slug(slug)
+        (folder / "TRACKB_CLAIM_LEASE.json").write_text(
+            json.dumps(lease, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        (folder / "dataset-metadata.json").write_text(
+            json.dumps({
+                "title": "CropCop Track B Protected Claim Lease",
+                "id": f"{owner}/{dataset}",
+                "licenses": [{"name": "other"}],
+            }, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        try:
+            run_checked(
+                ["kaggle", "datasets", "create", "-p", str(folder), "-q", "-r", "zip"],
+                timeout=1800,
+            )
+        except Exception as exc:
+            # Dataset creation can be ambiguous if transport fails after the server
+            # accepted the request. Resolve by reading the remote lease exactly once.
+            remote = _read_remote()
+            if remote == lease:
+                return {
+                    "status": "PASS_CLAIM_LEASE_ACQUIRED_AFTER_AMBIGUOUS_CREATE",
+                    "slug": slug,
+                    "lease_sha256": sha256_json(lease),
+                }
+            if remote is not None:
+                raise TrackBOpsError(
+                    "claim lease acquisition lost to another writer; protected inference forbidden"
+                ) from exc
+            raise
+
+    _wait_kaggle_dataset_ready(slug, timeout_seconds=1800)
+    remote = _read_remote()
+    if remote != lease:
+        raise TrackBOpsError("claim lease round-trip verification failed")
+    return {
+        "status": "PASS_CLAIM_LEASE_ACQUIRED",
+        "slug": slug,
+        "lease_sha256": sha256_json(lease),
+    }
+
+
 def read_latest_attempt_state(slug: str) -> dict | None:
     if not kaggle_dataset_exists(slug):
         return None
