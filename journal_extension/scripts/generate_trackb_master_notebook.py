@@ -26,7 +26,6 @@ This is the **single operator-facing Track-B qualification notebook**. It is fai
 
 One-time Kaggle setup:
 - add secret KAGGLE_API_TOKEN;
-- add secret CROPCOP_GITHUB_TOKEN;
 - enable Internet;
 - select **T4 x2**.
 
@@ -61,26 +60,15 @@ print('Frozen Track-B qualification source:', HEAD)
 
 from kaggle_secrets import UserSecretsClient
 _secret_client = UserSecretsClient()
-for _name in ('KAGGLE_API_TOKEN', 'CROPCOP_GITHUB_TOKEN'):
-    _value = (_secret_client.get_secret(_name) or '').strip()
-    if not _value:
-        raise RuntimeError(f'Required Kaggle secret is empty: {_name}')
-    if any(ch.isspace() for ch in _value):
-        raise RuntimeError(f'Required Kaggle secret contains whitespace/newline: {_name}')
-    os.environ[_name] = _value
+_value = (_secret_client.get_secret('KAGGLE_API_TOKEN') or '').strip()
+if not _value:
+    raise RuntimeError('Required Kaggle secret is empty: KAGGLE_API_TOKEN')
+if any(ch.isspace() for ch in _value):
+    raise RuntimeError('KAGGLE_API_TOKEN contains whitespace/newline')
+os.environ['KAGGLE_API_TOKEN'] = _value
 del _value, _secret_client
-print('Required secrets loaded into process environment: PASS')
-
-# Fail fast on the exact Git transport used by terminal evidence publication.
-# This imports no scientific package and runs before the expensive runtime repair.
-sys.path.insert(0, str(REPO / 'journal_extension' / 'src'))
-from cropcop_je.trackb_r07_ops import verify_github_repository_push_access
-github_preflight = verify_github_repository_push_access(
-    REPO,
-    source_git_sha=HEAD,
-)
-print('GitHub evidence write preflight: PASS')
-print(json.dumps(github_preflight, indent=2, sort_keys=True))
+print('Kaggle API secret loaded: PASS')
+print('GitHub credential/preflight: SKIPPED for prediction-blind qualification')
 """),
         code("""BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'
 LOCKFILE = REPO / 'journal_extension/track_b_r07/requirements-trackb.lock.txt'
