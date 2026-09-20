@@ -39,7 +39,7 @@ jobs:
           python -m py_compile             journal_extension/src/cropcop_je/trackb_r07.py             journal_extension/src/cropcop_je/trackb_r07_audit.py             journal_extension/src/cropcop_je/trackb_r07_analysis.py             journal_extension/src/cropcop_je/trackb_r07_ops.py             journal_extension/scripts/bootstrap_trackb_runtime.py             journal_extension/scripts/run_trackb_r07.py             journal_extension/scripts/run_trackb_r07_master.py             journal_extension/scripts/validate_trackb_preinference_qualification.py             journal_extension/scripts/build_trackb_core_package.py             journal_extension/scripts/build_trackb_historical_compare.py             journal_extension/scripts/prepare_trackb_core_input.py             journal_extension/scripts/prepare_trackb_candidate_input.py             journal_extension/scripts/prepare_trackb_historical_source_input.py             journal_extension/scripts/validate_trackb_infrastructure.py             journal_extension/scripts/generate_trackb_core_builder_notebook.py             journal_extension/scripts/generate_trackb_r07_notebook.py             journal_extension/scripts/generate_trackb_master_notebook.py             journal_extension/scripts/generate_trackb_historical_compare_notebook.py             journal_extension/scripts/trackb_v4_materialize.py             journal_extension/scripts/trackb_v4_execute_attached.py             journal_extension/scripts/validate_trackb_v4_orchestration.py
 
       - name: Run targeted Track-B tests
-        run: python -m unittest -v tests.test_trackb_r07
+        run: python -m unittest -v tests.test_trackb_r07 tests.test_trackb_v4_materialize
 
       - name: Regenerate canonical notebooks
         run: |
