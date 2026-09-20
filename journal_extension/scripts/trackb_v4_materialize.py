@@ -44,8 +44,8 @@ SOURCE_SLUG_BASENAMES = {
     "dino_bundle": "cropcop-secondary-g1-8904b100",
 }
 
-INFRA_DATASET_NAME = "cropcop-trackb-r07-infrastructure-v4"
-EXTERNAL_DATASET_NAME = "cropcop-trackb-r07-external-v4"
+INFRA_DATASET_PREFIX = "cropcop-trackb-infrastructure-v5"
+EXTERNAL_DATASET_PREFIX = "cropcop-trackb-external-v5"
 
 
 def stage(name: str) -> None:
@@ -915,15 +915,20 @@ def main() -> int:
     if not args.skip_publication:
         stage("5 :: private Kaggle publication and full round-trip verification")
         owner = early_owner or verify_authenticated_kaggle_owner(args.kaggle_owner)
-        infra_slug = f"{owner}/{INFRA_DATASET_NAME}"
-        external_slug = f"{owner}/{EXTERNAL_DATASET_NAME}"
+        infra_slug = (
+            f"{owner}/{INFRA_DATASET_PREFIX}-{pairing['materialization_id'][:16]}"
+        )
+        external_slug = (
+            f"{owner}/{EXTERNAL_DATASET_PREFIX}-{pairing['materialization_id'][:16]}"
+        )
         infra_pub = publish_private_kaggle_dataset(
             folder=infra_root,
             slug=infra_slug,
-            title="CropCop Track B R07 Infrastructure v4",
+            title="CropCop Track B R07 Infrastructure v5",
             version_message=f"Track-B materialization {pairing['materialization_id'][:16]}",
             license_name="other",
             full_roundtrip=False,
+            allow_version=False,
         )
         infra_manifest = load_json(infra_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")
         shutil.rmtree(infra_root, ignore_errors=True)
@@ -936,10 +941,11 @@ def main() -> int:
         external_pub = publish_private_kaggle_dataset(
             folder=external_root,
             slug=external_slug,
-            title="CropCop Track B R07 External Cohorts v4",
+            title="CropCop Track B R07 External Cohorts v5",
             version_message=f"Track-B materialization {pairing['materialization_id'][:16]}",
             license_name="other",
             full_roundtrip=False,
+            allow_version=False,
         )
         external_manifest = load_json(external_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")
         shutil.rmtree(external_root, ignore_errors=True)
