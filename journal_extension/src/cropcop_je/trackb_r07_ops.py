@@ -39,6 +39,13 @@ def evidence_dataset_slug(owner: str) -> str:
         raise TrackBOpsError(f"invalid Kaggle owner: {owner!r}")
     return f"{owner}/cropcop-trackb-r07-evidence"
 
+
+def attempt_dataset_slug(owner: str) -> str:
+    owner = str(owner).strip()
+    if not owner or "/" in owner:
+        raise TrackBOpsError(f"invalid Kaggle owner: {owner!r}")
+    return f"{owner}/cropcop-trackb-r07-attempt-ledger"
+
 SOURCE_DATASETS = {
     "final_v1": "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1",
     "r07_s1": "sabahatabbas/sec-je-r07-cnxtt-context-s1-8904b100d223-a01",
@@ -616,6 +623,48 @@ def publish_private_kaggle_dataset(
         + " | ".join(errors[-4:])
     )
 
+
+
+def read_latest_attempt_state(slug: str) -> dict | None:
+    if not kaggle_dataset_exists(slug):
+        return None
+    with tempfile.TemporaryDirectory() as td:
+        try:
+            path = _download_kaggle_file(slug, "TRACKB_ATTEMPT_STATE.json", Path(td))
+        except Exception as exc:
+            raise TrackBOpsError(f"attempt ledger exists but latest state cannot be downloaded: {slug}") from exc
+        try:
+            state = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise TrackBOpsError(f"attempt ledger state is invalid JSON: {slug}") from exc
+    if not isinstance(state, dict):
+        raise TrackBOpsError(f"attempt ledger state is not an object: {slug}")
+    if len(str(state.get("science_preimage_sha256", ""))) != 64:
+        raise TrackBOpsError(f"attempt ledger lacks a valid science preimage digest: {slug}")
+    return state
+
+
+def publish_attempt_state(slug: str, state: dict) -> dict[str, object]:
+    if not isinstance(state, dict):
+        raise TrackBOpsError("attempt state must be a JSON object")
+    required = ("attempt_id", "status", "science_preimage_sha256", "protected_inference_ever")
+    for field in required:
+        if field not in state:
+            raise TrackBOpsError(f"attempt state missing field: {field}")
+    with tempfile.TemporaryDirectory() as td:
+        folder = Path(td)
+        (folder / "TRACKB_ATTEMPT_STATE.json").write_text(
+            json.dumps(state, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return publish_private_kaggle_dataset(
+            folder=folder,
+            slug=slug,
+            title="CropCop Track B R07 Attempt Ledger",
+            version_message=f"{state['status']} {str(state['attempt_id'])[:24]}",
+            license_name="other",
+            full_roundtrip=True,
+        )
 
 
 def _urlopen_json(url: str, *, timeout: int = 120) -> dict:
