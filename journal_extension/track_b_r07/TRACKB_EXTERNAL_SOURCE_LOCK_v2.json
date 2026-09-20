@@ -1,0 +1,48 @@
+{
+  "schema_version": "2.0",
+  "lock_id": "TRACKB_EXTERNAL_SOURCE_LOCK_v2",
+  "status": "HOLD_PENDING_GVLID_INTEGRITY_RESOLUTION",
+  "scientific_change": false,
+  "protected_external_predictions_allowed": false,
+  "authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "candidates": {
+    "gvlid_v5": {
+      "role": "gvlid_v5",
+      "doi": "10.17632/wkymf8bhcg.5",
+      "version": "5",
+      "provider": "MENDELEY_DATA",
+      "dataset_id": "wkymf8bhcg",
+      "expected_image_count": 3477,
+      "integrity_policy": "OFFICIAL_PUBLISHED_ARTIFACT_MUST_BE_CRYPTOGRAPHICALLY_BOUND_BEFORE_MATERIALIZATION",
+      "integrity_status": "UNRESOLVED",
+      "required_resolution": [
+        "resolve the authoritative published artifact/file set for version 5",
+        "bind provider file identifiers, stable filenames, sizes and published checksums where available",
+        "resolve the documented docs/checksums.txt discrepancy without bypassing integrity verification",
+        "prove one-to-one integrity coverage for all 3477 accepted source images"
+      ],
+      "materialization_permitted": false
+    },
+    "irish_potato": {
+      "role": "irish_potato",
+      "doi": "10.5281/zenodo.8286529",
+      "version": "01",
+      "provider": "ZENODO",
+      "record_id": "8286529",
+      "required_archives": {
+        "earlyblt.zip": 17772,
+        "healthy.zip": 20438,
+        "lateblt.zip": 20499
+      },
+      "expected_image_count": 58709,
+      "integrity_policy": "ALL_THREE_PROVIDER_ARCHIVES_MUST_HAVE_PROVIDER_CHECKSUMS_VERIFIED_BEFORE_NORMALIZATION",
+      "integrity_status": "PROVIDER_CHECKSUM_REQUIRED_AT_RUNTIME",
+      "materialization_permitted": true
+    }
+  },
+  "fail_closed": true,
+  "notes": [
+    "This lock is operational/provenance hardening only and does not change the frozen Track-B scientific thresholds, mappings, seeds or evidence-grade rules.",
+    "The lock remains non-runnable until GVLiD source-integrity resolution is completed and this file is re-attested."
+  ]
+}
