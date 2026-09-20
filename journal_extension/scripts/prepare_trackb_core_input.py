@@ -47,9 +47,10 @@ def main() -> int:
     ap.add_argument("--code-attestation", required=True)
     ap.add_argument("--class-map", required=True)
     ap.add_argument("--v1-manifest", required=True)
+    ap.add_argument("--qualification-only", action="store_true")
     for seed in ("s1", "s2", "s3"):
-        ap.add_argument(f"--r07-{seed}", required=True)
-        ap.add_argument(f"--r07-{seed}-run-record", required=True)
+        ap.add_argument(f"--r07-{seed}")
+        ap.add_argument(f"--r07-{seed}-run-record")
     ap.add_argument("--dino-checkpoint", required=True)
     ap.add_argument("--dino-factory-manifest", required=True)
     ap.add_argument("--dino-factory-source-root", required=True)
@@ -69,36 +70,41 @@ def main() -> int:
         "code_attestation": args.code_attestation,
         "class_map": args.class_map,
         "v1_manifest": args.v1_manifest,
-        "r07_s1": args.r07_s1,
-        "r07_s2": args.r07_s2,
-        "r07_s3": args.r07_s3,
-        "r07_s1_run_record": args.r07_s1_run_record,
-        "r07_s2_run_record": args.r07_s2_run_record,
-        "r07_s3_run_record": args.r07_s3_run_record,
         "dino_checkpoint": args.dino_checkpoint,
         "dino_factory_manifest": args.dino_factory_manifest,
     }
+    if not args.qualification_only:
+        for seed in ("s1", "s2", "s3"):
+            model_value = getattr(args, f"r07_{seed}")
+            record_value = getattr(args, f"r07_{seed}_run_record")
+            if not model_value or not record_value:
+                raise TrackBError(
+                    "claim-capable core requires physical R07 checkpoint and run-record paths for all three seeds"
+                )
+            file_args[f"r07_{seed}"] = model_value
+            file_args[f"r07_{seed}_run_record"] = record_value
     files = {key: _file(root, value, key) for key, value in file_args.items()}
     if files["class_map"]["sha256"] != CLASS_MAP_SHA256:
         raise TrackBError("class-map SHA mismatch")
     if files["v1_manifest"]["sha256"] != DATASET_MANIFEST_SHA256:
         raise TrackBError("V1 manifest SHA mismatch")
-    for seed in ("S1", "S2", "S3"):
-        if files[f"r07_{seed.lower()}"]["sha256"] != R07_CHECKPOINTS[seed]:
-            raise TrackBError(f"R07 {seed} checkpoint SHA mismatch")
-        run_key = f"r07_{seed.lower()}_run_record"
-        if files[run_key]["sha256"] != R07_RUN_RECORDS[seed]["sha256"]:
-            raise TrackBError(f"R07 {seed} run-record SHA mismatch")
-        run_record = load_json(_inside(root, file_args[run_key]))
-        if str(run_record.get("run_id", "")) != R07_RUN_RECORDS[seed]["run_id"]:
-            raise TrackBError(f"R07 {seed} run-record ID mismatch")
-        selected_sha = (
-            ((run_record.get("artifact_locators") or {}).get("selected_checkpoint") or {}).get("sha256")
-            or (run_record.get("result_summary") or {}).get("selected_checkpoint_sha256")
-            or run_record.get("selected_checkpoint_sha256")
-        )
-        if str(selected_sha) != R07_CHECKPOINTS[seed]:
-            raise TrackBError(f"R07 {seed} run record does not bind the frozen checkpoint")
+    if not args.qualification_only:
+        for seed in ("S1", "S2", "S3"):
+            if files[f"r07_{seed.lower()}"]["sha256"] != R07_CHECKPOINTS[seed]:
+                raise TrackBError(f"R07 {seed} checkpoint SHA mismatch")
+            run_key = f"r07_{seed.lower()}_run_record"
+            if files[run_key]["sha256"] != R07_RUN_RECORDS[seed]["sha256"]:
+                raise TrackBError(f"R07 {seed} run-record SHA mismatch")
+            run_record = load_json(_inside(root, file_args[run_key]))
+            if str(run_record.get("run_id", "")) != R07_RUN_RECORDS[seed]["run_id"]:
+                raise TrackBError(f"R07 {seed} run-record ID mismatch")
+            selected_sha = (
+                ((run_record.get("artifact_locators") or {}).get("selected_checkpoint") or {}).get("sha256")
+                or (run_record.get("result_summary") or {}).get("selected_checkpoint_sha256")
+                or run_record.get("selected_checkpoint_sha256")
+            )
+            if str(selected_sha) != R07_CHECKPOINTS[seed]:
+                raise TrackBError(f"R07 {seed} run record does not bind the frozen checkpoint")
     if files["dino_checkpoint"]["sha256"] != DINO_AUDIT_SHA256:
         raise TrackBError("DINO audit checkpoint SHA mismatch")
     if files["dino_factory_manifest"]["sha256"] != DINO_FACTORY_MANIFEST_SHA256:
@@ -122,11 +128,16 @@ def main() -> int:
         raise TrackBError("core package contains consumed V1-test directory beside val/: " + ", ".join(p.name for p in forbidden_dirs))
 
     manifest = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "role": "core",
+        "qualification_only": bool(args.qualification_only),
         "repository_root": repo.relative_to(root).as_posix(),
         "v1_validation_root": val_root.relative_to(root).as_posix(),
         "dino_factory_source_root": dino_source.relative_to(root).as_posix(),
+        "authorized_r07_checkpoint_sha256": R07_CHECKPOINTS,
+        "authorized_r07_run_record_sha256": {
+            seed: R07_RUN_RECORDS[seed]["sha256"] for seed in ("S1", "S2", "S3")
+        },
         "files": files,
     }
     text = json.dumps(manifest, sort_keys=True).lower()
