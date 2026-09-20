@@ -135,6 +135,47 @@ def audit_policy_from_lock(lock: dict[str, Any]) -> TrackBAuditPolicy:
     )
 
 
+def validate_prior_attempt_for_rerun(
+    previous: dict[str, Any] | None,
+    *,
+    current_science_preimage_sha256: str,
+) -> dict[str, Any]:
+    """Validate whether a clean restart is allowed after a prior protected attempt."""
+    if not previous:
+        return {
+            "allowed": True,
+            "prior_attempt_with_protected_inference": False,
+            "parent_attempt_id": None,
+        }
+    if previous.get("protected_inference_ever") is not True:
+        return {
+            "allowed": True,
+            "prior_attempt_with_protected_inference": False,
+            "parent_attempt_id": previous.get("attempt_id"),
+        }
+    previous_digest = str(previous.get("science_preimage_sha256", ""))
+    if previous_digest != str(current_science_preimage_sha256):
+        raise TrackBError(
+            "a prior protected Track-B attempt exists under different scientific identities; "
+            "automatic rerun is forbidden"
+        )
+    terminal_or_durable = {
+        "SCIENCE_QA_PASS",
+        "PRIVATE_ARCHIVE_VERIFIED",
+        "PUBLICATION_COMPLETE",
+    }
+    if str(previous.get("status", "")) in terminal_or_durable:
+        raise TrackBError(
+            f"prior attempt is already durable at status={previous.get('status')}; "
+            "protected inference must not be rerun"
+        )
+    return {
+        "allowed": True,
+        "prior_attempt_with_protected_inference": True,
+        "parent_attempt_id": previous.get("attempt_id"),
+    }
+
+
 def load_json(path: str | Path) -> dict[str, Any]:
     obj = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(obj, dict):
