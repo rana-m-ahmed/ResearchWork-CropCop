@@ -400,6 +400,11 @@ def main() -> int:
             license_name="other",
             full_roundtrip=False,
         )
+        infra_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
+            infra_slug, infra_root
+        )
+        shutil.rmtree(infra_root, ignore_errors=True)
+
         external_pub = publish_private_kaggle_dataset(
             folder=external_root,
             slug=external_slug,
@@ -408,12 +413,11 @@ def main() -> int:
             license_name="other",
             full_roundtrip=False,
         )
-        infra_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
-            infra_slug, infra_root
-        )
         external_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
             external_slug, external_root
         )
+        shutil.rmtree(external_root, ignore_errors=True)
+
         readiness["publication"] = {
             "owner": owner,
             "infrastructure": infra_pub,
