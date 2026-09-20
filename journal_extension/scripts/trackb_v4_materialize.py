@@ -565,52 +565,104 @@ def _prepare_candidate(repo_root: Path, role: str, package_root: Path) -> None:
     )
 
 
-def _verify_published_archive_roundtrip(slug: str, published_folder: Path) -> dict:
-    manifest_path = published_folder / "TRACKB_KAGGLE_CONTENT_MANIFEST.json"
-    if not manifest_path.is_file():
-        raise TrackBOpsError(f"local Kaggle content manifest missing after publication: {manifest_path}")
-    manifest = load_json(manifest_path)
-    expected_rows = manifest.get("files")
+def _verify_published_archive_roundtrip(
+    slug: str,
+    expected_manifest: dict,
+    *,
+    scratch_root: Path,
+    attempts: int = 3,
+) -> dict:
+    expected_rows = expected_manifest.get("files")
     if not isinstance(expected_rows, list) or not expected_rows:
-        raise TrackBOpsError("local Kaggle content manifest has no files")
+        raise TrackBOpsError("Kaggle content manifest has no files for archive verification")
+    expected_payload_bytes = sum(int(row["bytes"]) for row in expected_rows)
 
-    with tempfile.TemporaryDirectory() as td:
-        root = Path(td)
-        run_checked(
-            ["kaggle", "datasets", "download", "-d", slug, "-p", str(root), "-q"],
-            timeout=7200,
-        )
-        archives = sorted(root.glob("*.zip"))
-        if len(archives) != 1:
-            raise TrackBOpsError(f"expected one Kaggle round-trip ZIP for {slug}; found {archives}")
-        archive = archives[0]
-        verified = 0
-        with zipfile.ZipFile(archive) as zf:
-            info_by_name = {
-                info.filename.replace("\\", "/").lstrip("./"): info
-                for info in zf.infolist()
-                if not info.is_dir()
+    errors: list[str] = []
+    for attempt in range(1, int(attempts) + 1):
+        roundtrip_root = scratch_root / f"_roundtrip_{slug.split('/', 1)[-1]}_{attempt}"
+        if roundtrip_root.exists():
+            shutil.rmtree(roundtrip_root)
+        roundtrip_root.mkdir(parents=True, exist_ok=False)
+        try:
+            free_bytes = int(shutil.disk_usage(roundtrip_root).free)
+            hard_required = int(expected_payload_bytes * 1.05) + 256 * 1024 * 1024
+            if free_bytes < hard_required:
+                raise TrackBOpsError(
+                    f"insufficient disk for Kaggle archive round-trip: slug={slug}, "
+                    f"free={free_bytes}, hard_required={hard_required}, "
+                    f"payload_bytes={expected_payload_bytes}"
+                )
+            run_checked(
+                ["kaggle", "datasets", "download", "-d", slug, "-p", str(roundtrip_root), "-q"],
+                timeout=7200,
+            )
+            archives = sorted(roundtrip_root.glob("*.zip"))
+            if len(archives) != 1:
+                raise TrackBOpsError(
+                    f"expected one Kaggle round-trip ZIP for {slug}; found {archives}"
+                )
+            archive = archives[0]
+            verified = 0
+            with zipfile.ZipFile(archive) as zf:
+                info_by_name = {
+                    info.filename.replace("\\", "/").lstrip("./"): info
+                    for info in zf.infolist()
+                    if not info.is_dir()
+                }
+                manifest_names = {
+                    str(row["path"]).replace("\\", "/").lstrip("./")
+                    for row in expected_rows
+                }
+                unexpected_payload = sorted(
+                    name for name in info_by_name
+                    if name not in manifest_names
+                    and name not in {"dataset-metadata.json", "TRACKB_KAGGLE_CONTENT_MANIFEST.json"}
+                )
+                if unexpected_payload:
+                    raise TrackBOpsError(
+                        f"Kaggle round-trip archive has unexpected payload members for {slug}: "
+                        f"{unexpected_payload[:20]}"
+                    )
+                for row in expected_rows:
+                    rel = str(row["path"]).replace("\\", "/").lstrip("./")
+                    info = info_by_name.get(rel)
+                    if info is None:
+                        raise TrackBOpsError(
+                            f"Kaggle round-trip archive missing member: {slug}/{rel}"
+                        )
+                    if int(info.file_size) != int(row["bytes"]):
+                        raise TrackBOpsError(
+                            f"Kaggle round-trip size mismatch: {slug}/{rel}"
+                        )
+                    h = hashlib.sha256()
+                    with zf.open(info, "r") as handle:
+                        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                            h.update(chunk)
+                    if h.hexdigest() != str(row["sha256"]):
+                        raise TrackBOpsError(
+                            f"Kaggle round-trip SHA mismatch: {slug}/{rel}"
+                        )
+                    verified += 1
+            result = {
+                "status": "PASS",
+                "archive_sha256": sha256_file(archive),
+                "verified_file_count": verified,
+                "content_digest_sha256": expected_manifest["content_digest_sha256"],
+                "attempts": attempt,
+                "peak_disk_guard_payload_bytes": expected_payload_bytes,
             }
-            for row in expected_rows:
-                rel = str(row["path"]).replace("\\", "/").lstrip("./")
-                info = info_by_name.get(rel)
-                if info is None:
-                    raise TrackBOpsError(f"Kaggle round-trip archive missing member: {slug}/{rel}")
-                if int(info.file_size) != int(row["bytes"]):
-                    raise TrackBOpsError(f"Kaggle round-trip size mismatch: {slug}/{rel}")
-                h = hashlib.sha256()
-                with zf.open(info, "r") as handle:
-                    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                        h.update(chunk)
-                if h.hexdigest() != str(row["sha256"]):
-                    raise TrackBOpsError(f"Kaggle round-trip SHA mismatch: {slug}/{rel}")
-                verified += 1
-        return {
-            "status": "PASS",
-            "archive_sha256": sha256_file(archive),
-            "verified_file_count": verified,
-            "content_digest_sha256": manifest["content_digest_sha256"],
-        }
+            shutil.rmtree(roundtrip_root, ignore_errors=True)
+            return result
+        except Exception as exc:
+            errors.append(f"attempt={attempt} {type(exc).__name__}: {exc}")
+            shutil.rmtree(roundtrip_root, ignore_errors=True)
+            if attempt < int(attempts):
+                continue
+    raise TrackBOpsError(
+        f"Kaggle archive round-trip failed after {attempts} attempts for {slug}: "
+        + " | ".join(errors[-3:])
+    )
+
 
 
 def _manifest_sha(root: Path) -> str:
@@ -823,10 +875,13 @@ def main() -> int:
             license_name="other",
             full_roundtrip=False,
         )
-        infra_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
-            infra_slug, infra_root
-        )
+        infra_manifest = load_json(infra_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")
         shutil.rmtree(infra_root, ignore_errors=True)
+        infra_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
+            infra_slug,
+            infra_manifest,
+            scratch_root=output_root,
+        )
 
         external_pub = publish_private_kaggle_dataset(
             folder=external_root,
@@ -836,10 +891,13 @@ def main() -> int:
             license_name="other",
             full_roundtrip=False,
         )
-        external_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
-            external_slug, external_root
-        )
+        external_manifest = load_json(external_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")
         shutil.rmtree(external_root, ignore_errors=True)
+        external_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
+            external_slug,
+            external_manifest,
+            scratch_root=output_root,
+        )
 
         readiness["publication"] = {
             "owner": owner,
