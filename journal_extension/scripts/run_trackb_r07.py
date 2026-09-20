@@ -1273,6 +1273,7 @@ def main() -> int:
                 "grade": seal["grade"],
                 "claim_mode": seal["claim_mode"],
                 "seal_sha256": seal["seal_sha256"],
+                "candidate_input_manifest_sha256": seal["candidate_input_manifest_sha256"],
                 "source_manifest_sha256": seal["source_manifest_sha256"],
                 "source_metadata_record_sha256": seal["source_metadata_record_sha256"],
                 "family_graph_sha256": seal["family_graph_sha256"],
