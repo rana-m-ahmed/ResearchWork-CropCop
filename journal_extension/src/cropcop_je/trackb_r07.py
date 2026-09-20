@@ -383,6 +383,7 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         "independent_preinference_qa_required": True,
         "protected_claim_requires_post_qualification_exact_sha_freeze": True,
         "qualification_must_produce_zero_protected_external_predictions": True,
+        "protected_claim_requires_matching_qualification_sha256": True,
     }
     for key, value in expected_automation.items():
         if automation.get(key) != value:
