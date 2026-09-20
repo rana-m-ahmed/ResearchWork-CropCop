@@ -886,40 +886,188 @@ def acquire_irish_potato(destination: str | Path, *, lineage_review_path: str | 
     return {"root": str(destination), "data_root": str(data_root), "source_metadata": source}
 
 
-def _extract_strings(value) -> Iterable[str]:
-    if isinstance(value, str):
-        yield value
-    elif isinstance(value, dict):
-        for k, v in value.items():
-            yield str(k)
-            yield from _extract_strings(v)
-    elif isinstance(value, list):
-        for item in value:
-            yield from _extract_strings(item)
+def _urlopen_json_value(url: str, *, timeout: int = 180):
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "Mozilla/5.0 CropCop-TrackB/3.0"},
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        payload = response.read()
+    try:
+        obj = json.loads(payload.decode("utf-8"))
+    except Exception as exc:
+        raise TrackBOpsError(f"invalid JSON response from {url}") from exc
+    if not isinstance(obj, (dict, list)):
+        raise TrackBOpsError(f"JSON object/list expected from {url}")
+    return obj
 
 
-def _mendeley_download_links(html: str) -> list[str]:
-    decoded = html.replace("\\u002F", "/").replace("\\/", "/")
-    urls = set(re.findall(r'https?://[^"\'<>\\s]+', decoded))
-    links = {
-        url.rstrip(".,)")
-        for url in urls
-        if "mendeley.com" in url and ("file_downloaded" in url or "/public-files/" in url)
-    }
-    # Modern Mendeley pages often place download URLs or file IDs in __NEXT_DATA__.
-    match = re.search(r'<script[^>]+id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>', html, flags=re.S | re.I)
-    if match:
+def _safe_mendeley_name(row: dict, fallback: str) -> str:
+    value = (
+        row.get("name")
+        or row.get("filename")
+        or row.get("file_name")
+        or row.get("folder_name")
+        or fallback
+    )
+    name = str(value).strip().replace("\\", "/")
+    path = Path(name)
+    if not name or path.is_absolute() or ".." in path.parts:
+        raise TrackBOpsError(f"unsafe Mendeley file/folder name: {value!r}")
+    return name
+
+
+def _supported_source_checksum(value: object) -> str:
+    text = str(value or "").strip().lower()
+    if not text:
+        return ""
+    if ":" in text:
+        algorithm, digest = text.split(":", 1)
+        if algorithm in {"sha256", "md5"} and len(digest) in {64, 32}:
+            return f"{algorithm}:{digest}"
+        return ""
+    if len(text) == 64 and all(ch in "0123456789abcdef" for ch in text):
+        return f"sha256:{text}"
+    if len(text) == 32 and all(ch in "0123456789abcdef" for ch in text):
+        return f"md5:{text}"
+    return ""
+
+
+def _mendeley_public_file_records(
+    dataset_id: str,
+    *,
+    version: str,
+) -> list[dict[str, object]]:
+    """Resolve the exact published Mendeley dataset through its public API.
+
+    Download URLs returned by Mendeley may be short-lived signed URLs. They are
+    used only for transport and are excluded from the stable source manifest.
+    """
+    dataset_id = str(dataset_id).strip()
+    version = str(version).strip()
+    if not dataset_id or not version:
+        raise TrackBOpsError("Mendeley dataset id/version must be non-empty")
+
+    queue: list[tuple[str, tuple[str, ...]]] = [("root", ())]
+    seen_folders = {"root"}
+    records: list[dict[str, object]] = []
+
+    while queue:
+        folder_id, parent_parts = queue.pop(0)
+        query = urllib.parse.urlencode({"folder_id": folder_id, "version": version})
+        endpoint = (
+            f"https://data.mendeley.com/public-api/datasets/{urllib.parse.quote(dataset_id)}"
+            f"/files?{query}"
+        )
         try:
-            obj = json.loads(match.group(1))
-            for value in _extract_strings(obj):
-                normalized = value.replace("\\u002F", "/").replace("\\/", "/")
-                if normalized.startswith("http") and "mendeley.com" in normalized and (
-                    "file_downloaded" in normalized or "/public-files/" in normalized
-                ):
-                    links.add(normalized)
-        except Exception:
-            pass
-    return sorted(links)
+            payload = _urlopen_json_value(endpoint, timeout=180)
+        except Exception as exc:
+            raise TrackBOpsError(
+                f"Mendeley public API file listing failed for dataset={dataset_id} "
+                f"version={version} folder={folder_id}"
+            ) from exc
+
+        if isinstance(payload, list):
+            rows = payload
+        else:
+            rows = payload.get("files")
+            if rows is None:
+                rows = payload.get("results")
+        if not isinstance(rows, list):
+            raise TrackBOpsError(
+                f"Mendeley public API returned no file list for dataset={dataset_id} "
+                f"version={version} folder={folder_id}"
+            )
+
+        for index, row in enumerate(rows):
+            if not isinstance(row, dict):
+                raise TrackBOpsError("Mendeley public API file entry is not an object")
+            row_id = str(row.get("id") or row.get("file_id") or "").strip()
+            name = _safe_mendeley_name(row, row_id or f"entry_{index}")
+            name_parts = tuple(part for part in name.split("/") if part not in {"", "."})
+            if not name_parts:
+                raise TrackBOpsError("Mendeley public API produced an empty file/folder path")
+            rel_parts = parent_parts + name_parts
+
+            details = row.get("content_details")
+            details = details if isinstance(details, dict) else {}
+            download_url = str(
+                details.get("download_url")
+                or row.get("download_url")
+                or ""
+            ).strip()
+            if download_url:
+                parsed = urllib.parse.urlparse(download_url)
+                if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                    raise TrackBOpsError("Mendeley public API returned an invalid download URL")
+                reported_checksum = (
+                    details.get("sha256")
+                    or details.get("checksum")
+                    or row.get("sha256")
+                    or row.get("checksum")
+                    or row.get("filehash")
+                    or ""
+                )
+                size_value = row.get("size")
+                if size_value is None:
+                    size_value = details.get("size")
+                try:
+                    size = int(size_value) if size_value is not None else -1
+                except (TypeError, ValueError):
+                    size = -1
+                records.append({
+                    "id": row_id,
+                    "relative_path": "/".join(rel_parts),
+                    "size": size,
+                    "reported_checksum": str(reported_checksum or ""),
+                    "download_checksum": _supported_source_checksum(reported_checksum),
+                    "download_url": download_url,
+                    "listing_endpoint": endpoint,
+                })
+                continue
+
+            child_id = str(
+                row.get("folder_id")
+                or row.get("id")
+                or ""
+            ).strip()
+            if not child_id:
+                raise TrackBOpsError(
+                    "Mendeley public API entry has neither a download URL nor a folder id"
+                )
+            if child_id in seen_folders:
+                continue
+            seen_folders.add(child_id)
+            if len(seen_folders) > 10000:
+                raise TrackBOpsError("Mendeley public API folder traversal exceeded safety limit")
+            queue.append((child_id, rel_parts))
+
+    if not records:
+        raise TrackBOpsError(
+            f"Mendeley public API returned no downloadable files for {dataset_id} version {version}"
+        )
+    records.sort(key=lambda row: str(row["relative_path"]))
+    paths = [str(row["relative_path"]) for row in records]
+    if len(paths) != len(set(paths)):
+        raise TrackBOpsError("Mendeley public API returned duplicate relative file paths")
+    return records
+
+
+def _mendeley_stable_manifest(records: list[dict[str, object]]) -> dict[str, object]:
+    files = []
+    for row in records:
+        files.append({
+            "id": str(row.get("id") or ""),
+            "relative_path": str(row["relative_path"]),
+            "size": int(row.get("size", -1)),
+            "reported_checksum": str(row.get("reported_checksum") or ""),
+        })
+    return {
+        "schema_version": "1.0",
+        "dataset_id": "wkymf8bhcg",
+        "version": "5",
+        "files": files,
+    }
 
 
 def probe_external_sources() -> dict[str, object]:
@@ -934,23 +1082,12 @@ def probe_external_sources() -> dict[str, object]:
             f"Irish Potato source probe is missing required archives: {sorted(required_files - file_names)}"
         )
 
-    page_url = "https://data.mendeley.com/datasets/wkymf8bhcg/5"
-    req = urllib.request.Request(
-        page_url,
-        headers={"User-Agent": "Mozilla/5.0 CropCop-TrackB/2.0"},
+    records = _mendeley_public_file_records("wkymf8bhcg", version="5")
+    stable_manifest = _mendeley_stable_manifest(records)
+    total_declared_bytes = sum(
+        max(0, int(row.get("size", -1)))
+        for row in records
     )
-    try:
-        with urllib.request.urlopen(req, timeout=180) as response:
-            html = response.read().decode("utf-8", errors="replace")
-    except Exception as exc:
-        raise TrackBOpsError("GVLiD v5 Mendeley source page is unreachable") from exc
-    links = _mendeley_download_links(html)
-    if not links:
-        raise TrackBOpsError(
-            "GVLiD v5 source probe found no deterministic public-file download URL; "
-            "do not start Track-B compute or substitute a mirror"
-        )
-    import hashlib
     return {
         "status": "PASS",
         "irish_potato": {
@@ -961,8 +1098,10 @@ def probe_external_sources() -> dict[str, object]:
         "gvlid_v5": {
             "doi": "10.17632/wkymf8bhcg.5",
             "version": "5",
-            "source_page_sha256": hashlib.sha256(html.encode("utf-8")).hexdigest(),
-            "deterministic_download_link_count": len(links),
+            "resolver": "MENDELEY_PUBLIC_API",
+            "public_api_file_count": len(records),
+            "public_api_declared_bytes": total_declared_bytes,
+            "public_api_manifest_sha256": sha256_json(stable_manifest),
         },
     }
 
