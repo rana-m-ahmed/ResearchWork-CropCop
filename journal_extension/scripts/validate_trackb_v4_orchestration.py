@@ -78,6 +78,18 @@ def main() -> int:
     readiness, readiness_text = notebook_text(readiness_path)
     final, final_text = notebook_text(final_path)
 
+    for label, notebook in (("Notebook 00", readiness), ("Notebook 01", final)):
+        for index, cell in enumerate(notebook.get("cells") or []):
+            if not isinstance(cell, dict) or cell.get("cell_type") != "code":
+                continue
+            source = "".join(cell.get("source") or [])
+            try:
+                compile(source, f"{label} cell {index}", "exec")
+            except SyntaxError as exc:
+                raise ValidationError(
+                    f"{label} code cell {index} does not compile: {exc}"
+                ) from exc
+
     orchestration = load_json(
         repo / "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json"
     )
