@@ -42,16 +42,22 @@ import json, os, shutil, subprocess, sys
 WORK = Path('/kaggle/working')
 REPO = WORK / 'ResearchWork-CropCop-trackb-v3'
 REPO_URL = 'https://github.com/rana-m-ahmed/ResearchWork-CropCop.git'
-SOURCE_REF = 'trackb-r07-remediation-v3-20260920'
+SOURCE_COMMIT = '87249ddbd73dd7b0cf5242670ce9cc25b0c415a1'
 
 if REPO.exists():
     shutil.rmtree(REPO)
 subprocess.run(
-    ['git', 'clone', '--depth', '1', '--branch', SOURCE_REF, REPO_URL, str(REPO)],
+    ['git', 'clone', '--filter=blob:none', '--no-checkout', REPO_URL, str(REPO)],
+    check=True,
+)
+subprocess.run(
+    ['git', '-C', str(REPO), 'checkout', '--detach', SOURCE_COMMIT],
     check=True,
 )
 HEAD = subprocess.check_output(['git', '-C', str(REPO), 'rev-parse', 'HEAD'], text=True).strip()
-print('Track-B source head:', HEAD)
+if HEAD != SOURCE_COMMIT:
+    raise RuntimeError(f'Frozen Track-B source mismatch: expected {SOURCE_COMMIT}, got {HEAD}')
+print('Frozen Track-B qualification source:', HEAD)
 
 from kaggle_secrets import UserSecretsClient
 _secret_client = UserSecretsClient()
