@@ -10,6 +10,7 @@ import stat
 import subprocess
 import tempfile
 import time
+import tarfile
 import urllib.parse
 import urllib.request
 import zipfile
@@ -931,6 +932,127 @@ def _safe_extract_zip(
         zf.extractall(destination)
 
 
+GVLID_OFFICIAL_COMPANION_COMMIT = "878a1c7098964bb52c4c4a5c30e5b53340565258"
+GVLID_OFFICIAL_COMPANION_ARCHIVE_URL = (
+    "https://codeload.github.com/MilindGayakwad/DNN/tar.gz/"
+    + GVLID_OFFICIAL_COMPANION_COMMIT
+)
+
+
+def _safe_extract_gvlid_companion_tar(
+    archive: Path,
+    destination: Path,
+    *,
+    expected_image_count: int = 3477,
+    max_members: int = 5000,
+    max_uncompressed_bytes: int = 4 * 1024 * 1024 * 1024,
+) -> dict[str, object]:
+    """Extract only the pinned companion repo's GVLiD image subtree.
+
+    The codeload tarball is a transport container, not an authority.  Authority
+    remains the pinned checksum CSV; every extracted image is verified later.
+    """
+    archive = Path(archive).resolve()
+    destination = Path(destination).resolve()
+    if not archive.is_file():
+        raise TrackBOpsError(f"GVLiD companion archive missing: {archive}")
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.mkdir(parents=True)
+
+    image_suffixes = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+    selected: list[tuple[tarfile.TarInfo, tuple[str, ...]]] = []
+    seen_paths: set[str] = set()
+    total_uncompressed = 0
+
+    try:
+        tf = tarfile.open(archive, mode="r:*")
+    except (tarfile.TarError, OSError) as exc:
+        raise TrackBOpsError("official GVLiD companion transport is not a readable tar archive") from exc
+
+    with tf:
+        for member in tf.getmembers():
+            raw_name = str(member.name).replace("\\", "/")
+            member_path = Path(raw_name)
+            if member_path.is_absolute() or ".." in member_path.parts:
+                raise TrackBOpsError(f"unsafe companion archive member: {member.name}")
+            parts = tuple(part for part in member_path.parts if part not in {"", "."})
+            try:
+                gvlid_index = next(
+                    index for index, part in enumerate(parts)
+                    if part.casefold() == "gvlid"
+                )
+            except StopIteration:
+                continue
+            rel_parts = parts[gvlid_index:]
+            if len(rel_parts) < 3:
+                continue
+            if member.isdir():
+                continue
+            if not member.isfile():
+                raise TrackBOpsError(
+                    f"non-regular member inside GVLiD companion subtree: {member.name}"
+                )
+            if Path(rel_parts[-1]).suffix.lower() not in image_suffixes:
+                continue
+
+            rel_key = "/".join(rel_parts).casefold()
+            if rel_key in seen_paths:
+                raise TrackBOpsError(
+                    f"duplicate/case-colliding GVLiD companion image path: {member.name}"
+                )
+            seen_paths.add(rel_key)
+            total_uncompressed += int(member.size)
+            if len(selected) + 1 > int(max_members):
+                raise TrackBOpsError(
+                    f"GVLiD companion image-count safety limit exceeded: {len(selected)+1} > {max_members}"
+                )
+            if total_uncompressed > int(max_uncompressed_bytes):
+                raise TrackBOpsError(
+                    "GVLiD companion uncompressed-size safety limit exceeded: "
+                    f"{total_uncompressed} > {max_uncompressed_bytes}"
+                )
+            selected.append((member, rel_parts))
+
+        if len(selected) != int(expected_image_count):
+            raise TrackBOpsError(
+                "official GVLiD companion archive image-count mismatch: "
+                f"expected={expected_image_count}, observed={len(selected)}"
+            )
+
+        free_bytes = int(shutil.disk_usage(destination).free)
+        hard_required = int(total_uncompressed * 1.10) + 256 * 1024 * 1024
+        if free_bytes < hard_required:
+            raise TrackBOpsError(
+                "insufficient disk before GVLiD companion extraction: "
+                f"free={free_bytes}, hard_required={hard_required}, "
+                f"uncompressed_bytes={total_uncompressed}"
+            )
+
+        for member, rel_parts in selected:
+            src = tf.extractfile(member)
+            if src is None:
+                raise TrackBOpsError(
+                    f"unable to read GVLiD companion image member: {member.name}"
+                )
+            target = destination.joinpath(*rel_parts)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with src, target.open("xb") as out:
+                shutil.copyfileobj(src, out, length=1024 * 1024)
+            if target.stat().st_size != int(member.size):
+                raise TrackBOpsError(
+                    f"GVLiD companion extracted-size mismatch: {member.name}"
+                )
+
+    return {
+        "status": "PASS",
+        "official_repository": "MilindGayakwad/DNN",
+        "official_commit": GVLID_OFFICIAL_COMPANION_COMMIT,
+        "selected_image_count": len(selected),
+        "selected_uncompressed_bytes": total_uncompressed,
+    }
+
+
 def _load_lineage_review(path: str | Path, *, role: str, doi: str, version: str) -> tuple[dict, str, str]:
     review_path = Path(path).resolve()
     if not review_path.is_file():
@@ -1654,49 +1776,102 @@ def acquire_gvlid_v5(
     extracted = destination / "_extracted"
     receipts = []
     seen_transport_sha: set[str] = set()
+    image_suffixes = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+    materialization_route = "MENDELEY_PUBLIC_API_BYTES"
 
-    for index, row in enumerate(records):
-        url = str(row["download_url"])
-        relative_path = str(row["relative_path"])
-        basename = Path(relative_path).name or f"mendeley_{index:05d}"
-        safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", basename)[:120] or f"mendeley_{index:05d}"
-        provisional = transport_dir / f"{index:05d}_{safe_name}"
-        checksum = str(row.get("download_checksum") or "") or None
-        receipt = _download_mendeley_record(
-            dataset_id="wkymf8bhcg",
-            version="5",
-            expected_record=row,
-            destination=provisional,
+    single_transport_suffix = (
+        Path(str(records[0]["relative_path"])).suffix.lower()
+        if len(records) == 1 else ""
+    )
+    skip_single_opaque_container = (
+        len(records) == 1
+        and single_transport_suffix not in image_suffixes
+        and single_transport_suffix != ".zip"
+    )
+
+    if not skip_single_opaque_container:
+        for index, row in enumerate(records):
+            relative_path = str(row["relative_path"])
+            basename = Path(relative_path).name or f"mendeley_{index:05d}"
+            safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", basename)[:120] or f"mendeley_{index:05d}"
+            provisional = transport_dir / f"{index:05d}_{safe_name}"
+            receipt = _download_mendeley_record(
+                dataset_id="wkymf8bhcg",
+                version="5",
+                expected_record=row,
+                destination=provisional,
+            )
+            transport_sha = str(receipt["sha256"])
+            if transport_sha in seen_transport_sha:
+                provisional.unlink(missing_ok=True)
+                continue
+            seen_transport_sha.add(transport_sha)
+
+            record_receipt = {
+                "route": "MENDELEY_PUBLIC_API_BYTES",
+                "source_file_id": str(row.get("id") or ""),
+                "source_relative_path": relative_path,
+                "source_size": int(row.get("size", -1)),
+                "source_reported_checksum": str(row.get("reported_checksum") or ""),
+                "download_url_persisted": False,
+                **receipt,
+            }
+            record_receipt.pop("path", None)
+            receipts.append(record_receipt)
+
+            try:
+                if zipfile.is_zipfile(provisional):
+                    _safe_extract_zip(
+                        provisional,
+                        extracted / f"part_{index:05d}_{transport_sha[:16]}",
+                    )
+                elif Path(relative_path).suffix.lower() in image_suffixes:
+                    target = extracted / "direct_files" / relative_path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    os.replace(provisional, target)
+                else:
+                    target = extracted / "opaque_transport" / relative_path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    os.replace(provisional, target)
+            finally:
+                provisional.unlink(missing_ok=True)
+
+    observed_images = sorted(
+        p for p in extracted.rglob("*")
+        if p.is_file() and p.suffix.lower() in image_suffixes
+    ) if extracted.exists() else []
+
+    if not observed_images:
+        # Mendeley v5 currently exposes one opaque ~902 MB transport object.
+        # Preserve Mendeley as the DOI/version identity authority, but materialize
+        # image bytes from the authors' pinned official companion repository.
+        # The fallback is accepted only after all 3477 images pass the same
+        # pinned official SHA-256 ledger below.
+        shutil.rmtree(extracted, ignore_errors=True)
+        shutil.rmtree(transport_dir, ignore_errors=True)
+        extracted.mkdir(parents=True, exist_ok=True)
+        transport_dir.mkdir(parents=True, exist_ok=True)
+        companion_archive = transport_dir / "official_companion.tar.gz"
+        companion_download = _stream_download(
+            GVLID_OFFICIAL_COMPANION_ARCHIVE_URL,
+            companion_archive,
         )
-        transport_sha = str(receipt["sha256"])
-        if transport_sha in seen_transport_sha:
-            provisional.unlink(missing_ok=True)
-            continue
-        seen_transport_sha.add(transport_sha)
-
-        record_receipt = {
-            "source_file_id": str(row.get("id") or ""),
-            "source_relative_path": relative_path,
-            "source_size": int(row.get("size", -1)),
-            "source_reported_checksum": str(row.get("reported_checksum") or ""),
+        companion_extract = _safe_extract_gvlid_companion_tar(
+            companion_archive,
+            extracted / "official_companion",
+        )
+        companion_record = {
+            "route": "PINNED_OFFICIAL_COMPANION_ARCHIVE_FALLBACK",
             "download_url_persisted": False,
-            **receipt,
+            "official_repository": "MilindGayakwad/DNN",
+            "official_commit": GVLID_OFFICIAL_COMPANION_COMMIT,
+            **companion_download,
+            "extraction": companion_extract,
         }
-        record_receipt.pop("path", None)
-        receipts.append(record_receipt)
-
-        try:
-            if zipfile.is_zipfile(provisional):
-                _safe_extract_zip(
-                    provisional,
-                    extracted / f"part_{index:05d}_{transport_sha[:16]}",
-                )
-            else:
-                target = extracted / "direct_files" / relative_path
-                target.parent.mkdir(parents=True, exist_ok=True)
-                os.replace(provisional, target)
-        finally:
-            provisional.unlink(missing_ok=True)
+        companion_record.pop("path", None)
+        receipts.append(companion_record)
+        companion_archive.unlink(missing_ok=True)
+        materialization_route = "PINNED_OFFICIAL_COMPANION_ARCHIVE_FALLBACK"
 
     data_root = destination / "data"
     supports, checksum_integrity = _normalize_gvlid_tree(
@@ -1719,6 +1894,7 @@ def acquire_gvlid_v5(
         "lineage_review_id": lineage_id,
         "lineage_review_sha256": lineage_sha,
         "source_resolver": "MENDELEY_PUBLIC_API",
+        "image_materialization_route": materialization_route,
         "source_public_api_manifest_sha256": manifest_sha,
         "source_public_api_file_count": len(records),
         "observed_class_support": supports,
