@@ -1,0 +1,52 @@
+{
+  "schema_version": "2.0",
+  "lock_id": "TRACKB_EXTERNAL_SOURCE_LOCK_v2",
+  "status": "PASS_EXTERNAL_SOURCE_AUTHORITY",
+  "scientific_change": false,
+  "protected_external_predictions_allowed": false,
+  "authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "candidates": {
+    "gvlid_v5": {
+      "role": "gvlid_v5",
+      "doi": "10.17632/wkymf8bhcg.5",
+      "version": "5",
+      "provider": "MENDELEY_DATA",
+      "dataset_id": "wkymf8bhcg",
+      "expected_image_count": 3477,
+      "integrity_policy": "MENDELEY_V5_IMAGE_BYTES_MUST_MATCH_PINNED_OFFICIAL_COMPANION_CHECKSUM_LEDGER",
+      "integrity_status": "PASS_PINNED_OFFICIAL_COMPANION_LEDGER",
+      "required_resolution": [],
+      "materialization_permitted": true,
+      "checksum_authority": {
+        "provenance_record": "journal_extension/track_b_r07/external_authority/GVLID_V5_CHECKSUM_AUTHORITY_v1.json",
+        "vendored_ledger": "journal_extension/track_b_r07/external_authority/gvlid_v5_checksums.csv",
+        "official_repository": "MilindGayakwad/DNN",
+        "official_commit": "878a1c7098964bb52c4c4a5c30e5b53340565258",
+        "official_blob_sha1": "5c953cf0381614d8e3744737bfeed98ea1162f9c",
+        "ledger_rows": 3477
+      }
+    },
+    "irish_potato": {
+      "role": "irish_potato",
+      "doi": "10.5281/zenodo.8286529",
+      "version": "01",
+      "provider": "ZENODO",
+      "record_id": "8286529",
+      "required_archives": {
+        "earlyblt.zip": 17772,
+        "healthy.zip": 20438,
+        "lateblt.zip": 20499
+      },
+      "expected_image_count": 58709,
+      "integrity_policy": "ALL_THREE_PROVIDER_ARCHIVES_MUST_HAVE_PROVIDER_CHECKSUMS_VERIFIED_BEFORE_NORMALIZATION",
+      "integrity_status": "PROVIDER_CHECKSUM_REQUIRED_AT_RUNTIME",
+      "materialization_permitted": true
+    }
+  },
+  "fail_closed": true,
+  "notes": [
+    "This lock is operational/provenance hardening only and does not change frozen Track-B scientific thresholds, mappings, seeds or evidence-grade rules.",
+    "The Scientific Data article names docs/checksums.txt; the official companion repository at the pinned commit publishes docs/checksums.csv. Independent verification established exactly 3477 valid SHA-256 rows with complete one-to-one image-path coverage.",
+    "Kaggle execution uses the vendored pinned ledger and does not depend on live GitHub availability."
+  ]
+}

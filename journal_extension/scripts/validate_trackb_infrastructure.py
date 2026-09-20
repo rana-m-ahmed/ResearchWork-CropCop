@@ -41,9 +41,9 @@ def main() -> int:
     args = ap.parse_args()
     root = Path(args.repo_root).resolve()
 
-    authority_path = root / "journal_extension/amendments/track_bc_r07_downstream_v2.json"
-    lock_path = root / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v2.json"
-    attestation_path = root / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v2.json"
+    authority_path = root / "journal_extension/amendments/track_bc_r07_downstream_v3.json"
+    lock_path = root / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v4.json"
+    attestation_path = root / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v4.json"
     final_nb = root / "journal_extension/kaggle/trackb_r07_end_to_end.ipynb"
     master_nb = root / "journal_extension/kaggle/trackb_r07_master.ipynb"
     core_nb = root / "journal_extension/kaggle/trackb_build_core_package.ipynb"
@@ -52,6 +52,7 @@ def main() -> int:
     audit_module = root / "journal_extension/src/cropcop_je/trackb_r07_audit.py"
     ops_module = root / "journal_extension/src/cropcop_je/trackb_r07_ops.py"
     master_runner = root / "journal_extension/scripts/run_trackb_r07_master.py"
+    preinference_validator = root / "journal_extension/scripts/validate_trackb_preinference_qualification.py"
     runtime_bootstrap = root / "journal_extension/scripts/bootstrap_trackb_runtime.py"
     core_builder = root / "journal_extension/scripts/build_trackb_core_package.py"
     hist_builder = root / "journal_extension/scripts/build_trackb_historical_compare.py"
@@ -59,7 +60,7 @@ def main() -> int:
 
     for path in (
         authority_path, lock_path, attestation_path, final_nb, master_nb, core_nb, hist_nb, runner,
-        audit_module, ops_module, master_runner, runtime_bootstrap, core_builder, hist_builder, hist_source_prep,
+        audit_module, ops_module, master_runner, preinference_validator, runtime_bootstrap, core_builder, hist_builder, hist_source_prep,
     ):
         if not path.is_file():
             raise TrackBError(f"required Track-B infrastructure file missing: {path.relative_to(root)}")
@@ -86,9 +87,12 @@ def main() -> int:
     for forbidden in ("git push", "github_token", "gh_token", "ds-v1-test-consumed", "--split test"):
         if forbidden in lowered:
             raise TrackBError(f"final Track-B notebook contains forbidden surface/action: {forbidden}")
-    for required in ("run_trackb_r07.py", "--mode", "all", "TRACKB_FINAL_QA.json", "TRACK_B_CLOSED"):
+    for required in ("run_trackb_r07.py", "--mode", "preflight", "PREFLIGHT_PASS.json"):
         if required not in final_text:
-            raise TrackBError(f"final Track-B notebook missing expected controller binding: {required}")
+            raise TrackBError(f"internal Track-B notebook missing prediction-free preflight binding: {required}")
+    for forbidden in ("--mode', 'all", "--mode\", \"all", "PROTECTED_INFERENCE_STARTED", "CROPCOP_GITHUB_TOKEN"):
+        if forbidden in final_text:
+            raise TrackBError(f"internal Track-B notebook exposes forbidden protected-run surface: {forbidden}")
     for required in (
         "build_trackb_core_package.py",
         "16368",
@@ -117,11 +121,16 @@ def main() -> int:
 
     for required in (
         "KAGGLE_API_TOKEN",
-        "CROPCOP_GITHUB_TOKEN",
         "run_trackb_r07_master.py",
         "bootstrap_trackb_runtime.py",
         "requirements-trackb.lock.txt",
-        "PASS_AUTOMATED_TRACK_B_COMPLETE",
+        "PASS_TRACKB_PREINFERENCE_QUALIFICATION",
+        "TRACKB_PREINFERENCE_QUALIFICATION.json",
+        "qualification_science_sha256",
+        "TRACKB_PREINFERENCE_QA.json",
+        "--execution-mode",
+        "qualification",
+        "/kaggle/tmp/cropcop_trackb_r07",
     ):
         if required not in master_text:
             raise TrackBError(f"master notebook missing automation binding: {required}")
@@ -133,12 +142,19 @@ def main() -> int:
         raise TrackBError("master notebook does not use the proven active-interpreter lock-repair path")
     if "VENV_PY" in master_text or "trackb_runtime_env" in master_text:
         raise TrackBError("master notebook still exposes the failed venv execution path")
-    if "verify_github_repository_push_access" not in master_text:
-        raise TrackBError("master notebook lacks fail-fast Git write preflight")
-    git_preflight_pos = master_text.find("verify_github_repository_push_access")
-    runtime_bootstrap_pos = master_text.find("bootstrap_trackb_runtime.py")
-    if min(git_preflight_pos, runtime_bootstrap_pos) < 0 or git_preflight_pos > runtime_bootstrap_pos:
-        raise TrackBError("GitHub write preflight must execute before runtime package repair")
+    if "CROPCOP_GITHUB_TOKEN" in master_text or "verify_github_repository_push_access" in master_text:
+        raise TrackBError("qualification notebook must not require GitHub credentials or push preflight")
+    if "SKIPPED for prediction-blind qualification" not in master_text:
+        raise TrackBError("qualification notebook does not explicitly record skipped GitHub preflight")
+    if "'--execution-mode', 'claim'" in master_text or '"--execution-mode", "claim"' in master_text:
+        raise TrackBError("operator notebook exposes protected claim mode instead of qualification mode")
+    if "--authorized-qualification-science-sha256" in master_text:
+        raise TrackBError("qualification notebook exposes protected-claim authorization input")
+    frozen_qualification_sha = "73e07bb23d94e67bd2ad8f9d63226cd4488caf70"
+    if f"SOURCE_COMMIT = '{frozen_qualification_sha}'" not in master_text:
+        raise TrackBError("qualification notebook is not pinned to the audited implementation SHA")
+    if "SOURCE_REF" in master_text or "checkout', '--detach'" not in master_text:
+        raise TrackBError("qualification notebook regressed to mutable branch execution")
 
     ops_text = ops_module.read_text(encoding="utf-8")
     for required in (
@@ -147,6 +163,8 @@ def main() -> int:
         "publish_to_github_branch",
         "publish_private_kaggle_dataset",
         "acquire_gvlid_v5",
+        "MENDELEY_PUBLIC_API",
+        "_mendeley_public_file_records",
         "acquire_irish_potato",
         "detect_authenticated_kaggle_owner",
         "verify_authenticated_kaggle_owner",
@@ -156,6 +174,12 @@ def main() -> int:
         "normalized_image_count",
         "observed_class_support",
         "raw_external_images_included",
+        "TRACKB_KAGGLE_CONTENT_MANIFEST.json",
+        "source_checksum_verified",
+        "TRACKB_EXTERNAL_LINEAGE_REVIEW_v1",
+        "attempt_dataset_slug",
+        "publish_attempt_state",
+        "read_latest_attempt_state",
     ):
         if required not in ops_text:
             raise TrackBError(f"Track-B operations module missing automation/security guard: {required}")
@@ -178,6 +202,9 @@ def main() -> int:
         "Private Kaggle publication attempt",
         "for attempt, delay in enumerate((0, 5, 15, 30), start=1)",
         "private Kaggle dataset publication failed after 4 attempts",
+        "reused_identical_remote",
+        "_verify_remote_kaggle_content",
+        "_wait_kaggle_dataset_ready",
     ):
         if required not in ops_text:
             raise TrackBError(f"private Kaggle publication retry guard missing: {required}")
@@ -224,6 +251,17 @@ def main() -> int:
         "source_roots[\"final_v1\"]",
         "gvlid_v5",
         "irish_potato",
+        "/kaggle/tmp/cropcop_trackb_r07",
+        "attempt_dataset_slug",
+        "PRIVATE_ARCHIVE_VERIFIED",
+        "PUBLICATION_COMPLETE",
+        "full_roundtrip=True",
+        "validate_trackb_preinference_qualification.py",
+        "PASS_TRACKB_PREINFERENCE_QUALIFICATION",
+        "--authorized-qualification-science-sha256",
+        '"--execution-mode", choices=["qualification", "claim"], default="qualification"',
+        "configure_runtime_secrets(require_github=claim_mode)",
+        "SKIPPED_QUALIFICATION_MODE",
     ):
         if required not in master_runner_text:
             raise TrackBError(f"master controller missing automated operation: {required}")
@@ -247,6 +285,14 @@ def main() -> int:
         raise TrackBError("execution lock does not default private Kaggle ownership to AUTO")
     if automation.get("kaggle_dataset_owner_mode") != "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT":
         raise TrackBError("execution lock does not require authenticated Kaggle owner auto-detection")
+    if automation.get("github_token_required_modes") != ["claim"]:
+        raise TrackBError("GitHub token must be claim-only")
+    if automation.get("github_push_preflight_modes") != ["claim"]:
+        raise TrackBError("GitHub push preflight must be claim-only")
+    if automation.get("qualification_requires_github_token") is not False:
+        raise TrackBError("qualification must not require GitHub token")
+    if automation.get("qualification_requires_github_push_preflight") is not False:
+        raise TrackBError("qualification must not require GitHub push preflight")
     kaggle_policy = lock.get("kaggle", {})
     if kaggle_policy.get("internet_required_during_claim_run") is not True:
         raise TrackBError("automated master requires Internet for orchestration/publication")
@@ -294,9 +340,63 @@ def main() -> int:
         '"maximum_evidence_grade": "EXT-S"',
         "full 117,546-image EXT-I route is dormant",
         "locked Python drift",
+        "audit_policy_from_lock",
+        "deterministic_representative_order",
+        "PROTECTED_INFERENCE_STARTED",
+        "TRACKB_SCIENCE_MANIFEST.json",
+        "trackb_science_sha256",
+        "_verify_zip_archive",
+        "PASS_PREDICTION_BLIND_QUALIFICATION",
+        "TRACKB_PREINFERENCE_QUALIFICATION.json",
+        'choices=["preflight", "qualification", "all"]',
     ):
         if required not in runner_text:
             raise TrackBError(f"final runner missing safe historical-package gate: {required}")
+    package_pos = runner_text.find('packages = _package_outputs(output_root)')
+    closure_write_pos = runner_text.find('atomic_write_json(output_root / "TRACKB_FINAL_CLOSURE.json"')
+    if min(package_pos, closure_write_pos) < 0 or package_pos > closure_write_pos:
+        raise TrackBError("TRACK_B_CLOSED can be written before evidence-package verification")
+    if "external_predictions_before_firewall" in runner_text:
+        raise TrackBError("runner still exposes ambiguous cross-attempt prediction chronology field")
+    if "def _science_preimage_manifest(" in runner_text:
+        raise TrackBError("runner regressed to obsolete/timestamp-unsafe science preimage helper")
+    prediction_blind_start = runner_text.find("def _prediction_blind_science_manifest(")
+    stable_manifest_start = runner_text.find("def _stable_science_manifest(")
+    prediction_blind_text = runner_text[prediction_blind_start:stable_manifest_start]
+    for forbidden in ("sealed_at_utc", "retrieved_at", "final_qa_sha256", "candidate_input_manifest_sha256", "source_metadata_record_sha256"):
+        if forbidden in prediction_blind_text:
+            raise TrackBError(
+                f"prediction-blind science identity contains execution/transport metadata: {forbidden}"
+            )
+    if "cache: dict[str, dict[str, Any]] = {}" in runner_text:
+        raise TrackBError("runner regressed to an all-in-RAM candidate ORB cache")
+    if "open_memmap" not in runner_text or "mmap_mode=\"r\"" not in runner_text:
+        raise TrackBError("runner lacks file-backed packed candidate ORB cache")
+
+    qualification_gate = runner_text.find('if args.mode == "qualification":')
+    claim_gate = runner_text.find("claim_candidates =")
+    protected_call = runner_text.find('"gvlid_grape": _protected_inference(')
+    if min(qualification_gate, claim_gate, protected_call) < 0 or not (
+        qualification_gate < claim_gate < protected_call
+    ):
+        raise TrackBError("prediction-blind qualification does not return before protected inference")
+
+    preinference_text = preinference_validator.read_text(encoding="utf-8")
+    for required in (
+        "PASS_INDEPENDENT_PREINFERENCE_QA",
+        "TRACKB_PREDICTION_BLIND_SCIENCE.json",
+        "qualification_science_sha256",
+        "reconstructed_science",
+        "protected_external_prediction_count",
+        "TRACKB_FINAL_CLOSURE.json",
+        "TRACKB_ATTEMPT_STATE.json",
+        "verify_candidate_seal",
+        "V1_TRAIN_VAL_ONLY",
+        "92744",
+    ):
+        if required not in preinference_text:
+            raise TrackBError(f"pre-inference validator missing safety check: {required}")
+
     audit_call = runner_text.find('grape = _audit_candidate(')
     second_audit_call = runner_text.find('potato = _audit_candidate(')
     firewall = runner_text.find('stage("4 :: prediction firewall")')
@@ -328,7 +428,15 @@ def main() -> int:
         "private_evidence_archived_before_github_publication": True,
         "github_publication_retry_attempts": 4,
         "private_kaggle_publication_retry_attempts": 4,
-        "track_b_v2_candidates": ["gvlid_grape", "irish_potato"],
+        "track_b_v3_candidates": ["gvlid_grape", "irish_potato"],
+        "lock_is_executable_policy_source": True,
+        "seeded_family_order_is_operational": True,
+        "source_checksums_required": True,
+        "scratch_storage_isolation_required": True,
+        "durable_attempt_ledger_required": True,
+        "closure_after_package_verification": True,
+        "stable_science_digest_required": True,
+        "private_kaggle_roundtrip_required": True,
         "retired_v1_candidate_absent": True,
         "core_builder_validation_only_surface": True,
         "prediction_blind_audit_module": True,
@@ -339,6 +447,9 @@ def main() -> int:
         "safe_historical_builder_image_count": 92744,
         "safe_historical_builder_maximum_grade": "EXT-S",
         "full_ext_i_representation_policy": "pre_test_recovered_representation_only",
+        "operator_default_mode": "qualification",
+        "independent_preinference_validator": True,
+        "protected_inference_fail_closed_until_qualification_review": True,
     }
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
