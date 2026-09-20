@@ -166,7 +166,7 @@
     },
     {
       "path": "journal_extension/track_b_r07/external_authority/GVLID_V5_CHECKSUM_AUTHORITY_v1.json",
-      "git_blob_sha1": "02935818773c0649aa06bb8823e9f26ade73ce62",
+      "git_blob_sha1": "4de1d3abe896fc87f95351c0c44e8d57f43bdc4f",
       "origin": "track_b_v5_source_authority"
     },
     {
@@ -186,14 +186,14 @@
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json",
-      "git_blob_sha1": "0d7eb75cb39c0efb339f16935f4ef01307934c93",
+      "git_blob_sha1": "f03a20f362fa3053d72a2ce7bfdcbad7c57379b4",
       "origin": "track_b_v5_source_authority"
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json",
-      "git_blob_sha1": "5bd4cf8327bc348f0c07fc167c722ea12c724ab4",
+      "git_blob_sha1": "66bf8db01be1f7505e56160bf9952c29d73f82aa",
       "origin": "track_b_v5_materialization_authority"
     }
   ],
-  "attestation_note": "Track-B v5 runtime re-attestation after GVLiD opaque-container transport repair. Frozen scientific thresholds, mappings, checkpoints, grade rules, and protected-inference policy are unchanged; only external transport materialization was hardened."
+  "attestation_note": "Track-B v5 runtime re-attestation after fail-closed GVLiD opaque-provider transport remediation. Mendeley v5 remains DOI/version/stable-manifest identity authority; byte fallback is allowed only from the pinned official companion commit when provider transport yields zero usable images, and acceptance still requires all 3477 pinned SHA-256 checks. Scientific thresholds, mappings, checkpoints, seeds, grade rules, and protected-inference policy are unchanged."
 }
