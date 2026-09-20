@@ -1613,6 +1613,20 @@ def _verify_zip_archive(path: Path) -> dict[str, Any]:
 
 def _package_outputs(output_root: Path) -> dict[str, Any]:
     import zipfile
+
+    existing_bytes = sum(
+        int(path.stat().st_size)
+        for path in output_root.rglob("*")
+        if path.is_file()
+        and path.name not in {"TRACKB_COMPLETE_EVIDENCE.zip", "TRACKB_PUBLIC_EVIDENCE.zip"}
+    )
+    free_bytes = int(shutil.disk_usage(output_root).free)
+    required_bytes = int(existing_bytes * 1.25) + 512 * 1024 * 1024
+    if free_bytes < required_bytes:
+        raise TrackBError(
+            "insufficient disk before Track-B evidence packaging: "
+            f"free={free_bytes}, required={required_bytes}, existing={existing_bytes}"
+        )
     complete = output_root / "TRACKB_COMPLETE_EVIDENCE.zip"
     public = output_root / "TRACKB_PUBLIC_EVIDENCE.zip"
     exclude = {complete.name, public.name, "TRACKB_FINAL_CLOSURE.json", "TRACKB_PACKAGE_MANIFEST.json"}
