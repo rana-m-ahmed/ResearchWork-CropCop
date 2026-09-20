@@ -561,6 +561,7 @@ def publish_private_kaggle_dataset(
     version_message: str,
     license_name: str = "other",
     full_roundtrip: bool = False,
+    allow_version: bool = True,
 ) -> dict[str, object]:
     folder = Path(folder).resolve()
     if not folder.is_dir() or not any(folder.iterdir()):
@@ -598,6 +599,11 @@ def publish_private_kaggle_dataset(
                 }
 
             exists_now = kaggle_dataset_exists(slug)
+            if exists_now and not allow_version:
+                raise TrackBOpsError(
+                    "content-addressed Kaggle dataset already exists with different bytes; "
+                    f"refusing to create a new version: {slug}"
+                )
             if exists_now:
                 run_checked(
                     [
