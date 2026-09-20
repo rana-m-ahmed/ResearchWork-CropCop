@@ -5,7 +5,7 @@
   "scientific_authority": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "scientific_execution_lock": "TRACKB_R07_EXECUTION_LOCK_v3",
   "scientific_code_attestation": "TRACKB_CODE_ATTESTATION_v3",
-  "orchestration_implementation_commit": "d0898dafc4419e1db009ab24202660d40f6b3fae",
+  "orchestration_implementation_commit": "15bcfaa23158074d318000121970f4952f6737c0",
   "protected_external_predictions_allowed": false,
   "source_inputs": {
     "attachment_mode": "KAGGLE_ATTACHED_DATASETS_ONLY",
@@ -67,7 +67,7 @@
     "recovery_policy": "S2/S3 recovered records must exactly match the frozen Track-B run-record SHA-256 values before core construction"
   },
   "load_bearing_files": {
-    "journal_extension/scripts/trackb_v4_materialize.py": "a25d86c26b57d99c4b33db8628297efd2766b93b",
+    "journal_extension/scripts/trackb_v4_materialize.py": "d5046c7dc3af5378311ebf1283a561a37be5dbb4",
     "journal_extension/scripts/trackb_v4_execute_attached.py": "94205cd8afac27c76ba13a83a8ab969e9382ae68",
     "journal_extension/scripts/run_trackb_r07.py": "3437c276b789d1772039a187dce1e00fcdaea23d",
     "journal_extension/scripts/validate_trackb_preinference_qualification.py": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2",
@@ -77,10 +77,12 @@
     "journal_extension/src/cropcop_je/tracka_v12_placement.py": "fbdd3a04c79a63542f9117cdc77b914093152e04",
     "journal_extension/track_b_r07/replay_authority/R07_S1_ORIGINAL_RUN_RECORD.json": "e578f6deb815b285c2bdd955975cc5ce19b831e6",
     "journal_extension/track_b_r07/replay_authority/TRACKA_V12_K3_PUBLIC_REPORT.json": "e40402cdf240c1bfbb88586c78b7a7bdc8ad1ec1",
-    "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json": "c150f0093d70e4650b2e85134db59a49a4e5b7ec",
-    "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json": "5dcc34b7d004f8fcebfdcd0377152b279a3f3628",
+    "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json": "e3cf5d0d575bd458e4af8f83db49ad515d6ee70c",
+    "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json": "f305e5befdc76b3c90e8ff21c57f901e71a66812",
     "journal_extension/scripts/build_trackb_core_package.py": "115b91fdfebdd8c19b91f5be32fda8383c19f328",
-    "tests/test_trackb_v4_materialize.py": "e23ecd35c393f31c45a5c752cdc409d61b07cb0e"
+    "tests/test_trackb_v4_materialize.py": "0ee33fb535a13dcea54714bfd7b8e5ffed359ff6",
+    "journal_extension/scripts/build_trackb_historical_compare.py": "fa4e08760d6c762e72eb43083bec8600b1bde6d3",
+    "journal_extension/src/cropcop_je/trackb_r07_ops.py": "d207375871ba6b00235ba3a8bff06dde964021d2"
   },
   "metric_schema_contract": {
     "selected_replay_metrics": [
@@ -108,5 +110,14 @@
     "entrypoint": "historical_dino_tiny:build_teacher",
     "preflight_source_validation_required": true,
     "preflight_teacher_instantiation_required": true
+  },
+  "release_hardening_contract": {
+    "historical_dino_batch_probe": 64,
+    "historical_output_disk_guard": true,
+    "archive_member_count_limit": 120000,
+    "archive_uncompressed_byte_limit": 21474836480,
+    "external_transport_url_checksum_size_preflight": true,
+    "publication_delete_local_before_archive_roundtrip": true,
+    "archive_roundtrip_retry_count": 3
   }
 }
