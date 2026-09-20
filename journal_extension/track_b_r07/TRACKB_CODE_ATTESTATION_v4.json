@@ -2,7 +2,7 @@
   "schema_version": "5.0",
   "attestation_id": "TRACKB_CODE_ATTESTATION_v4",
   "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
-  "scope": "load-bearing Track-B v5 execution: immutable qualification handoff, attached-code authentication, full content binding, deterministic audit policy, source integrity, single-writer protected claim, durable attempt chronology, evidence durability, and frozen Track-A dependencies",
+  "scope": "load-bearing Track-B v5 runtime execution and materialization: immutable qualification handoff, attached-code authentication, full content binding, deterministic audit policy, source integrity, single-writer protected claim, durable attempt chronology, evidence durability, and frozen Track-A dependencies",
   "files": [
     {
       "path": "journal_extension/amendments/track_bc_r07_downstream_v3.json",
@@ -73,16 +73,6 @@
       "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py",
       "git_blob_sha1": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2",
       "origin": "track_b_infrastructure"
-    },
-    {
-      "path": "journal_extension/scripts/validate_trackb_release_authority.py",
-      "git_blob_sha1": "b1947a07504737a1573f9704d9c55d4a2803841f",
-      "origin": "track_b_v5_hardening"
-    },
-    {
-      "path": "journal_extension/scripts/validate_trackb_v4_orchestration.py",
-      "git_blob_sha1": "3f9f7a96be094f1229f9e94e4fb55673c55090b1",
-      "origin": "track_b_v5_hardening"
     },
     {
       "path": "journal_extension/src/cropcop_je/atomic_io.py",
@@ -200,5 +190,5 @@
       "origin": "track_b_v5_source_authority"
     }
   ],
-  "attestation_note": "V5 pre-results re-attestation after forensic hardening. Scientific candidates, mappings, checkpoints, metric definitions, audit thresholds, support floor, bootstrap parameters, historical comparison scope and V1-test closure remain unchanged."
+  "attestation_note": "V5 pre-results runtime re-attestation after forensic hardening. CI/release validators are intentionally excluded from the runtime attestation boundary. Scientific candidates, mappings, checkpoints, metric definitions, audit thresholds, support floor, bootstrap parameters, historical comparison scope and V1-test closure remain unchanged."
 }
