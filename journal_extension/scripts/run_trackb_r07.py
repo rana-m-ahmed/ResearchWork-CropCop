@@ -1182,6 +1182,288 @@ def _stable_science_manifest(output_root: Path, core, candidates) -> dict[str, A
     return payload
 
 
+def _load_claim_qualification(
+    *,
+    qualification_root: Path,
+    output_root: Path,
+    authorized_sha: str,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    qualification_root = Path(qualification_root).resolve()
+    required = (
+        "TRACKB_PREINFERENCE_QUALIFICATION.json",
+        "TRACKB_PREINFERENCE_QA.json",
+        "TRACKB_PREDICTION_BLIND_SCIENCE.json",
+        "TRACKB_PREDICTION_FIREWALL.json",
+    )
+    missing = [name for name in required if not (qualification_root / name).is_file()]
+    if missing:
+        raise TrackBError(f"claim qualification handoff is incomplete: missing={missing}")
+
+    qualification = load_json(
+        qualification_root / "TRACKB_PREINFERENCE_QUALIFICATION.json"
+    )
+    qualification_clean = dict(qualification)
+    observed_qualification_hash = str(
+        qualification_clean.pop("qualification_sha256", "")
+    )
+    if (
+        len(observed_qualification_hash) != 64
+        or sha256_json(qualification_clean) != observed_qualification_hash
+    ):
+        raise TrackBError("claim qualification self-hash mismatch")
+    if qualification.get("status") != "PASS_PREDICTION_BLIND_QUALIFICATION":
+        raise TrackBError("claim handoff qualification is not terminal PASS")
+    if int(qualification.get("protected_external_prediction_count", -1)) != 0:
+        raise TrackBError("claim handoff qualification contains protected predictions")
+    if qualification.get("v1_test_accessed") is not False:
+        raise TrackBError("claim handoff qualification violates V1-test closure")
+
+    science = load_json(qualification_root / "TRACKB_PREDICTION_BLIND_SCIENCE.json")
+    science_clean = dict(science)
+    observed_science_hash = str(
+        science_clean.pop("qualification_science_sha256", "")
+    )
+    if (
+        len(observed_science_hash) != 64
+        or sha256_json(science_clean) != observed_science_hash
+    ):
+        raise TrackBError("claim prediction-blind science self-hash mismatch")
+    if observed_science_hash != authorized_sha:
+        raise TrackBError(
+            "claim qualification handoff differs from the reviewed science SHA"
+        )
+    if str(qualification.get("qualification_science_sha256", "")) != authorized_sha:
+        raise TrackBError("claim qualification/science digest binding mismatch")
+
+    qa = load_json(qualification_root / "TRACKB_PREINFERENCE_QA.json")
+    if qa.get("status") != "PASS_INDEPENDENT_PREINFERENCE_QA":
+        raise TrackBError("claim handoff independent pre-inference QA is not PASS")
+    if str(qa.get("qualification_science_sha256", "")) != authorized_sha:
+        raise TrackBError("claim handoff QA science digest mismatch")
+    firewall = load_json(qualification_root / "TRACKB_PREDICTION_FIREWALL.json")
+    if firewall.get("status") != "PASS":
+        raise TrackBError("claim handoff prediction firewall is not PASS")
+    if int(firewall.get("external_predictions_before_this_attempt_firewall", -1)) != 0:
+        raise TrackBError("claim handoff firewall is not prediction-blind")
+
+    for name in required:
+        shutil.copy2(qualification_root / name, output_root / name)
+    for optional in (
+        "dino_audit_encoder_identity.json",
+        "TRACKB_CAPACITY_PREFLIGHT.json",
+    ):
+        source = qualification_root / optional
+        if source.is_file():
+            shutil.copy2(source, output_root / f"qualification_{optional}")
+
+    loaded: dict[str, dict[str, Any]] = {}
+    for cid in ("gvlid_grape", "irish_potato"):
+        src_root = qualification_root / "candidates" / cid
+        if not src_root.is_dir():
+            raise TrackBError(f"claim handoff candidate evidence missing: {cid}")
+        dst_root = output_root / "candidates" / cid
+        shutil.copytree(src_root, dst_root)
+        seal = load_json(dst_root / "seal.json")
+        verify_candidate_seal(seal)
+        expected = (qualification.get("candidates") or {}).get(cid)
+        if not isinstance(expected, dict):
+            raise TrackBError(f"claim qualification missing candidate: {cid}")
+        if seal.get("seal_sha256") != expected.get("seal_sha256"):
+            raise TrackBError(f"claim candidate seal differs from reviewed qualification: {cid}")
+        reps = _read_jsonl(dst_root / "sealed_representatives.jsonl")
+        loaded[cid] = {
+            "candidate_id": cid,
+            "root": dst_root,
+            "grade": seal["grade"],
+            "seal": seal,
+            "representatives": reps,
+        }
+
+    return loaded["gvlid_grape"], loaded["irish_potato"], science
+
+
+def _execute_protected_claim_from_qualification(
+    *,
+    args,
+    inputs,
+    core,
+    class_map,
+    audit_policy,
+    output_root: Path,
+    started: float,
+) -> int:
+    authorized_sha = str(args.authorized_qualification_science_sha256).strip().lower()
+    if (
+        len(authorized_sha) != 64
+        or any(ch not in "0123456789abcdef" for ch in authorized_sha)
+    ):
+        raise TrackBError("claim mode requires the reviewed qualification science SHA-256")
+    if not args.qualification_root:
+        raise TrackBError("claim mode requires --qualification-root")
+
+    grape, potato, prediction_blind_science = _load_claim_qualification(
+        qualification_root=Path(args.qualification_root),
+        output_root=output_root,
+        authorized_sha=authorized_sha,
+    )
+    atomic_write_json(
+        output_root / "TRACKB_QUALIFICATION_AUTHORIZATION.json",
+        {
+            "schema_version": "3.0",
+            "status": "PASS_IMMUTABLE_REVIEWED_QUALIFICATION_HANDOFF",
+            "authorized_qualification_science_sha256": authorized_sha,
+            "current_qualification_science_sha256": prediction_blind_science[
+                "qualification_science_sha256"
+            ],
+            "protected_inference_authorized": True,
+            "qualification_recomputed": False,
+        },
+    )
+
+    claim_candidates = [
+        candidate
+        for candidate in (grape, potato)
+        if candidate["grade"] in {"EXT-I", "EXT-S"}
+    ]
+    attempt_state = None
+    if claim_candidates:
+        if (
+            not args.attempt_dataset_slug
+            or not args.claim_lease_dataset_slug
+            or not args.materialization_id
+            or not args.attempt_id
+            or len(str(args.source_git_sha)) != 40
+        ):
+            raise TrackBError(
+                "protected inference requires attempt-ledger slug, claim-lease slug, "
+                "materialization identity, attempt ID, and exact source Git SHA"
+            )
+        previous = read_latest_attempt_state(args.attempt_dataset_slug)
+        rerun_gate = validate_prior_attempt_for_rerun(
+            previous,
+            current_science_preimage_sha256=authorized_sha,
+        )
+        lease_payload = {
+            "schema_version": "1.0",
+            "status": "CLAIM_LEASE_ACQUIRED",
+            "attempt_id": str(args.attempt_id),
+            "science_preimage_sha256": authorized_sha,
+            "materialization_id": str(args.materialization_id),
+            "source_git_sha": str(args.source_git_sha),
+        }
+        lease_receipt = acquire_claim_lease(
+            str(args.claim_lease_dataset_slug),
+            lease_payload,
+        )
+        atomic_write_json(output_root / "TRACKB_CLAIM_LEASE.json", lease_payload)
+        atomic_write_json(
+            output_root / "TRACKB_CLAIM_LEASE_RECEIPT.json",
+            lease_receipt,
+        )
+        attempt_state = {
+            "schema_version": "2.0",
+            "attempt_id": str(args.attempt_id),
+            "status": "PROTECTED_INFERENCE_STARTED",
+            "protected_inference_ever": True,
+            "started_at_utc": utc_now(),
+            "source_git_sha": str(args.source_git_sha),
+            "materialization_id": str(args.materialization_id),
+            "claim_lease_dataset_slug": str(args.claim_lease_dataset_slug),
+            "claim_lease_sha256": lease_receipt["lease_sha256"],
+            "science_preimage_sha256": authorized_sha,
+            "science_preimage": prediction_blind_science,
+            "qualification_recomputed": False,
+            "parent_attempt_id": rerun_gate["parent_attempt_id"],
+            "prior_attempt_with_protected_inference": rerun_gate[
+                "prior_attempt_with_protected_inference"
+            ],
+        }
+        atomic_write_json(output_root / "TRACKB_ATTEMPT_STATE.json", attempt_state)
+        attempt_receipt = publish_attempt_state(
+            args.attempt_dataset_slug,
+            attempt_state,
+        )
+        atomic_write_json(
+            output_root / "TRACKB_ATTEMPT_PUBLICATION.json",
+            attempt_receipt,
+        )
+
+    _inject_image_paths(grape, inputs["gvlid_v5"])
+    _inject_image_paths(potato, inputs["irish_potato"])
+    _protected_inference(
+        grape, core, class_map, output_root, args.device, audit_policy
+    )
+    _protected_inference(
+        potato, core, class_map, output_root, args.device, audit_policy
+    )
+
+    stage("7 :: independent closure QA")
+    qa = {
+        "schema_version": "2.0",
+        "status": "PASS",
+        "candidate_qa": {},
+        "v1_test_accessed": False,
+        "new_training_performed": False,
+        "external_predictions_before_candidate_seal": False,
+        "qualification_recomputed": False,
+    }
+    for candidate in (grape, potato):
+        qa["candidate_qa"][candidate["candidate_id"]] = _independent_candidate_qa(
+            candidate, output_root, audit_policy
+        )
+    qa["qa_sha256"] = sha256_json(
+        {k: v for k, v in qa.items() if k != "qa_sha256"}
+    )
+    atomic_write_json(output_root / "TRACKB_FINAL_QA.json", qa)
+
+    science_manifest = _stable_science_manifest(output_root, core, (grape, potato))
+    if attempt_state is not None:
+        attempt_state = {
+            **attempt_state,
+            "status": "SCIENCE_QA_PASS",
+            "science_qa_pass_at_utc": utc_now(),
+            "trackb_science_sha256": science_manifest["trackb_science_sha256"],
+            "final_qa_sha256": qa["qa_sha256"],
+        }
+        atomic_write_json(output_root / "TRACKB_ATTEMPT_STATE.json", attempt_state)
+        science_qa_receipt = publish_attempt_state(
+            args.attempt_dataset_slug, attempt_state
+        )
+        atomic_write_json(
+            output_root / "TRACKB_ATTEMPT_SCIENCE_QA_PUBLICATION.json",
+            science_qa_receipt,
+        )
+
+    packages = _package_outputs(output_root)
+    atomic_write_json(output_root / "TRACKB_PACKAGE_MANIFEST.json", packages)
+    closure = {
+        "schema_version": "3.0",
+        "status": "TRACK_B_CLOSED",
+        "authority_id": AUTHORITY_ID,
+        "elapsed_seconds": time.time() - started,
+        "candidate_status": qa["candidate_qa"],
+        "final_qa_sha256": qa["qa_sha256"],
+        "trackb_science_sha256": science_manifest["trackb_science_sha256"],
+        "science_manifest_sha256": sha256_file(
+            output_root / "TRACKB_SCIENCE_MANIFEST.json"
+        ),
+        "package_manifest_sha256": sha256_file(
+            output_root / "TRACKB_PACKAGE_MANIFEST.json"
+        ),
+        "package_verification_status": packages["status"],
+        "v1_test_accessed": False,
+        "new_training_performed": False,
+        "external_predictions_before_candidate_seal": False,
+        "qualification_recomputed": False,
+    }
+    closure["closure_sha256"] = sha256_json(
+        {k: v for k, v in closure.items() if k != "closure_sha256"}
+    )
+    atomic_write_json(output_root / "TRACKB_FINAL_CLOSURE.json", closure)
+    print(json.dumps({**closure, "packages": packages}, indent=2, sort_keys=True))
+    return 0
+
+
 def _verify_zip_archive(path: Path) -> dict[str, Any]:
     import hashlib
     import zipfile
@@ -1269,13 +1551,18 @@ def main() -> int:
     ap.add_argument("--scratch-root", default="/kaggle/tmp/cropcop_trackb_r07_audit")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--workers", type=int, default=4)
-    ap.add_argument("--mode", choices=["preflight", "qualification", "all"], default="qualification")
+    ap.add_argument(
+        "--mode",
+        choices=["preflight", "qualification", "claim", "all"],
+        default="qualification",
+    )
     ap.add_argument("--source-git-sha", default="")
     ap.add_argument("--attempt-dataset-slug", default="")
     ap.add_argument("--claim-lease-dataset-slug", default="")
     ap.add_argument("--materialization-id", default="")
     ap.add_argument("--attempt-id", default="")
     ap.add_argument("--authorized-qualification-science-sha256", default="")
+    ap.add_argument("--qualification-root", default="")
     args = ap.parse_args()
 
     output_root = Path(args.output_root).resolve()
@@ -1297,12 +1584,22 @@ def main() -> int:
         scratch_root=audit_scratch_root,
         device=args.device,
         audit_policy=audit_policy,
-        expected_external_images=3477 + 58709,
+        expected_external_images=0 if args.mode == "claim" else 3477 + 58709,
     )
     atomic_write_json(output_root / "TRACKB_CAPACITY_PREFLIGHT.json", capacity)
     if args.mode == "preflight":
         atomic_write_json(output_root / "PREFLIGHT_PASS.json", {"status": "PASS", "authority_id": AUTHORITY_ID})
         return 0
+    if args.mode == "claim":
+        return _execute_protected_claim_from_qualification(
+            args=args,
+            inputs=inputs,
+            core=core,
+            class_map=class_map,
+            audit_policy=audit_policy,
+            output_root=output_root,
+            started=started,
+        )
 
     stage("1-4 :: prediction-blind source verification, family audit, grade, and seal")
     dino_model, dino_identity = _load_dino(core)
