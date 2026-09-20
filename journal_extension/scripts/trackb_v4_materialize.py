@@ -672,6 +672,35 @@ def _manifest_sha(root: Path) -> str:
     return sha256_file(path)
 
 
+def _role_content_identity(root: Path) -> dict[str, object]:
+    """Cryptographically bind every regular payload file inside a Track-B role root.
+
+    Pair receipts live above the role roots, so this ledger cannot hash itself.
+    Symlinks are forbidden in published role payloads because they are not portable
+    across Kaggle materialization boundaries.
+    """
+    root = Path(root).resolve()
+    rows: list[dict[str, object]] = []
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise TrackBOpsError(f"published Track-B role contains a symlink: {path}")
+        if not path.is_file():
+            continue
+        rel = path.relative_to(root).as_posix()
+        rows.append({
+            "path": rel,
+            "bytes": int(path.stat().st_size),
+            "sha256": sha256_file(path),
+        })
+    if not rows:
+        raise TrackBOpsError(f"Track-B role payload is empty: {root}")
+    return {
+        "file_count": len(rows),
+        "total_bytes": sum(int(row["bytes"]) for row in rows),
+        "content_sha256": sha256_json(rows),
+    }
+
+
 def _validate_roles(
     core_root: Path,
     historical_root: Path,
@@ -725,17 +754,24 @@ def _write_pair_receipts(
         "gvlid_v5": _manifest_sha(gvlid_root),
         "irish_potato": _manifest_sha(potato_root),
     }
+    role_content_identity = {
+        "core": _role_content_identity(core_root),
+        "historical_compare": _role_content_identity(historical_root),
+        "gvlid_v5": _role_content_identity(gvlid_root),
+        "irish_potato": _role_content_identity(potato_root),
+    }
     pairing_preimage = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "repository_source_sha": source_sha,
         "scientific_execution_lock_sha256": sha256_file(execution_lock),
         "scientific_code_attestation_sha256": sha256_file(code_attestation),
         "role_manifest_sha256": role_manifest_sha256,
+        "role_content_identity": role_content_identity,
     }
     materialization_id = sha256_json(pairing_preimage)
 
     common = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "status": "PASS_PAIRED_TRACKB_INPUT_BUNDLE",
         "materialization_id": materialization_id,
         **pairing_preimage,
@@ -764,6 +800,7 @@ def _write_pair_receipts(
         "materialization_id": materialization_id,
         "repository_source_sha": source_sha,
         "role_manifest_sha256": role_manifest_sha256,
+        "role_content_identity": role_content_identity,
         "scientific_execution_lock_sha256": pairing_preimage["scientific_execution_lock_sha256"],
         "scientific_code_attestation_sha256": pairing_preimage["scientific_code_attestation_sha256"],
     }
