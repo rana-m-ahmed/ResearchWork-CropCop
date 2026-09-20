@@ -237,7 +237,11 @@
     "private_terminal_evidence_full_roundtrip_required": true,
     "closure_after_package_verification": true,
     "stable_science_digest_required": true,
-    "github_run_id_uses_science_digest": true
+    "github_run_id_uses_science_digest": true,
+    "operator_default_mode": "qualification",
+    "independent_preinference_qa_required": true,
+    "protected_claim_requires_post_qualification_exact_sha_freeze": true,
+    "qualification_must_produce_zero_protected_external_predictions": true
   },
   "runtime_bootstrap": {
     "mode": "PROVEN_KAGGLE_LOCK_REPAIR_FRESH_SUBPROCESS",
