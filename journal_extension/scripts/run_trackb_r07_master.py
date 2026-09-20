@@ -222,21 +222,21 @@ def main() -> int:
     ap.add_argument("--kaggle-owner", default=KAGGLE_OWNER_DEFAULT)
     ap.add_argument("--force-rebuild-historical", action="store_true")
     ap.add_argument("--execution-mode", choices=["qualification", "claim"], default="qualification")
-    ap.add_argument("--authorized-qualification-sha256", default="")
+    ap.add_argument("--authorized-qualification-science-sha256", default="")
     args = ap.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
     workspace = Path(args.workspace).resolve()
     scratch_root = Path(args.scratch_root).resolve()
     requested_kaggle_owner = str(args.kaggle_owner).strip()
-    authorized_qualification_sha256 = str(args.authorized_qualification_sha256).strip().lower()
+    authorized_qualification_science_sha256 = str(args.authorized_qualification_science_sha256).strip().lower()
     if args.execution_mode == "claim":
         if (
-            len(authorized_qualification_sha256) != 64
-            or any(ch not in "0123456789abcdef" for ch in authorized_qualification_sha256)
+            len(authorized_qualification_science_sha256) != 64
+            or any(ch not in "0123456789abcdef" for ch in authorized_qualification_science_sha256)
         ):
             raise TrackBOpsError(
-                "claim mode requires a reviewed --authorized-qualification-sha256"
+                "claim mode requires a reviewed --authorized-qualification-science-sha256"
             )
     if workspace.exists() and any(workspace.iterdir()):
         raise TrackBOpsError(f"master workspace must be empty for a clean run: {workspace}")
@@ -295,7 +295,7 @@ def main() -> int:
         "attempt_id": attempt_id,
         "attempt_dataset_slug": attempt_dataset,
         "protected_external_predictions_before_controller": False,
-        "authorized_qualification_sha256": authorized_qualification_sha256 or None,
+        "authorized_qualification_science_sha256": authorized_qualification_science_sha256 or None,
     }
     print(json.dumps({k: v for k, v in receipt.items() if k != "secret_presence"} | {"secret_presence": secret_presence}, indent=2))
 
@@ -387,7 +387,7 @@ def main() -> int:
         runner_cmd += [
             "--attempt-dataset-slug", attempt_dataset,
             "--attempt-id", attempt_id,
-            "--authorized-qualification-sha256", authorized_qualification_sha256,
+            "--authorized-qualification-science-sha256", authorized_qualification_science_sha256,
         ]
     run_checked(runner_cmd, cwd=repo_root, timeout=36000)
 
