@@ -70,7 +70,7 @@ def main() -> int:
     if len(final.get("cells", [])) != 6:
         raise ValidationError("final execution notebook must have exactly six cells")
 
-    expected_snapshot = "63d22dbe00a183712e086d0e5c9242f37f1dfd4e"
+    expected_snapshot = "685f985483049923e25a450cbc9a1d05a705e374"
     if f"SOURCE_COMMIT = '{expected_snapshot}'" not in readiness_text:
         raise ValidationError("readiness notebook is not pinned to the frozen v4 repository snapshot")
     for basename in (
@@ -90,6 +90,12 @@ def main() -> int:
         raise ValidationError("readiness notebook contains stale persistent materialization path")
     if "trackb_v4_materialize.py" not in readiness_text:
         raise ValidationError("readiness notebook does not invoke the frozen materializer")
+    builder_source = (repo / "journal_extension/scripts/build_trackb_core_package.py").read_text(encoding="utf-8")
+    materializer_source = (repo / "journal_extension/scripts/trackb_v4_materialize.py").read_text(encoding="utf-8")
+    if '"--dino-factory-source-root", "repository/journal_extension/teacher_factory"' not in builder_source:
+        raise ValidationError("Track-B core builder does not bind the sealed DINO factory to its dedicated source root")
+    if "validate_teacher_factory_bundle(" not in materializer_source or "load_exact_teacher(" not in materializer_source:
+        raise ValidationError("Track-B readiness must validate and instantiate the sealed DINO teacher during source qualification")
     if "source_qualification_sha256" not in readiness_text:
         raise ValidationError("readiness notebook must surface the complete source-qualification digest")
     if "CROPCOP_GITHUB_TOKEN" in readiness_text:
