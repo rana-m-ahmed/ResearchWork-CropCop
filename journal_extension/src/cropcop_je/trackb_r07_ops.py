@@ -541,11 +541,36 @@ def _safe_extract_zip(path: Path, destination: Path) -> None:
         zf.extractall(destination)
 
 
-def acquire_irish_potato(destination: str | Path) -> dict:
+def _load_lineage_review(path: str | Path, *, role: str, doi: str, version: str) -> tuple[dict, str, str]:
+    review_path = Path(path).resolve()
+    if not review_path.is_file():
+        raise TrackBOpsError(f"lineage review file missing: {review_path}")
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    if review.get("review_id") != "TRACKB_EXTERNAL_LINEAGE_REVIEW_v1":
+        raise TrackBOpsError("unexpected external-lineage review identity")
+    row = (review.get("candidates") or {}).get(role)
+    if not isinstance(row, dict):
+        raise TrackBOpsError(f"lineage review lacks candidate role: {role}")
+    if str(row.get("doi")) != doi or str(row.get("version")) != version:
+        raise TrackBOpsError(f"lineage review source identity mismatch for {role}")
+    status = str(row.get("lineage_review_status", ""))
+    known = row.get("known_historical_contributor_relationship")
+    if status not in {"PASS_NO_KNOWN_RELATIONSHIP", "RESIDUAL_UNCERTAINTY"} or not isinstance(known, bool):
+        raise TrackBOpsError(f"lineage review conclusion invalid for {role}")
+    return row, sha256_file(review_path), str(review.get("review_id"))
+
+
+def acquire_irish_potato(destination: str | Path, *, lineage_review_path: str | Path) -> dict:
     destination = Path(destination).resolve()
     if destination.exists():
         shutil.rmtree(destination)
     destination.mkdir(parents=True)
+    lineage_row, lineage_sha, lineage_id = _load_lineage_review(
+        lineage_review_path,
+        role="irish_potato",
+        doi="10.5281/zenodo.8286529",
+        version="01",
+    )
     record = _urlopen_json("https://zenodo.org/api/records/8286529")
     metadata = record.get("metadata") or {}
     version = str(metadata.get("version", ""))
@@ -609,8 +634,10 @@ def acquire_irish_potato(destination: str | Path) -> dict:
         "source_url": "https://zenodo.org/records/8286529",
         "retrieved_at": utc_now(),
         "license_or_access_text": licence_text,
-        "known_historical_contributor_relationship": False,
-        "lineage_review_status": "RESIDUAL_UNCERTAINTY",
+        "known_historical_contributor_relationship": bool(lineage_row["known_historical_contributor_relationship"]),
+        "lineage_review_status": str(lineage_row["lineage_review_status"]),
+        "lineage_review_id": lineage_id,
+        "lineage_review_sha256": lineage_sha,
         "acquisition_transport": transport,
         "observed_class_support": observed_support,
         "zenodo_record_id": str(record.get("id", "")),
@@ -824,11 +851,17 @@ def _normalize_gvlid_tree(extracted_root: Path, data_root: Path) -> tuple[dict[s
     return supports, integrity
 
 
-def acquire_gvlid_v5(destination: str | Path) -> dict:
+def acquire_gvlid_v5(destination: str | Path, *, lineage_review_path: str | Path) -> dict:
     destination = Path(destination).resolve()
     if destination.exists():
         shutil.rmtree(destination)
     destination.mkdir(parents=True)
+    lineage_row, lineage_sha, lineage_id = _load_lineage_review(
+        lineage_review_path,
+        role="gvlid_v5",
+        doi="10.17632/wkymf8bhcg.5",
+        version="5",
+    )
     page_url = "https://data.mendeley.com/datasets/wkymf8bhcg/5"
     req = urllib.request.Request(page_url, headers={"User-Agent": "Mozilla/5.0 CropCop-TrackB/2.0"})
     with urllib.request.urlopen(req, timeout=180) as response:
@@ -871,8 +904,10 @@ def acquire_gvlid_v5(destination: str | Path) -> dict:
         "source_url": page_url,
         "retrieved_at": utc_now(),
         "license_or_access_text": "CC BY 4.0",
-        "known_historical_contributor_relationship": False,
-        "lineage_review_status": "RESIDUAL_UNCERTAINTY",
+        "known_historical_contributor_relationship": bool(lineage_row["known_historical_contributor_relationship"]),
+        "lineage_review_status": str(lineage_row["lineage_review_status"]),
+        "lineage_review_id": lineage_id,
+        "lineage_review_sha256": lineage_sha,
         "source_page_sha256": page_sha,
         "observed_class_support": supports,
         "published_total_images": 3477,
