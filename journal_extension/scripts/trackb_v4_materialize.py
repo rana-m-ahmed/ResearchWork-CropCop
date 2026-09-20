@@ -311,9 +311,17 @@ def _prepare_r07_source_views(
 
     recovery_script = repo_root / "journal_extension/scripts/recover_tracka_v12_terminal_record.py"
     for seed, spec in continuation.items():
-        checkpoint_root, selected_checkpoint = _selected_checkpoint_from_index(
-            spec["mount"], R07_CHECKPOINTS[seed]
-        )
+        restored_from_durable = False
+        try:
+            checkpoint_root, selected_checkpoint = _selected_checkpoint_from_index(
+                spec["mount"], R07_CHECKPOINTS[seed]
+            )
+        except TrackBOpsError:
+            checkpoint_root = source_views / "_restored_checkpoints" / seed.lower()
+            checkpoint_root.mkdir(parents=True, exist_ok=False)
+            selected_checkpoint = None
+            restored_from_durable = True
+
         recovery_out = source_views / "_recovery" / seed.lower()
         run_checked(
             [
@@ -328,8 +336,13 @@ def _prepare_r07_source_views(
                 "--output-dir", str(recovery_out),
             ],
             cwd=repo_root,
-            timeout=1800,
+            timeout=3600,
         )
+        if restored_from_durable:
+            checkpoint_root, selected_checkpoint = _selected_checkpoint_from_index(
+                checkpoint_root, R07_CHECKPOINTS[seed]
+            )
+        assert selected_checkpoint is not None
         recovered = recovery_out / "RECOVERED_TERMINAL_RUN_RECORD.json"
         certificate = recovery_out / "TERMINAL_RECOVERY_CERTIFICATE.json"
         if not recovered.is_file() or not certificate.is_file():
@@ -357,6 +370,7 @@ def _prepare_r07_source_views(
             "run_id": R07_RUN_RECORDS[seed]["run_id"],
             "checkpoint_sha256": sha256_file(selected_checkpoint),
             "checkpoint_index_root": str(checkpoint_root),
+            "restored_from_durable_locator": restored_from_durable,
             "recovery_certificate_sha256": sha256_file(certificate),
         }
 
