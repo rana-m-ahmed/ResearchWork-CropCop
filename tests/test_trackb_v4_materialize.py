@@ -507,6 +507,64 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             source.index('supports, checksum_integrity = _normalize_gvlid_tree('),
         )
 
+    def test_gvlid_companion_tar_extractor_handles_canonical_tree(self):
+        import io
+        import tarfile
+        from cropcop_je.trackb_r07_ops import _safe_extract_gvlid_companion_tar
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            archive = root / "companion.tar.gz"
+            with tarfile.open(archive, "w:gz") as tf:
+                for name, payload in (
+                    ("DNN-fixed/GVLiD/Black rot/a.jpg", b"aaa"),
+                    ("DNN-fixed/GVLiD/healthy/b.jpg", b"bbb"),
+                ):
+                    info = tarfile.TarInfo(name)
+                    info.size = len(payload)
+                    tf.addfile(info, io.BytesIO(payload))
+
+            destination = root / "out"
+            receipt = _safe_extract_gvlid_companion_tar(
+                archive,
+                destination,
+                expected_image_count=2,
+                max_members=10,
+                max_uncompressed_bytes=1024,
+            )
+            self.assertEqual(receipt["status"], "PASS")
+            self.assertEqual(receipt["selected_image_count"], 2)
+            self.assertEqual(
+                (destination / "GVLiD" / "Black rot" / "a.jpg").read_bytes(),
+                b"aaa",
+            )
+            self.assertEqual(
+                (destination / "GVLiD" / "healthy" / "b.jpg").read_bytes(),
+                b"bbb",
+            )
+
+    def test_gvlid_companion_tar_extractor_rejects_traversal(self):
+        import io
+        import tarfile
+        from cropcop_je.trackb_r07_ops import _safe_extract_gvlid_companion_tar
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            archive = root / "bad.tar.gz"
+            with tarfile.open(archive, "w:gz") as tf:
+                payload = b"bad"
+                info = tarfile.TarInfo("../GVLiD/healthy/bad.jpg")
+                info.size = len(payload)
+                tf.addfile(info, io.BytesIO(payload))
+            with self.assertRaises(module.TrackBOpsError):
+                _safe_extract_gvlid_companion_tar(
+                    archive,
+                    root / "out",
+                    expected_image_count=1,
+                    max_members=10,
+                    max_uncompressed_bytes=1024,
+                )
+
     def test_gvlid_companion_tar_extraction_is_bounded_and_path_safe(self):
         source = (
             ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
