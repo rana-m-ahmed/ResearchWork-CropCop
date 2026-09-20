@@ -358,6 +358,7 @@ def main() -> int:
             sys.executable, str(runner),
             "--input-root", str(inputs_root),
             "--output-root", str(output_root),
+            "--scratch-root", str(scratch_root / "audit_scratch"),
             "--device", args.device,
             "--workers", "4",
             "--mode", "all",
@@ -378,6 +379,7 @@ def main() -> int:
         title="CropCop Track B R07 Restricted Evidence",
         version_message=f"Track-B closure {closure['closure_sha256'][:16]}",
         license_name="other",
+        full_roundtrip=True,
     )
     receipt["private_kaggle_evidence"] = private_receipt
     receipt["closure_sha256"] = closure["closure_sha256"]
