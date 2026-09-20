@@ -50,8 +50,18 @@ def main() -> int:
     repo = Path(args.repo_root).resolve()
     authority_path = repo / "journal_extension/track_b_r07/TRACKB_RELEASE_AUTHORITY_v1.json"
     source_lock_path = repo / "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json"
+    execution_lock_path = repo / "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v4.json"
+    code_attestation_path = repo / "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v4.json"
+    materialization_lock_path = repo / "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json"
+    requirements_lock_path = repo / "journal_extension/track_b_r07/requirements-trackb.lock.txt"
+    orchestration_lock_path = repo / "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json"
+    operator_attestation_path = repo / "journal_extension/track_b_r07/TRACKB_V5_OPERATOR_ATTESTATION_v1.json"
+
     authority = _load(authority_path)
     source_lock = _load(source_lock_path)
+    execution_lock = _load(execution_lock_path)
+    operator_attestation = _load(operator_attestation_path)
+    orchestration_lock = _load(orchestration_lock_path)
 
     if authority.get("release_id") != "TRACKB_V5_RELEASE_AUTHORITY_v1":
         raise ReleaseAuthorityError("unexpected Track-B release authority identity")
@@ -83,14 +93,53 @@ def main() -> int:
             "materialization_lock_sha256",
             "external_source_lock_sha256",
             "requirements_lock_sha256",
+            "orchestration_lock_sha256",
+            "operator_attestation_sha256",
         }
         for field in sha_bindings:
             _require_hex(str(bindings.get(field, "")).lower(), 64, field)
         for field in ("operator_notebook_00_blob_sha1", "operator_notebook_01_blob_sha1"):
             _require_hex(str(bindings.get(field, "")).lower(), 40, field)
 
-        if _sha256(source_lock_path) != bindings["external_source_lock_sha256"]:
-            raise ReleaseAuthorityError("release authority does not bind current external-source lock bytes")
+        expected_sha = {
+            "code_attestation_sha256": _sha256(code_attestation_path),
+            "execution_lock_sha256": _sha256(execution_lock_path),
+            "materialization_lock_sha256": _sha256(materialization_lock_path),
+            "external_source_lock_sha256": _sha256(source_lock_path),
+            "requirements_lock_sha256": _sha256(requirements_lock_path),
+            "orchestration_lock_sha256": _sha256(orchestration_lock_path),
+            "operator_attestation_sha256": _sha256(operator_attestation_path),
+        }
+        mismatches = {
+            field: {"expected": expected_sha[field], "bound": str(bindings.get(field, ""))}
+            for field in expected_sha
+            if expected_sha[field] != str(bindings.get(field, ""))
+        }
+        if mismatches:
+            raise ReleaseAuthorityError(
+                f"release authority hash binding mismatch: {mismatches}"
+            )
+
+        if execution_lock.get("code_attestation_sha256") != bindings["code_attestation_sha256"]:
+            raise ReleaseAuthorityError(
+                "execution lock does not bind the same code attestation as the release"
+            )
+        if orchestration_lock.get("runtime_source_commit") != runtime:
+            raise ReleaseAuthorityError(
+                "orchestration lock runtime source differs from release authority"
+            )
+        if operator_attestation.get("runtime_source_commit") != runtime:
+            raise ReleaseAuthorityError(
+                "operator attestation runtime source differs from release authority"
+            )
+        if operator_attestation.get("release_id") != authority.get("release_id"):
+            raise ReleaseAuthorityError(
+                "operator attestation release identity mismatch"
+            )
+        if operator_attestation.get("status") != "FROZEN_PRE_RESULTS_OPERATOR_SURFACE":
+            raise ReleaseAuthorityError("operator attestation is not frozen pre-results")
+        if operator_attestation.get("scientific_change") is not False:
+            raise ReleaseAuthorityError("operator attestation must preserve frozen science")
 
         notebook_paths = authority.get("supported_operator_notebooks") or []
         if len(notebook_paths) != 2:
@@ -105,11 +154,25 @@ def main() -> int:
                 f"operator notebook blob drift: expected={expected_blobs}, observed={observed_blobs}"
             )
 
+        operator_rows = operator_attestation.get("operator_files") or []
+        operator_blobs = {
+            str(row.get("path", "")): str(row.get("git_blob_sha1", ""))
+            for row in operator_rows
+            if isinstance(row, dict)
+        }
+        for rel, observed in zip(notebook_paths, observed_blobs):
+            if operator_blobs.get(str(rel)) != observed:
+                raise ReleaseAuthorityError(
+                    f"operator attestation notebook binding mismatch: {rel}"
+                )
+
     result = {
         "status": "PASS_RELEASE_AUTHORITY_STRUCTURE",
         "release_status": authority.get("status"),
         "executable": bool(authority.get("executable")),
         "external_source_status": source_lock.get("status"),
+        "runtime_source_commit": authority.get("runtime_source_commit"),
+        "operator_attestation_status": operator_attestation.get("status"),
     }
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
