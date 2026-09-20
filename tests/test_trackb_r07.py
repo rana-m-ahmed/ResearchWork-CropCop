@@ -296,6 +296,8 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertTrue(automation["protected_claim_requires_post_qualification_exact_sha_freeze"])
         self.assertTrue(automation["qualification_must_produce_zero_protected_external_predictions"])
         self.assertTrue(automation["protected_claim_requires_matching_qualification_science_sha256"])
+        self.assertTrue(automation["qualification_science_identity_excludes_execution_timestamps"])
+        self.assertTrue(automation["qualification_science_identity_reused_for_attempt_ancestry"])
 
         drifted = dict(lock)
         drifted["automation"] = dict(automation)
@@ -524,6 +526,8 @@ class TrackBR07Tests(unittest.TestCase):
             "TRACKB_PREDICTION_BLIND_SCIENCE.json",
             "qualification_science_sha256",
             "reconstructed_science",
+            "qualification_science_sha256",
+            "TRACKB_PREDICTION_BLIND_SCIENCE.json",
         ):
             self.assertIn(token, source)
 
