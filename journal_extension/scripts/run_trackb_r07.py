@@ -1011,6 +1011,7 @@ def _science_preimage_manifest(output_root: Path, core, candidates) -> dict[str,
         "class_map_sha256": CLASS_MAP_SHA256,
         "dataset_manifest_sha256": DATASET_MANIFEST_SHA256,
         "authorized_r07_checkpoint_sha256": R07_CHECKPOINTS,
+        "final_qa_sha256": sha256_file(output_root / "TRACKB_FINAL_QA.json"),
         "candidates": {},
     }
     for candidate in candidates:
