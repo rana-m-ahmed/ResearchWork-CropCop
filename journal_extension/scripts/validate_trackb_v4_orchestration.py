@@ -137,7 +137,7 @@ def main() -> int:
     )
 
     preexec = final_text.index("PASS_PREEXECUTION_ATTACHED_TRUST")
-    bootstrap = final_text.index("bootstrap_trackb_runtime.py")
+    bootstrap = final_text.index("BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'")
     if preexec > bootstrap:
         raise ValidationError(
             "Notebook 01 must authenticate attached bytes/code before runtime bootstrap"
