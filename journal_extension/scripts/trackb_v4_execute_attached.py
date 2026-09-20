@@ -249,6 +249,66 @@ def _build_qualification_bundle(
     return destination, manifest
 
 
+def _validate_qualification_bundle(
+    *,
+    input_root: Path,
+    paired: dict,
+    authorized_sha: str,
+) -> dict:
+    manifest_path = _find_single(input_root, "TRACKB_QUALIFICATION_BUNDLE.json")
+    manifest = load_json(manifest_path)
+    if manifest.get("role") != "TRACKB_QUALIFICATION":
+        raise TrackBOpsError("attached qualification bundle role mismatch")
+    if manifest.get("status") != "PASS_IMMUTABLE_PREDICTION_BLIND_QUALIFICATION":
+        raise TrackBOpsError("attached qualification bundle is not terminal PASS")
+    if manifest.get("protected_external_prediction_count") != 0:
+        raise TrackBOpsError("qualification bundle claims protected predictions")
+    if manifest.get("v1_test_accessed") is not False:
+        raise TrackBOpsError("qualification bundle does not preserve V1-test closure")
+    if str(manifest.get("materialization_id", "")) != str(paired["materialization_id"]):
+        raise TrackBOpsError("qualification bundle materialization identity mismatch")
+    if str(manifest.get("repository_source_sha", "")) != str(paired["repository_source_sha"]):
+        raise TrackBOpsError("qualification bundle repository source identity mismatch")
+    if manifest.get("role_manifest_sha256") != paired["role_manifest_sha256"]:
+        raise TrackBOpsError("qualification bundle role-manifest binding mismatch")
+    if manifest.get("role_content_identity") != paired["role_content_identity"]:
+        raise TrackBOpsError("qualification bundle attached-input content binding mismatch")
+    if str(manifest.get("qualification_science_sha256", "")).lower() != authorized_sha:
+        raise TrackBOpsError(
+            "reviewed qualification SHA does not match the attached immutable qualification bundle"
+        )
+
+    evidence_rel = str(manifest.get("evidence_root", "")).strip()
+    evidence_root = (manifest_path.parent / evidence_rel).resolve()
+    if manifest_path.parent not in evidence_root.parents:
+        raise TrackBOpsError("qualification evidence root escapes its bundle")
+    if not evidence_root.is_dir():
+        raise TrackBOpsError("qualification evidence root is missing")
+    observed_identity = _role_content_identity(evidence_root)
+    if observed_identity != manifest.get("evidence_content_identity"):
+        raise TrackBOpsError(
+            "qualification evidence bytes differ from the published handoff identity"
+        )
+
+    required = (
+        "TRACKB_PREINFERENCE_QUALIFICATION.json",
+        "TRACKB_PREINFERENCE_QA.json",
+        "TRACKB_PREDICTION_BLIND_SCIENCE.json",
+        "TRACKB_PREDICTION_FIREWALL.json",
+    )
+    missing = [name for name in required if not (evidence_root / name).is_file()]
+    if missing:
+        raise TrackBOpsError(f"qualification bundle is incomplete: missing={missing}")
+
+    return {
+        "manifest_path": manifest_path,
+        "manifest_sha256": sha256_file(manifest_path),
+        "evidence_root": evidence_root,
+        "evidence_content_identity": observed_identity,
+        "qualification_science_sha256": authorized_sha,
+    }
+
+
 def _run_claim(
     *,
     repo_root: Path,
@@ -260,6 +320,7 @@ def _run_claim(
     authorized_sha: str,
     kaggle_owner: str,
     materialization_id: str,
+    qualification_root: Path,
 ) -> dict:
     if len(authorized_sha) != 64 or any(ch not in "0123456789abcdef" for ch in authorized_sha):
         raise TrackBOpsError("claim mode requires a 64-character reviewed qualification science SHA-256")
@@ -279,7 +340,8 @@ def _run_claim(
             "--scratch-root", str(scratch_root / "audit"),
             "--device", device,
             "--workers", "4",
-            "--mode", "all",
+            "--mode", "claim",
+            "--qualification-root", str(qualification_root),
             "--source-git-sha", source_git_sha,
             "--attempt-dataset-slug", attempt_slug,
             "--claim-lease-dataset-slug", lease_slug,
@@ -431,6 +493,12 @@ def main() -> int:
             "publication": qualification_pub,
         }
     else:
+        authorization = str(args.authorized_qualification_science_sha256).strip().lower()
+        qualification_bundle = _validate_qualification_bundle(
+            input_root=input_root,
+            paired=paired,
+            authorized_sha=authorization,
+        )
         result = _run_claim(
             repo_root=repo_root,
             input_root=input_root,
@@ -441,7 +509,14 @@ def main() -> int:
             authorized_sha=str(args.authorized_qualification_science_sha256).strip().lower(),
             kaggle_owner=args.kaggle_owner,
             materialization_id=str(paired["materialization_id"]),
+            qualification_root=Path(qualification_bundle["evidence_root"]),
         )
+        result["qualification_bundle_manifest_sha256"] = qualification_bundle[
+            "manifest_sha256"
+        ]
+        result["qualification_bundle_evidence_content_identity"] = qualification_bundle[
+            "evidence_content_identity"
+        ]
 
     receipt = {
         "schema_version": "2.0",
