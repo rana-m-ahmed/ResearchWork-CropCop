@@ -116,7 +116,11 @@ def _preflight_historical_components(
     val_samples = [row for row in rows if row[1].startswith("val/")][:32]
     dino_samples = train_samples + val_samples
     if len(train_samples) != 32 or len(val_samples) != 32:
-        raise TrackBError("historical preflight could not assemble a 64-image train/val DINO batch")
+        raise TrackBError("historical preflight could not assemble balanced train/val samples")
+    if len(dino_samples) != 64:
+        raise TrackBError(
+            f"historical preflight DINO batch-size drift: expected 64, got {len(dino_samples)}"
+        )
     orb_samples = [train_samples[0], val_samples[0]]
 
     tensors = []
