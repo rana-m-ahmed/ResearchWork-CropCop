@@ -213,6 +213,67 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         self.assertEqual(correct, [])
 
 
+    def test_historical_builder_has_exact_batch_and_output_disk_preflight(self):
+        source = (
+            ROOT / "journal_extension" / "scripts" / "build_trackb_historical_compare.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("dino_batch_probe_size", source)
+        self.assertIn("[:32]", source)
+        self.assertIn("len(dino_samples) != 64", source)
+        self.assertIn("shutil.disk_usage(output_root).free", source)
+        self.assertIn("_historical_output_budget_bytes()", source)
+        self.assertLess(
+            source.index("_preflight_historical_components("),
+            source.index("_pack_orb("),
+        )
+
+    def test_publication_releases_local_bundle_before_archive_roundtrip(self):
+        source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
+        infra_manifest = source.index(
+            'infra_manifest = load_json(infra_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")'
+        )
+        infra_delete = source.index("shutil.rmtree(infra_root, ignore_errors=True)", infra_manifest)
+        infra_verify = source.index(
+            'infra_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(',
+            infra_delete,
+        )
+        self.assertLess(infra_manifest, infra_delete)
+        self.assertLess(infra_delete, infra_verify)
+
+        external_manifest = source.index(
+            'external_manifest = load_json(external_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")'
+        )
+        external_delete = source.index(
+            "shutil.rmtree(external_root, ignore_errors=True)",
+            external_manifest,
+        )
+        external_verify = source.index(
+            'external_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(',
+            external_delete,
+        )
+        self.assertLess(external_manifest, external_delete)
+        self.assertLess(external_delete, external_verify)
+
+    def test_external_transport_probe_requires_url_checksum_and_size(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("Irish Potato source probe found invalid download URL", source)
+        self.assertIn("Irish Potato source probe found missing checksum", source)
+        self.assertIn("Irish Potato source probe found invalid declared size", source)
+        self.assertIn("GVLiD public API probe reported no positive declared payload bytes", source)
+        self.assertIn("download_urls_valid", source)
+
+    def test_archive_extraction_has_member_size_symlink_and_disk_guards(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("max_members: int = 120000", source)
+        self.assertIn("max_uncompressed_bytes: int = 20 * 1024 * 1024 * 1024", source)
+        self.assertIn("archive symlink member is not permitted", source)
+        self.assertIn("insufficient disk before archive extraction", source)
+
+
     def test_embedded_replay_authority_matches_frozen_trackb_contract(self):
         authority = ROOT / "journal_extension" / "track_b_r07" / "replay_authority"
         s1 = authority / "R07_S1_ORIGINAL_RUN_RECORD.json"
