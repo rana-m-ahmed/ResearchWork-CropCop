@@ -168,7 +168,7 @@ def main() -> int:
         raise TrackBError("Notebook 01 must scrub GitHub credentials before scientific execution")
 
     if nb01_text.index("PASS_PREEXECUTION_ATTACHED_TRUST") > nb01_text.index(
-        "bootstrap_trackb_runtime.py"
+        "BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'"
     ):
         raise TrackBError("Notebook 01 executes attached code before authenticating it")
 
