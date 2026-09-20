@@ -5,30 +5,30 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "f727c15e548def498a2ae8794a4e52e30baac2ba",
-  "preseal_operator_surface_commit": "eb9d8817755f6780d640914684f250c966b5e15a",
+  "runtime_source_commit": "fd3ba767e9f6c6b4a26b6a7216086d29153cc4ef",
+  "preseal_operator_surface_commit": "db91c82da59b13b096b3a476dc3da9eca7b7a6c6",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
     "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
-    "git_blob_sha1": "26c7b1b93a0b86715763beef2e5a08288a3b7077",
-    "sha256": "1bb5f2b1d80f4935aa1c7f626c97e76b8c696720378982f2ab7d1517767744a4"
+    "git_blob_sha1": "6af6f039422c875ee56dc26ad1cf17f431d464cd",
+    "sha256": "fc6607c077012c105072ae341764bd080693e11724666fd04613e21ca98ca690"
   },
   "operator_files": [
     {
       "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
-      "git_blob_sha1": "276fe6fe630b4e54f958fcf2a5c4c747aaf98470",
+      "git_blob_sha1": "d5a82fb1f29e374cb93e7d7df102936263e8aac3",
       "role": "READINESS_AND_IMMUTABLE_MATERIALIZATION"
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "4665391101e472d9b4e7ef15392222a60aacc2a0",
+      "git_blob_sha1": "a3ede0d389d4aa3fa2c251b4635a175e8b1fdfd7",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_GVLID_TRANSPORT_REPAIR",
-    "note": "Runtime and notebooks rebound after fail-closed GVLiD opaque-container repair; fresh exact-head QA required before execution."
+    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_FINAL_GVLID_REPAIR",
+    "note": "Final runtime, source authority, materialization authority, and notebooks rebound after observed Kaggle GVLiD opaque-provider transport failure."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
@@ -42,6 +42,9 @@
     "v1_test_reopen_forbidden": true,
     "protected_external_predictions_before_claim": 0,
     "gvlid_opaque_transport_fallback_requires_pinned_companion_commit": true,
-    "gvlid_full_3477_checksum_authority_required": true
+    "gvlid_full_3477_checksum_authority_required": true,
+    "gvlid_source_identity_authority": "MENDELEY_V5_DOI_VERSION_STABLE_MANIFEST",
+    "gvlid_byte_fallback": "PINNED_OFFICIAL_COMPANION_COMMIT_ONLY_IF_ZERO_PROVIDER_IMAGES",
+    "gvlid_partial_provider_fallback_forbidden": true
   }
 }
