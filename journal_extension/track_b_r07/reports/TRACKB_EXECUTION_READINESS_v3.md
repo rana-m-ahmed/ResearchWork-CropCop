@@ -2,7 +2,7 @@
 
 **Current gate:** **IMPLEMENTATION PASS / HOLD FOR REAL KAGGLE QUALIFICATION**
 
-The remediation implementation has passed exact-head repository QA at `64f6202dfab9d4972c14557f6506311ef5b4b614`. This report does **not** claim that Track B is closed or that protected external inference has run.
+The remediation implementation has passed exact-head repository QA at `d2796cb69daec26a94113e5909719eb353b94832`. This report does **not** claim that Track B is closed or that protected external inference has run.
 
 ## Current authority
 
@@ -40,7 +40,8 @@ Required setup:
 - GPU T4 x2;
 - Internet ON;
 - `KAGGLE_API_TOKEN`;
-- `CROPCOP_GITHUB_TOKEN`;
+
+`CROPCOP_GITHUB_TOKEN` is **not required for qualification**. It is required only for the later protected claim/publication run.
 - no manual Track-B dataset attachments;
 - no manual pip installation.
 
@@ -50,10 +51,9 @@ Persistent evidence uses `/kaggle/working/trackb_master`; heavy/raw/transient ma
 
 All relevant workflows passed at the audited implementation code head:
 
-- Track B Infrastructure QA PR — **35492138674**
-- Track B Infrastructure QA push — **35492136557**
-- Validate secondary Track-A wave — **35492138642**
-- Validate public evidence / complete CPU-safe suite — **35492138673**
+- Track B Infrastructure QA PR — **35493475660**
+- Validate secondary Track-A wave — **35493475669**
+- Validate public evidence / complete CPU-safe suite — **35493475536**
 
 ## What remains
 
