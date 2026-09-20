@@ -32,7 +32,7 @@ from cropcop_je.trackb_r07 import (
 from cropcop_je.hashing import sha256_json
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
 from cropcop_je.trackb_r07_audit import ImageAuditRecord, deterministic_representative_order, representative_manifest
-from cropcop_je.trackb_r07_ops import _checksum_matches, _classify_github_push_failure, _parse_sha256_ledger, load_kaggle_secret
+from cropcop_je.trackb_r07_ops import _checksum_matches, _classify_github_push_failure, _parse_gvlid_checksum_authority, load_kaggle_secret
 
 
 class TrackBR07Tests(unittest.TestCase):
@@ -568,19 +568,18 @@ class TrackBR07Tests(unittest.TestCase):
             self.assertTrue(_checksum_matches(path, f"sha256:{sha}"))
             self.assertFalse(_checksum_matches(path, "md5:" + "0" * 32))
 
-    def test_gvlid_checksum_ledger_parser_is_deterministic(self):
-        import tempfile
-        with tempfile.TemporaryDirectory() as td:
-            path = Path(td) / "checksums.txt"
-            h1, h2 = "1" * 64, "2" * 64
-            path.write_text(
-                f"{h1}  data/Black Rot/a.jpg\n"
-                f"data/Healthy/b.jpg,{h2}\n",
-                encoding="utf-8",
-            )
-            parsed = _parse_sha256_ledger(path)
-            self.assertEqual(parsed["data/black rot/a.jpg"], h1)
-            self.assertEqual(parsed["data/healthy/b.jpg"], h2)
+    def test_gvlid_checksum_authority_parser_is_deterministic(self):
+        path = (
+            ROOT
+            / "journal_extension"
+            / "track_b_r07"
+            / "external_authority"
+            / "gvlid_v5_checksums.csv"
+        )
+        first = _parse_gvlid_checksum_authority(path)
+        second = _parse_gvlid_checksum_authority(path)
+        self.assertEqual(first, second)
+        self.assertEqual(len(first), 3477)
 
     def test_attempt_rerun_gate_allows_only_unchanged_interrupted_attempt(self):
         digest = "a" * 64
