@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "lock_id": "TRACKB_EXTERNAL_SOURCE_LOCK_v2",
-  "status": "HOLD_PENDING_GVLID_INTEGRITY_RESOLUTION",
+  "status": "PASS_EXTERNAL_SOURCE_AUTHORITY",
   "scientific_change": false,
   "protected_external_predictions_allowed": false,
   "authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
@@ -13,15 +13,18 @@
       "provider": "MENDELEY_DATA",
       "dataset_id": "wkymf8bhcg",
       "expected_image_count": 3477,
-      "integrity_policy": "OFFICIAL_PUBLISHED_ARTIFACT_MUST_BE_CRYPTOGRAPHICALLY_BOUND_BEFORE_MATERIALIZATION",
-      "integrity_status": "UNRESOLVED",
-      "required_resolution": [
-        "resolve the authoritative published artifact/file set for version 5",
-        "bind provider file identifiers, stable filenames, sizes and published checksums where available",
-        "resolve the documented docs/checksums.txt discrepancy without bypassing integrity verification",
-        "prove one-to-one integrity coverage for all 3477 accepted source images"
-      ],
-      "materialization_permitted": false
+      "integrity_policy": "MENDELEY_V5_IMAGE_BYTES_MUST_MATCH_PINNED_OFFICIAL_COMPANION_CHECKSUM_LEDGER",
+      "integrity_status": "PASS_PINNED_OFFICIAL_COMPANION_LEDGER",
+      "required_resolution": [],
+      "materialization_permitted": true,
+      "checksum_authority": {
+        "provenance_record": "journal_extension/track_b_r07/external_authority/GVLID_V5_CHECKSUM_AUTHORITY_v1.json",
+        "vendored_ledger": "journal_extension/track_b_r07/external_authority/gvlid_v5_checksums.csv",
+        "official_repository": "MilindGayakwad/DNN",
+        "official_commit": "878a1c7098964bb52c4c4a5c30e5b53340565258",
+        "official_blob_sha1": "5c953cf0381614d8e3744737bfeed98ea1162f9c",
+        "ledger_rows": 3477
+      }
     },
     "irish_potato": {
       "role": "irish_potato",
@@ -42,7 +45,8 @@
   },
   "fail_closed": true,
   "notes": [
-    "This lock is operational/provenance hardening only and does not change the frozen Track-B scientific thresholds, mappings, seeds or evidence-grade rules.",
-    "The lock remains non-runnable until GVLiD source-integrity resolution is completed and this file is re-attested."
+    "This lock is operational/provenance hardening only and does not change frozen Track-B scientific thresholds, mappings, seeds or evidence-grade rules.",
+    "The Scientific Data article names docs/checksums.txt; the official companion repository at the pinned commit publishes docs/checksums.csv. Independent verification established exactly 3477 valid SHA-256 rows with complete one-to-one image-path coverage.",
+    "Kaggle execution uses the vendored pinned ledger and does not depend on live GitHub availability."
   ]
 }
