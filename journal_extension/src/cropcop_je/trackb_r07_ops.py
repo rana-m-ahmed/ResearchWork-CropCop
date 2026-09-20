@@ -1097,6 +1097,7 @@ def create_publication_staging(output_root: str | Path, destination: str | Path)
         "r07_family_replay.json",
         "TRACKB_PREDICTION_FIREWALL.json",
         "TRACKB_FINAL_QA.json",
+        "TRACKB_SCIENCE_MANIFEST.json",
         "TRACKB_FINAL_CLOSURE.json",
         "TRACKB_PACKAGE_MANIFEST.json",
     ):
@@ -1149,9 +1150,10 @@ def publish_public_trackb_evidence(
     if closure.get("status") != "TRACK_B_CLOSED" or qa.get("status") != "PASS":
         raise TrackBOpsError("public evidence publication requires terminal Track-B closure and QA PASS")
     closure_sha = str(closure.get("closure_sha256", ""))
-    if len(closure_sha) != 64:
-        raise TrackBOpsError("terminal closure lacks valid closure_sha256")
-    run_id = f"TB2-FINAL-{closure_sha[:16]}"
+    science_sha = str(closure.get("trackb_science_sha256", ""))
+    if len(closure_sha) != 64 or len(science_sha) != 64:
+        raise TrackBOpsError("terminal closure lacks valid closure/science SHA-256 identity")
+    run_id = f"TB3-FINAL-{science_sha[:16]}"
     with tempfile.TemporaryDirectory() as td:
         staged = create_publication_staging(output_root, Path(td) / "public")
         branch = publish_to_github_branch(
@@ -1161,7 +1163,7 @@ def publish_public_trackb_evidence(
             files=[str(p) for p in staged],
             destination_prefix="journal_extension/evidence/public/track_b",
         )
-    return {"run_id": run_id, "branch": branch, "closure_sha256": closure_sha}
+    return {"run_id": run_id, "branch": branch, "closure_sha256": closure_sha, "trackb_science_sha256": science_sha}
 
 
 def prepare_private_evidence_folder(output_root: str | Path, destination: str | Path) -> Path:
@@ -1175,6 +1177,7 @@ def prepare_private_evidence_folder(output_root: str | Path, destination: str | 
         "TRACKB_PUBLIC_EVIDENCE.zip",
         "TRACKB_PACKAGE_MANIFEST.json",
         "TRACKB_FINAL_QA.json",
+        "TRACKB_SCIENCE_MANIFEST.json",
         "TRACKB_FINAL_CLOSURE.json",
     ):
         src = output_root / name
