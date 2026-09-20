@@ -31,7 +31,7 @@
     },
     {
       "path": "journal_extension/scripts/build_trackb_historical_compare.py",
-      "git_blob_sha1": "fa4e08760d6c762e72eb43083bec8600b1bde6d3",
+      "git_blob_sha1": "28778000e2f0accf64c033a2b6aa591c88a850cd",
       "origin": "track_b_v3_remediation"
     },
     {
@@ -165,5 +165,5 @@
       "origin": "track_b_v3_remediation"
     }
   ],
-  "attestation_note": "Release-hardening re-attestation: canonical R07 metric schema, dedicated historical DINO factory root, 64-image DINO micro-smoke, output-filesystem disk preflight, bounded archive extraction, stronger external transport preflight, and low-peak publication round-trip ordering. No scientific dataset, checkpoint, mapping, threshold, seed, evidence-grade rule, or replay tolerance changed."
+  "attestation_note": "Release-hardening re-attestation: exact 64-image historical DINO preflight batch assertion, output-filesystem disk budgeting, bounded archive extraction, stronger external transport preflight, low-peak publication round-trip ordering, dedicated DINO factory root, and canonical R07 metric schema. No scientific dataset, checkpoint, mapping, threshold, seed, evidence-grade rule, or replay tolerance changed."
 }
