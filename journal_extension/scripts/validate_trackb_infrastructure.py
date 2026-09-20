@@ -52,6 +52,7 @@ def main() -> int:
     audit_module = root / "journal_extension/src/cropcop_je/trackb_r07_audit.py"
     ops_module = root / "journal_extension/src/cropcop_je/trackb_r07_ops.py"
     master_runner = root / "journal_extension/scripts/run_trackb_r07_master.py"
+    preinference_validator = root / "journal_extension/scripts/validate_trackb_preinference_qualification.py"
     runtime_bootstrap = root / "journal_extension/scripts/bootstrap_trackb_runtime.py"
     core_builder = root / "journal_extension/scripts/build_trackb_core_package.py"
     hist_builder = root / "journal_extension/scripts/build_trackb_historical_compare.py"
@@ -59,7 +60,7 @@ def main() -> int:
 
     for path in (
         authority_path, lock_path, attestation_path, final_nb, master_nb, core_nb, hist_nb, runner,
-        audit_module, ops_module, master_runner, runtime_bootstrap, core_builder, hist_builder, hist_source_prep,
+        audit_module, ops_module, master_runner, preinference_validator, runtime_bootstrap, core_builder, hist_builder, hist_source_prep,
     ):
         if not path.is_file():
             raise TrackBError(f"required Track-B infrastructure file missing: {path.relative_to(root)}")
@@ -124,9 +125,12 @@ def main() -> int:
         "run_trackb_r07_master.py",
         "bootstrap_trackb_runtime.py",
         "requirements-trackb.lock.txt",
-        "PASS_AUTOMATED_TRACK_B_COMPLETE",
+        "PASS_TRACKB_PREINFERENCE_QUALIFICATION",
+        "TRACKB_PREINFERENCE_QUALIFICATION.json",
+        "TRACKB_PREINFERENCE_QA.json",
+        "--execution-mode",
+        "qualification",
         "/kaggle/tmp/cropcop_trackb_r07",
-        "trackb_science_sha256",
     ):
         if required not in master_text:
             raise TrackBError(f"master notebook missing automation binding: {required}")
@@ -140,6 +144,8 @@ def main() -> int:
         raise TrackBError("master notebook still exposes the failed venv execution path")
     if "verify_github_repository_push_access" not in master_text:
         raise TrackBError("master notebook lacks fail-fast Git write preflight")
+    if "'--execution-mode', 'claim'" in master_text or '"--execution-mode", "claim"' in master_text:
+        raise TrackBError("operator notebook exposes protected claim mode instead of qualification mode")
     git_preflight_pos = master_text.find("verify_github_repository_push_access")
     runtime_bootstrap_pos = master_text.find("bootstrap_trackb_runtime.py")
     if min(git_preflight_pos, runtime_bootstrap_pos) < 0 or git_preflight_pos > runtime_bootstrap_pos:
@@ -243,6 +249,9 @@ def main() -> int:
         "PRIVATE_ARCHIVE_VERIFIED",
         "PUBLICATION_COMPLETE",
         "full_roundtrip=True",
+        "validate_trackb_preinference_qualification.py",
+        "PASS_TRACKB_PREINFERENCE_QUALIFICATION",
+        '"--execution-mode", choices=["qualification", "claim"], default="qualification"',
     ):
         if required not in master_runner_text:
             raise TrackBError(f"master controller missing automated operation: {required}")
@@ -319,6 +328,9 @@ def main() -> int:
         "TRACKB_SCIENCE_MANIFEST.json",
         "trackb_science_sha256",
         "_verify_zip_archive",
+        "PASS_PREDICTION_BLIND_QUALIFICATION",
+        "TRACKB_PREINFERENCE_QUALIFICATION.json",
+        'choices=["preflight", "qualification", "all"]',
     ):
         if required not in runner_text:
             raise TrackBError(f"final runner missing safe historical-package gate: {required}")
@@ -332,6 +344,27 @@ def main() -> int:
         raise TrackBError("runner regressed to an all-in-RAM candidate ORB cache")
     if "open_memmap" not in runner_text or "mmap_mode=\"r\"" not in runner_text:
         raise TrackBError("runner lacks file-backed packed candidate ORB cache")
+
+    qualification_gate = runner_text.find('if args.mode == "qualification":')
+    claim_gate = runner_text.find("claim_candidates =")
+    protected_call = runner_text.find('"gvlid_grape": _protected_inference(')
+    if min(qualification_gate, claim_gate, protected_call) < 0 or not (
+        qualification_gate < claim_gate < protected_call
+    ):
+        raise TrackBError("prediction-blind qualification does not return before protected inference")
+
+    preinference_text = preinference_validator.read_text(encoding="utf-8")
+    for required in (
+        "PASS_INDEPENDENT_PREINFERENCE_QA",
+        "protected_external_prediction_count",
+        "TRACKB_FINAL_CLOSURE.json",
+        "TRACKB_ATTEMPT_STATE.json",
+        "verify_candidate_seal",
+        "V1_TRAIN_VAL_ONLY",
+        "92744",
+    ):
+        if required not in preinference_text:
+            raise TrackBError(f"pre-inference validator missing safety check: {required}")
 
     audit_call = runner_text.find('grape = _audit_candidate(')
     second_audit_call = runner_text.find('potato = _audit_candidate(')
@@ -383,6 +416,9 @@ def main() -> int:
         "safe_historical_builder_image_count": 92744,
         "safe_historical_builder_maximum_grade": "EXT-S",
         "full_ext_i_representation_policy": "pre_test_recovered_representation_only",
+        "operator_default_mode": "qualification",
+        "independent_preinference_validator": True,
+        "protected_inference_fail_closed_until_qualification_review": True,
     }
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
