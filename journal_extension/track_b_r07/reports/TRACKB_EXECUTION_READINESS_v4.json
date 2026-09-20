@@ -18,5 +18,7 @@
     "KAGGLE_API_TOKEN"
   ],
   "protected_external_inference_authorized": false,
-  "required_next_gate": "PASS_TRACKB_INPUT_MATERIALIZATION"
+  "required_next_gate": "PASS_TRACKB_INPUT_MATERIALIZATION",
+  "runtime_snapshot_commit": "685f985483049923e25a450cbc9a1d05a705e374",
+  "dino_factory_preflight": "REQUIRED_AND_IMPLEMENTED"
 }
