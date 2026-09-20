@@ -5,7 +5,7 @@
   "scientific_authority": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "scientific_execution_lock": "TRACKB_R07_EXECUTION_LOCK_v3",
   "scientific_code_attestation": "TRACKB_CODE_ATTESTATION_v3",
-  "orchestration_implementation_commit": "066584af76704272c4ce05d0cf6795388b350f94",
+  "orchestration_implementation_commit": "cbde7382267533ec785e4dd36152681a047b9bce",
   "protected_external_predictions_allowed": false,
   "source_inputs": {
     "attachment_mode": "KAGGLE_ATTACHED_DATASETS_ONLY",
@@ -59,6 +59,27 @@
       "KAGGLE_API_TOKEN"
     ]
   },
-  "repository_snapshot_commit": "066584af76704272c4ce05d0cf6795388b350f94",
-  "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY"
+  "repository_snapshot_commit": "cbde7382267533ec785e4dd36152681a047b9bce",
+  "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY",
+  "replay_authority": {
+    "s1": "journal_extension/track_b_r07/replay_authority/R07_S1_ORIGINAL_RUN_RECORD.json",
+    "s2_s3_terminal_account_report": "journal_extension/track_b_r07/replay_authority/TRACKA_V12_K3_PUBLIC_REPORT.json",
+    "continuation_recovery": "journal_extension/scripts/recover_tracka_v12_terminal_record.py",
+    "recovery_policy": "S2/S3 run records must be cryptographically recovered and match the already-frozen Track-B run-record SHA-256 values before core construction"
+  },
+  "load_bearing_files": {
+    "journal_extension/scripts/trackb_v4_materialize.py": "fae5306d716c24468ae0c9a2802fb5546a574073",
+    "journal_extension/scripts/trackb_v4_execute_attached.py": "94205cd8afac27c76ba13a83a8ab969e9382ae68",
+    "journal_extension/scripts/validate_trackb_v4_orchestration.py": "53d04136bd0726c037586309912c1db38be8789f",
+    "journal_extension/scripts/run_trackb_r07.py": "3437c276b789d1772039a187dce1e00fcdaea23d",
+    "journal_extension/scripts/validate_trackb_preinference_qualification.py": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2",
+    "journal_extension/scripts/recover_tracka_v12_terminal_record.py": "c86c1b9bc4079bcf4051dcd71fca74034a11f2ba",
+    "journal_extension/src/cropcop_je/tracka_v12_recovery.py": "9dc7c39718e68bcf38d1873566ca4f823503615f",
+    "journal_extension/src/cropcop_je/tracka_v12.py": "b133a8554d6f688d33cf078bf5d827363e89f2e1",
+    "journal_extension/src/cropcop_je/tracka_v12_placement.py": "fbdd3a04c79a63542f9117cdc77b914093152e04",
+    "journal_extension/track_b_r07/replay_authority/R07_S1_ORIGINAL_RUN_RECORD.json": "e578f6deb815b285c2bdd955975cc5ce19b831e6",
+    "journal_extension/track_b_r07/replay_authority/TRACKA_V12_K3_PUBLIC_REPORT.json": "e40402cdf240c1bfbb88586c78b7a7bdc8ad1ec1",
+    "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json": "de622b10b3611cd8e5d9febb829e6a88cf70ac9b",
+    "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json": "e0f13839ce6632fcdac722e7ba11108b29c6c51c"
+  }
 }
