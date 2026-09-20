@@ -7,17 +7,17 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
   "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
-  "runtime_source_commit": "3f5fbd8f450ff938561a3e737ec4298fca2d7402",
+  "runtime_source_commit": "f727c15e548def498a2ae8794a4e52e30baac2ba",
   "bindings": {
-    "code_attestation_sha256": "42049f9e65090cd20773768f2187fbd9e427fcec2dc8d2d30047bc69c6addef5",
-    "execution_lock_sha256": "c061b7212207ab3e32b69d21865f7488bda1a2833b8e17f94a326d29f8a9e51e",
+    "code_attestation_sha256": "20d4780fdf4ca0fbb68506c16bb922e45167a2abbf9be4058124c9f78e124a80",
+    "execution_lock_sha256": "c9d97600fa696f13dd6c7efdac611e3a3170f9a099fdd396f133117706e5989c",
     "materialization_lock_sha256": "3d39b2c6931852de6055c3298513c7acaa1aed095248097d81978d5e52268d98",
     "external_source_lock_sha256": "5beaa5cfccd45c7e7fa941b2c62bd20a248c663710bfc7dadfcf7af683585417",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
-    "orchestration_lock_sha256": "52e35eb0170d1466b6305645c72ad13448557be37f7366879b0b91824f005f41",
-    "operator_attestation_sha256": "0efa302d787023d771cdfa692b9c6befcc02a83544fc13eb99272df88a538d43",
-    "operator_notebook_00_blob_sha1": "8825b67ca87d12381884961ce765ff4727194c52",
-    "operator_notebook_01_blob_sha1": "eea0a3b914cfcf72da025d6bec472a018c8f4899"
+    "orchestration_lock_sha256": "1bb5f2b1d80f4935aa1c7f626c97e76b8c696720378982f2ab7d1517767744a4",
+    "operator_attestation_sha256": "0b1722b1f0baca6ee6b8fe0a48414b5280b5a9ef5aef95b3b0e6a2825a04507a",
+    "operator_notebook_00_blob_sha1": "276fe6fe630b4e54f958fcf2a5c4c747aaf98470",
+    "operator_notebook_01_blob_sha1": "4665391101e472d9b4e7ef15392222a60aacc2a0"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -60,12 +60,8 @@
     "V1 test remains closed: SATISFIED"
   ],
   "seal_evidence": {
-    "deep_qa_validated_commit": "4aa156db5a9d06c8295bd6c1e83fd6d18914edc9",
-    "trackb_qa_workflow_run_id": 35529239299,
-    "trackb_qa_workflow_run_number": 531,
-    "trackb_qa_conclusion": "success",
-    "notebook_cell_compile_pass": true,
-    "targeted_safety_regression_tests_pass": true,
+    "failure_repair": "GVLiD opaque Mendeley transport produced zero recognized images; runtime now permits only a pinned official companion fallback when zero usable Mendeley images are materialized, followed by mandatory 3477-image checksum verification.",
+    "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
   }
