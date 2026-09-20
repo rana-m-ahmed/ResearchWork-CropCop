@@ -58,31 +58,81 @@ def _resolve_attached_root(input_root: Path, basename: str) -> Path:
     return candidates[0]
 
 
-def _unique_sha(root: Path, name: str, expected_sha: str) -> Path:
-    matches = [
-        path.resolve()
-        for path in root.rglob(name)
-        if path.is_file() and sha256_file(path) == expected_sha
-    ]
-    if len(matches) != 1:
-        raise TrackBOpsError(
-            f"expected one {name} with SHA-256 {expected_sha} under {root}; found {matches}"
-        )
-    return matches[0]
-
-
 def _find_v1(root: Path) -> tuple[Path, Path, Path]:
-    manifest = _unique_sha(root, "final_manifest.csv", DATASET_MANIFEST_SHA256)
-    class_map = _unique_sha(root, "class_to_idx.json", CLASS_MAP_SHA256)
-    roots = []
-    for parent in (manifest.parent.parent, manifest.parent, manifest.parent.parent.parent):
-        image_root = parent / "dataset"
-        if (image_root / "train").is_dir() and (image_root / "val").is_dir():
-            roots.append(image_root.resolve())
-    roots = list(dict.fromkeys(roots))
-    if len(roots) != 1:
-        raise TrackBOpsError(f"could not resolve unique frozen Final-V1 image root: {roots}")
-    return manifest, class_map, roots[0]
+    manifest_matches = [
+        path.resolve()
+        for path in root.rglob("final_manifest.csv")
+        if path.is_file() and sha256_file(path) == DATASET_MANIFEST_SHA256
+    ]
+    class_matches = [
+        path.resolve()
+        for path in root.rglob("class_to_idx.json")
+        if path.is_file() and sha256_file(path) == CLASS_MAP_SHA256
+    ]
+
+    resolved: list[tuple[Path, Path, Path]] = []
+    diagnostics: list[dict[str, object]] = []
+    for manifest in sorted(manifest_matches):
+        local_class_maps = sorted(
+            path for path in class_matches if path.parent == manifest.parent
+        )
+        roots: list[Path] = []
+        for parent in (
+            manifest.parent.parent,
+            manifest.parent,
+            manifest.parent.parent.parent,
+        ):
+            image_root = parent / "dataset"
+            if (image_root / "train").is_dir() and (image_root / "val").is_dir():
+                roots.append(image_root.resolve())
+        roots = list(dict.fromkeys(roots))
+        diagnostics.append({
+            "manifest": str(manifest),
+            "same_directory_class_maps": [str(path) for path in local_class_maps],
+            "image_roots": [str(path) for path in roots],
+        })
+        if len(local_class_maps) == 1 and len(roots) == 1:
+            resolved.append((manifest, local_class_maps[0], roots[0]))
+
+    unique: list[tuple[Path, Path, Path]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for manifest, class_map, image_root in resolved:
+        key = (str(manifest), str(class_map), str(image_root))
+        if key not in seen:
+            seen.add(key)
+            unique.append((manifest, class_map, image_root))
+
+    if len(unique) != 1:
+        raise TrackBOpsError(
+            "could not resolve exactly one image-backed frozen Final-V1 authority pair; "
+            + json.dumps({
+                "manifest_hash_matches": [str(path) for path in manifest_matches],
+                "class_map_hash_matches": [str(path) for path in class_matches],
+                "structural_candidates": diagnostics,
+            }, sort_keys=True)
+        )
+    return unique[0]
+
+
+def _prepare_final_v1_core_view(source_root: Path, view_root: Path) -> Path:
+    manifest, class_map, image_root = _find_v1(source_root)
+    if view_root.exists():
+        shutil.rmtree(view_root)
+    audit = view_root / "audit"
+    audit.mkdir(parents=True, exist_ok=False)
+    shutil.copy2(manifest, audit / "final_manifest.csv")
+    shutil.copy2(class_map, audit / "class_to_idx.json")
+
+    dataset_link = view_root / "dataset"
+    dataset_link.symlink_to(image_root, target_is_directory=True)
+
+    if sha256_file(audit / "final_manifest.csv") != DATASET_MANIFEST_SHA256:
+        raise TrackBOpsError("canonical Final-V1 view manifest hash drift")
+    if sha256_file(audit / "class_to_idx.json") != CLASS_MAP_SHA256:
+        raise TrackBOpsError("canonical Final-V1 view class-map hash drift")
+    if not (dataset_link / "train").is_dir() or not (dataset_link / "val").is_dir():
+        raise TrackBOpsError("canonical Final-V1 view does not resolve train/val image roots")
+    return view_root
 
 
 def _resolve_core_file(core_root: Path, manifest: dict, key: str) -> Path:
@@ -100,13 +150,18 @@ def _resolve_core_file(core_root: Path, manifest: dict, key: str) -> Path:
     return path
 
 
-def _run_core_builder(repo_root: Path, mounts: dict[str, Path], core_root: Path) -> None:
+def _run_core_builder(
+    repo_root: Path,
+    mounts: dict[str, Path],
+    core_root: Path,
+    final_v1_view_root: Path,
+) -> None:
     run_checked(
         [
             sys.executable,
             str(repo_root / "journal_extension/scripts/build_trackb_core_package.py"),
             "--repo-root", str(repo_root),
-            "--final-v1-root", str(mounts["final_v1"]),
+            "--final-v1-root", str(final_v1_view_root),
             "--r07-s1-root", str(mounts["r07_s1"]),
             "--r07-s2-root", str(mounts["r07_s2"]),
             "--r07-s3-root", str(mounts["r07_s3"]),
@@ -357,10 +412,17 @@ def main() -> int:
     potato_root = external_root / "irish_potato"
     infra_root.mkdir(parents=True)
     external_root.mkdir(parents=True)
-    _run_core_builder(repo_root, mounts, core_root)
+
+    source_views = output_root / "_source_views"
+    final_v1_view = _prepare_final_v1_core_view(
+        mounts["final_v1"],
+        source_views / "final_v1",
+    )
+    _run_core_builder(repo_root, mounts, core_root, final_v1_view)
 
     stage("2 :: safe historical comparison")
     _run_historical_builder(repo_root, mounts["final_v1"], core_root, historical_root, args.device)
+    shutil.rmtree(source_views, ignore_errors=True)
 
     stage("3 :: authoritative external cohorts")
     lineage_review = repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json"
