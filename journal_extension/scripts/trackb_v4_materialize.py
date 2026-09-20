@@ -13,6 +13,7 @@ from pathlib import Path
 import _bootstrap  # noqa: F401
 
 from cropcop_je.hashing import sha256_file, sha256_json
+from cropcop_je.g1 import validate_teacher_factory_bundle
 from cropcop_je.trackb_r07 import (
     CLASS_MAP_SHA256,
     DATASET_MANIFEST_SHA256,
@@ -378,7 +379,7 @@ def _prepare_r07_source_views(
     return views, evidence
 
 
-def _prequalify_dino(root: Path) -> dict[str, object]:
+def _prequalify_dino(root: Path, *, repo_root: Path) -> dict[str, object]:
     checkpoint = _find_exact_file_by_sha(
         root,
         expected_sha256=DINO_AUDIT_SHA256,
@@ -390,11 +391,30 @@ def _prequalify_dino(root: Path) -> dict[str, object]:
         suffixes={".json"},
         max_bytes=16 * 1024 * 1024,
     )
+    factory_manifest = load_json(factory)
+    factory_source_root = (repo_root / "journal_extension" / "teacher_factory").resolve()
+    if not factory_source_root.is_dir():
+        raise TrackBOpsError(f"frozen DINO teacher factory source root missing: {factory_source_root}")
+    entrypoint = str(factory_manifest.get("entrypoint", "")).strip()
+    if not entrypoint or ":" not in entrypoint:
+        raise TrackBOpsError("DINO factory manifest lacks a valid entrypoint")
+    errors = validate_teacher_factory_bundle(
+        factory_manifest,
+        source_root=factory_source_root,
+        expected_entrypoint=entrypoint,
+    )
+    if errors:
+        raise TrackBOpsError(
+            "DINO teacher factory source qualification failed: " + "; ".join(errors)
+        )
     return {
         "checkpoint_sha256": sha256_file(checkpoint),
         "checkpoint_source_path": str(checkpoint),
         "factory_manifest_sha256": sha256_file(factory),
         "factory_manifest_source_path": str(factory),
+        "factory_source_root": str(factory_source_root),
+        "factory_entrypoint": entrypoint,
+        "factory_source_validation": "PASS",
     }
 
 
@@ -715,7 +735,7 @@ def main() -> int:
         source_views / "final_v1",
     )
     r07_views, r07_evidence = _prepare_r07_source_views(repo_root, mounts, source_views)
-    dino_evidence = _prequalify_dino(mounts["dino_bundle"])
+    dino_evidence = _prequalify_dino(mounts["dino_bundle"], repo_root=repo_root)
     source_qualification_path = _write_source_qualification(
         output_root,
         final_v1=final_v1_authority,
