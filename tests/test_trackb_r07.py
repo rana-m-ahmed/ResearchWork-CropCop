@@ -610,6 +610,39 @@ class TrackBR07Tests(unittest.TestCase):
                         current_science_preimage_sha256=digest,
                     )
 
+    def test_v5_deterministic_orb_ransac_contract_is_source_locked(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_audit.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("_CV2_RANSAC_LOCK", source)
+        self.assertIn("with _CV2_RANSAC_LOCK:", source)
+        self.assertIn("cv2.setRNGSeed(int(rng_seed) & 0x7FFFFFFF)", source)
+        self.assertIn("cv2.findHomography(", source)
+
+    def test_v5_time_budget_guards_cover_qualification_claim_and_packaging(self):
+        source = (
+            ROOT / "journal_extension" / "scripts" / "run_trackb_r07.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("def _require_remaining_time(", source)
+        self.assertIn('required_seconds=5 * 3600', source)
+        self.assertIn('stage_name="prediction-blind qualification"', source)
+        self.assertIn('required_seconds=2 * 3600', source)
+        self.assertIn('stage_name="protected claim"', source)
+        self.assertIn('required_seconds=45 * 60', source)
+        self.assertIn('stage_name="claim evidence packaging"', source)
+
+    def test_v5_capacity_preflight_enforces_t4x2_vram_and_scratch(self):
+        source = (
+            ROOT / "journal_extension" / "scripts" / "run_trackb_r07.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("def _preflight_kaggle_capacity(", source)
+        self.assertIn("device_count < 2", source)
+        self.assertIn('"T4" not in name.upper()', source)
+        self.assertIn("min_total_vram = 12 * 1024**3", source)
+        self.assertIn("min_free_vram = 8 * 1024**3", source)
+        self.assertIn("shutil.disk_usage(scratch_root).free", source)
+        self.assertIn("expected_external_images=0 if args.mode == \"claim\" else 3477 + 58709", source)
+
     def test_bootstrap_is_reproducible_and_shared_across_seeds(self):
         rows = []
         for i in range(12):
