@@ -1,10 +1,6 @@
 name: Track B Infrastructure QA
 
 on:
-  push:
-    branches:
-      - trackb-r07-infrastructure-20260919
-      - trackb-r07-remediation-v3-20260920
   pull_request:
     branches:
       - trackb-r07-infrastructure-20260919
