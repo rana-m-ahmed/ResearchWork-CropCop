@@ -13,7 +13,16 @@ from pathlib import Path
 import _bootstrap  # noqa: F401
 
 from cropcop_je.hashing import sha256_file, sha256_json
-from cropcop_je.trackb_r07 import CLASS_MAP_SHA256, DATASET_MANIFEST_SHA256, TrackBError, load_json
+from cropcop_je.trackb_r07 import (
+    CLASS_MAP_SHA256,
+    DATASET_MANIFEST_SHA256,
+    DINO_AUDIT_SHA256,
+    DINO_FACTORY_MANIFEST_SHA256,
+    R07_CHECKPOINTS,
+    R07_RUN_RECORDS,
+    TrackBError,
+    load_json,
+)
 from cropcop_je.trackb_r07_ops import (
     TrackBOpsError,
     acquire_gvlid_v5,
@@ -135,6 +144,273 @@ def _prepare_final_v1_core_view(source_root: Path, view_root: Path) -> Path:
     return view_root
 
 
+
+def _find_exact_file_by_sha(
+    root: Path,
+    *,
+    expected_sha256: str,
+    suffixes: set[str] | None = None,
+    max_bytes: int | None = None,
+) -> Path:
+    matches: list[Path] = []
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        if suffixes is not None and path.suffix.lower() not in suffixes:
+            continue
+        try:
+            size = path.stat().st_size
+        except OSError:
+            continue
+        if max_bytes is not None and size > max_bytes:
+            continue
+        if sha256_file(path) == expected_sha256:
+            matches.append(path.resolve())
+    matches = list(dict.fromkeys(matches))
+    if len(matches) != 1:
+        raise TrackBOpsError(
+            f"expected exactly one file with SHA-256 {expected_sha256} under {root}; "
+            f"found {[str(path) for path in matches]}"
+        )
+    return matches[0]
+
+
+def _selected_checkpoint_from_index(root: Path, expected_sha256: str) -> tuple[Path, Path]:
+    candidates: list[tuple[Path, Path]] = []
+    for index_path in sorted(root.rglob("checkpoint_index.json")):
+        if not index_path.is_file():
+            continue
+        try:
+            payload = load_json(index_path)
+        except Exception:
+            continue
+        selected = payload.get("selected")
+        if not isinstance(selected, dict):
+            continue
+        if str(selected.get("sha256", "")) != expected_sha256:
+            continue
+        rel = str(selected.get("relative_path", "")).strip()
+        if not rel:
+            continue
+        selected_path = (index_path.parent / rel).resolve()
+        if not selected_path.is_file():
+            continue
+        if sha256_file(selected_path) != expected_sha256:
+            continue
+        candidates.append((index_path.parent.resolve(), selected_path))
+    unique: list[tuple[Path, Path]] = []
+    seen: set[tuple[str, str]] = set()
+    for root_path, selected_path in candidates:
+        key = (str(root_path), str(selected_path))
+        if key not in seen:
+            seen.add(key)
+            unique.append((root_path, selected_path))
+    if len(unique) != 1:
+        raise TrackBOpsError(
+            f"expected exactly one checkpoint_index.json binding selected checkpoint "
+            f"{expected_sha256} under {root}; found "
+            f"{[(str(a), str(b)) for a, b in unique]}"
+        )
+    return unique[0]
+
+
+def _symlink_file(src: Path, dst: Path) -> None:
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists() or dst.is_symlink():
+        dst.unlink()
+    dst.symlink_to(src.resolve())
+
+
+def _verify_run_record_contract(path: Path, seed: str) -> dict:
+    observed_sha = sha256_file(path)
+    expected = R07_RUN_RECORDS[seed]
+    if observed_sha != expected["sha256"]:
+        raise TrackBOpsError(
+            f"R07 {seed} run-record SHA mismatch: expected {expected['sha256']}, got {observed_sha}"
+        )
+    record = load_json(path)
+    if str(record.get("run_id", "")) != expected["run_id"]:
+        raise TrackBOpsError(f"R07 {seed} run-record ID mismatch")
+    selected_sha = (
+        ((record.get("artifact_locators") or {}).get("selected_checkpoint") or {}).get("sha256")
+        or (record.get("result_summary") or {}).get("selected_checkpoint_sha256")
+        or record.get("selected_checkpoint_sha256")
+    )
+    if str(selected_sha) != R07_CHECKPOINTS[seed]:
+        raise TrackBOpsError(f"R07 {seed} run record does not bind the frozen checkpoint")
+    selected_metrics = (record.get("result_summary") or {}).get("selected_metrics") or {}
+    required_metrics = {
+        "validation_accuracy",
+        "validation_balanced_accuracy",
+        "validation_macro_f1",
+        "validation_nll",
+    }
+    if not required_metrics.issubset(selected_metrics):
+        raise TrackBOpsError(
+            f"R07 {seed} run record lacks frozen replay metrics: "
+            f"{sorted(required_metrics.difference(selected_metrics))}"
+        )
+    return record
+
+
+def _prepare_r07_source_views(
+    repo_root: Path,
+    mounts: dict[str, Path],
+    source_views: Path,
+) -> tuple[dict[str, Path], dict[str, object]]:
+    authority_root = repo_root / "journal_extension/track_b_r07/replay_authority"
+    s1_record = authority_root / "R07_S1_ORIGINAL_RUN_RECORD.json"
+    k3_report = authority_root / "TRACKA_V12_K3_PUBLIC_REPORT.json"
+    if not s1_record.is_file() or not k3_report.is_file():
+        raise TrackBOpsError("Track-B replay-authority files are missing from the frozen repository snapshot")
+
+    _verify_run_record_contract(s1_record, "S1")
+    k3 = load_json(k3_report)
+    if (
+        k3.get("status") != "PASS"
+        or k3.get("science_complete") is not True
+        or k3.get("science_source_sha") != "56023042e57758591df9babb3438f191dbe10312"
+        or k3.get("science_authorization_sha256") != "58d65a9c9f0c06222c00541feca9b2aaa005ebda850d2261d4df3e0e1fe7fbb7"
+        or k3.get("scheduler_freeze_sha256") != "7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787"
+    ):
+        raise TrackBOpsError("frozen K3 terminal account report identity/status mismatch")
+
+    views: dict[str, Path] = {}
+    evidence: dict[str, object] = {}
+
+    s1_checkpoint = _find_exact_file_by_sha(
+        mounts["r07_s1"],
+        expected_sha256=R07_CHECKPOINTS["S1"],
+        suffixes={".pt", ".pth", ".ckpt", ".bin", ".safetensors", ""},
+    )
+    s1_view = source_views / "r07_s1"
+    s1_view.mkdir(parents=True, exist_ok=False)
+    _symlink_file(s1_checkpoint, s1_view / "selected_checkpoint.pt")
+    shutil.copy2(s1_record, s1_view / "run_record.json")
+    views["r07_s1"] = s1_view
+    evidence["S1"] = {
+        "record_kind": "ORIGINAL_PUBLIC_RUN_RECORD",
+        "run_record_sha256": sha256_file(s1_view / "run_record.json"),
+        "run_id": R07_RUN_RECORDS["S1"]["run_id"],
+        "checkpoint_sha256": sha256_file(s1_checkpoint),
+        "checkpoint_source_path": str(s1_checkpoint),
+    }
+
+    continuation = {
+        "S2": {
+            "mount": mounts["r07_s2"],
+            "experiment_id": "R07-CNXTT-CONTEXT-S2",
+            "durable_locator": "sabahatabbas/cropcop-r07-cnxtt-context-s2-abce1197-56023042",
+        },
+        "S3": {
+            "mount": mounts["r07_s3"],
+            "experiment_id": "R07-CNXTT-CONTEXT-S3",
+            "durable_locator": "sabahatabbas/cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
+        },
+    }
+
+    recovery_script = repo_root / "journal_extension/scripts/recover_tracka_v12_terminal_record.py"
+    for seed, spec in continuation.items():
+        checkpoint_root, selected_checkpoint = _selected_checkpoint_from_index(
+            spec["mount"], R07_CHECKPOINTS[seed]
+        )
+        recovery_out = source_views / "_recovery" / seed.lower()
+        run_checked(
+            [
+                sys.executable,
+                str(recovery_script),
+                "--repo-root", str(repo_root),
+                "--experiment-id", spec["experiment_id"],
+                "--run-id", R07_RUN_RECORDS[seed]["run_id"],
+                "--account-report", str(k3_report),
+                "--checkpoint-root", str(checkpoint_root),
+                "--durable-store-locator", spec["durable_locator"],
+                "--output-dir", str(recovery_out),
+            ],
+            cwd=repo_root,
+            timeout=1800,
+        )
+        recovered = recovery_out / "RECOVERED_TERMINAL_RUN_RECORD.json"
+        certificate = recovery_out / "TERMINAL_RECOVERY_CERTIFICATE.json"
+        if not recovered.is_file() or not certificate.is_file():
+            raise TrackBOpsError(f"R07 {seed} terminal recovery did not produce required artifacts")
+        _verify_run_record_contract(recovered, seed)
+        cert = load_json(certificate)
+        if (
+            cert.get("status") != "PASS"
+            or cert.get("experiment_id") != spec["experiment_id"]
+            or cert.get("selected_checkpoint_sha256") != R07_CHECKPOINTS[seed]
+            or cert.get("recovered_run_record_sha256") != R07_RUN_RECORDS[seed]["sha256"]
+            or cert.get("scientific_training_reperformed") is not False
+            or cert.get("protected_surface_opened") is not False
+        ):
+            raise TrackBOpsError(f"R07 {seed} terminal recovery certificate mismatch")
+
+        view = source_views / f"r07_{seed.lower()}"
+        view.mkdir(parents=True, exist_ok=False)
+        _symlink_file(selected_checkpoint, view / "selected_checkpoint.pt")
+        shutil.copy2(recovered, view / "run_record.json")
+        views[f"r07_{seed.lower()}"] = view
+        evidence[seed] = {
+            "record_kind": "CRYPTOGRAPHIC_TERMINAL_RECORD_RECOVERY",
+            "run_record_sha256": sha256_file(view / "run_record.json"),
+            "run_id": R07_RUN_RECORDS[seed]["run_id"],
+            "checkpoint_sha256": sha256_file(selected_checkpoint),
+            "checkpoint_index_root": str(checkpoint_root),
+            "recovery_certificate_sha256": sha256_file(certificate),
+        }
+
+    return views, evidence
+
+
+def _prequalify_dino(root: Path) -> dict[str, object]:
+    checkpoint = _find_exact_file_by_sha(
+        root,
+        expected_sha256=DINO_AUDIT_SHA256,
+        suffixes={".pt", ".pth", ".ckpt", ".bin", ".safetensors", ""},
+    )
+    factory = _find_exact_file_by_sha(
+        root,
+        expected_sha256=DINO_FACTORY_MANIFEST_SHA256,
+        suffixes={".json"},
+        max_bytes=16 * 1024 * 1024,
+    )
+    return {
+        "checkpoint_sha256": sha256_file(checkpoint),
+        "checkpoint_source_path": str(checkpoint),
+        "factory_manifest_sha256": sha256_file(factory),
+        "factory_manifest_source_path": str(factory),
+    }
+
+
+def _write_source_qualification(
+    output_root: Path,
+    *,
+    final_v1: tuple[Path, Path, Path],
+    r07: dict[str, object],
+    dino: dict[str, object],
+) -> Path:
+    manifest, class_map, image_root = final_v1
+    payload = {
+        "schema_version": "1.0",
+        "status": "PASS_TRACKB_SOURCE_QUALIFICATION",
+        "protected_external_prediction_count": 0,
+        "v1_test_accessed": False,
+        "final_v1": {
+            "manifest_sha256": sha256_file(manifest),
+            "class_map_sha256": sha256_file(class_map),
+            "image_root": str(image_root),
+            "train_present": (image_root / "train").is_dir(),
+            "val_present": (image_root / "val").is_dir(),
+        },
+        "r07": r07,
+        "dino": dino,
+    }
+    path = output_root / "TRACKB_SOURCE_QUALIFICATION.json"
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
 def _resolve_core_file(core_root: Path, manifest: dict, key: str) -> Path:
     row = (manifest.get("files") or {}).get(key)
     if not isinstance(row, dict):
@@ -155,6 +431,7 @@ def _run_core_builder(
     mounts: dict[str, Path],
     core_root: Path,
     final_v1_view_root: Path,
+    r07_views: dict[str, Path],
 ) -> None:
     run_checked(
         [
@@ -162,9 +439,9 @@ def _run_core_builder(
             str(repo_root / "journal_extension/scripts/build_trackb_core_package.py"),
             "--repo-root", str(repo_root),
             "--final-v1-root", str(final_v1_view_root),
-            "--r07-s1-root", str(mounts["r07_s1"]),
-            "--r07-s2-root", str(mounts["r07_s2"]),
-            "--r07-s3-root", str(mounts["r07_s3"]),
+            "--r07-s1-root", str(r07_views["r07_s1"]),
+            "--r07-s2-root", str(r07_views["r07_s2"]),
+            "--r07-s3-root", str(r07_views["r07_s3"]),
             "--dino-bundle-root", str(mounts["dino_bundle"]),
             "--output-root", str(core_root),
         ],
@@ -403,6 +680,23 @@ def main() -> int:
     }
     print(json.dumps({key: str(value) for key, value in mounts.items()}, indent=2, sort_keys=True))
 
+    stage("0.5 :: complete source qualification")
+    source_views = output_root / "_source_views"
+    final_v1_authority = _find_v1(mounts["final_v1"])
+    final_v1_view = _prepare_final_v1_core_view(
+        mounts["final_v1"],
+        source_views / "final_v1",
+    )
+    r07_views, r07_evidence = _prepare_r07_source_views(repo_root, mounts, source_views)
+    dino_evidence = _prequalify_dino(mounts["dino_bundle"])
+    source_qualification_path = _write_source_qualification(
+        output_root,
+        final_v1=final_v1_authority,
+        r07=r07_evidence,
+        dino=dino_evidence,
+    )
+    print(source_qualification_path.read_text(encoding="utf-8"), flush=True)
+
     stage("1 :: immutable core")
     infra_root = output_root / "infrastructure_bundle"
     external_root = output_root / "external_bundle"
@@ -412,13 +706,7 @@ def main() -> int:
     potato_root = external_root / "irish_potato"
     infra_root.mkdir(parents=True)
     external_root.mkdir(parents=True)
-
-    source_views = output_root / "_source_views"
-    final_v1_view = _prepare_final_v1_core_view(
-        mounts["final_v1"],
-        source_views / "final_v1",
-    )
-    _run_core_builder(repo_root, mounts, core_root, final_v1_view)
+    _run_core_builder(repo_root, mounts, core_root, final_v1_view, r07_views)
 
     stage("2 :: safe historical comparison")
     _run_historical_builder(repo_root, mounts["final_v1"], core_root, historical_root, args.device)
@@ -445,6 +733,7 @@ def main() -> int:
         "protected_external_prediction_count": 0,
         "v1_test_accessed": False,
         "materialization": pairing,
+        "source_qualification_sha256": sha256_file(source_qualification_path),
         "publication": None,
     }
 
