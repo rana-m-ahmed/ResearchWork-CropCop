@@ -14,6 +14,7 @@ import _bootstrap  # noqa: F401
 
 from cropcop_je.hashing import sha256_file, sha256_json
 from cropcop_je.g1 import validate_teacher_factory_bundle
+from cropcop_je.models import load_exact_teacher
 from cropcop_je.trackb_r07 import (
     CLASS_MAP_SHA256,
     DATASET_MANIFEST_SHA256,
@@ -407,6 +408,26 @@ def _prequalify_dino(root: Path, *, repo_root: Path) -> dict[str, object]:
         raise TrackBOpsError(
             "DINO teacher factory source qualification failed: " + "; ".join(errors)
         )
+
+    try:
+        teacher, teacher_identity = load_exact_teacher(
+            checkpoint,
+            factory_spec=entrypoint,
+            factory_bundle_manifest=factory,
+            repo_root=factory_source_root,
+            factory_source_root=factory_source_root,
+        )
+    except Exception as exc:
+        raise TrackBOpsError(
+            f"DINO teacher preflight instantiation failed: {type(exc).__name__}: {exc}"
+        ) from exc
+    try:
+        parameter_count = sum(int(p.numel()) for p in teacher.parameters())
+    finally:
+        del teacher
+    if parameter_count <= 0:
+        raise TrackBOpsError("DINO teacher preflight produced a model with no parameters")
+
     return {
         "checkpoint_sha256": sha256_file(checkpoint),
         "checkpoint_source_path": str(checkpoint),
@@ -415,6 +436,9 @@ def _prequalify_dino(root: Path, *, repo_root: Path) -> dict[str, object]:
         "factory_source_root": str(factory_source_root),
         "factory_entrypoint": entrypoint,
         "factory_source_validation": "PASS",
+        "teacher_instantiation": "PASS",
+        "teacher_parameter_count": parameter_count,
+        "teacher_bundle_sha256": str(teacher_identity.get("bundle_sha256", "")),
     }
 
 
