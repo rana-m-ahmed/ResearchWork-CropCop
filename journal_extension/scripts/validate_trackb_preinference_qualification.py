@@ -108,6 +108,14 @@ def main() -> int:
     inference_root = output_root / "inference"
     if inference_root.exists() and any(p.is_file() for p in inference_root.rglob("*")):
         raise TrackBError("protected inference files exist in prediction-blind qualification output")
+    unexpected_prediction_files = [
+        p for p in output_root.rglob("predictions.jsonl") if p.is_file()
+    ]
+    if unexpected_prediction_files:
+        raise TrackBError(
+            "prediction files exist outside the permitted zero-prediction qualification surface: "
+            + ", ".join(str(p.relative_to(output_root)) for p in unexpected_prediction_files)
+        )
     forbidden_terminal = [
         output_root / "TRACKB_FINAL_CLOSURE.json",
         output_root / "TRACKB_FINAL_QA.json",
@@ -123,6 +131,7 @@ def main() -> int:
         )
 
     candidate_qa = {}
+    role_by_candidate = {"gvlid_grape": "gvlid_v5", "irish_potato": "irish_potato"}
     for cid in ("gvlid_grape", "irish_potato"):
         expected = (qualification.get("candidates") or {}).get(cid)
         if not isinstance(expected, dict):
@@ -133,6 +142,19 @@ def main() -> int:
         verify_candidate_seal(seal)
         if seal["seal_sha256"] != expected["seal_sha256"]:
             raise TrackBError(f"{cid}: seal identity mismatch")
+
+        bundle = inputs[role_by_candidate[cid]]
+        observed_input_manifest_sha = sha256_file(bundle.manifest_path)
+        if observed_input_manifest_sha != str(seal["candidate_input_manifest_sha256"]):
+            raise TrackBError(f"{cid}: candidate input manifest differs from seal")
+        if observed_input_manifest_sha != str(expected["candidate_input_manifest_sha256"]):
+            raise TrackBError(f"{cid}: candidate input manifest differs from qualification")
+        source_metadata = resolve_bundle_file(bundle, "source_metadata_record")
+        observed_source_metadata_sha = sha256_file(source_metadata)
+        if observed_source_metadata_sha != str(seal["source_metadata_record_sha256"]):
+            raise TrackBError(f"{cid}: source metadata differs from seal")
+        if observed_source_metadata_sha != str(expected["source_metadata_record_sha256"]):
+            raise TrackBError(f"{cid}: source metadata differs from qualification")
 
         bindings = {
             "source_manifest_sha256": root / "raw_manifest.csv",
@@ -157,8 +179,14 @@ def main() -> int:
             raise TrackBError(f"{cid}: family support does not independently recompute")
         if seal["grade"] != expected["grade"] or seal["claim_mode"] != expected["claim_mode"]:
             raise TrackBError(f"{cid}: terminal grade/claim-mode mismatch")
+        accepted_rows = _read_jsonl(root / "accepted_historical_edges.jsonl")
+        if len(accepted_rows) != int(seal["accepted_historical_link_count"]):
+            raise TrackBError(f"{cid}: accepted historical-edge ledger count does not match seal")
         if int(seal["accepted_historical_link_count"]) != int(expected["accepted_historical_link_count"]):
             raise TrackBError(f"{cid}: historical-link count mismatch")
+        rep_ids = [str(row["representative_row_id"]) for row in reps]
+        if len(rep_ids) != len(set(rep_ids)):
+            raise TrackBError(f"{cid}: duplicate representative IDs in sealed qualification surface")
 
         candidate_qa[cid] = {
             "seal_sha256": seal["seal_sha256"],
