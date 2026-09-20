@@ -291,6 +291,10 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertEqual(automation["github_publication_retry_attempts"], 4)
         self.assertEqual(automation["private_kaggle_publication_retry_attempts"], 4)
         self.assertTrue(automation["github_publication_failure_preserves_scientific_closure"])
+        self.assertEqual(automation["operator_default_mode"], "qualification")
+        self.assertTrue(automation["independent_preinference_qa_required"])
+        self.assertTrue(automation["protected_claim_requires_post_qualification_exact_sha_freeze"])
+        self.assertTrue(automation["qualification_must_produce_zero_protected_external_predictions"])
 
         drifted = dict(lock)
         drifted["automation"] = dict(automation)
@@ -465,6 +469,37 @@ class TrackBR07Tests(unittest.TestCase):
         drifted["external_family_order_seed"] = 1
         with self.assertRaises(TrackBError):
             validate_execution_lock(drifted)
+
+    def test_operator_sources_fail_closed_to_qualification(self):
+        master = (ROOT / "journal_extension" / "scripts" / "run_trackb_r07_master.py").read_text(encoding="utf-8")
+        runner = (ROOT / "journal_extension" / "scripts" / "run_trackb_r07.py").read_text(encoding="utf-8")
+        notebook = (ROOT / "journal_extension" / "kaggle" / "trackb_r07_master.ipynb").read_text(encoding="utf-8")
+        self.assertIn('choices=["qualification", "claim"], default="qualification"', master)
+        self.assertIn('PASS_TRACKB_PREINFERENCE_QUALIFICATION', master)
+        self.assertIn('validate_trackb_preinference_qualification.py', master)
+        self.assertIn('choices=["preflight", "qualification", "all"]', runner)
+        self.assertLess(
+            runner.index('if args.mode == "qualification":'),
+            runner.index("claim_candidates ="),
+        )
+        self.assertIn("--execution-mode", notebook)
+        self.assertIn("qualification", notebook)
+        self.assertIn("TRACKB_PREINFERENCE_QA.json", notebook)
+        self.assertNotIn("PASS_AUTOMATED_TRACK_B_COMPLETE", notebook)
+
+    def test_preinference_validator_forbids_claim_artifacts(self):
+        source = (
+            ROOT / "journal_extension" / "scripts" / "validate_trackb_preinference_qualification.py"
+        ).read_text(encoding="utf-8")
+        for token in (
+            "TRACKB_FINAL_CLOSURE.json",
+            "TRACKB_FINAL_QA.json",
+            "TRACKB_ATTEMPT_STATE.json",
+            "protected_external_prediction_count",
+            "PASS_INDEPENDENT_PREINFERENCE_QA",
+            "verify_candidate_seal",
+        ):
+            self.assertIn(token, source)
 
     def test_seeded_representative_order_is_traversal_invariant(self):
         rows = [
