@@ -10,8 +10,8 @@ from typing import Any, Iterable
 
 from .hashing import require_sha256, sha256_file, sha256_json
 
-AUTHORITY_ID = "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v2"
-EXECUTION_LOCK_ID = "TRACKB_R07_EXECUTION_LOCK_v2"
+AUTHORITY_ID = "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3"
+EXECUTION_LOCK_ID = "TRACKB_R07_EXECUTION_LOCK_v3"
 TRACK_A_CLOSURE_COMMIT = "604aafd51e20e70098ce4af647e90c8ff558a9e8"
 TRACK_A_FINAL_AUDIT_SELF_HASH = "1c7d98fa47a12ae6eaa53e1c6e91b4e6eef2d04bb717c2d58c7ae2ebae2b51c6"
 DATASET_MANIFEST_SHA256 = "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2"
@@ -86,6 +86,96 @@ class InputBundle:
     manifest: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class TrackBAuditPolicy:
+    phash_radius: int
+    dhash_radius: int
+    dino_top_k: int
+    orb_max_side: int
+    orb_nfeatures: int
+    lowe_ratio: float
+    minimum_good_matches: int
+    minimum_normalized_good_match_ratio: float
+    homography_ransac_reprojection_px: float
+    minimum_homography_inliers: int
+    minimum_inlier_ratio: float
+    minimum_convex_hull_coverage_each_image: float
+    maximum_median_symmetric_reprojection_px: float
+    support_floor: int
+    bootstrap_replicates: int
+    bootstrap_seed: int
+    external_family_order_seed: int
+
+
+def audit_policy_from_lock(lock: dict[str, Any]) -> TrackBAuditPolicy:
+    """Return the single executable Track-B audit policy after full lock validation."""
+    validate_execution_lock(lock)
+    generation = lock["candidate_generation"]
+    geometry = lock["geometric_acceptance"]
+    grades = lock["grade_rules"]
+    bootstrap = lock["bootstrap"]
+    return TrackBAuditPolicy(
+        phash_radius=int(generation["phash"]["hamming_max"]),
+        dhash_radius=int(generation["dhash"]["hamming_max"]),
+        dino_top_k=int(generation["dino_top_k"]),
+        orb_max_side=int(geometry["max_image_side"]),
+        orb_nfeatures=int(geometry["orb_features_max"]),
+        lowe_ratio=float(geometry["lowe_ratio"]),
+        minimum_good_matches=int(geometry["minimum_good_matches"]),
+        minimum_normalized_good_match_ratio=float(geometry["minimum_normalized_good_match_ratio"]),
+        homography_ransac_reprojection_px=float(geometry["homography_ransac_reprojection_px"]),
+        minimum_homography_inliers=int(geometry["minimum_homography_inliers"]),
+        minimum_inlier_ratio=float(geometry["minimum_inlier_ratio"]),
+        minimum_convex_hull_coverage_each_image=float(geometry["minimum_convex_hull_coverage_each_image"]),
+        maximum_median_symmetric_reprojection_px=float(geometry["maximum_median_symmetric_reprojection_px"]),
+        support_floor=int(grades["minimum_independent_families_per_required_mapped_class"]),
+        bootstrap_replicates=int(bootstrap["replicates"]),
+        bootstrap_seed=int(bootstrap["seed"]),
+        external_family_order_seed=int(lock["external_family_order_seed"]),
+    )
+
+
+def validate_prior_attempt_for_rerun(
+    previous: dict[str, Any] | None,
+    *,
+    current_science_preimage_sha256: str,
+) -> dict[str, Any]:
+    """Validate whether a clean restart is allowed after a prior protected attempt."""
+    if not previous:
+        return {
+            "allowed": True,
+            "prior_attempt_with_protected_inference": False,
+            "parent_attempt_id": None,
+        }
+    if previous.get("protected_inference_ever") is not True:
+        return {
+            "allowed": True,
+            "prior_attempt_with_protected_inference": False,
+            "parent_attempt_id": previous.get("attempt_id"),
+        }
+    previous_digest = str(previous.get("science_preimage_sha256", ""))
+    if previous_digest != str(current_science_preimage_sha256):
+        raise TrackBError(
+            "a prior protected Track-B attempt exists under different scientific identities; "
+            "automatic rerun is forbidden"
+        )
+    terminal_or_durable = {
+        "SCIENCE_QA_PASS",
+        "PRIVATE_ARCHIVE_VERIFIED",
+        "PUBLICATION_COMPLETE",
+    }
+    if str(previous.get("status", "")) in terminal_or_durable:
+        raise TrackBError(
+            f"prior attempt is already durable at status={previous.get('status')}; "
+            "protected inference must not be rerun"
+        )
+    return {
+        "allowed": True,
+        "prior_attempt_with_protected_inference": True,
+        "parent_attempt_id": previous.get("attempt_id"),
+    }
+
+
 def load_json(path: str | Path) -> dict[str, Any]:
     obj = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(obj, dict):
@@ -102,7 +192,7 @@ def git_blob_sha1(path: str | Path) -> str:
 def verify_code_attestation(repo_root: str | Path, attestation_path: str | Path) -> dict[str, Any]:
     root = Path(repo_root).resolve()
     attestation = load_json(attestation_path)
-    if attestation.get("attestation_id") != "TRACKB_CODE_ATTESTATION_v2":
+    if attestation.get("attestation_id") != "TRACKB_CODE_ATTESTATION_v3":
         raise TrackBError("Track-B code attestation identity mismatch")
     if attestation.get("parent_track_a_closure_commit") != TRACK_A_CLOSURE_COMMIT:
         raise TrackBError("Track-B code attestation parent-closure mismatch")
@@ -149,19 +239,37 @@ def validate_downstream_authority(authority: dict[str, Any]) -> None:
     if authority.get("audit_encoder", {}).get("checkpoint_sha256") != DINO_AUDIT_SHA256:
         raise TrackBError("DINO audit encoder identity mismatch")
     chronology = authority.get("chronology", {})
-    if chronology.get("protected_external_predictions_before_v2") is not False:
-        raise TrackBError("v2 cohort redesign does not predate protected external predictions")
-    if chronology.get("external_metric_results_used_to_choose_v2_candidates") is not False:
-        raise TrackBError("v2 cohort redesign is not explicitly pre-external/outcome-blind")
+    if chronology.get("protected_external_predictions_before_v3") is not False:
+        raise TrackBError("v3 remediation does not predate protected external predictions")
+    if chronology.get("external_metric_results_used_to_design_v3") is not False:
+        raise TrackBError("v3 remediation is not explicitly pre-external/outcome-blind")
+    if chronology.get("v2_candidate_selection_preserved") is not True:
+        raise TrackBError("v3 remediation does not preserve the frozen v2 candidate selection")
+    lineage = authority.get("external_lineage_review", {})
+    if (
+        lineage.get("review_id") != "TRACKB_EXTERNAL_LINEAGE_REVIEW_v1"
+        or lineage.get("sha256") != "fda8ebf32ce19854679289d72a16f9a7adbe9319e9d0d90046697498f9b645b0"
+        or lineage.get("status") != "PRE_RESULTS_FROZEN"
+        or lineage.get("residual_uncertainty_caps_at") != "EXT-S"
+    ):
+        raise TrackBError("v3 external-lineage review binding drift")
+    boundary = authority.get("remediation_boundary", {})
+    for field in (
+        "changes_scientific_estimand", "changes_candidates", "changes_mappings",
+        "changes_model_states", "changes_metric_definitions", "changes_audit_thresholds",
+        "changes_support_floor", "changes_bootstrap_parameters", "changes_historical_surface",
+    ):
+        if boundary.get(field) is not False:
+            raise TrackBError(f"v3 remediation boundary does not preserve frozen science: {field}")
     redesign = authority.get("cohort_redesign", {})
     if (redesign.get("primary_confirmatory_candidate") or {}).get("id") != "gvlid_grape":
-        raise TrackBError("v2 confirmatory cohort identity drift")
+        raise TrackBError("v3 confirmatory cohort identity drift")
     if (redesign.get("complementary_stress_candidate") or {}).get("id") != "irish_potato":
-        raise TrackBError("v2 stress cohort identity drift")
+        raise TrackBError("v3 stress cohort identity drift")
     if (redesign.get("retired_candidate") or {}).get("id") != "agrivision_bd":
-        raise TrackBError("v2 retired-candidate chronology is missing")
+        raise TrackBError("v3 retired-candidate chronology is missing")
     if redesign.get("post_prediction_candidate_substitution_forbidden") is not True:
-        raise TrackBError("v2 candidate substitution firewall is missing")
+        raise TrackBError("v3 candidate substitution firewall is missing")
     track_c = authority.get("track_c_deployment_representative", {})
     if track_c.get("state") != "R07-S1" or track_c.get("checkpoint_sha256") != R07_CHECKPOINTS["S1"]:
         raise TrackBError("shared downstream amendment does not freeze the independent Track-C R07-S1 representative")
@@ -170,7 +278,7 @@ def validate_downstream_authority(authority: dict[str, Any]) -> None:
 
 
 def validate_execution_lock(lock: dict[str, Any]) -> None:
-    if lock.get("lock_id") != EXECUTION_LOCK_ID or lock.get("status") not in {"PRE_EXECUTION_LOCK", "PRE_EXECUTION_LOCK_V2"}:
+    if lock.get("lock_id") != EXECUTION_LOCK_ID or lock.get("status") != "PRE_EXECUTION_LOCK_V3":
         raise TrackBError("Track-B execution lock is absent or invalid")
     if lock.get("authority_id") != AUTHORITY_ID:
         raise TrackBError("execution lock/downstream authority mismatch")
@@ -245,11 +353,11 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         row = lock.get(key, {})
         contract = CANDIDATE_CONTRACTS[candidate_id]
         if row.get("id") != candidate_id or row.get("role") != role:
-            raise TrackBError(f"Track-B v2 candidate identity drift: {key}")
+            raise TrackBError(f"Track-B v3 candidate identity drift: {key}")
         if row.get("scope") != contract["scope"] or row.get("doi") != contract["doi"] or str(row.get("version")) != contract["version"]:
-            raise TrackBError(f"Track-B v2 candidate source identity drift: {candidate_id}")
+            raise TrackBError(f"Track-B v3 candidate source identity drift: {candidate_id}")
         if row.get("mapping") != contract["mapping"]:
-            raise TrackBError(f"Track-B v2 candidate mapping drift: {candidate_id}")
+            raise TrackBError(f"Track-B v3 candidate mapping drift: {candidate_id}")
     automation = lock.get("automation", {})
     expected_automation = {
         "single_master_notebook": True,
@@ -271,24 +379,140 @@ def validate_execution_lock(lock: dict[str, Any]) -> None:
         "private_kaggle_publication_retry_attempts": 4,
         "github_publication_failure_preserves_scientific_closure": True,
         "external_source_reachability_preflight": True,
+        "operator_default_mode": "qualification",
+        "independent_preinference_qa_required": True,
+        "protected_claim_requires_post_qualification_exact_sha_freeze": True,
+        "qualification_must_produce_zero_protected_external_predictions": True,
+        "protected_claim_requires_matching_qualification_science_sha256": True,
+        "qualification_science_identity_excludes_execution_timestamps": True,
+        "qualification_science_identity_reused_for_attempt_ancestry": True,
+        "github_token_required_modes": ["claim"],
+        "github_push_preflight_modes": ["claim"],
+        "qualification_requires_github_token": False,
+        "qualification_requires_github_push_preflight": False,
     }
     for key, value in expected_automation.items():
         if automation.get(key) != value:
-            raise TrackBError(f"Track-B v2 automation policy drift: {key}")
+            raise TrackBError(f"Track-B v3 automation policy drift: {key}")
     if automation.get("kaggle_dataset_owner_default") != "AUTO":
-        raise TrackBError("Track-B v2 private Kaggle owner must default to AUTO")
+        raise TrackBError("Track-B v3 private Kaggle owner must default to AUTO")
     if automation.get("kaggle_dataset_owner_mode") != "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT":
         raise TrackBError("Track-B v2 private Kaggle owner must be inferred from the active API token")
     kaggle_policy = lock.get("kaggle", {})
     if kaggle_policy.get("internet_required_during_claim_run") is not True:
-        raise TrackBError("Track-B v2 automated master requires Internet for orchestration/publication")
+        raise TrackBError("Track-B v3 automated master requires Internet for orchestration/publication")
     if kaggle_policy.get("internet_role") != "ORCHESTRATION_AND_EVIDENCE_PUBLICATION_ONLY":
-        raise TrackBError("Track-B v2 Internet role drift")
+        raise TrackBError("Track-B v3 Internet role drift")
     if kaggle_policy.get("protected_inference_network_dependency") is not False:
-        raise TrackBError("Track-B v2 protected inference must not have a network dependency")
-    dino_pre = lock.get("candidate_generation", {}).get("dino_feature_preprocessing", {})
+        raise TrackBError("Track-B v3 protected inference must not have a network dependency")
+    generation = lock.get("candidate_generation", {})
+    phash = generation.get("phash", {})
+    dhash = generation.get("dhash", {})
+    if phash.get("bits") != 64 or int(phash.get("hamming_max", -1)) != 12:
+        raise TrackBError("pHash candidate-generation policy drift")
+    if dhash.get("bits") != 64 or int(dhash.get("hamming_max", -1)) != 10:
+        raise TrackBError("dHash candidate-generation policy drift")
+    if generation.get("exact_raw_sha256") is not True or int(generation.get("dino_top_k", -1)) != 50:
+        raise TrackBError("candidate-generation exact/DINO policy drift")
+    dino_pre = generation.get("dino_feature_preprocessing", {})
     if dino_pre.get("entrypoint") != "cropcop_je.data.ctc_v2_eval_transform" or dino_pre.get("ctc_v2_config_sha256") != CTC_V2_CONFIG_SHA256:
         raise TrackBError("DINO audit preprocessing contract drift")
+    geometry = lock.get("geometric_acceptance", {})
+    expected_geometry = {
+        "bfmatcher_norm": "HAMMING",
+        "homography_ransac_reprojection_px": 5,
+        "lowe_ratio": 0.75,
+        "max_image_side": 800,
+        "maximum_median_symmetric_reprojection_px": 3,
+        "minimum_convex_hull_coverage_each_image": 0.1,
+        "minimum_good_matches": 20,
+        "minimum_homography_inliers": 12,
+        "minimum_inlier_ratio": 0.35,
+        "minimum_normalized_good_match_ratio": 0.12,
+        "orb_features_max": 1200,
+    }
+    for key, value in expected_geometry.items():
+        if geometry.get(key) != value:
+            raise TrackBError(f"geometric acceptance policy drift: {key}")
+    bootstrap_policy = lock.get("bootstrap", {})
+    expected_bootstrap_policy = {
+        "interval": "percentile_95",
+        "no_new_nhst_family": True,
+        "replicates": 5000,
+        "same_resample_indices_for_all_three_seeds": True,
+        "seed": 409883112,
+        "stratify_within_mapped_class": True,
+        "unit": "family_representative",
+    }
+    for key, value in expected_bootstrap_policy.items():
+        if bootstrap_policy.get(key) != value:
+            raise TrackBError(f"bootstrap policy drift: {key}")
+    if int(lock.get("external_family_order_seed", -1)) != 1936263114:
+        raise TrackBError("external family-order seed drift")
+    lineage_lock = lock.get("external_lineage_review", {})
+    if (
+        lineage_lock.get("review_id") != "TRACKB_EXTERNAL_LINEAGE_REVIEW_v1"
+        or lineage_lock.get("sha256") != "fda8ebf32ce19854679289d72a16f9a7adbe9319e9d0d90046697498f9b645b0"
+        or lineage_lock.get("required_status") != "PRE_RESULTS_FROZEN"
+        or lineage_lock.get("required_candidate_status") != "RESIDUAL_UNCERTAINTY"
+    ):
+        raise TrackBError("execution lock external-lineage binding drift")
+    source_integrity = lock.get("source_integrity", {})
+    expected_source_integrity = {
+        "irish_potato_official_archive_checksum_required": True,
+        "gvlid_source_sha256_ledger_required": True,
+        "atomic_download_required": True,
+        "bounded_download_retries": 4,
+        "transport_order_may_not_define_scientific_identity": True,
+        "canonical_member_identity": "raw_sha256_plus_source_member_path_digest",
+    }
+    for key, value in expected_source_integrity.items():
+        if source_integrity.get(key) != value:
+            raise TrackBError(f"source-integrity policy drift: {key}")
+    runtime_policy = lock.get("runtime_policy", {})
+    if runtime_policy.get("execution_lock_is_single_source_of_truth") is not True:
+        raise TrackBError("runtime policy no longer treats the execution lock as authoritative")
+    if runtime_policy.get("seeded_representative_ordering") is not True:
+        raise TrackBError("seeded representative-order policy missing")
+    if runtime_policy.get("representative_order_rng") != "numpy.random.PCG64":
+        raise TrackBError("representative-order RNG drift")
+    if int(runtime_policy.get("opencv_internal_threads", -1)) != 1:
+        raise TrackBError("OpenCV thread policy drift")
+    storage = lock.get("kaggle", {}).get("storage_policy", {})
+    expected_storage = {
+        "persistent_root": "/kaggle/working/trackb_master",
+        "scratch_root": "/kaggle/tmp/cropcop_trackb_r07",
+        "raw_external_images_persistent": False,
+        "source_model_files_persistent": False,
+        "partial_downloads_persistent": False,
+        "final_evidence_persistent": True,
+    }
+    for key, value in expected_storage.items():
+        if storage.get(key) != value:
+            raise TrackBError(f"Kaggle storage policy drift: {key}")
+    expected_v3_automation = {
+        "attempt_ledger_dataset_slug_template": "{owner}/cropcop-trackb-r07-attempt-ledger",
+        "durable_attempt_before_first_protected_forward_pass": True,
+        "rerun_requires_identical_science_preimage": True,
+        "protected_science_rerun_after_science_qa_forbidden": True,
+        "private_kaggle_content_addressed": True,
+        "private_kaggle_ready_status_required": True,
+        "private_terminal_evidence_full_roundtrip_required": True,
+        "closure_after_package_verification": True,
+        "stable_science_digest_required": True,
+        "github_run_id_uses_science_digest": True,
+    }
+    for key, value in expected_v3_automation.items():
+        if automation.get(key) != value:
+            raise TrackBError(f"Track-B v3 durability policy drift: {key}")
+    closure_policy = lock.get("closure_policy", {})
+    if (
+        closure_policy.get("stable_science_identity") != "trackb_science_sha256"
+        or closure_policy.get("execution_instance_identity") != "closure_sha256"
+        or closure_policy.get("elapsed_time_excluded_from_science_identity") is not True
+        or closure_policy.get("publication_retry_counts_excluded_from_science_identity") is not True
+    ):
+        raise TrackBError("Track-B v3 closure identity policy drift")
     historical = lock.get("historical_compare", {})
     safe = historical.get("safe_postclosure_route", {})
     expected_safe = {
