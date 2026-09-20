@@ -17,9 +17,11 @@ from cropcop_je.trackb_r07 import (
     R07_CHECKPOINTS,
     R07_RUN_RECORDS,
     TrackBError,
+    audit_policy_from_lock,
     assign_candidate_grade,
     build_candidate_seal,
     mapped_scope_metrics,
+    validate_prior_attempt_for_rerun,
     validate_same_prediction_surface,
     verify_candidate_seal,
     git_blob_sha1,
@@ -29,8 +31,8 @@ from cropcop_je.trackb_r07 import (
 )
 from cropcop_je.hashing import sha256_json
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
-from cropcop_je.trackb_r07_audit import ImageAuditRecord, representative_manifest
-from cropcop_je.trackb_r07_ops import load_kaggle_secret, _classify_github_push_failure
+from cropcop_je.trackb_r07_audit import ImageAuditRecord, deterministic_representative_order, representative_manifest
+from cropcop_je.trackb_r07_ops import _checksum_matches, _classify_github_push_failure, _parse_sha256_ledger, load_kaggle_secret
 
 
 class TrackBR07Tests(unittest.TestCase):
@@ -423,6 +425,127 @@ class TrackBR07Tests(unittest.TestCase):
         rows = representative_manifest([r1, r2], [["z", "a"]])
         self.assertEqual(rows[0]["representative_row_id"], "a")
         self.assertEqual(rows[0]["representative_raw_sha256"], "0" * 64)
+
+    def test_audit_policy_is_executable_lock_source_of_truth(self):
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+        policy = audit_policy_from_lock(lock)
+        self.assertEqual(policy.phash_radius, 12)
+        self.assertEqual(policy.dhash_radius, 10)
+        self.assertEqual(policy.dino_top_k, 50)
+        self.assertEqual(policy.orb_max_side, 800)
+        self.assertEqual(policy.orb_nfeatures, 1200)
+        self.assertEqual(policy.bootstrap_replicates, 5000)
+        self.assertEqual(policy.bootstrap_seed, 409883112)
+        self.assertEqual(policy.external_family_order_seed, 1936263114)
+
+    def test_lock_rejects_operational_threshold_drift(self):
+        import copy
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+        mutations = [
+            ("candidate_generation", "dino_top_k", 49),
+            ("geometric_acceptance", "lowe_ratio", 0.74),
+            ("geometric_acceptance", "orb_features_max", 1199),
+            ("bootstrap", "replicates", 4999),
+        ]
+        for section, key, value in mutations:
+            drifted = copy.deepcopy(lock)
+            drifted[section][key] = value
+            with self.subTest(section=section, key=key):
+                with self.assertRaises(TrackBError):
+                    validate_execution_lock(drifted)
+        drifted = copy.deepcopy(lock)
+        drifted["candidate_generation"]["phash"]["hamming_max"] = 11
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted)
+        drifted = copy.deepcopy(lock)
+        drifted["candidate_generation"]["dhash"]["hamming_max"] = 9
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted)
+        drifted = copy.deepcopy(lock)
+        drifted["external_family_order_seed"] = 1
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted)
+
+    def test_seeded_representative_order_is_traversal_invariant(self):
+        rows = [
+            {"representative_raw_sha256": f"{i:064x}", "family_id": f"F{i}", "representative_row_id": f"R{i}"}
+            for i in range(12)
+        ]
+        a = deterministic_representative_order(rows, seed=1936263114)
+        b = deterministic_representative_order(list(reversed(rows)), seed=1936263114)
+        self.assertEqual(a, b)
+        self.assertEqual(
+            {row["representative_row_id"] for row in a},
+            {row["representative_row_id"] for row in rows},
+        )
+        c = deterministic_representative_order(rows, seed=1936263115)
+        self.assertNotEqual(
+            [row["representative_row_id"] for row in a],
+            [row["representative_row_id"] for row in c],
+        )
+
+    def test_checksum_verifier_supports_zenodo_md5_and_sha256(self):
+        import hashlib, tempfile
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "x.bin"
+            path.write_bytes(b"track-b-source")
+            md5 = hashlib.md5(path.read_bytes()).hexdigest()
+            sha = hashlib.sha256(path.read_bytes()).hexdigest()
+            self.assertTrue(_checksum_matches(path, f"md5:{md5}"))
+            self.assertTrue(_checksum_matches(path, f"sha256:{sha}"))
+            self.assertFalse(_checksum_matches(path, "md5:" + "0" * 32))
+
+    def test_gvlid_checksum_ledger_parser_is_deterministic(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "checksums.txt"
+            h1, h2 = "1" * 64, "2" * 64
+            path.write_text(
+                f"{h1}  data/Black Rot/a.jpg\n"
+                f"data/Healthy/b.jpg,{h2}\n",
+                encoding="utf-8",
+            )
+            parsed = _parse_sha256_ledger(path)
+            self.assertEqual(parsed["data/black rot/a.jpg"], h1)
+            self.assertEqual(parsed["data/healthy/b.jpg"], h2)
+
+    def test_attempt_rerun_gate_allows_only_unchanged_interrupted_attempt(self):
+        digest = "a" * 64
+        gate = validate_prior_attempt_for_rerun(
+            {
+                "attempt_id": "old",
+                "protected_inference_ever": True,
+                "science_preimage_sha256": digest,
+                "status": "PROTECTED_INFERENCE_STARTED",
+            },
+            current_science_preimage_sha256=digest,
+        )
+        self.assertTrue(gate["prior_attempt_with_protected_inference"])
+        self.assertEqual(gate["parent_attempt_id"], "old")
+
+        with self.assertRaises(TrackBError):
+            validate_prior_attempt_for_rerun(
+                {
+                    "attempt_id": "old",
+                    "protected_inference_ever": True,
+                    "science_preimage_sha256": "b" * 64,
+                    "status": "PROTECTED_INFERENCE_STARTED",
+                },
+                current_science_preimage_sha256=digest,
+            )
+
+        for status in ("SCIENCE_QA_PASS", "PRIVATE_ARCHIVE_VERIFIED", "PUBLICATION_COMPLETE"):
+            with self.subTest(status=status):
+                with self.assertRaises(TrackBError):
+                    validate_prior_attempt_for_rerun(
+                        {
+                            "attempt_id": "old",
+                            "protected_inference_ever": True,
+                            "science_preimage_sha256": digest,
+                            "status": status,
+                        },
+                        current_science_preimage_sha256=digest,
+                    )
 
     def test_bootstrap_is_reproducible_and_shared_across_seeds(self):
         rows = []
