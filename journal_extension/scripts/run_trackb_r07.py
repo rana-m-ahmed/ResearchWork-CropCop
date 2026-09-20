@@ -45,6 +45,7 @@ from cropcop_je.trackb_r07 import (
     three_seed_summary,
     validate_downstream_authority,
     validate_execution_lock,
+    validate_prior_attempt_for_rerun,
     validate_same_prediction_surface,
     verify_candidate_seal,
     verify_code_attestation,
@@ -1253,21 +1254,10 @@ def main() -> int:
             )
         preimage = _science_preimage_manifest(output_root, core, (grape, potato))
         previous = read_latest_attempt_state(args.attempt_dataset_slug)
-        if previous and previous.get("protected_inference_ever") is True:
-            if previous.get("science_preimage_sha256") != preimage["science_preimage_sha256"]:
-                raise TrackBError(
-                    "a prior protected Track-B attempt exists under different scientific identities; "
-                    "automatic rerun is forbidden"
-                )
-            if previous.get("status") in {
-                "SCIENCE_QA_PASS",
-                "PRIVATE_ARCHIVE_VERIFIED",
-                "PUBLICATION_COMPLETE",
-            }:
-                raise TrackBError(
-                    f"prior attempt is already durable at status={previous.get('status')}; "
-                    "do not rerun protected inference"
-                )
+        rerun_gate = validate_prior_attempt_for_rerun(
+            previous,
+            current_science_preimage_sha256=preimage["science_preimage_sha256"],
+        )
         attempt_state = {
             "schema_version": "1.0",
             "attempt_id": str(args.attempt_id),
@@ -1277,8 +1267,8 @@ def main() -> int:
             "source_git_sha": str(args.source_git_sha),
             "science_preimage_sha256": preimage["science_preimage_sha256"],
             "science_preimage": preimage,
-            "parent_attempt_id": (previous or {}).get("attempt_id"),
-            "prior_attempt_with_protected_inference": bool(previous and previous.get("protected_inference_ever") is True),
+            "parent_attempt_id": rerun_gate["parent_attempt_id"],
+            "prior_attempt_with_protected_inference": rerun_gate["prior_attempt_with_protected_inference"],
         }
         atomic_write_json(output_root / "TRACKB_ATTEMPT_STATE.json", attempt_state)
         attempt_receipt = publish_attempt_state(args.attempt_dataset_slug, attempt_state)
