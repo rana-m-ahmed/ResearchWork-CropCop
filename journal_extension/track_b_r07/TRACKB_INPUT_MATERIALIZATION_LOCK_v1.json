@@ -58,5 +58,7 @@
     "claim": [
       "KAGGLE_API_TOKEN"
     ]
-  }
+  },
+  "repository_snapshot_commit": "13b4d8fa19280f7ca94462e852a2c51dda416340",
+  "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY"
 }
