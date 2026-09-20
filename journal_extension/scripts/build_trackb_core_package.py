@@ -288,7 +288,7 @@ def main() -> int:
         "--r07-s3-run-record", "models/r07_s3_run_record.json",
         "--dino-checkpoint", "audit_encoder/DINO_TEACHER.pt",
         "--dino-factory-manifest", "audit_encoder/TEACHER_FACTORY_BUNDLE.json",
-        "--dino-factory-source-root", "repository",
+        "--dino-factory-source-root", "repository/journal_extension/teacher_factory",
     ]
     subprocess.run(cmd, cwd=repo_copy, check=True)
 
