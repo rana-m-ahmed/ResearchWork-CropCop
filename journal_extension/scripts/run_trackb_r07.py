@@ -75,6 +75,7 @@ from cropcop_je.trackb_r07_audit import (
 )
 
 VAL_COUNT = 16368
+MAX_AUDIT_CANDIDATE_PAIRS = 5_000_000
 
 
 def stage(name: str):
@@ -219,7 +220,14 @@ def _load_dino(core):
     return model, identity
 
 
-def _self_dino_pairs(features, row_ids: list[str], *, device: str, top_k: int) -> set[tuple[str, str]]:
+def _self_dino_pairs(
+    features,
+    row_ids: list[str],
+    *,
+    device: str,
+    top_k: int,
+    max_pairs: int = MAX_AUDIT_CANDIDATE_PAIRS,
+) -> set[tuple[str, str]]:
     import numpy as np
     if len(row_ids) < 2:
         return set()
@@ -235,10 +243,30 @@ def _self_dino_pairs(features, row_ids: list[str], *, device: str, top_k: int) -
             a, b = sorted((row_ids[i], row_ids[j]))
             if a != b:
                 pairs.add((a, b))
+                if len(pairs) > int(max_pairs):
+                    raise TrackBError(
+                        f"DINO within-candidate pairs exceed operational cap {max_pairs}"
+                    )
                 kept += 1
             if kept >= int(top_k):
                 break
     return pairs
+
+
+def _bounded_pair_union(
+    *pair_sets: set[tuple[str, str]],
+    max_pairs: int = MAX_AUDIT_CANDIDATE_PAIRS,
+    label: str,
+) -> set[tuple[str, str]]:
+    out: set[tuple[str, str]] = set()
+    for rows in pair_sets:
+        out.update(rows)
+        if len(out) > int(max_pairs):
+            raise TrackBError(
+                f"{label} unique candidate-pair union exceeds operational cap "
+                f"{max_pairs}: observed>{max_pairs}"
+            )
+    return out
 
 
 def _cross_exact_pairs(external_records, hist_rows):
@@ -496,13 +524,31 @@ def _audit_candidate(
     mapping_ok = len(set(mapping.values())) == len(mapping) and all(target in class_map for target in mapping.values())
 
     # Prediction-blind family construction over all eligible originals.
-    exact_within = exact_duplicate_pairs(records)
-    phash_within = near_hash_pairs(records, field="phash64", radius=audit_policy.phash_radius)
-    dhash_within = near_hash_pairs(records, field="dhash64", radius=audit_policy.dhash_radius)
+    exact_within = exact_duplicate_pairs(
+        records, max_pairs=MAX_AUDIT_CANDIDATE_PAIRS
+    )
+    phash_within = near_hash_pairs(
+        records,
+        field="phash64",
+        radius=audit_policy.phash_radius,
+        max_pairs=MAX_AUDIT_CANDIDATE_PAIRS,
+    )
+    dhash_within = near_hash_pairs(
+        records,
+        field="dhash64",
+        radius=audit_policy.dhash_radius,
+        max_pairs=MAX_AUDIT_CANDIDATE_PAIRS,
+    )
     image_paths = [data_root / r.relative_path for r in records]
     candidate_features = encode_audit_features(dino_model, image_paths, ctc_v2_eval_transform, device, batch_size=64)
     dino_within = _self_dino_pairs(candidate_features, [r.row_id for r in records], device=device, top_k=audit_policy.dino_top_k)
-    candidate_pair_union = phash_within | dhash_within | dino_within | exact_within
+    candidate_pair_union = _bounded_pair_union(
+        exact_within,
+        phash_within,
+        dhash_within,
+        dino_within,
+        label=f"{candidate_id}/within",
+    )
 
     candidate_orb_get = _candidate_orb_getter(
         records,
@@ -534,15 +580,37 @@ def _audit_candidate(
     mapped_features = candidate_features[mapped_index]
     mapped_order = [records[i] for i in mapped_index]
     exact_cross = _cross_exact_pairs(mapped_order, hist_rows)
-    phash_cross = cross_hash_pairs(mapped_order, hist_rows, field="phash64", radius=audit_policy.phash_radius)
-    dhash_cross = cross_hash_pairs(mapped_order, hist_rows, field="dhash64", radius=audit_policy.dhash_radius)
+    phash_cross = cross_hash_pairs(
+        mapped_order,
+        hist_rows,
+        field="phash64",
+        radius=audit_policy.phash_radius,
+        max_pairs=MAX_AUDIT_CANDIDATE_PAIRS,
+    )
+    dhash_cross = cross_hash_pairs(
+        mapped_order,
+        hist_rows,
+        field="dhash64",
+        radius=audit_policy.dhash_radius,
+        max_pairs=MAX_AUDIT_CANDIDATE_PAIRS,
+    )
     dino_idx, _ = topk_cosine_neighbors(mapped_features, hist_features, k=audit_policy.dino_top_k, device=device)
-    dino_cross = {
-        (row.row_id, hist_rows[int(j)]["hist_id"])
-        for row, neighbor_row in zip(mapped_order, dino_idx)
-        for j in neighbor_row
-    }
-    cross_union = exact_cross | phash_cross | dhash_cross | dino_cross
+    dino_cross: set[tuple[str, str]] = set()
+    for row, neighbor_row in zip(mapped_order, dino_idx):
+        for j in neighbor_row:
+            dino_cross.add((row.row_id, hist_rows[int(j)]["hist_id"]))
+            if len(dino_cross) > MAX_AUDIT_CANDIDATE_PAIRS:
+                raise TrackBError(
+                    "DINO cross-dataset candidate pairs exceed operational cap "
+                    f"{MAX_AUDIT_CANDIDATE_PAIRS}"
+                )
+    cross_union = _bounded_pair_union(
+        exact_cross,
+        phash_cross,
+        dhash_cross,
+        dino_cross,
+        label=f"{candidate_id}/historical",
+    )
     hist_id_to_idx = {row["hist_id"]: i for i, row in enumerate(hist_rows)}
     accepted_cross = set(exact_cross)
     def hist_get(hist_id: str):
