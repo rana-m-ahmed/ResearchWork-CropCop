@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
-from .hashing import sha256_file
+from .hashing import sha256_file, sha256_json
 from .publication import audit_public_files, publish_to_github_branch
 
 
@@ -380,6 +380,147 @@ def _metadata_slug(slug: str) -> tuple[str, str]:
     return owner, dataset
 
 
+def _local_kaggle_content_manifest(folder: Path) -> dict:
+    ignored = {"dataset-metadata.json", "TRACKB_KAGGLE_CONTENT_MANIFEST.json"}
+    files = []
+    for path in sorted(folder.rglob("*")):
+        if not path.is_file() or path.name in ignored:
+            continue
+        rel = path.relative_to(folder).as_posix()
+        files.append({
+            "path": rel,
+            "bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        })
+    if not files:
+        raise TrackBOpsError(f"private Kaggle publication contains no payload files: {folder}")
+    digest = sha256_json(files)
+    manifest = {
+        "schema_version": "1.0",
+        "status": "PASS",
+        "content_digest_sha256": digest,
+        "files": files,
+    }
+    (folder / "TRACKB_KAGGLE_CONTENT_MANIFEST.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    return manifest
+
+
+def _kaggle_dataset_status(slug: str) -> dict:
+    result = run_checked(
+        ["kaggle", "datasets", "status", slug, "--format", "json"],
+        timeout=180,
+    )
+    try:
+        payload = json.loads(result.stdout)
+    except Exception as exc:
+        raise TrackBOpsError(
+            f"Kaggle dataset status did not return valid JSON for {slug}: {redact(result.stdout)[-1000:]}"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise TrackBOpsError(f"Kaggle dataset status payload is not an object for {slug}")
+    return payload
+
+
+def _wait_kaggle_dataset_ready(slug: str, *, timeout_seconds: int = 900) -> dict:
+    deadline = time.monotonic() + int(timeout_seconds)
+    last = {}
+    while time.monotonic() < deadline:
+        last = _kaggle_dataset_status(slug)
+        status = str(last.get("status", "")).strip().lower()
+        if status == "ready":
+            return last
+        if status == "error":
+            raise TrackBOpsError(f"Kaggle dataset entered error state: {slug}: {last}")
+        time.sleep(5)
+    raise TrackBOpsError(f"Kaggle dataset did not become ready within {timeout_seconds}s: {slug}: {last}")
+
+
+def _download_kaggle_file(slug: str, relative_path: str, destination: Path) -> Path:
+    destination.mkdir(parents=True, exist_ok=True)
+    run_checked(
+        [
+            "kaggle", "datasets", "download", slug,
+            "-f", relative_path,
+            "-p", str(destination),
+            "--unzip", "-o", "-q",
+        ],
+        timeout=7200,
+    )
+    direct = destination / relative_path
+    if direct.is_file():
+        return direct
+    matches = [p for p in destination.rglob(Path(relative_path).name) if p.is_file()]
+    if len(matches) != 1:
+        raise TrackBOpsError(
+            f"Kaggle single-file round-trip could not resolve {relative_path!r} from {slug}: {matches}"
+        )
+    return matches[0]
+
+
+def _read_remote_kaggle_content_manifest(slug: str) -> dict | None:
+    if not kaggle_dataset_exists(slug):
+        return None
+    with tempfile.TemporaryDirectory() as td:
+        try:
+            path = _download_kaggle_file(
+                slug,
+                "TRACKB_KAGGLE_CONTENT_MANIFEST.json",
+                Path(td),
+            )
+        except Exception:
+            return None
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise TrackBOpsError(f"remote Kaggle content manifest is invalid JSON: {slug}") from exc
+    if not isinstance(payload, dict) or len(str(payload.get("content_digest_sha256", ""))) != 64:
+        raise TrackBOpsError(f"remote Kaggle content manifest is malformed: {slug}")
+    return payload
+
+
+def _verify_remote_kaggle_content(
+    slug: str,
+    local_manifest: dict,
+    *,
+    full_roundtrip: bool,
+) -> dict:
+    remote = _read_remote_kaggle_content_manifest(slug)
+    if remote is None:
+        raise TrackBOpsError(f"remote Kaggle content manifest missing after publication: {slug}")
+    if remote.get("content_digest_sha256") != local_manifest.get("content_digest_sha256"):
+        raise TrackBOpsError(
+            f"remote Kaggle content digest mismatch: local={local_manifest.get('content_digest_sha256')} "
+            f"remote={remote.get('content_digest_sha256')}"
+        )
+    if remote.get("files") != local_manifest.get("files"):
+        raise TrackBOpsError("remote Kaggle content manifest file ledger differs from local publication ledger")
+    verified_files = 0
+    if full_roundtrip:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for row in local_manifest["files"]:
+                rel = str(row["path"])
+                path = _download_kaggle_file(slug, rel, root / f"f{verified_files:05d}")
+                if path.stat().st_size != int(row["bytes"]) or sha256_file(path) != str(row["sha256"]):
+                    raise TrackBOpsError(f"remote Kaggle round-trip bytes differ for {slug}/{rel}")
+                verified_files += 1
+    status = _wait_kaggle_dataset_ready(slug)
+    version = status.get("current_version_number")
+    if version is None:
+        version = status.get("currentVersionNumber")
+    return {
+        "status": "PASS",
+        "content_digest_sha256": local_manifest["content_digest_sha256"],
+        "remote_manifest_match": True,
+        "full_roundtrip": bool(full_roundtrip),
+        "roundtrip_verified_file_count": verified_files,
+        "current_version_number": version,
+        "kaggle_status": status,
+    }
+
+
 def publish_private_kaggle_dataset(
     *,
     folder: str | Path,
@@ -387,7 +528,8 @@ def publish_private_kaggle_dataset(
     title: str,
     version_message: str,
     license_name: str = "other",
-) -> dict[str, str | bool | int]:
+    full_roundtrip: bool = False,
+) -> dict[str, object]:
     folder = Path(folder).resolve()
     if not folder.is_dir() or not any(folder.iterdir()):
         raise TrackBOpsError(f"private Kaggle publication folder is empty: {folder}")
@@ -399,6 +541,8 @@ def publish_private_kaggle_dataset(
         "licenses": [{"name": license_name}],
     }
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+    local_manifest = _local_kaggle_content_manifest(folder)
+    local_digest = str(local_manifest["content_digest_sha256"])
 
     existed_initially = kaggle_dataset_exists(slug)
     errors: list[str] = []
@@ -406,6 +550,21 @@ def publish_private_kaggle_dataset(
         if delay:
             time.sleep(delay)
         try:
+            existing = _read_remote_kaggle_content_manifest(slug)
+            if existing and existing.get("content_digest_sha256") == local_digest:
+                verification = _verify_remote_kaggle_content(
+                    slug, local_manifest, full_roundtrip=full_roundtrip
+                )
+                return {
+                    "slug": slug,
+                    "action": "reuse",
+                    "created": False,
+                    "versioned": False,
+                    "reused_identical_remote": True,
+                    "attempts": attempt,
+                    **verification,
+                }
+
             exists_now = kaggle_dataset_exists(slug)
             if exists_now:
                 run_checked(
@@ -419,7 +578,6 @@ def publish_private_kaggle_dataset(
                 )
                 action = "version"
             else:
-                # Dataset creation intentionally uses the CLI default private visibility.
                 run_checked(
                     [
                         "kaggle", "datasets", "create",
@@ -429,11 +587,19 @@ def publish_private_kaggle_dataset(
                     timeout=7200,
                 )
                 action = "create"
+
+            _wait_kaggle_dataset_ready(slug)
+            verification = _verify_remote_kaggle_content(
+                slug, local_manifest, full_roundtrip=full_roundtrip
+            )
             return {
                 "slug": slug,
+                "action": action,
                 "created": action == "create" and not existed_initially,
-                "versioned": action == "version" or existed_initially,
+                "versioned": action == "version",
+                "reused_identical_remote": False,
                 "attempts": attempt,
+                **verification,
             }
         except Exception as exc:
             message = redact(str(exc))
@@ -449,6 +615,7 @@ def publish_private_kaggle_dataset(
         "private Kaggle dataset publication failed after 4 attempts: "
         + " | ".join(errors[-4:])
     )
+
 
 
 def _urlopen_json(url: str, *, timeout: int = 120) -> dict:
