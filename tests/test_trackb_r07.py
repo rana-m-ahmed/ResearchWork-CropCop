@@ -295,6 +295,7 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertTrue(automation["independent_preinference_qa_required"])
         self.assertTrue(automation["protected_claim_requires_post_qualification_exact_sha_freeze"])
         self.assertTrue(automation["qualification_must_produce_zero_protected_external_predictions"])
+        self.assertTrue(automation["protected_claim_requires_matching_qualification_sha256"])
 
         drifted = dict(lock)
         drifted["automation"] = dict(automation)
@@ -476,6 +477,10 @@ class TrackBR07Tests(unittest.TestCase):
         notebook = (ROOT / "journal_extension" / "kaggle" / "trackb_r07_master.ipynb").read_text(encoding="utf-8")
         self.assertIn('choices=["qualification", "claim"], default="qualification"', master)
         self.assertIn('PASS_TRACKB_PREINFERENCE_QUALIFICATION', master)
+        self.assertIn('--authorized-qualification-sha256', master)
+        self.assertIn('claim mode requires a reviewed --authorized-qualification-sha256', master)
+        self.assertIn('protected claim execution requires a reviewed --authorized-qualification-sha256', runner)
+        self.assertIn('TRACKB_QUALIFICATION_AUTHORIZATION.json', runner)
         self.assertIn('validate_trackb_preinference_qualification.py', master)
         self.assertIn('choices=["preflight", "qualification", "all"]', runner)
         self.assertLess(
