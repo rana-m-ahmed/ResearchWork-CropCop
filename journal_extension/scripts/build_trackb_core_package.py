@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import shutil
 import subprocess
 import sys
@@ -151,9 +152,24 @@ def _verify_run_record(path: Path, seed: str) -> dict:
     if str(selected_sha) != R07_CHECKPOINTS[seed]:
         raise TrackBError(f"R07 {seed} run record does not bind selected checkpoint")
     metrics = (obj.get("result_summary") or {}).get("selected_metrics") or {}
-    for key in ("accuracy", "balanced_accuracy", "macro_f1", "nll"):
-        if key not in metrics:
-            raise TrackBError(f"R07 {seed} run record lacks selected metric {key}")
+    required_metrics = (
+        "validation_accuracy",
+        "validation_balanced_accuracy",
+        "validation_macro_f1",
+        "validation_nll",
+    )
+    missing = [key for key in required_metrics if key not in metrics]
+    if missing:
+        raise TrackBError(
+            f"R07 {seed} run record lacks canonical selected replay metrics: {missing}"
+        )
+    for key in required_metrics:
+        try:
+            value = float(metrics[key])
+        except (TypeError, ValueError) as exc:
+            raise TrackBError(f"R07 {seed} selected replay metric is non-numeric: {key}") from exc
+        if not math.isfinite(value):
+            raise TrackBError(f"R07 {seed} selected replay metric is non-finite: {key}")
     return obj
 
 
