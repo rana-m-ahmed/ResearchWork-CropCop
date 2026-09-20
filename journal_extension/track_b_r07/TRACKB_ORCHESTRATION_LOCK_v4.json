@@ -5,7 +5,7 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "scientific_lock_id": "TRACKB_R07_EXECUTION_LOCK_v3",
-  "orchestration_implementation_commit": "e5e4bc5a30b51645fbbb89f550f9819f7286d79f",
+  "orchestration_implementation_commit": "d0898dafc4419e1db009ab24202660d40f6b3fae",
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
     "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb"
@@ -50,21 +50,21 @@
     "scientific_device": "cuda:0"
   },
   "load_bearing_files": {
-    "journal_extension/scripts/trackb_v4_materialize.py": "fae5306d716c24468ae0c9a2802fb5546a574073",
+    "journal_extension/scripts/trackb_v4_materialize.py": "a25d86c26b57d99c4b33db8628297efd2766b93b",
     "journal_extension/scripts/trackb_v4_execute_attached.py": "94205cd8afac27c76ba13a83a8ab969e9382ae68",
     "journal_extension/scripts/run_trackb_r07.py": "3437c276b789d1772039a187dce1e00fcdaea23d",
     "journal_extension/scripts/validate_trackb_preinference_qualification.py": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2",
-    "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json": "f188e3cc4d083d6ae96a9476f8f8f99e5b08b132",
-    "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json": "36c1c029a62e85c499687b0cf92cedd8324e2f9c",
+    "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json": "c150f0093d70e4650b2e85134db59a49a4e5b7ec",
+    "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json": "5dcc34b7d004f8fcebfdcd0377152b279a3f3628",
     "journal_extension/scripts/recover_tracka_v12_terminal_record.py": "c86c1b9bc4079bcf4051dcd71fca74034a11f2ba",
     "journal_extension/src/cropcop_je/tracka_v12_recovery.py": "9dc7c39718e68bcf38d1873566ca4f823503615f",
     "journal_extension/src/cropcop_je/tracka_v12.py": "b133a8554d6f688d33cf078bf5d827363e89f2e1",
     "journal_extension/src/cropcop_je/tracka_v12_placement.py": "fbdd3a04c79a63542f9117cdc77b914093152e04",
     "journal_extension/track_b_r07/replay_authority/R07_S1_ORIGINAL_RUN_RECORD.json": "e578f6deb815b285c2bdd955975cc5ce19b831e6",
     "journal_extension/track_b_r07/replay_authority/TRACKA_V12_K3_PUBLIC_REPORT.json": "e40402cdf240c1bfbb88586c78b7a7bdc8ad1ec1",
-    "journal_extension/scripts/build_trackb_core_package.py": "3ee5c7e0428005ce31c2c3f80c14c14b79a5e45f"
+    "journal_extension/scripts/build_trackb_core_package.py": "115b91fdfebdd8c19b91f5be32fda8383c19f328",
+    "tests/test_trackb_v4_materialize.py": "e23ecd35c393f31c45a5c752cdc409d61b07cb0e"
   },
-  "repository_snapshot_commit": "e5e4bc5a30b51645fbbb89f550f9819f7286d79f",
   "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY",
   "replay_authority": {
     "s1": "journal_extension/track_b_r07/replay_authority/R07_S1_ORIGINAL_RUN_RECORD.json",
@@ -87,5 +87,16 @@
     "scientific_change": false,
     "builder_blob_sha1": "3ee5c7e0428005ce31c2c3f80c14c14b79a5e45f",
     "code_attestation_sha256": "de0189c5332787ac078e9afedf0abe2d167cef16259300681f76325409f3db80"
+  },
+  "runtime_snapshot_binding": {
+    "policy": "NOTEBOOK_SOURCE_COMMIT_PLUS_LOAD_BEARING_BLOB_ATTESTATION",
+    "self_referential_commit_hash_forbidden": true,
+    "notebook_source_commit_is_authoritative": true
+  },
+  "dino_factory_contract": {
+    "source_root": "repository/journal_extension/teacher_factory",
+    "entrypoint": "historical_dino_tiny:build_teacher",
+    "preflight_source_validation_required": true,
+    "preflight_teacher_instantiation_required": true
   }
 }
