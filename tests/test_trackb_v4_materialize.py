@@ -429,5 +429,72 @@ class TrackBV4MaterializationTests(unittest.TestCase):
 
 
 
+
+    def test_vendored_gvlid_checksum_authority_is_complete_and_pinned(self):
+        from cropcop_je import trackb_r07_ops
+
+        ledger = (
+            ROOT
+            / "journal_extension"
+            / "track_b_r07"
+            / "external_authority"
+            / "gvlid_v5_checksums.csv"
+        )
+        entries = trackb_r07_ops._parse_gvlid_checksum_authority(ledger)
+        self.assertEqual(len(entries), 3477)
+        self.assertEqual(
+            trackb_r07_ops._git_blob_sha1(ledger),
+            "5c953cf0381614d8e3744737bfeed98ea1162f9c",
+        )
+        support = {}
+        for label, _name in entries:
+            support[label] = support.get(label, 0) + 1
+        self.assertEqual(
+            support,
+            {
+                "Black Rot": 808,
+                "Esca": 888,
+                "Healthy": 1109,
+                "Leaf Blight": 672,
+            },
+        )
+
+    def test_gvlid_checksum_authority_rejects_duplicate_identity(self):
+        from cropcop_je import trackb_r07_ops
+
+        with tempfile.TemporaryDirectory() as td:
+            ledger = Path(td) / "checksums.csv"
+            digest = "a" * 64
+            ledger.write_text(
+                "filename,sha256\n"
+                f"GVLiD\\healthy\\x.jpg,{digest}\n"
+                f"GVLiD\\healthy\\x.jpg,{digest}\n",
+                encoding="utf-8",
+            )
+            with self.assertRaises(trackb_r07_ops.TrackBOpsError):
+                trackb_r07_ops._parse_gvlid_checksum_authority(ledger)
+
+    def test_external_source_lock_uses_pinned_gvlid_companion_ledger(self):
+        lock = json.loads(
+            (
+                ROOT
+                / "journal_extension"
+                / "track_b_r07"
+                / "TRACKB_EXTERNAL_SOURCE_LOCK_v2.json"
+            ).read_text(encoding="utf-8")
+        )
+        row = lock["candidates"]["gvlid_v5"]
+        self.assertTrue(row["materialization_permitted"])
+        self.assertEqual(row["checksum_authority"]["official_repository"], "MilindGayakwad/DNN")
+        self.assertEqual(
+            row["checksum_authority"]["official_commit"],
+            "878a1c7098964bb52c4c4a5c30e5b53340565258",
+        )
+        self.assertEqual(
+            row["checksum_authority"]["official_blob_sha1"],
+            "5c953cf0381614d8e3744737bfeed98ea1162f9c",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
