@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "attestation_id": "TRACKB_V5_OPERATOR_ATTESTATION_v1",
+  "status": "FROZEN_PRE_RESULTS_OPERATOR_SURFACE",
+  "scientific_change": false,
+  "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
+  "runtime_source_commit": "3f5fbd8f450ff938561a3e737ec4298fca2d7402",
+  "orchestration_lock": {
+    "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
+    "git_blob_sha1": "82bff21fde52b4807043b5eb03498368e140c2cb"
+  },
+  "operator_files": [
+    {
+      "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
+      "git_blob_sha1": "8825b67ca87d12381884961ce765ff4727194c52",
+      "role": "READINESS_AND_IMMUTABLE_MATERIALIZATION"
+    },
+    {
+      "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
+      "git_blob_sha1": "ff646c172578890d7ad29b9a954756e1f0decfef",
+      "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
+    }
+  ],
+  "operator_contract": {
+    "notebook_00_exact_runtime_checkout_required": true,
+    "notebook_01_expected_runtime_generation_required": true,
+    "mutable_branch_execution_forbidden": true,
+    "attached_code_authenticated_before_execution": true,
+    "qualification_bundle_required_for_claim": true,
+    "claim_recomputes_qualification": false,
+    "v1_test_reopen_forbidden": true,
+    "protected_external_predictions_before_claim": 0
+  }
+}
