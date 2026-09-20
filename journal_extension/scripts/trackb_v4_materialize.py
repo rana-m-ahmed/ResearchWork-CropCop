@@ -859,7 +859,6 @@ def main() -> int:
     )
     print(source_qualification_path.read_text(encoding="utf-8"), flush=True)
 
-    stage("1 :: immutable core")
     infra_root = output_root / "infrastructure_bundle"
     external_root = output_root / "external_bundle"
     core_root = infra_root / "core"
@@ -868,18 +867,32 @@ def main() -> int:
     potato_root = external_root / "irish_potato"
     infra_root.mkdir(parents=True)
     external_root.mkdir(parents=True)
+
+    stage("1 :: authoritative external cohorts — fail-fast sealed acquisition")
+    lineage_review = repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json"
+    acquire_gvlid_v5(
+        gvlid_root,
+        lineage_review_path=lineage_review,
+        expected_source_manifest_sha256=str(
+            (external_probe.get("gvlid_v5") or {}).get("public_api_manifest_sha256", "")
+        ),
+    )
+    _prepare_candidate(repo_root, "gvlid_v5", gvlid_root)
+    acquire_irish_potato(
+        potato_root,
+        lineage_review_path=lineage_review,
+        expected_source_manifest_sha256=str(
+            (external_probe.get("irish_potato") or {}).get("source_manifest_sha256", "")
+        ),
+    )
+    _prepare_candidate(repo_root, "irish_potato", potato_root)
+
+    stage("2 :: immutable core")
     _run_core_builder(repo_root, mounts, core_root, final_v1_view, r07_views)
 
-    stage("2 :: safe historical comparison")
+    stage("3 :: safe historical comparison")
     _run_historical_builder(repo_root, mounts["final_v1"], core_root, historical_root, args.device)
     shutil.rmtree(source_views, ignore_errors=True)
-
-    stage("3 :: authoritative external cohorts")
-    lineage_review = repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json"
-    acquire_gvlid_v5(gvlid_root, lineage_review_path=lineage_review)
-    _prepare_candidate(repo_root, "gvlid_v5", gvlid_root)
-    acquire_irish_potato(potato_root, lineage_review_path=lineage_review)
-    _prepare_candidate(repo_root, "irish_potato", potato_root)
 
     stage("4 :: input-contract validation and pairing")
     _validate_roles(core_root, historical_root, gvlid_root, potato_root)
