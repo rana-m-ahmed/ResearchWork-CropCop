@@ -163,6 +163,7 @@ def _run_qualification(
     scratch_root: Path,
     source_git_sha: str,
     device: str,
+    deadline_epoch: float,
 ) -> dict:
     runner = repo_root / "journal_extension/scripts/run_trackb_r07.py"
     validator = repo_root / "journal_extension/scripts/validate_trackb_preinference_qualification.py"
@@ -176,6 +177,7 @@ def _run_qualification(
             "--workers", "4",
             "--mode", "qualification",
             "--source-git-sha", source_git_sha,
+            "--deadline-epoch", str(deadline_epoch),
         ],
         cwd=repo_root,
         timeout=36000,
@@ -321,6 +323,7 @@ def _run_claim(
     kaggle_owner: str,
     materialization_id: str,
     qualification_root: Path,
+    deadline_epoch: float,
 ) -> dict:
     if len(authorized_sha) != 64 or any(ch not in "0123456789abcdef" for ch in authorized_sha):
         raise TrackBOpsError("claim mode requires a 64-character reviewed qualification science SHA-256")
@@ -348,6 +351,7 @@ def _run_claim(
             "--materialization-id", materialization_id,
             "--attempt-id", attempt_id,
             "--authorized-qualification-science-sha256", authorized_sha,
+            "--deadline-epoch", str(deadline_epoch),
         ],
         cwd=repo_root,
         timeout=36000,
@@ -450,6 +454,15 @@ def main() -> int:
     if len(source_git_sha) != 40:
         raise TrackBOpsError("paired input bundles lack an exact repository source SHA")
 
+    notebook_started_raw = os.environ.get("TRACKB_NOTEBOOK_STARTED_AT_EPOCH", "").strip()
+    try:
+        notebook_started = float(notebook_started_raw) if notebook_started_raw else time.time()
+    except ValueError as exc:
+        raise TrackBOpsError("invalid TRACKB_NOTEBOOK_STARTED_AT_EPOCH") from exc
+    # Reserve 90 minutes from Kaggle's nominal 12-hour session for final archive
+    # publication, round-trip verification and operator-visible receipts.
+    deadline_epoch = notebook_started + (10.5 * 3600)
+
     stage("1 :: Track-B scientific execution")
     if args.mode == "qualification":
         result = _run_qualification(
@@ -459,6 +472,7 @@ def main() -> int:
             scratch_root=scratch_root,
             source_git_sha=source_git_sha,
             device=args.device,
+            deadline_epoch=deadline_epoch,
         )
         # Publication credentials are introduced only after prediction-blind
         # science and independent QA have completed.
@@ -514,6 +528,7 @@ def main() -> int:
             kaggle_owner=args.kaggle_owner,
             materialization_id=str(paired["materialization_id"]),
             qualification_root=Path(qualification_bundle["evidence_root"]),
+            deadline_epoch=deadline_epoch,
         )
         result["qualification_bundle_manifest_sha256"] = qualification_bundle[
             "manifest_sha256"
@@ -528,6 +543,7 @@ def main() -> int:
         "mode": args.mode,
         "materialization_id": paired["materialization_id"],
         "repository_source_sha": source_git_sha,
+        "deadline_epoch": deadline_epoch,
         "role_manifest_sha256": paired["role_manifest_sha256"],
         "role_content_identity": paired["role_content_identity"],
         **result,
