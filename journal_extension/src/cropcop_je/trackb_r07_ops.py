@@ -1075,12 +1075,38 @@ def probe_external_sources() -> dict[str, object]:
     metadata = record.get("metadata") or {}
     if str(metadata.get("version", "")) != "01":
         raise TrackBOpsError("Irish Potato source probe observed a non-01 Zenodo version")
-    file_names = {str(row.get("key", "")) for row in (record.get("files") or [])}
     required_files = {"earlyblt.zip", "healthy.zip", "lateblt.zip"}
-    if not required_files.issubset(file_names):
+    by_name = {str(row.get("key", "")): row for row in (record.get("files") or [])}
+    if not required_files.issubset(by_name):
         raise TrackBOpsError(
-            f"Irish Potato source probe is missing required archives: {sorted(required_files - file_names)}"
+            f"Irish Potato source probe is missing required archives: {sorted(required_files - set(by_name))}"
         )
+    zenodo_rows = []
+    zenodo_total_declared_bytes = 0
+    for name in sorted(required_files):
+        row = by_name[name]
+        links = row.get("links") or {}
+        url = str(links.get("self") or links.get("content") or "").strip()
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise TrackBOpsError(f"Irish Potato source probe found invalid download URL: {name}")
+        checksum = str(row.get("checksum") or "").strip()
+        if not checksum:
+            raise TrackBOpsError(f"Irish Potato source probe found missing checksum: {name}")
+        size_value = row.get("size")
+        try:
+            size = int(size_value)
+        except (TypeError, ValueError):
+            size = -1
+        if size <= 0:
+            raise TrackBOpsError(f"Irish Potato source probe found invalid declared size: {name}={size}")
+        zenodo_total_declared_bytes += size
+        zenodo_rows.append({
+            "name": name,
+            "declared_bytes": size,
+            "checksum_present": True,
+            "download_url_valid": True,
+        })
 
     records = _mendeley_public_file_records("wkymf8bhcg", version="5")
     stable_manifest = _mendeley_stable_manifest(records)
@@ -1088,12 +1114,20 @@ def probe_external_sources() -> dict[str, object]:
         max(0, int(row.get("size", -1)))
         for row in records
     )
+    if total_declared_bytes <= 0:
+        raise TrackBOpsError("GVLiD public API probe reported no positive declared payload bytes")
+    if any(not str(row.get("download_url", "")).strip() for row in records):
+        raise TrackBOpsError("GVLiD public API probe found a file without a download URL")
+
     return {
         "status": "PASS",
         "irish_potato": {
             "doi": "10.5281/zenodo.8286529",
             "version": "01",
             "required_archives_present": True,
+            "archive_count": len(zenodo_rows),
+            "declared_bytes": zenodo_total_declared_bytes,
+            "transport_contract": zenodo_rows,
         },
         "gvlid_v5": {
             "doi": "10.17632/wkymf8bhcg.5",
@@ -1102,6 +1136,7 @@ def probe_external_sources() -> dict[str, object]:
             "public_api_file_count": len(records),
             "public_api_declared_bytes": total_declared_bytes,
             "public_api_manifest_sha256": sha256_json(stable_manifest),
+            "download_urls_valid": True,
         },
     }
 
