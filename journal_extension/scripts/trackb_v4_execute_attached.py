@@ -361,7 +361,10 @@ def _run_claim(
         raise TrackBOpsError("protected Track-B closure reports V1-test access")
 
     restricted = prepare_private_evidence_folder(output_root, scratch_root / "restricted_archive")
-    evidence_slug = evidence_dataset_slug(owner) + "-v4"
+    evidence_slug = (
+        f"{owner}/cropcop-trackb-evidence-v5-"
+        f"{str(closure['trackb_science_sha256'])[:16]}"
+    )
     private_receipt = publish_private_kaggle_dataset(
         folder=restricted,
         slug=evidence_slug,
@@ -369,6 +372,7 @@ def _run_claim(
         version_message=f"Track-B closure {str(closure['closure_sha256'])[:16]}",
         license_name="other",
         full_roundtrip=True,
+        allow_version=False,
     )
 
     attempt_state_path = output_root / "TRACKB_ATTEMPT_STATE.json"
