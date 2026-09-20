@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.0",
+  "report_id": "TRACKB_REMEDIATION_REGISTER_v1",
+  "generated_date": "2026-09-20",
+  "baseline_release": "ef5e2f9d4b8b542e13f33ba5446672f0e9cd60c0",
+  "audited_implementation_code_head": "d2796cb69daec26a94113e5909719eb353b94832",
+  "branch": "trackb-r07-remediation-v3-20260920",
+  "status": "PASS_IMPLEMENTATION_REMEDIATION_COMPLETE__KAGGLE_QUALIFICATION_REQUIRED",
+  "protected_external_inference_executed": false,
+  "scientific_design_changed": false,
+  "frozen_invariants": {
+    "candidates": [
+      "gvlid_grape",
+      "irish_potato"
+    ],
+    "classifier_states": [
+      "R07-S1",
+      "R07-S2",
+      "R07-S3"
+    ],
+    "native_output_space": 120,
+    "bootstrap_replicates": 5000,
+    "bootstrap_seed": 409883112,
+    "external_family_order_seed": 1936263114,
+    "support_floor_per_mapped_class": 50,
+    "historical_compare_scope": "V1_TRAIN_VAL_ONLY",
+    "historical_compare_rows": 92744,
+    "maximum_current_evidence_grade": "EXT-S",
+    "v1_test_status": "CLOSED_FOR_TRACK_B",
+    "new_training_authorized": false
+  },
+  "mitigations": [
+    {
+      "id": "M01",
+      "issue": "Frozen audit settings could diverge from hard-coded runtime values",
+      "status": "FIXED",
+      "verification": "TrackBAuditPolicy is built from validated v3 execution lock; mutation tests reject operational-threshold drift."
+    },
+    {
+      "id": "M02",
+      "issue": "Frozen external-family-order seed was previously sealed but unused",
+      "status": "FIXED",
+      "verification": "Seeded PCG64 representative ordering is executed before sealing; traversal-invariance test passes."
+    },
+    {
+      "id": "M03",
+      "issue": "Candidate ORB descriptors could accumulate in Python memory",
+      "status": "FIXED",
+      "verification": "Candidate ORB cache is file-backed/packed under scratch storage with mmap reads."
+    },
+    {
+      "id": "M04",
+      "issue": "Nested OpenCV/Python threading could oversubscribe Kaggle CPU",
+      "status": "FIXED",
+      "verification": "v3 runtime policy fixes OpenCV internal threads to one while worker pool remains bounded."
+    },
+    {
+      "id": "M05",
+      "issue": "Raw external/model material could remain in autosaved /kaggle/working",
+      "status": "FIXED",
+      "verification": "Large/raw/model material is staged under /kaggle/tmp; final persistent hygiene scan rejects images, model files and .part files."
+    },
+    {
+      "id": "M06",
+      "issue": "External acquisition lacked authoritative checksum binding and robust transport",
+      "status": "FIXED",
+      "verification": "Zenodo published checksums are mandatory; GVLiD source SHA-256 ledger is required; downloads use .part + retry + checksum + atomic replace."
+    },
+    {
+      "id": "M07",
+      "issue": "Lineage relationship flag lacked a frozen evidence record",
+      "status": "FIXED",
+      "verification": "TRACKB_EXTERNAL_LINEAGE_REVIEW_v1 is pre-results frozen and SHA-bound; both candidates retain RESIDUAL_UNCERTAINTY."
+    },
+    {
+      "id": "M08",
+      "issue": "Transport enumeration could influence scientific member identity",
+      "status": "FIXED",
+      "verification": "Canonical member naming binds raw SHA-256 plus source-member path digest; Mendeley duplicate transports are content-deduplicated."
+    },
+    {
+      "id": "M09",
+      "issue": "Fresh reruns could forget an earlier protected-inference attempt",
+      "status": "FIXED",
+      "verification": "Private Kaggle attempt ledger records durable PROTECTED_INFERENCE_STARTED and subsequent states; rerun requires identical science preimage."
+    },
+    {
+      "id": "M10",
+      "issue": "TRACK_B_CLOSED could be written before package verification",
+      "status": "FIXED",
+      "verification": "Independent QA -> stable science manifest -> ZIP build/CRC/member-hash verification -> package manifest -> closure."
+    },
+    {
+      "id": "M11",
+      "issue": "Scientific identity mixed with execution timestamps/duration",
+      "status": "FIXED",
+      "verification": "Stable trackb_science_sha256 is separated from execution-instance closure_sha256."
+    },
+    {
+      "id": "M12",
+      "issue": "Private Kaggle publication could be non-idempotent or incompletely verified",
+      "status": "FIXED",
+      "verification": "Content manifest/digest, identical-remote reuse, Ready-state poll and full terminal-evidence round-trip byte verification are implemented."
+    },
+    {
+      "id": "M13",
+      "issue": "GitHub failure after scientific closure could encourage science rerun",
+      "status": "FIXED",
+      "verification": "Private archive is verified first; GitHub failure preserves closure and explicitly forbids science rerun."
+    },
+    {
+      "id": "M14",
+      "issue": "Stale v2 readiness artifacts could be mistaken for current authority",
+      "status": "FIXED_BY_V3_SUPERSESSION",
+      "verification": "TRACKB_EXECUTION_READINESS_v3 is the only current readiness artifact; v2 reports are retained as historical records only."
+    },
+    {
+      "id": "M15",
+      "issue": "Repository-wide CI assumptions broke when Track-B notebooks/tests were added",
+      "status": "FIXED",
+      "verification": "Generic Python-3.11 suite installs compatible NumPy and Track-A canonical-notebook assertion excludes separately namespaced trackb_ notebooks."
+    }
+  ],
+  "exact_head_ci": {
+    "qa_reference_head": "00015260fb2c85b720c044d558f622a4c79b0e99",
+    "trackb_infrastructure_pr": {
+      "run_id": 35493475660,
+      "conclusion": "success"
+    },
+    "validate_secondary_tracka_wave": {
+      "run_id": 35493475669,
+      "conclusion": "success"
+    },
+    "validate_public_evidence": {
+      "run_id": 35493475536,
+      "conclusion": "success"
+    }
+  },
+  "remaining_required_gates": [
+    "Q1 real Kaggle qualification execution on frozen implementation d2796cb69daec26a94113e5909719eb353b94832",
+    "Q2 full real prediction-blind GVLiD + Irish Potato acquisition/audit qualification with zero protected R07 external predictions",
+    "Q3 independent verification of Q2 evidence and no-V1-test/no-protected-prediction assertions",
+    "freeze and authorize the later protected claim run using the reviewed qualification_science_sha256"
+  ]
+}

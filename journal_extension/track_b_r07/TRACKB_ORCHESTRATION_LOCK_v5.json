@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "lock_id": "TRACKB_ORCHESTRATION_LOCK_v5",
+  "status": "PRESEAL_PENDING_RUNTIME_SNAPSHOT",
+  "scientific_change": false,
+  "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "scientific_execution_lock_id": "TRACKB_R07_EXECUTION_LOCK_v4",
+  "code_attestation_id": "TRACKB_CODE_ATTESTATION_v4",
+  "external_source_lock_id": "TRACKB_EXTERNAL_SOURCE_LOCK_v2",
+  "input_materialization_lock_id": "TRACKB_INPUT_MATERIALIZATION_LOCK_v2",
+  "release_authority_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
+  "runtime_source_commit": "",
+  "supported_operator_notebooks": [
+    "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
+    "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb"
+  ],
+  "deprecated_operator_notebooks": [
+    "journal_extension/kaggle/trackb_build_core_package.ipynb",
+    "journal_extension/kaggle/trackb_build_historical_compare.ipynb",
+    "journal_extension/kaggle/trackb_r07_end_to_end.ipynb",
+    "journal_extension/kaggle/trackb_r07_master.ipynb"
+  ],
+  "readiness": {
+    "purpose": "SOURCE_QUALIFICATION_AND_IMMUTABLE_INPUT_MATERIALIZATION_ONLY",
+    "protected_external_predictions": 0,
+    "v1_test_accessed": false,
+    "attached_sources_only": true,
+    "external_acquisition_before_historical_compute": true,
+    "output_datasets_content_addressed": true,
+    "full_roundtrip_verification_required": true,
+    "credential": "KAGGLE_API_TOKEN",
+    "github_credential_required": false
+  },
+  "qualification": {
+    "protected_external_predictions": 0,
+    "v1_test_accessed": false,
+    "attached_code_authenticated_before_execution": true,
+    "full_role_content_identity_required": true,
+    "source_and_materialization_policy_hashes_required": true,
+    "scientific_subprocess_credentials": [],
+    "post_science_publication_credential": "KAGGLE_API_TOKEN",
+    "immutable_qualification_bundle_required": true,
+    "immutable_qualification_dataset_content_addressed": true,
+    "independent_preinference_qa_required": true
+  },
+  "claim": {
+    "same_infrastructure_and_external_materialization_as_qualification": true,
+    "exact_qualification_bundle_required": true,
+    "reviewed_qualification_science_sha256_required": true,
+    "qualification_recomputed": false,
+    "single_writer_claim_lease_required": true,
+    "durable_attempt_state_before_first_forward_pass": true,
+    "credential": "KAGGLE_API_TOKEN",
+    "github_credential_required": false,
+    "protected_inference_network_dependency": false,
+    "durable_states": [
+      "PROTECTED_INFERENCE_STARTED",
+      "SCIENCE_QA_PASS",
+      "PRIVATE_ARCHIVE_VERIFIED",
+      "TRACK_B_CLOSED"
+    ]
+  },
+  "runtime": {
+    "bootstrap_script": "journal_extension/scripts/bootstrap_trackb_runtime.py",
+    "requirements_lock": "journal_extension/track_b_r07/requirements-trackb.lock.txt",
+    "fresh_scientific_subprocess_required": true,
+    "target_accelerator": "T4x2",
+    "scientific_device": "cuda:0",
+    "session_hard_limit_hours": 12,
+    "publication_reserve_minutes": 90,
+    "runtime_source_commit_authoritative": true,
+    "mutable_branch_execution_forbidden": true
+  },
+  "filesystem": {
+    "input_root": "/kaggle/input",
+    "scratch_root_prefix": "/kaggle/tmp",
+    "durable_root_prefix": "/kaggle/working",
+    "authoritative_output_overwrite_forbidden": true,
+    "consumer_absolute_transient_paths_forbidden": true,
+    "published_role_symlinks_forbidden": true
+  },
+  "determinism": {
+    "torch_deterministic_algorithms_required": true,
+    "opencv_pair_seeded_ransac": true,
+    "dino_topk_cutoff_ties_stable": true,
+    "family_order_seed": 1936263114
+  },
+  "publication": {
+    "infrastructure_external_content_addressed_by_materialization_id": true,
+    "qualification_content_addressed_by_qualification_science_sha256": true,
+    "evidence_content_addressed_by_trackb_science_sha256": true,
+    "conflicting_version_creation_forbidden": true,
+    "github_in_scientific_critical_path": false
+  },
+  "finalization_requirements": [
+    "runtime_source_commit is exact 40-character Git commit",
+    "Notebook 00 is pinned to runtime_source_commit",
+    "Notebook 01 release anchor matches runtime_source_commit and release authority",
+    "runtime attestation verifies against runtime_source_commit",
+    "execution lock binds runtime attestation SHA-256",
+    "CI compile/tests/infrastructure/orchestration validators PASS",
+    "release authority bindings are populated",
+    "release authority executable=true only after all prior requirements PASS"
+  ]
+}

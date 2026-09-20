@@ -1,0 +1,87 @@
+{
+  "schema_version": "2.0",
+  "lock_id": "TRACKB_INPUT_MATERIALIZATION_LOCK_v2",
+  "status": "PRE_RESULTS_OPERATIONAL_LOCK",
+  "scientific_change": false,
+  "scientific_authority": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "scientific_execution_lock": "TRACKB_R07_EXECUTION_LOCK_v4",
+  "scientific_code_attestation": "TRACKB_CODE_ATTESTATION_v4",
+  "external_source_lock": "TRACKB_EXTERNAL_SOURCE_LOCK_v2",
+  "protected_external_predictions_allowed": false,
+  "source_inputs": {
+    "attachment_mode": "KAGGLE_ATTACHED_DATASETS_ONLY",
+    "required": [
+      "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1",
+      "sabahatabbas/sec-je-r07-cnxtt-context-s1-8904b100d223-a01",
+      "sabahatabbas/cropcop-r07-cnxtt-context-s2-abce1197-56023042",
+      "sabahatabbas/cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
+      "ranamuhammadahmed6/cropcop-secondary-g1-8904b100"
+    ],
+    "attached_sources_are_read_only": true,
+    "api_download_of_attached_sources_forbidden": true,
+    "identity_validation": "CONTENT_AND_FROZEN_AUTHORITY_HASHES",
+    "dino_dataset_version_required": 2
+  },
+  "external_sources": {
+    "acquisition_before_historical_compute": true,
+    "source_manifest_toc_tou_binding_required": true,
+    "official_source_checksums_required": true,
+    "gvlid_authority": "TRACKB_EXTERNAL_SOURCE_LOCK_v2:gvlid_v5",
+    "irish_potato_authority": "TRACKB_EXTERNAL_SOURCE_LOCK_v2:irish_potato"
+  },
+  "outputs": {
+    "infrastructure_dataset_prefix": "cropcop-trackb-infra-v5",
+    "external_dataset_prefix": "cropcop-trackb-external-v5",
+    "content_addressed_by": "materialization_id_prefix16",
+    "new_version_on_conflict_forbidden": true,
+    "required_roles": [
+      "core",
+      "historical_compare",
+      "gvlid_v5",
+      "irish_potato"
+    ],
+    "full_roundtrip_verification_required": true,
+    "paired_materialization_id_required": true,
+    "full_role_content_identity_required": true
+  },
+  "historical_compare": {
+    "coverage_scope": "V1_TRAIN_VAL_ONLY",
+    "image_count": 92744,
+    "train_image_count": 76376,
+    "validation_image_count": 16368,
+    "v1_test_image_bytes_accessed": false,
+    "maximum_evidence_grade": "EXT-S"
+  },
+  "secrets": {
+    "readiness": [
+      "KAGGLE_API_TOKEN"
+    ],
+    "qualification_post_science_publication": [
+      "KAGGLE_API_TOKEN"
+    ],
+    "qualification_scientific_subprocess": [],
+    "claim": [
+      "KAGGLE_API_TOKEN"
+    ],
+    "github_token_required": false
+  },
+  "filesystem_policy": {
+    "attached_root": "/kaggle/input",
+    "heavy_scratch_root": "/kaggle/tmp",
+    "durable_receipt_root": "/kaggle/working",
+    "absolute_transient_paths_forbidden_in_consumer_authority": true,
+    "published_role_symlinks_forbidden": true,
+    "existing_authoritative_output_overwrite_forbidden": true
+  },
+  "runtime_binding": {
+    "pair_receipt_must_bind": [
+      "repository_source_sha",
+      "scientific_execution_lock_sha256",
+      "scientific_code_attestation_sha256",
+      "external_source_lock_sha256",
+      "input_materialization_lock_sha256",
+      "role_manifest_sha256",
+      "role_content_identity"
+    ]
+  }
+}

@@ -1,193 +1,140 @@
-# CropCop Track B — R07 External Validation v2
+# CropCop Track B — R07 External Validation
 
-Track B evaluates the frozen Track-A-selected R07 ConvNeXt-Tiny family on prospectively fixed external field cohorts. It does not train, tune, reselect, or replace model states. The consumed V1 test remains closed.
+## Current operator architecture: v4
 
-## Operator entry point
+Track B keeps the frozen v3 scientific design and replaces only the operator/orchestration layer.
 
-Use only:
+**Supported operator notebooks:**
 
-`journal_extension/kaggle/trackb_r07_master.ipynb`
+1. `journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb`
+2. `journal_extension/kaggle/TrackB_01_Final_Execution.ipynb`
 
-One-time Kaggle setup:
+All older Track-B notebooks are historical/recovery surfaces and are **not supported for new v4 execution**.
 
-- enable Internet;
-- select T4 x2;
-- add secret `KAGGLE_API_TOKEN`;
-- add secret `CROPCOP_GITHUB_TOKEN`.
+## Scientific boundary
 
-`CROPCOP_GITHUB_TOKEN` must be a current raw GitHub PAT that can push to
-`rana-m-ahmed/ResearchWork-CropCop`. For a fine-grained PAT, select that repository
-and grant **Contents: Read and write**. Do not store quotes, a URL, a username, or an
-expired/revoked token in the Kaggle secret.
+The v4 orchestration makes **no scientific change** to:
 
-No Track-B input dataset needs to be manually uploaded or attached. The master notebook clones the frozen Track-B source, loads both secrets, and immediately performs a non-mutating `git push --dry-run` to a disposable evidence probe ref using temporary `GIT_ASKPASS`. This is the same Git transport used by final evidence publication and creates no remote ref. Invalid/expired credentials therefore fail **before** the expensive runtime repair. Only after this preflight passes does the notebook apply `requirements-trackb.lock.txt` directly to Kaggle's active Python interpreter **before any scientific package import**. This deliberately reuses the clean-session execution pattern already qualified during Track A. The repaired stack is verified from a fresh child interpreter with CUDA before `run_trackb_r07_master.py` is launched in another fresh subprocess.
+- downstream authority `EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3`;
+- R07 ConvNeXt-Tiny S1/S2/S3;
+- native 120-way predictions;
+- CTC-v2 preprocessing;
+- GVLiD v5 and Irish Potato Version 01;
+- frozen source→CropCop mappings;
+- V1 train+validation historical comparison only (92,744 images);
+- EXT-S ceiling for the executable post-closure historical route;
+- pHash/dHash/DINO/ORB audit thresholds;
+- 50-family minimum support;
+- 5,000 bootstrap replicates, seed `409883112`;
+- external-family order seed `1936263114`;
+- consumed V1 test closure;
+- no training/adaptation/reselection.
 
-Do not create a Python `venv` on Kaggle for Track B: the Kaggle system interpreter may not provide a working `ensurepip` path. Do not manually install Torch either; the master notebook owns the one-time exact-lock repair.
+The scientific runner remains `journal_extension/scripts/run_trackb_r07.py`.
 
-The older `trackb_r07_end_to_end.ipynb` is retained only as an inspectable internal claim-engine/recovery surface. It is not the supported operator workflow.
+## Notebook 00 — Readiness & Materialization
 
-## Kaggle runtime lock
+Use Kaggle T4 x2 with Internet ON and secret `KAGGLE_API_TOKEN`.
 
-Track B reuses the already-qualified Track-A clean-session package-repair pattern rather than a virtual environment. The scientific stack is repaired once from `requirements-trackb.lock.txt`, then all scientific imports/execution occur only in fresh subprocesses.
+Attach exactly the five frozen internal source datasets listed in
+`TRACKB_INPUT_MATERIALIZATION_LOCK_v1.json`.
 
-Frozen execution packages include:
+The readiness notebook:
 
-- Python 3.12.13
-- torch 2.12.1
-- torchvision 0.27.1
-- timm 1.0.26
-- NumPy 2.5.2
-- Pillow 12.3.0
-- transformers 5.0.0
-- huggingface-hub 1.30.0
-- safetensors 0.8.0
-- opencv-python-headless 4.13.0.92
-- Kaggle CLI 2.2.4
+1. checks out the exact frozen v4 orchestration source;
+2. repairs/verifies the exact Track-B runtime;
+3. reads the five internal datasets from attached `/kaggle/input` mounts rather than downloading them;
+4. builds the immutable core package;
+5. builds the safe 92,744-image historical comparison package;
+6. acquires and verifies the exact public GVLiD v5 and Irish Potato Version 01 cohorts;
+7. prepares the two candidate packages;
+8. creates a common `materialization_id` binding all four role manifests, repository source, v3 execution lock and v3 scientific attestation;
+9. publishes exactly two private Kaggle datasets:
+   - `cropcop-trackb-r07-infrastructure-v4`
+   - `cropcop-trackb-r07-external-v4`
+10. performs full private-Kaggle round-trip content verification.
 
-OpenCV 4.13.0.92 is a pre-results technical compatibility re-lock from 4.12.0.88 because the older wheel conflicts with the frozen NumPy 2.5.2 dependency on Python 3.12. No protected external prediction preceded this re-lock.
+Readiness is prediction-blind and must finish with
+`PASS_TRACKB_INPUT_MATERIALIZATION`, zero protected external predictions, and no V1-test access.
 
-## Frozen scientific cohorts
+Heavy one-time materialization lives under `/kaggle/tmp`; only the readiness receipt is retained in `/kaggle/working`.
 
-### Confirmatory field cohort — GVLiD v5
+## Notebook 01 — Final Execution
 
-- Candidate ID: `gvlid_grape`
-- Input role: `gvlid_v5`
-- DOI: `10.17632/wkymf8bhcg.5`
-- Version: 5
-- Expected images: 3,477
-- Scope: `SCOPE-GRAPE-4`
+Attach only the exact two private dataset versions produced by Notebook 00.
 
-Frozen mapping:
+The final notebook performs no Mendeley/Zenodo acquisition, no Kaggle dataset downloading, and no Git clone. It executes from the repository snapshot embedded in the attached `core` package.
 
-| Source label | CropCop label |
-|---|---|
-| Black Rot | `grape_black_rot` |
-| Esca | `grape_esca` |
-| Healthy | `grape_healthy` |
-| Leaf Blight | `grape_leaf_blight` |
+### Qualification mode
 
-The source publication/package has a one-image arithmetic inconsistency between its stated total and one displayed class-count table. Track B therefore treats the exact acquired version-5 bytes as authority: total identity must reconcile to 3,477 and observed class supports are enumerated and frozen before any R07 prediction.
+Default:
 
-### Complementary stress cohort — Irish Potato Version 01
+`RUN_MODE = 'qualification'`
 
-- Candidate ID: `irish_potato`
-- Input role: `irish_potato`
-- DOI: `10.5281/zenodo.8286529`
-- Version: `01`
-- Expected images: 58,709
-- Scope: `SCOPE-POTATO-3`
+Secrets required: **none**.
 
-Frozen mapping:
+Qualification:
 
-| Source label | CropCop label |
-|---|---|
-| `earlyblt` | `potato_early_blight` |
-| `healthy` | `potato_healthy` |
-| `lateblt` | `potato_late_blight` |
+- validates the two paired bundle receipts;
+- validates exactly four Track-B input roles;
+- repairs/verifies the exact runtime;
+- launches the scientific controller in a fresh subprocess;
+- replays R07 S1/S2/S3 on the frozen V1 validation surface;
+- runs both complete prediction-blind candidate audits;
+- freezes grades, families and seals;
+- writes `TRACKB_PREINFERENCE_QUALIFICATION.json`;
+- runs independent pre-inference QA;
+- asserts zero protected external predictions and V1-test access false;
+- stops.
 
-Expected source support remains 17,772 / 20,438 / 20,499 respectively.
+The key handoff is `qualification_science_sha256`.
 
-Agri-Vision Bangladesh is retired from Track-B v2 **before protected external inference**. It is not a fallback candidate if either frozen v2 cohort performs poorly.
+### Claim mode
 
-## Why the two-cohort design is locked this way
+Only after independent review of qualification:
 
-Candidate selection used only pre-external evidence: ontology compatibility, acquisition/source independence, field realism, public provenance, support, frozen R07 internal class reliability, and complementarity between a stronger confirmatory scope and a harder stress scope. External R07 performance cannot alter the cohort pair, mappings, model family, or seed set.
+`RUN_MODE = 'claim'`
 
-Track B evaluates exactly R07-S1/S2/S3. The historical DINOv3 ConvNeXt-Tiny checkpoint is an audit-only feature encoder. Historical MobileNetV4/PTE remains contextual preprint evidence and is not the Track-B classifier.
+and set the exact reviewed
+`AUTHORIZED_QUALIFICATION_SCIENCE_SHA256`.
 
-## Automated master workflow
+Claim mode must use the exact same two attached dataset versions.
 
-The master controller performs these stages in order:
+Secret required: `KAGGLE_API_TOKEN` only.
 
-1. load Kaggle/GitHub secrets and prove GitHub evidence-branch write access with a non-mutating `git push --dry-run` before dependency repair;
-2. repair any stock Kaggle package drift to the exact Track-B lock and verify the repaired stack/CUDA from a fresh subprocess;
-3. auto-detect the Kaggle owner authenticated by `KAGGLE_API_TOKEN` and verify access to every frozen Final-V1, R07-S1/S2/S3, and DINO source dataset before large downloads begin;
-4. automatically download those frozen assets;
-5. build the immutable `core` package containing only the allowed validation replay surface and frozen model/audit identities;
-6. build or reuse an exact private `historical_compare` cache over V1 train+validation only;
-7. delete large temporary source downloads to control working-disk pressure;
-8. acquire GVLiD v5 and Irish Potato from their authoritative public repositories;
-9. validate/package both external candidates;
-10. run prediction-blind exact/pHash/dHash/DINO/ORB family and historical-overlap audits;
-11. freeze each candidate grade and immutable seal before any R07 forward pass;
-12. run S1/S2/S3 native 120-way inference on the same sealed representatives;
-13. compute the fixed 5,000-replicate family bootstrap with shared resamples;
-14. independently recompute QA and require `TRACK_B_CLOSED`;
-15. archive the complete restricted evidence ZIP to a private Kaggle dataset **before** any final GitHub publication attempt;
-16. publish only audited public-safe summaries to a GitHub evidence branch, retrying transient failures four times.
+The runner recomputes the prediction-blind science identity and refuses protected inference unless it matches the reviewed digest exactly. Before the first protected R07 forward pass, it writes the durable attempt ledger. After terminal QA it builds the complete/public evidence packages and archives restricted evidence to private Kaggle with round-trip verification.
 
-The controller automatically garbage-collects large source downloads between stages rather than requiring the operator to create and reattach multiple intermediate datasets.
+GitHub credentials are intentionally excluded from the scientific run.
 
-## Publication durability
+## Publication boundary
 
-GitHub publication is an operational dissemination layer, not part of the scientific
-estimator. The notebook proves Git write access before compute. After terminal
-`TRACK_B_CLOSED` + QA PASS, the complete restricted evidence is archived to the
-private Kaggle evidence dataset first. Both private Kaggle publication and GitHub public-safe publication receive four attempts with bounded retry delays.
+GitHub is a post-closure dissemination layer, not part of the estimator.
 
-If GitHub becomes unavailable after scientific closure, Track B does **not** discard
-or reinterpret results. The automation receipt records
-`TRACK_B_CLOSED_PRIVATE_EVIDENCE_ARCHIVED_GITHUB_PUBLICATION_FAILED`, and the
-private evidence remains the durable recovery authority. Credential failures should
-normally be caught before dependency repair by the early dry-run preflight.
+After `TRACK_B_CLOSED`, use the public-safe evidence archive produced by Notebook 01 and commit it to:
 
-## Historical comparison boundary
+`journal_extension/evidence/public/track_b/<science-sha-prefix>/`
 
-The executable post-closure historical comparison uses only frozen Final-V1 train + validation:
+through a reviewed repository branch/PR.
 
-- train: 76,376
-- validation: 16,368
-- total: 92,744
-- consumed V1-test image bytes accessed: **false**
+A GitHub publication failure must never trigger a scientific rerun.
 
-This route has a permanent maximum grade of `EXT-S` because it is not the complete 117,546-image historical audited universe.
+## v4 operational locks
 
-`EXT-I` is possible only if a complete pre-test cryptographic comparison representation of all 117,546 historical images is genuinely recovered and independently verified. The repository must not recreate that surface now by reopening consumed V1-test images.
+- `TRACKB_INPUT_MATERIALIZATION_LOCK_v1.json`
+- `TRACKB_ORCHESTRATION_LOCK_v4.json`
 
-## Prediction firewall
+These operational locks sit above the unchanged scientific:
 
-For each candidate, the following must be frozen before R07 inference:
+- `TRACKB_R07_EXECUTION_LOCK_v3.json`
+- `TRACKB_CODE_ATTESTATION_v3.json`
+- `TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json`
 
-- DOI/version/source metadata;
-- raw-image manifest;
-- frozen source→CropCop mapping;
-- decode-failure ledger;
-- family graph and deterministic family representatives;
-- exact/near historical-overlap evidence;
-- family support;
-- terminal `EXT-I`, `EXT-S`, or `EXT-X` grade;
-- all three R07 checkpoint hashes;
-- class-map and preprocessing identity;
-- bootstrap configuration;
-- immutable seal hash.
+## Current gate
 
-`EXT-X` produces no claim-making protected classifier inference.
+Until Notebook 00 completes successfully on real Kaggle and the two published bundles are independently verified:
 
-## Evidence publication boundary
+**HOLD — REAL MATERIALIZATION REQUIRED**
 
-GitHub receives only allow-listed text evidence after terminal QA. The publication layer rejects model/checkpoint archives, raw images, secrets, credentials, private runtime paths, and row-level logits.
+Until Notebook 01 qualification passes and its `qualification_science_sha256` is reviewed:
 
-Complete restricted evidence is persisted to a private Kaggle dataset under the owner authenticated by the API token. The master notebook does not hard-code a personal Kaggle owner.
-
-## Claim boundary
-
-- `EXT-I`: only audit-bounded source-independent wording for that candidate's frozen mapped scope.
-- `EXT-S`: public cross-dataset / external-domain stress-test wording only.
-- `EXT-X`: no claim-producing performance result.
-
-No Track-B outcome establishes universal 120-class field generalization, agronomic treatment readiness, or device/runtime performance.
-
-## Core frozen identities
-
-- dataset manifest SHA-256: `bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2`
-- class-map SHA-256: `46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2`
-- DINO audit checkpoint SHA-256: `74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79`
-- R07-S1: `dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974`
-- R07-S2: `199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310`
-- R07-S3: `621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37`
-
-Current authority:
-
-- `EAAI-JE-TRACKBC-R07-DOWNSTREAM-v2`
-- `TRACKB_R07_EXECUTION_LOCK_v2`
-- `TRACKB_CODE_ATTESTATION_v2`
+**HOLD — PROTECTED EXTERNAL INFERENCE FORBIDDEN**
