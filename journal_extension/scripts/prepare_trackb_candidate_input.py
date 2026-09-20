@@ -47,7 +47,7 @@ def main() -> int:
     meta=json.loads(meta_path.read_text(encoding="utf-8"))
     if str(meta.get("doi")) != spec["doi"] or str(meta.get("version")) != spec["version"]:
         raise TrackBError("source metadata DOI/version mismatch")
-    for field in ("retrieved_at","license_or_access_text","source_url","lineage_review_status"):
+    for field in ("retrieved_at","license_or_access_text","source_url","lineage_review_status","lineage_review_id","lineage_review_sha256"):
         if not str(meta.get(field,"" )).strip(): raise TrackBError(f"source metadata missing {field}")
     known=meta.get("known_historical_contributor_relationship")
     if not isinstance(known,bool): raise TrackBError("source metadata must state known_historical_contributor_relationship as boolean")
@@ -55,6 +55,22 @@ def main() -> int:
     if lineage not in {"PASS_NO_KNOWN_RELATIONSHIP","RESIDUAL_UNCERTAINTY"}:
         raise TrackBError("unsupported lineage_review_status")
     unresolved=bool(known or lineage != "PASS_NO_KNOWN_RELATIONSHIP")
+
+    lineage_sha=str(meta.get("lineage_review_sha256","")).strip().lower()
+    if len(lineage_sha) != 64 or any(ch not in "0123456789abcdef" for ch in lineage_sha):
+        raise TrackBError("source metadata lineage_review_sha256 is invalid")
+    if args.role == "irish_potato":
+        transport=meta.get("acquisition_transport")
+        if not isinstance(transport,list) or len(transport) != 3:
+            raise TrackBError("Irish Potato acquisition transport must contain exactly three source archives")
+        if any(row.get("source_checksum_verified") is not True for row in transport):
+            raise TrackBError("Irish Potato source archive checksum verification is incomplete")
+    elif args.role == "gvlid_v5":
+        integrity=meta.get("source_checksum_integrity")
+        if not isinstance(integrity,dict) or integrity.get("status") != "PASS":
+            raise TrackBError("GVLiD source checksum ledger verification is not PASS")
+        if int(integrity.get("verified_image_count",-1)) != spec["count"]:
+            raise TrackBError("GVLiD checksum ledger did not verify all frozen images")
 
     items=discover_candidate_images(data_root, eligible_subtree=spec["subtree"], allowed_labels=None)
     if len(items) != spec["count"]:
@@ -81,6 +97,9 @@ def main() -> int:
     manifest={
         "schema_version":"1.0", "role":args.role, "doi":spec["doi"], "version":spec["version"],
         "data_root":data_root.relative_to(root).as_posix(), "unresolved_lineage":unresolved,
+        "lineage_review_id":str(meta["lineage_review_id"]),
+        "lineage_review_sha256":lineage_sha,
+        "source_checksum_verified":True,
         "preflight_original_count":len(items), "preflight_label_support":supports, "files":files,
     }
     atomic_write_json(root/"TRACKB_INPUT_MANIFEST.json",manifest)

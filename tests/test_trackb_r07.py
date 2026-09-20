@@ -17,9 +17,11 @@ from cropcop_je.trackb_r07 import (
     R07_CHECKPOINTS,
     R07_RUN_RECORDS,
     TrackBError,
+    audit_policy_from_lock,
     assign_candidate_grade,
     build_candidate_seal,
     mapped_scope_metrics,
+    validate_prior_attempt_for_rerun,
     validate_same_prediction_surface,
     verify_candidate_seal,
     git_blob_sha1,
@@ -29,8 +31,8 @@ from cropcop_je.trackb_r07 import (
 )
 from cropcop_je.hashing import sha256_json
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
-from cropcop_je.trackb_r07_audit import ImageAuditRecord, representative_manifest
-from cropcop_je.trackb_r07_ops import load_kaggle_secret, _classify_github_push_failure
+from cropcop_je.trackb_r07_audit import ImageAuditRecord, deterministic_representative_order, representative_manifest
+from cropcop_je.trackb_r07_ops import _checksum_matches, _classify_github_push_failure, _parse_gvlid_checksum_authority, load_kaggle_secret
 
 
 class TrackBR07Tests(unittest.TestCase):
@@ -219,7 +221,7 @@ class TrackBR07Tests(unittest.TestCase):
             f = root / "x.py"
             f.write_text("print('ok')\n", encoding="utf-8")
             att = {
-                "attestation_id": "TRACKB_CODE_ATTESTATION_v2",
+                "attestation_id": "TRACKB_CODE_ATTESTATION_v3",
                 "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
                 "files": [{"path": "x.py", "git_blob_sha1": git_blob_sha1(f)}],
             }
@@ -230,7 +232,7 @@ class TrackBR07Tests(unittest.TestCase):
             with self.assertRaises(TrackBError):
                 verify_code_attestation(root, ap)
 
-    def test_v2_candidate_roles_are_frozen_and_agrivision_is_retired(self):
+    def test_v3_candidate_roles_preserve_frozen_v2_selection(self):
         self.assertEqual(REQUIRED_INPUT_ROLES, {"core", "historical_compare", "gvlid_v5", "irish_potato"})
         self.assertNotIn("agrivision_bd", CANDIDATE_CONTRACTS)
         self.assertEqual(
@@ -243,8 +245,8 @@ class TrackBR07Tests(unittest.TestCase):
             },
         )
 
-    def test_v2_lock_requires_automated_publication_boundaries(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+    def test_v3_lock_requires_automated_publication_boundaries(self):
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
         validate_execution_lock(lock)
         automation = lock["automation"]
         self.assertTrue(automation["single_master_notebook"])
@@ -289,6 +291,17 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertEqual(automation["github_publication_retry_attempts"], 4)
         self.assertEqual(automation["private_kaggle_publication_retry_attempts"], 4)
         self.assertTrue(automation["github_publication_failure_preserves_scientific_closure"])
+        self.assertEqual(automation["operator_default_mode"], "qualification")
+        self.assertTrue(automation["independent_preinference_qa_required"])
+        self.assertTrue(automation["protected_claim_requires_post_qualification_exact_sha_freeze"])
+        self.assertTrue(automation["qualification_must_produce_zero_protected_external_predictions"])
+        self.assertTrue(automation["protected_claim_requires_matching_qualification_science_sha256"])
+        self.assertTrue(automation["qualification_science_identity_excludes_execution_timestamps"])
+        self.assertTrue(automation["qualification_science_identity_reused_for_attempt_ancestry"])
+        self.assertEqual(automation["github_token_required_modes"], ["claim"])
+        self.assertEqual(automation["github_push_preflight_modes"], ["claim"])
+        self.assertFalse(automation["qualification_requires_github_token"])
+        self.assertFalse(automation["qualification_requires_github_push_preflight"])
 
         drifted = dict(lock)
         drifted["automation"] = dict(automation)
@@ -381,7 +394,7 @@ class TrackBR07Tests(unittest.TestCase):
         verify_candidate_seal(build_candidate_seal(payload))
 
     def test_execution_lock_binds_replay_records_and_dino_factory(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
         validate_execution_lock(lock)
         ids = lock["identities"]
         self.assertEqual(ids["dino_factory_manifest_sha256"], DINO_FACTORY_MANIFEST_SHA256)
@@ -397,7 +410,7 @@ class TrackBR07Tests(unittest.TestCase):
             validate_execution_lock(drifted)
 
     def test_execution_lock_forbids_postclosure_full_raw_rebuild(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v2.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
         validate_execution_lock(lock)
         drifted = dict(lock)
         drifted["historical_compare"] = dict(lock["historical_compare"])
@@ -423,6 +436,191 @@ class TrackBR07Tests(unittest.TestCase):
         rows = representative_manifest([r1, r2], [["z", "a"]])
         self.assertEqual(rows[0]["representative_row_id"], "a")
         self.assertEqual(rows[0]["representative_raw_sha256"], "0" * 64)
+
+    def test_audit_policy_is_executable_lock_source_of_truth(self):
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+        policy = audit_policy_from_lock(lock)
+        self.assertEqual(policy.phash_radius, 12)
+        self.assertEqual(policy.dhash_radius, 10)
+        self.assertEqual(policy.dino_top_k, 50)
+        self.assertEqual(policy.orb_max_side, 800)
+        self.assertEqual(policy.orb_nfeatures, 1200)
+        self.assertEqual(policy.bootstrap_replicates, 5000)
+        self.assertEqual(policy.bootstrap_seed, 409883112)
+        self.assertEqual(policy.external_family_order_seed, 1936263114)
+
+    def test_lock_rejects_operational_threshold_drift(self):
+        import copy
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+        mutations = [
+            ("candidate_generation", "dino_top_k", 49),
+            ("geometric_acceptance", "lowe_ratio", 0.74),
+            ("geometric_acceptance", "orb_features_max", 1199),
+            ("bootstrap", "replicates", 4999),
+        ]
+        for section, key, value in mutations:
+            drifted = copy.deepcopy(lock)
+            drifted[section][key] = value
+            with self.subTest(section=section, key=key):
+                with self.assertRaises(TrackBError):
+                    validate_execution_lock(drifted)
+        drifted = copy.deepcopy(lock)
+        drifted["candidate_generation"]["phash"]["hamming_max"] = 11
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted)
+        drifted = copy.deepcopy(lock)
+        drifted["candidate_generation"]["dhash"]["hamming_max"] = 9
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted)
+        drifted = copy.deepcopy(lock)
+        drifted["external_family_order_seed"] = 1
+        with self.assertRaises(TrackBError):
+            validate_execution_lock(drifted)
+
+    def test_operator_sources_fail_closed_to_qualification(self):
+        master = (ROOT / "journal_extension" / "scripts" / "run_trackb_r07_master.py").read_text(encoding="utf-8")
+        runner = (ROOT / "journal_extension" / "scripts" / "run_trackb_r07.py").read_text(encoding="utf-8")
+        notebook = (ROOT / "journal_extension" / "kaggle" / "trackb_r07_master.ipynb").read_text(encoding="utf-8")
+        self.assertIn('choices=["qualification", "claim"], default="qualification"', master)
+        self.assertIn('PASS_TRACKB_PREINFERENCE_QUALIFICATION', master)
+        self.assertIn('--authorized-qualification-science-sha256', master)
+        self.assertIn('claim mode requires a reviewed --authorized-qualification-science-sha256', master)
+        self.assertIn('--authorized-qualification-science-sha256', runner)
+        self.assertIn('authorized_qualification_science', runner)
+        self.assertIn('current_qualification_science', runner)
+        self.assertIn('TRACKB_QUALIFICATION_AUTHORIZATION.json', runner)
+        self.assertIn('validate_trackb_preinference_qualification.py', master)
+        self.assertIn('choices=["preflight", "qualification", "claim", "all"]', runner)
+        self.assertIn('--qualification-root', runner)
+        self.assertIn('claim mode requires --qualification-root', runner)
+        self.assertIn('qualification_recomputed": False', runner)
+        self.assertLess(
+            runner.index('if args.mode == "claim":'),
+            runner.index('stage("1-4 :: prediction-blind source verification'),
+        )
+        self.assertIn("--execution-mode", notebook)
+        self.assertIn("qualification", notebook)
+        self.assertIn("TRACKB_PREINFERENCE_QA.json", notebook)
+        self.assertNotIn("CROPCOP_GITHUB_TOKEN", notebook)
+        self.assertNotIn("verify_github_repository_push_access", notebook)
+        self.assertNotIn("PASS_AUTOMATED_TRACK_B_COMPLETE", notebook)
+
+    def test_prediction_blind_science_identity_excludes_execution_metadata(self):
+        source = (
+            ROOT / "journal_extension" / "scripts" / "run_trackb_r07.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def _prediction_blind_science_manifest(")
+        end = source.index("def _stable_science_manifest(", start)
+        helper = source[start:end]
+        for forbidden in (
+            "sealed_at_utc",
+            "retrieved_at",
+            "final_qa_sha256",
+            "candidate_input_manifest_sha256",
+            "source_metadata_record_sha256",
+        ):
+            self.assertNotIn(forbidden, helper)
+        self.assertIn("qualification_science_sha256", helper)
+        self.assertIn("TRACKB_PREDICTION_BLIND_SCIENCE.json", helper)
+
+    def test_preinference_validator_forbids_claim_artifacts(self):
+        source = (
+            ROOT / "journal_extension" / "scripts" / "validate_trackb_preinference_qualification.py"
+        ).read_text(encoding="utf-8")
+        for token in (
+            "TRACKB_FINAL_CLOSURE.json",
+            "TRACKB_FINAL_QA.json",
+            "TRACKB_ATTEMPT_STATE.json",
+            "protected_external_prediction_count",
+            "PASS_INDEPENDENT_PREINFERENCE_QA",
+            "verify_candidate_seal",
+            "TRACKB_PREDICTION_BLIND_SCIENCE.json",
+            "qualification_science_sha256",
+            "reconstructed_science",
+            "qualification_science_sha256",
+            "TRACKB_PREDICTION_BLIND_SCIENCE.json",
+        ):
+            self.assertIn(token, source)
+
+    def test_seeded_representative_order_is_traversal_invariant(self):
+        rows = [
+            {"representative_raw_sha256": f"{i:064x}", "family_id": f"F{i}", "representative_row_id": f"R{i}"}
+            for i in range(12)
+        ]
+        a = deterministic_representative_order(rows, seed=1936263114)
+        b = deterministic_representative_order(list(reversed(rows)), seed=1936263114)
+        self.assertEqual(a, b)
+        self.assertEqual(
+            {row["representative_row_id"] for row in a},
+            {row["representative_row_id"] for row in rows},
+        )
+        c = deterministic_representative_order(rows, seed=1936263115)
+        self.assertNotEqual(
+            [row["representative_row_id"] for row in a],
+            [row["representative_row_id"] for row in c],
+        )
+
+    def test_checksum_verifier_supports_zenodo_md5_and_sha256(self):
+        import hashlib, tempfile
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "x.bin"
+            path.write_bytes(b"track-b-source")
+            md5 = hashlib.md5(path.read_bytes()).hexdigest()
+            sha = hashlib.sha256(path.read_bytes()).hexdigest()
+            self.assertTrue(_checksum_matches(path, f"md5:{md5}"))
+            self.assertTrue(_checksum_matches(path, f"sha256:{sha}"))
+            self.assertFalse(_checksum_matches(path, "md5:" + "0" * 32))
+
+    def test_gvlid_checksum_authority_parser_is_deterministic(self):
+        path = (
+            ROOT
+            / "journal_extension"
+            / "track_b_r07"
+            / "external_authority"
+            / "gvlid_v5_checksums.csv"
+        )
+        first = _parse_gvlid_checksum_authority(path)
+        second = _parse_gvlid_checksum_authority(path)
+        self.assertEqual(first, second)
+        self.assertEqual(len(first), 3477)
+
+    def test_attempt_rerun_gate_allows_only_unchanged_interrupted_attempt(self):
+        digest = "a" * 64
+        gate = validate_prior_attempt_for_rerun(
+            {
+                "attempt_id": "old",
+                "protected_inference_ever": True,
+                "science_preimage_sha256": digest,
+                "status": "PROTECTED_INFERENCE_STARTED",
+            },
+            current_science_preimage_sha256=digest,
+        )
+        self.assertTrue(gate["prior_attempt_with_protected_inference"])
+        self.assertEqual(gate["parent_attempt_id"], "old")
+
+        with self.assertRaises(TrackBError):
+            validate_prior_attempt_for_rerun(
+                {
+                    "attempt_id": "old",
+                    "protected_inference_ever": True,
+                    "science_preimage_sha256": "b" * 64,
+                    "status": "PROTECTED_INFERENCE_STARTED",
+                },
+                current_science_preimage_sha256=digest,
+            )
+
+        for status in ("SCIENCE_QA_PASS", "PRIVATE_ARCHIVE_VERIFIED", "PUBLICATION_COMPLETE"):
+            with self.subTest(status=status):
+                with self.assertRaises(TrackBError):
+                    validate_prior_attempt_for_rerun(
+                        {
+                            "attempt_id": "old",
+                            "protected_inference_ever": True,
+                            "science_preimage_sha256": digest,
+                            "status": status,
+                        },
+                        current_science_preimage_sha256=digest,
+                    )
 
     def test_bootstrap_is_reproducible_and_shared_across_seeds(self):
         rows = []
