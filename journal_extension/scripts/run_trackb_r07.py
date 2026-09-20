@@ -50,6 +50,7 @@ from cropcop_je.trackb_r07 import (
     verify_code_attestation,
 )
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
+from cropcop_je.trackb_r07_ops import publish_attempt_state, read_latest_attempt_state, utc_now
 from cropcop_je.trackb_r07_audit import (
     ImageAuditRecord,
     build_family_components,
@@ -996,6 +997,40 @@ def _independent_candidate_qa(candidate, output_root: Path, audit_policy) -> dic
     return result
 
 
+def _science_preimage_manifest(output_root: Path, core, candidates) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "schema_version": "1.0",
+        "authority_id": AUTHORITY_ID,
+        "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
+        "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
+        "code_attestation_sha256": sha256_file(resolve_bundle_file(core, "code_attestation")),
+        "class_map_sha256": CLASS_MAP_SHA256,
+        "dataset_manifest_sha256": DATASET_MANIFEST_SHA256,
+        "authorized_r07_checkpoint_sha256": R07_CHECKPOINTS,
+        "candidates": {},
+    }
+    for candidate in candidates:
+        root = candidate["root"]
+        seal = candidate["seal"]
+        payload["candidates"][candidate["candidate_id"]] = {
+            "candidate_id": candidate["candidate_id"],
+            "source_doi": seal["source_doi"],
+            "source_version": seal["source_version"],
+            "grade": seal["grade"],
+            "claim_mode": seal["claim_mode"],
+            "mapping_sha256": seal["mapping_sha256"],
+            "family_support": seal["family_support"],
+            "accepted_historical_link_count": seal["accepted_historical_link_count"],
+            "source_manifest_sha256": sha256_file(root / "raw_manifest.csv"),
+            "family_graph_sha256": sha256_file(root / "families.jsonl"),
+            "representative_manifest_sha256": sha256_file(root / "sealed_representatives.jsonl"),
+            "accepted_within_edges_sha256": sha256_file(root / "accepted_within_edges.jsonl"),
+            "accepted_historical_edges_sha256": sha256_file(root / "accepted_historical_edges.jsonl"),
+        }
+    payload["science_preimage_sha256"] = sha256_json(payload)
+    return payload
+
+
 def _stable_science_manifest(output_root: Path, core, candidates) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "schema_version": "1.0",
@@ -1134,6 +1169,9 @@ def main() -> int:
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--mode", choices=["preflight", "all"], default="all")
+    ap.add_argument("--source-git-sha", default="")
+    ap.add_argument("--attempt-dataset-slug", default="")
+    ap.add_argument("--attempt-id", default="")
     args = ap.parse_args()
 
     output_root = Path(args.output_root).resolve()
@@ -1206,6 +1244,46 @@ def main() -> int:
     }
     atomic_write_json(output_root / "TRACKB_PREDICTION_FIREWALL.json", firewall)
 
+    claim_candidates = [candidate for candidate in (grape, potato) if candidate["grade"] in {"EXT-I", "EXT-S"}]
+    attempt_state = None
+    if claim_candidates:
+        if not args.attempt_dataset_slug or not args.attempt_id or len(str(args.source_git_sha)) != 40:
+            raise TrackBError(
+                "protected inference requires --attempt-dataset-slug, --attempt-id, and exact --source-git-sha"
+            )
+        preimage = _science_preimage_manifest(output_root, core, (grape, potato))
+        previous = read_latest_attempt_state(args.attempt_dataset_slug)
+        if previous and previous.get("protected_inference_ever") is True:
+            if previous.get("science_preimage_sha256") != preimage["science_preimage_sha256"]:
+                raise TrackBError(
+                    "a prior protected Track-B attempt exists under different scientific identities; "
+                    "automatic rerun is forbidden"
+                )
+            if previous.get("status") in {
+                "SCIENCE_QA_PASS",
+                "PRIVATE_ARCHIVE_VERIFIED",
+                "PUBLICATION_COMPLETE",
+            }:
+                raise TrackBError(
+                    f"prior attempt is already durable at status={previous.get('status')}; "
+                    "do not rerun protected inference"
+                )
+        attempt_state = {
+            "schema_version": "1.0",
+            "attempt_id": str(args.attempt_id),
+            "status": "PROTECTED_INFERENCE_STARTED",
+            "protected_inference_ever": True,
+            "started_at_utc": utc_now(),
+            "source_git_sha": str(args.source_git_sha),
+            "science_preimage_sha256": preimage["science_preimage_sha256"],
+            "science_preimage": preimage,
+            "parent_attempt_id": (previous or {}).get("attempt_id"),
+            "prior_attempt_with_protected_inference": bool(previous and previous.get("protected_inference_ever") is True),
+        }
+        atomic_write_json(output_root / "TRACKB_ATTEMPT_STATE.json", attempt_state)
+        attempt_receipt = publish_attempt_state(args.attempt_dataset_slug, attempt_state)
+        atomic_write_json(output_root / "TRACKB_ATTEMPT_PUBLICATION.json", attempt_receipt)
+
     _inject_image_paths(grape, inputs["gvlid_v5"])
     _inject_image_paths(potato, inputs["irish_potato"])
     results = {
@@ -1228,6 +1306,15 @@ def main() -> int:
     atomic_write_json(output_root / "TRACKB_FINAL_QA.json", qa)
 
     science_manifest = _stable_science_manifest(output_root, core, (grape, potato))
+    if attempt_state is not None:
+        attempt_state = {
+            **attempt_state,
+            "status": "SCIENCE_QA_PASS",
+            "science_qa_pass_at_utc": utc_now(),
+            "trackb_science_sha256": science_manifest["trackb_science_sha256"],
+            "final_qa_sha256": qa["qa_sha256"],
+        }
+        atomic_write_json(output_root / "TRACKB_ATTEMPT_STATE.json", attempt_state)
     packages = _package_outputs(output_root)
     atomic_write_json(output_root / "TRACKB_PACKAGE_MANIFEST.json", packages)
 
