@@ -1,21 +1,23 @@
 {
   "schema_version": "1.0",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "status": "REMEDIATION_IN_PROGRESS",
-  "executable": false,
+  "status": "SEALED_PRE_RESULTS_RELEASE",
+  "executable": true,
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
   "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
-  "runtime_source_commit": "",
+  "runtime_source_commit": "3f5fbd8f450ff938561a3e737ec4298fca2d7402",
   "bindings": {
-    "code_attestation_sha256": "",
-    "execution_lock_sha256": "",
-    "materialization_lock_sha256": "",
-    "external_source_lock_sha256": "",
-    "requirements_lock_sha256": "",
-    "operator_notebook_00_blob_sha1": "",
-    "operator_notebook_01_blob_sha1": ""
+    "code_attestation_sha256": "42049f9e65090cd20773768f2187fbd9e427fcec2dc8d2d30047bc69c6addef5",
+    "execution_lock_sha256": "c061b7212207ab3e32b69d21865f7488bda1a2833b8e17f94a326d29f8a9e51e",
+    "materialization_lock_sha256": "3d39b2c6931852de6055c3298513c7acaa1aed095248097d81978d5e52268d98",
+    "external_source_lock_sha256": "5beaa5cfccd45c7e7fa941b2c62bd20a248c663710bfc7dadfcf7af683585417",
+    "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
+    "orchestration_lock_sha256": "52e35eb0170d1466b6305645c72ad13448557be37f7366879b0b91824f005f41",
+    "operator_attestation_sha256": "a79d246693bbc5a74639ca0a27619a5267731c44be42439ac35f94f6dbb15b2c",
+    "operator_notebook_00_blob_sha1": "8825b67ca87d12381884961ce765ff4727194c52",
+    "operator_notebook_01_blob_sha1": "ae02cc3746c8876203e2fe51fb5f4b77648db8f0"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -49,10 +51,20 @@
     "automatic_deletion_of_existing_authoritative_outputs_forbidden": true
   },
   "seal_requirements": [
-    "runtime_source_commit must be an exact 40-character commit",
-    "all bindings must be populated and verified",
-    "external source lock must permit materialization for every candidate",
-    "operator notebooks must be regenerated from the final runtime snapshot",
-    "all Track-B QA and integration tests must pass"
-  ]
+    "runtime_source_commit is an exact 40-character commit: SATISFIED",
+    "all release bindings are populated and validator-checked: SATISFIED",
+    "external source lock permits both candidates: SATISFIED",
+    "Notebook 00 and Notebook 01 bind the final runtime snapshot: SATISFIED",
+    "Track-B compile/tests/infrastructure/orchestration QA passed on pre-seal surface: SATISFIED",
+    "protected external predictions before claim remain zero: SATISFIED",
+    "V1 test remains closed: SATISFIED"
+  ],
+  "seal_evidence": {
+    "preseal_operator_surface_commit": "f43ec41176e0b6be1dfd7e24bc4a87fa652ee1a5",
+    "trackb_qa_workflow_run_id": 35527822260,
+    "trackb_qa_workflow_run_number": 505,
+    "trackb_qa_conclusion": "success",
+    "protected_external_prediction_count": 0,
+    "v1_test_accessed": false
+  }
 }
