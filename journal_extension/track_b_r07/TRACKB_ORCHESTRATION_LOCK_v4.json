@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "lock_id": "TRACKB_ORCHESTRATION_LOCK_v4",
+  "status": "PRE_RESULTS_OPERATIONAL_LOCK",
+  "scientific_change": false,
+  "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "scientific_lock_id": "TRACKB_R07_EXECUTION_LOCK_v3",
+  "orchestration_implementation_commit": "8ec16d0c1bca6196fe5fb4add892c858536d570e",
+  "supported_operator_notebooks": [
+    "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
+    "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb"
+  ],
+  "deprecated_operator_notebooks": [
+    "journal_extension/kaggle/trackb_build_core_package.ipynb",
+    "journal_extension/kaggle/trackb_build_historical_compare.ipynb",
+    "journal_extension/kaggle/trackb_r07_end_to_end.ipynb",
+    "journal_extension/kaggle/trackb_r07_master.ipynb"
+  ],
+  "qualification": {
+    "attached_input_roles": [
+      "core",
+      "historical_compare",
+      "gvlid_v5",
+      "irish_potato"
+    ],
+    "live_scientific_input_downloads": false,
+    "git_clone_required": false,
+    "secrets_required": [],
+    "protected_external_predictions": 0,
+    "independent_preinference_qa_required": true
+  },
+  "claim": {
+    "same_attached_dataset_versions_as_qualification": true,
+    "reviewed_qualification_science_sha256_required": true,
+    "kaggle_api_token_required": true,
+    "github_token_required": false,
+    "protected_inference_network_dependency": false,
+    "durable_attempt_ledger_before_first_forward_pass": true,
+    "private_evidence_roundtrip_required": true
+  },
+  "publication": {
+    "github_in_scientific_critical_path": false,
+    "public_evidence_zip_generated_by_scientific_runner": true,
+    "github_commit_after_scientific_closure": true
+  },
+  "runtime": {
+    "bootstrap_script": "journal_extension/scripts/bootstrap_trackb_runtime.py",
+    "fresh_scientific_subprocess_required": true,
+    "target_accelerator": "T4x2",
+    "scientific_device": "cuda:0"
+  },
+  "load_bearing_files": {
+    "journal_extension/scripts/trackb_v4_materialize.py": "89f9dc3d14156ce61ca42f739149b72c101d302a",
+    "journal_extension/scripts/trackb_v4_execute_attached.py": "94205cd8afac27c76ba13a83a8ab969e9382ae68",
+    "journal_extension/scripts/run_trackb_r07.py": "3437c276b789d1772039a187dce1e00fcdaea23d",
+    "journal_extension/scripts/validate_trackb_preinference_qualification.py": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2",
+    "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json": "de622b10b3611cd8e5d9febb829e6a88cf70ac9b",
+    "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json": "e0f13839ce6632fcdac722e7ba11108b29c6c51c"
+  }
+}
