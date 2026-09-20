@@ -126,7 +126,6 @@ def main() -> int:
         "bootstrap_trackb_runtime.py",
         "requirements-trackb.lock.txt",
         "PASS_TRACKB_PREINFERENCE_QUALIFICATION",
-        "--authorized-qualification-sha256",
         "TRACKB_PREINFERENCE_QUALIFICATION.json",
         "TRACKB_QUALIFICATION_AUTHORIZATION.json",
         "--authorized-qualification-sha256",
@@ -149,6 +148,8 @@ def main() -> int:
         raise TrackBError("master notebook lacks fail-fast Git write preflight")
     if "'--execution-mode', 'claim'" in master_text or '"--execution-mode", "claim"' in master_text:
         raise TrackBError("operator notebook exposes protected claim mode instead of qualification mode")
+    if "--authorized-qualification-sha256" in master_text:
+        raise TrackBError("qualification notebook exposes protected-claim authorization input")
     frozen_qualification_sha = "87249ddbd73dd7b0cf5242670ce9cc25b0c415a1"
     if f"SOURCE_COMMIT = '{frozen_qualification_sha}'" not in master_text:
         raise TrackBError("qualification notebook is not pinned to the audited implementation SHA")
@@ -259,6 +260,7 @@ def main() -> int:
         "full_roundtrip=True",
         "validate_trackb_preinference_qualification.py",
         "PASS_TRACKB_PREINFERENCE_QUALIFICATION",
+        "--authorized-qualification-sha256",
         '"--execution-mode", choices=["qualification", "claim"], default="qualification"',
     ):
         if required not in master_runner_text:
