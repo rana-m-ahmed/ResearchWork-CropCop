@@ -86,13 +86,18 @@ def load_kaggle_secret(name: str) -> str:
     return value
 
 
-def configure_runtime_secrets() -> dict[str, bool]:
+def configure_runtime_secrets(*, require_github: bool) -> dict[str, bool]:
     kaggle = load_kaggle_secret("KAGGLE_API_TOKEN")
-    github = load_kaggle_secret("CROPCOP_GITHUB_TOKEN")
     os.environ["KAGGLE_API_TOKEN"] = kaggle
-    os.environ["CROPCOP_GITHUB_TOKEN"] = github
+    presence = {"KAGGLE_API_TOKEN": True, "CROPCOP_GITHUB_TOKEN": False}
+    if require_github:
+        github = load_kaggle_secret("CROPCOP_GITHUB_TOKEN")
+        os.environ["CROPCOP_GITHUB_TOKEN"] = github
+        presence["CROPCOP_GITHUB_TOKEN"] = True
+    else:
+        os.environ.pop("CROPCOP_GITHUB_TOKEN", None)
     os.environ["GIT_TERMINAL_PROMPT"] = "0"
-    return {"KAGGLE_API_TOKEN": True, "CROPCOP_GITHUB_TOKEN": True}
+    return presence
 
 
 def _github_askpass_environment(token: str, askpass: Path) -> dict[str, str]:
