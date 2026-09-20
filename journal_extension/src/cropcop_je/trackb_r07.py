@@ -163,6 +163,7 @@ def validate_prior_attempt_for_rerun(
         "SCIENCE_QA_PASS",
         "PRIVATE_ARCHIVE_VERIFIED",
         "PUBLICATION_COMPLETE",
+        "TRACK_B_CLOSED",
     }
     if str(previous.get("status", "")) in terminal_or_durable:
         raise TrackBError(
