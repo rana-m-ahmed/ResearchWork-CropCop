@@ -411,8 +411,17 @@ def main() -> int:
             or int(preqa.get("protected_external_prediction_count", -1)) != 0
         ):
             raise TrackBOpsError("Track-B prediction-blind qualification did not reach terminal PASS")
+        if (
+            qualification.get("qualification_science_sha256")
+            != preqa.get("qualification_science_sha256")
+        ):
+            raise TrackBOpsError("independent Q3 science digest differs from Q2 qualification")
         receipt["qualification"] = {
             "qualification_sha256": qualification["qualification_sha256"],
+            "qualification_science_sha256": qualification["qualification_science_sha256"],
+            "prediction_blind_science_manifest_sha256": qualification[
+                "prediction_blind_science_manifest_sha256"
+            ],
             "qa_sha256": preqa["qa_sha256"],
             "protected_external_prediction_count": 0,
             "v1_test_accessed": False,
