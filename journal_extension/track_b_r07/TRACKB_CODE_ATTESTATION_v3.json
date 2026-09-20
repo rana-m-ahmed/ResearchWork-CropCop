@@ -56,11 +56,11 @@
     },
     {
       "path": "journal_extension/scripts/run_trackb_r07.py",
-      "git_blob_sha1": "075c5074091480850b9ebde8143c71bc22e3e283",
+      "git_blob_sha1": "d02eeefc4e6854b0a4f4af7f749140031870fe97",
       "origin": "track_b_v3_remediation"
     },
     {
-      "git_blob_sha1": "578ee3271805c334856f4388a974e264ab42d597",
+      "git_blob_sha1": "a2b45a51065098c36ace20ba145cc933e04eb79c",
       "origin": "track_b_infrastructure",
       "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py"
     },
