@@ -54,6 +54,10 @@ SOURCE_DATASETS = {
     "dino_bundle": "ranamuhammadahmed6/cropcop-secondary-g1-8904b100",
 }
 
+SOURCE_DATASET_EXPECTED_VERSIONS = {
+    "dino_bundle": 2,
+}
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -307,8 +311,8 @@ def detect_authenticated_kaggle_owner() -> str:
     )
 
 
-def verify_kaggle_source_access(source_datasets: dict[str, str]) -> dict[str, str]:
-    verified: dict[str, str] = {}
+def verify_kaggle_source_access(source_datasets: dict[str, str]) -> dict[str, dict[str, object]]:
+    verified: dict[str, dict[str, object]] = {}
     failures: dict[str, str] = {}
     for role, slug in source_datasets.items():
         proc = subprocess.run(
@@ -320,7 +324,22 @@ def verify_kaggle_source_access(source_datasets: dict[str, str]) -> dict[str, st
             timeout=180,
         )
         if proc.returncode == 0:
-            verified[role] = slug
+            status = _kaggle_dataset_status(slug)
+            version = status.get("current_version_number")
+            if version is None:
+                version = status.get("currentVersionNumber")
+            if version is None:
+                raise TrackBOpsError(f"Kaggle source status lacks current version: {role}/{slug}: {status}")
+            expected_version = SOURCE_DATASET_EXPECTED_VERSIONS.get(role)
+            if expected_version is not None and int(version) != int(expected_version):
+                raise TrackBOpsError(
+                    f"Kaggle source version drift for {role}: expected={expected_version}, observed={version}"
+                )
+            verified[role] = {
+                "slug": slug,
+                "current_version_number": int(version),
+                "expected_version_number": expected_version,
+            }
         else:
             failures[role] = redact((proc.stderr or proc.stdout or "").strip())[-1200:]
     if failures:
