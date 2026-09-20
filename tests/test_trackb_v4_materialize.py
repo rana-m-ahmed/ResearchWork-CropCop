@@ -32,6 +32,15 @@ assert CORE_SPEC.loader is not None
 CORE_SPEC.loader.exec_module(core_module)
 
 
+EXEC_SPEC = importlib.util.spec_from_file_location(
+    "trackb_v4_execute_attached_under_test",
+    SCRIPTS / "trackb_v4_execute_attached.py",
+)
+exec_module = importlib.util.module_from_spec(EXEC_SPEC)
+assert EXEC_SPEC.loader is not None
+EXEC_SPEC.loader.exec_module(exec_module)
+
+
 class TrackBV4MaterializationTests(unittest.TestCase):
     def test_final_v1_resolver_prefers_hash_valid_image_backed_authority_pair(self):
         with tempfile.TemporaryDirectory() as td:
@@ -349,6 +358,75 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             )
             with self.assertRaises(module.TrackBOpsError):
                 module._selected_checkpoint_from_index(root, "a" * 64)
+
+
+    def test_role_content_identity_binds_every_payload_byte(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "data").mkdir()
+            payload = root / "data" / "sample.bin"
+            payload.write_bytes(b"alpha")
+            first = module._role_content_identity(root)
+            second = exec_module._role_content_identity(root)
+            self.assertEqual(first, second)
+            payload.write_bytes(b"beta")
+            changed = module._role_content_identity(root)
+            self.assertNotEqual(first["content_sha256"], changed["content_sha256"])
+
+    def test_role_content_identity_rejects_symlinks(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            target = root / "target.bin"
+            target.write_bytes(b"x")
+            link = root / "linked.bin"
+            try:
+                link.symlink_to(target)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks unavailable on this platform")
+            with self.assertRaises(module.TrackBOpsError):
+                module._role_content_identity(root)
+            with self.assertRaises(exec_module.TrackBOpsError):
+                exec_module._role_content_identity(root)
+
+    def test_external_cohorts_are_acquired_before_historical_compute(self):
+        source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
+        external = source.index('stage("1 :: authoritative external cohorts')
+        historical = source.index('stage("3 :: safe historical comparison")')
+        self.assertLess(external, historical)
+        self.assertIn("expected_source_manifest_sha256", source)
+
+    def test_attached_execution_refuses_to_delete_authoritative_outputs(self):
+        source = (SCRIPTS / "trackb_v4_execute_attached.py").read_text(encoding="utf-8")
+        self.assertIn(
+            "refusing to delete or overwrite an existing Track-B authoritative output root",
+            source,
+        )
+        self.assertNotIn("shutil.rmtree(output_root)", source)
+
+    def test_claim_path_requires_single_writer_lease_and_durable_state_transitions(self):
+        runner = (SCRIPTS / "run_trackb_r07.py").read_text(encoding="utf-8")
+        executor = (SCRIPTS / "trackb_v4_execute_attached.py").read_text(encoding="utf-8")
+        ops = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("acquire_claim_lease(", runner)
+        self.assertIn("--claim-lease-dataset-slug", runner)
+        self.assertIn("PASS_CLAIM_LEASE_ACQUIRED", ops)
+        self.assertIn('"status": "PRIVATE_ARCHIVE_VERIFIED"', executor)
+        self.assertIn('"status": "TRACK_B_CLOSED"', executor)
+        self.assertIn("publish_attempt_state(args.attempt_dataset_slug, attempt_state)", runner)
+
+    def test_external_transport_has_toc_tou_binding_and_signed_url_refresh(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("expected_source_manifest_sha256", source)
+        self.assertIn("source changed between readiness resolution and acquisition", source)
+        self.assertIn("_download_mendeley_record(", source)
+        self.assertIn("signed-URL refresh", source)
+        self.assertIn("source byte-size mismatch", source)
+        self.assertIn("duplicate/case-colliding member path", source)
+
 
 
 if __name__ == "__main__":
