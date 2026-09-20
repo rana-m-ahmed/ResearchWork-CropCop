@@ -59,3 +59,17 @@ The v4 readiness layer now follows the same frozen Track-A provenance paths used
 - A new early source-qualification gate also validates Final-V1, all three R07 states, DINO, external-source reachability, and Kaggle publication identity before expensive materialization begins.
 
 No R07 training, adaptation, model selection, thresholding, external prediction, or V1-test access is introduced by this remediation.
+
+## DINO factory source-root remediation
+
+A real Notebook-00 run passed source qualification, immutable-core construction, and entered the 92,744-image historical-comparison stage before the DINO loader failed with `teacher factory source file missing: historical_dino_tiny.py`. The sealed teacher factory manifest stores `historical_dino_tiny.py` relative to its dedicated source root, while the Track-B core package had incorrectly recorded the embedded repository root as `dino_factory_source_root`.
+
+Remediation:
+
+- core packaging now records `repository/journal_extension/teacher_factory` as the DINO factory source root;
+- Stage 0.5 validates the sealed factory bundle against that exact root;
+- Stage 0.5 instantiates the exact DINO teacher checkpoint/factory before any expensive historical build;
+- regression tests prove repository-root validation fails and the dedicated factory root passes;
+- the v3 code attestation/execution lock and v4 locks were rebound to the repaired builder.
+
+This is an operational path-binding correction only. DINO checkpoint SHA, factory-manifest SHA, model architecture, historical surface, audit thresholds, and scientific evidence policy are unchanged.
