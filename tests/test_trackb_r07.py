@@ -298,6 +298,10 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertTrue(automation["protected_claim_requires_matching_qualification_science_sha256"])
         self.assertTrue(automation["qualification_science_identity_excludes_execution_timestamps"])
         self.assertTrue(automation["qualification_science_identity_reused_for_attempt_ancestry"])
+        self.assertEqual(automation["github_token_required_modes"], ["claim"])
+        self.assertEqual(automation["github_push_preflight_modes"], ["claim"])
+        self.assertFalse(automation["qualification_requires_github_token"])
+        self.assertFalse(automation["qualification_requires_github_push_preflight"])
 
         drifted = dict(lock)
         drifted["automation"] = dict(automation)
@@ -494,6 +498,8 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertIn("--execution-mode", notebook)
         self.assertIn("qualification", notebook)
         self.assertIn("TRACKB_PREINFERENCE_QA.json", notebook)
+        self.assertNotIn("CROPCOP_GITHUB_TOKEN", notebook)
+        self.assertNotIn("verify_github_repository_push_access", notebook)
         self.assertNotIn("PASS_AUTOMATED_TRACK_B_COMPLETE", notebook)
 
     def test_prediction_blind_science_identity_excludes_execution_metadata(self):
