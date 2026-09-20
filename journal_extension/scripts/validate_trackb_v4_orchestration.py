@@ -82,8 +82,12 @@ def main() -> int:
     ):
         if basename not in readiness_text:
             raise ValidationError(f"readiness notebook missing attached-source declaration: {basename}")
-    if "/kaggle/tmp/trackb_v4_materialization" not in readiness_text:
-        raise ValidationError("readiness notebook must keep heavy materialization in ephemeral storage")
+    if "OUT = Path('/kaggle/tmp/trackb_v4_materialization')" not in readiness_text:
+        raise ValidationError("readiness notebook must launch heavy materialization in ephemeral storage")
+    if "receipt_path = Path('/kaggle/tmp/trackb_v4_materialization')" not in readiness_text:
+        raise ValidationError("readiness notebook receipt path must match ephemeral materialization root")
+    if "OUT = WORK / 'trackb_v4_materialization'" in readiness_text:
+        raise ValidationError("readiness notebook contains stale persistent materialization path")
     if "trackb_v4_materialize.py" not in readiness_text:
         raise ValidationError("readiness notebook does not invoke the frozen materializer")
     if "CROPCOP_GITHUB_TOKEN" in readiness_text:
