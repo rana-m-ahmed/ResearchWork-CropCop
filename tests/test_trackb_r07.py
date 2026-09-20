@@ -295,7 +295,7 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertTrue(automation["independent_preinference_qa_required"])
         self.assertTrue(automation["protected_claim_requires_post_qualification_exact_sha_freeze"])
         self.assertTrue(automation["qualification_must_produce_zero_protected_external_predictions"])
-        self.assertTrue(automation["protected_claim_requires_matching_qualification_sha256"])
+        self.assertTrue(automation["protected_claim_requires_matching_qualification_science_sha256"])
 
         drifted = dict(lock)
         drifted["automation"] = dict(automation)
@@ -477,9 +477,9 @@ class TrackBR07Tests(unittest.TestCase):
         notebook = (ROOT / "journal_extension" / "kaggle" / "trackb_r07_master.ipynb").read_text(encoding="utf-8")
         self.assertIn('choices=["qualification", "claim"], default="qualification"', master)
         self.assertIn('PASS_TRACKB_PREINFERENCE_QUALIFICATION', master)
-        self.assertIn('--authorized-qualification-sha256', master)
-        self.assertIn('claim mode requires a reviewed --authorized-qualification-sha256', master)
-        self.assertIn('protected claim execution requires a reviewed --authorized-qualification-sha256', runner)
+        self.assertIn('--authorized-qualification-science-sha256', master)
+        self.assertIn('claim mode requires a reviewed --authorized-qualification-science-sha256', master)
+        self.assertIn('protected claim execution requires a reviewed --authorized-qualification-science-sha256', runner)
         self.assertIn('TRACKB_QUALIFICATION_AUTHORIZATION.json', runner)
         self.assertIn('validate_trackb_preinference_qualification.py', master)
         self.assertIn('choices=["preflight", "qualification", "all"]', runner)
@@ -492,6 +492,24 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertIn("TRACKB_PREINFERENCE_QA.json", notebook)
         self.assertNotIn("PASS_AUTOMATED_TRACK_B_COMPLETE", notebook)
 
+    def test_prediction_blind_science_identity_excludes_execution_metadata(self):
+        source = (
+            ROOT / "journal_extension" / "scripts" / "run_trackb_r07.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def _prediction_blind_science_manifest(")
+        end = source.index("def _stable_science_manifest(", start)
+        helper = source[start:end]
+        for forbidden in (
+            "sealed_at_utc",
+            "retrieved_at",
+            "final_qa_sha256",
+            "candidate_input_manifest_sha256",
+            "source_metadata_record_sha256",
+        ):
+            self.assertNotIn(forbidden, helper)
+        self.assertIn("qualification_science_sha256", helper)
+        self.assertIn("TRACKB_PREDICTION_BLIND_SCIENCE.json", helper)
+
     def test_preinference_validator_forbids_claim_artifacts(self):
         source = (
             ROOT / "journal_extension" / "scripts" / "validate_trackb_preinference_qualification.py"
@@ -503,6 +521,9 @@ class TrackBR07Tests(unittest.TestCase):
             "protected_external_prediction_count",
             "PASS_INDEPENDENT_PREINFERENCE_QA",
             "verify_candidate_seal",
+            "TRACKB_PREDICTION_BLIND_SCIENCE.json",
+            "qualification_science_sha256",
+            "reconstructed_science",
         ):
             self.assertIn(token, source)
 
