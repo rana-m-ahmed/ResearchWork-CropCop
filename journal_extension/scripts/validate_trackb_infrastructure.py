@@ -150,7 +150,7 @@ def main() -> int:
         raise TrackBError("operator notebook exposes protected claim mode instead of qualification mode")
     if "--authorized-qualification-science-sha256" in master_text:
         raise TrackBError("qualification notebook exposes protected-claim authorization input")
-    frozen_qualification_sha = "d2796cb69daec26a94113e5909719eb353b94832"
+    frozen_qualification_sha = "73e07bb23d94e67bd2ad8f9d63226cd4488caf70"
     if f"SOURCE_COMMIT = '{frozen_qualification_sha}'" not in master_text:
         raise TrackBError("qualification notebook is not pinned to the audited implementation SHA")
     if "SOURCE_REF" in master_text or "checkout', '--detach'" not in master_text:
@@ -163,6 +163,8 @@ def main() -> int:
         "publish_to_github_branch",
         "publish_private_kaggle_dataset",
         "acquire_gvlid_v5",
+        "MENDELEY_PUBLIC_API",
+        "_mendeley_public_file_records",
         "acquire_irish_potato",
         "detect_authenticated_kaggle_owner",
         "verify_authenticated_kaggle_owner",
