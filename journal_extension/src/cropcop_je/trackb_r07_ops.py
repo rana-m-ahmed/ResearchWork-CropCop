@@ -1154,6 +1154,68 @@ def _mendeley_public_file_records(
     return records
 
 
+def _download_mendeley_record(
+    *,
+    dataset_id: str,
+    version: str,
+    expected_record: dict[str, object],
+    destination: Path,
+    attempts: int = 4,
+) -> dict[str, str | int | bool]:
+    """Download one Mendeley file while refreshing short-lived signed URLs on retry."""
+    expected_id = str(expected_record.get("id") or "")
+    expected_path = str(expected_record["relative_path"])
+    expected_size = int(expected_record.get("size", -1))
+    expected_reported_checksum = str(expected_record.get("reported_checksum") or "")
+    errors: list[str] = []
+
+    for attempt in range(1, int(attempts) + 1):
+        try:
+            fresh_records = _mendeley_public_file_records(dataset_id, version=version)
+            matches = [
+                row for row in fresh_records
+                if (
+                    expected_id
+                    and str(row.get("id") or "") == expected_id
+                ) or (
+                    not expected_id
+                    and str(row.get("relative_path") or "") == expected_path
+                )
+            ]
+            if len(matches) != 1:
+                raise TrackBOpsError(
+                    f"Mendeley retry could not uniquely re-resolve source record: "
+                    f"id={expected_id!r} path={expected_path!r} matches={len(matches)}"
+                )
+            row = matches[0]
+            if str(row.get("relative_path") or "") != expected_path:
+                raise TrackBOpsError("Mendeley source path changed during signed-URL refresh")
+            if expected_size > 0 and int(row.get("size", -1)) != expected_size:
+                raise TrackBOpsError("Mendeley source size changed during signed-URL refresh")
+            if str(row.get("reported_checksum") or "") != expected_reported_checksum:
+                raise TrackBOpsError("Mendeley source checksum metadata changed during signed-URL refresh")
+
+            checksum = str(row.get("download_checksum") or "") or None
+            receipt = _stream_download(
+                str(row["download_url"]),
+                destination,
+                expected_checksum=checksum,
+                expected_bytes=expected_size if expected_size > 0 else None,
+                attempts=1,
+            )
+            receipt["download_attempts"] = attempt
+            return receipt
+        except Exception as exc:
+            errors.append(f"attempt={attempt} {type(exc).__name__}: {exc}")
+            if attempt < int(attempts):
+                time.sleep((2, 5, 15)[min(attempt - 1, 2)])
+
+    raise TrackBOpsError(
+        f"Mendeley source download failed after {attempts} signed-URL refresh attempts: "
+        f"{expected_path}: " + " | ".join(errors[-4:])
+    )
+
+
 def _mendeley_stable_manifest(records: list[dict[str, object]]) -> dict[str, object]:
     files = []
     for row in records:
@@ -1420,11 +1482,11 @@ def acquire_gvlid_v5(
         safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", basename)[:120] or f"mendeley_{index:05d}"
         provisional = transport_dir / f"{index:05d}_{safe_name}"
         checksum = str(row.get("download_checksum") or "") or None
-        receipt = _stream_download(
-            url,
-            provisional,
-            expected_checksum=checksum,
-            expected_bytes=int(row.get("size", -1)) if int(row.get("size", -1)) > 0 else None,
+        receipt = _download_mendeley_record(
+            dataset_id="wkymf8bhcg",
+            version="5",
+            expected_record=row,
+            destination=provisional,
         )
         transport_sha = str(receipt["sha256"])
         if transport_sha in seen_transport_sha:
