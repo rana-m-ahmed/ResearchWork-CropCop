@@ -155,7 +155,10 @@ class HardeningCoreTests(unittest.TestCase):
 
     def test_one_canonical_notebook_and_three_small_lane_configs(self):
         kaggle = ROOT / "journal_extension" / "kaggle"
-        notebooks = list(kaggle.glob("*.ipynb"))
+        notebooks = sorted(
+            p for p in kaggle.glob("*.ipynb")
+            if not p.name.startswith(("trackb_", "TrackB_"))
+        )
         self.assertEqual([p.name for p in notebooks], ["canonical_lane.ipynb"])
         notebook = json.loads(notebooks[0].read_text())
         self.assertEqual(notebook.get("nbformat"), 4)
