@@ -22,7 +22,7 @@ def build_notebook():
     cells = [
         md("""# CropCop Track B — R07 Automated Master v3
 
-This is the **single operator-facing Track-B notebook**.
+This is the **single operator-facing Track-B qualification notebook**. It is fail-closed: the default execution mode is prediction-blind qualification and stops before any external R07 forward pass.
 
 One-time Kaggle setup:
 - add secret KAGGLE_API_TOKEN;
@@ -34,7 +34,7 @@ Do **not** manually attach or publish Track-B input/evidence datasets.
 
 Kaggle's stock image is allowed to start with a different Torch stack. Before any scientific import, the notebook applies the exact Track-B requirements lock to the active Kaggle interpreter using the same execution pattern already qualified by CropCop Track A. Scientific code is then launched only in a **fresh subprocess**, so stale modules from the notebook process cannot contaminate Track B.
 
-The consumed V1 test remains forbidden. The classifier family/seeds are frozen. GVLiD is the frozen external grape cohort (documented source acquisition includes in-situ vineyard and ex-situ imagery); Irish Potato is the complementary harder stress cohort. Candidate substitution after any external prediction is forbidden. Large mutable inputs use /kaggle/tmp; only final evidence is retained under /kaggle/working.
+The consumed V1 test remains forbidden. The classifier family/seeds are frozen. GVLiD is the frozen external grape cohort (documented source acquisition includes in-situ vineyard and ex-situ imagery); Irish Potato is the complementary harder stress cohort. Candidate substitution after any external prediction is forbidden. Large mutable inputs use /kaggle/tmp; only qualification evidence is retained under /kaggle/working. A separate exact-SHA claim notebook may be frozen only after Q1/Q2/Q3 qualification passes.
 """),
         code("""from pathlib import Path
 import json, os, shutil, subprocess, sys
@@ -135,6 +135,7 @@ subprocess.run(
         '--workspace', str(WORKSPACE),
         '--scratch-root', '/kaggle/tmp/cropcop_trackb_r07',
         '--device', 'cuda:0',
+        '--execution-mode', 'qualification',
     ],
     cwd=REPO,
     check=True,
@@ -143,28 +144,28 @@ subprocess.run(
 """),
         code("""OUT = Path('/kaggle/working/trackb_master/trackb_r07')
 receipt = json.loads((OUT / 'TRACKB_AUTOMATION_RECEIPT.json').read_text())
-closure = json.loads((OUT / 'TRACKB_FINAL_CLOSURE.json').read_text())
-qa = json.loads((OUT / 'TRACKB_FINAL_QA.json').read_text())
+qualification = json.loads((OUT / 'TRACKB_PREINFERENCE_QUALIFICATION.json').read_text())
+qa = json.loads((OUT / 'TRACKB_PREINFERENCE_QA.json').read_text())
 
-if closure.get('status') != 'TRACK_B_CLOSED' or qa.get('status') != 'PASS':
-    raise RuntimeError('Track-B terminal scientific closure/QA is not PASS')
-if receipt.get('status') != 'PASS_AUTOMATED_TRACK_B_COMPLETE':
-    if receipt.get('status') == 'TRACK_B_CLOSED_PRIVATE_EVIDENCE_ARCHIVED_GITHUB_PUBLICATION_FAILED':
-        raise RuntimeError(
-            'Track B science is CLOSED and restricted evidence is safely archived, '
-            'but GitHub public-safe publication failed after retries. Do not rerun '
-            'scientific execution; repair GitHub publication using the preserved evidence.'
-        )
-    raise RuntimeError(f"Automation receipt is not terminal PASS: {receipt.get('status')}")
+if receipt.get('status') != 'PASS_TRACKB_PREINFERENCE_QUALIFICATION':
+    raise RuntimeError(f"Track-B qualification receipt is not terminal PASS: {receipt.get('status')}")
+if qualification.get('status') != 'PASS_PREDICTION_BLIND_QUALIFICATION':
+    raise RuntimeError('Track-B prediction-blind qualification artifact is not PASS')
+if qa.get('status') != 'PASS_INDEPENDENT_PREINFERENCE_QA':
+    raise RuntimeError('Track-B independent pre-inference QA is not PASS')
+if int(qa.get('protected_external_prediction_count', -1)) != 0:
+    raise RuntimeError('Protected external predictions were produced during qualification')
 
 print(json.dumps({
     'automation_status': receipt['status'],
-    'track_b_status': closure['status'],
-    'closure_sha256': closure['closure_sha256'],
-    'trackb_science_sha256': closure['trackb_science_sha256'],
-    'final_qa_sha256': qa['qa_sha256'],
-    'github_public_evidence': receipt['github_public_evidence'],
-    'private_kaggle_evidence': receipt['private_kaggle_evidence'],
+    'qualification_status': qualification['status'],
+    'qualification_sha256': qualification['qualification_sha256'],
+    'preinference_qa_status': qa['status'],
+    'preinference_qa_sha256': qa['qa_sha256'],
+    'protected_external_prediction_count': qa['protected_external_prediction_count'],
+    'v1_test_accessed': qa['v1_test_accessed'],
+    'source_head': HEAD,
+    'next_gate': 'Independent review of Q1/Q2/Q3 evidence before freezing an exact-SHA claim notebook.',
 }, indent=2, sort_keys=True))
 """),
     ]
