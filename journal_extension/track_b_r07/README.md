@@ -1,6 +1,10 @@
-# CropCop Track B — R07 External Validation v2
+# CropCop Track B — R07 External Validation v3
 
-Track B evaluates the frozen Track-A-selected R07 ConvNeXt-Tiny family on prospectively fixed external field cohorts. It does not train, tune, reselect, or replace model states. The consumed V1 test remains closed.
+Track B evaluates the frozen Track-A-selected R07 ConvNeXt-Tiny family on prospectively fixed external cohorts. It does not train, tune, reselect, or replace model states. The consumed V1 test remains closed.
+
+## Current pre-inference status
+
+The v3 remediation implementation has passed repository-level QA, but **protected external inference is not yet authorized**. Real Kaggle qualification Q1/Q2/Q3 must pass first. See `reports/TRACKB_REMEDIATION_REGISTER_v1.*` and `reports/TRACKB_EXECUTION_READINESS_v3.*`. The older v2 readiness reports are retained only as historical records.
 
 ## Operator entry point
 
@@ -48,7 +52,7 @@ OpenCV 4.13.0.92 is a pre-results technical compatibility re-lock from 4.12.0.88
 
 ## Frozen scientific cohorts
 
-### Confirmatory field cohort — GVLiD v5
+### External grape cohort — GVLiD v5
 
 - Candidate ID: `gvlid_grape`
 - Input role: `gvlid_v5`
@@ -66,7 +70,7 @@ Frozen mapping:
 | Healthy | `grape_healthy` |
 | Leaf Blight | `grape_leaf_blight` |
 
-The source publication/package has a one-image arithmetic inconsistency between its stated total and one displayed class-count table. Track B therefore treats the exact acquired version-5 bytes as authority: total identity must reconcile to 3,477 and observed class supports are enumerated and frozen before any R07 prediction.
+The source publication/package has a one-image arithmetic inconsistency between its stated total and one displayed class-count table. Track B therefore treats the exact acquired version-5 bytes as authority: total identity must reconcile to 3,477 and observed class supports are enumerated and frozen before any R07 prediction. The cohort contains both in-situ vineyard and ex-situ/controlled-background imagery; Track B does not describe every representative as a biologically independent field leaf.
 
 ### Complementary stress cohort — Irish Potato Version 01
 
@@ -112,18 +116,17 @@ The master controller performs these stages in order:
 11. freeze each candidate grade and immutable seal before any R07 forward pass;
 12. run S1/S2/S3 native 120-way inference on the same sealed representatives;
 13. compute the fixed 5,000-replicate family bootstrap with shared resamples;
-14. independently recompute QA and require `TRACK_B_CLOSED`;
-15. archive the complete restricted evidence ZIP to a private Kaggle dataset **before** any final GitHub publication attempt;
-16. publish only audited public-safe summaries to a GitHub evidence branch, retrying transient failures four times.
+14. independently recompute QA and write a stable science manifest;
+15. build and verify complete/public evidence archives, then write the package manifest and only afterward issue local `TRACK_B_CLOSED`;
+16. round-trip verify the complete restricted evidence on private Kaggle **before** any final GitHub publication attempt;
+17. publish only audited public-safe summaries to a GitHub evidence branch, retrying transient failures four times.
 
 The controller automatically garbage-collects large source downloads between stages rather than requiring the operator to create and reattach multiple intermediate datasets.
 
 ## Publication durability
 
 GitHub publication is an operational dissemination layer, not part of the scientific
-estimator. The notebook proves Git write access before compute. After terminal
-`TRACK_B_CLOSED` + QA PASS, the complete restricted evidence is archived to the
-private Kaggle evidence dataset first. Both private Kaggle publication and GitHub public-safe publication receive four attempts with bounded retry delays.
+estimator. The notebook proves Git write access before compute. After terminal local `TRACK_B_CLOSED` + QA PASS, the complete restricted evidence is published to private Kaggle and fully round-trip byte-verified before GitHub publication. Both private Kaggle publication and GitHub public-safe publication receive four attempts with bounded retry delays.
 
 If GitHub becomes unavailable after scientific closure, Track B does **not** discard
 or reinterpret results. The automation receipt records
@@ -188,6 +191,7 @@ No Track-B outcome establishes universal 120-class field generalization, agronom
 
 Current authority:
 
-- `EAAI-JE-TRACKBC-R07-DOWNSTREAM-v2`
-- `TRACKB_R07_EXECUTION_LOCK_v2`
-- `TRACKB_CODE_ATTESTATION_v2`
+- `EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3`
+- `TRACKB_R07_EXECUTION_LOCK_v3`
+- `TRACKB_CODE_ATTESTATION_v3`
+- `TRACKB_EXTERNAL_LINEAGE_REVIEW_v1`
