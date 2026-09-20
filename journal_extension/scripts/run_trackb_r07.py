@@ -51,7 +51,12 @@ from cropcop_je.trackb_r07 import (
     verify_code_attestation,
 )
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
-from cropcop_je.trackb_r07_ops import publish_attempt_state, read_latest_attempt_state, utc_now
+from cropcop_je.trackb_r07_ops import (
+    acquire_claim_lease,
+    publish_attempt_state,
+    read_latest_attempt_state,
+    utc_now,
+)
 from cropcop_je.trackb_r07_audit import (
     ImageAuditRecord,
     build_family_components,
@@ -1201,6 +1206,8 @@ def main() -> int:
     ap.add_argument("--mode", choices=["preflight", "qualification", "all"], default="qualification")
     ap.add_argument("--source-git-sha", default="")
     ap.add_argument("--attempt-dataset-slug", default="")
+    ap.add_argument("--claim-lease-dataset-slug", default="")
+    ap.add_argument("--materialization-id", default="")
     ap.add_argument("--attempt-id", default="")
     ap.add_argument("--authorized-qualification-science-sha256", default="")
     args = ap.parse_args()
@@ -1357,9 +1364,16 @@ def main() -> int:
     claim_candidates = [candidate for candidate in (grape, potato) if candidate["grade"] in {"EXT-I", "EXT-S"}]
     attempt_state = None
     if claim_candidates:
-        if not args.attempt_dataset_slug or not args.attempt_id or len(str(args.source_git_sha)) != 40:
+        if (
+            not args.attempt_dataset_slug
+            or not args.claim_lease_dataset_slug
+            or not args.materialization_id
+            or not args.attempt_id
+            or len(str(args.source_git_sha)) != 40
+        ):
             raise TrackBError(
-                "protected inference requires --attempt-dataset-slug, --attempt-id, and exact --source-git-sha"
+                "protected inference requires attempt-ledger slug, claim-lease slug, "
+                "materialization identity, attempt ID, and exact source Git SHA"
             )
         preimage = prediction_blind_science
         previous = read_latest_attempt_state(args.attempt_dataset_slug)
@@ -1367,6 +1381,21 @@ def main() -> int:
             previous,
             current_science_preimage_sha256=preimage["qualification_science_sha256"],
         )
+        lease_payload = {
+            "schema_version": "1.0",
+            "status": "CLAIM_LEASE_ACQUIRED",
+            "attempt_id": str(args.attempt_id),
+            "science_preimage_sha256": preimage["qualification_science_sha256"],
+            "materialization_id": str(args.materialization_id),
+            "source_git_sha": str(args.source_git_sha),
+        }
+        lease_receipt = acquire_claim_lease(
+            str(args.claim_lease_dataset_slug),
+            lease_payload,
+        )
+        atomic_write_json(output_root / "TRACKB_CLAIM_LEASE.json", lease_payload)
+        atomic_write_json(output_root / "TRACKB_CLAIM_LEASE_RECEIPT.json", lease_receipt)
+
         attempt_state = {
             "schema_version": "1.0",
             "attempt_id": str(args.attempt_id),
@@ -1374,6 +1403,9 @@ def main() -> int:
             "protected_inference_ever": True,
             "started_at_utc": utc_now(),
             "source_git_sha": str(args.source_git_sha),
+            "materialization_id": str(args.materialization_id),
+            "claim_lease_dataset_slug": str(args.claim_lease_dataset_slug),
+            "claim_lease_sha256": lease_receipt["lease_sha256"],
             "science_preimage_sha256": preimage["qualification_science_sha256"],
             "science_preimage": preimage,
             "parent_attempt_id": rerun_gate["parent_attempt_id"],
@@ -1414,6 +1446,11 @@ def main() -> int:
             "final_qa_sha256": qa["qa_sha256"],
         }
         atomic_write_json(output_root / "TRACKB_ATTEMPT_STATE.json", attempt_state)
+        science_qa_receipt = publish_attempt_state(args.attempt_dataset_slug, attempt_state)
+        atomic_write_json(
+            output_root / "TRACKB_ATTEMPT_SCIENCE_QA_PUBLICATION.json",
+            science_qa_receipt,
+        )
     packages = _package_outputs(output_root)
     atomic_write_json(output_root / "TRACKB_PACKAGE_MANIFEST.json", packages)
 
