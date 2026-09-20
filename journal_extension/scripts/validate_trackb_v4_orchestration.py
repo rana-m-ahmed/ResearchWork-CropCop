@@ -70,7 +70,7 @@ def main() -> int:
     if len(final.get("cells", [])) != 6:
         raise ValidationError("final execution notebook must have exactly six cells")
 
-    expected_snapshot = "066584af76704272c4ce05d0cf6795388b350f94"
+    expected_snapshot = "cbde7382267533ec785e4dd36152681a047b9bce"
     if f"SOURCE_COMMIT = '{expected_snapshot}'" not in readiness_text:
         raise ValidationError("readiness notebook is not pinned to the frozen v4 repository snapshot")
     for basename in (
@@ -90,6 +90,8 @@ def main() -> int:
         raise ValidationError("readiness notebook contains stale persistent materialization path")
     if "trackb_v4_materialize.py" not in readiness_text:
         raise ValidationError("readiness notebook does not invoke the frozen materializer")
+    if "source_qualification_sha256" not in readiness_text:
+        raise ValidationError("readiness notebook must surface the complete source-qualification digest")
     if "CROPCOP_GITHUB_TOKEN" in readiness_text:
         raise ValidationError("readiness notebook must not require a GitHub credential")
 
