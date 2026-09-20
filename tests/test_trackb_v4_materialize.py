@@ -23,6 +23,14 @@ module = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(module)
 
+CORE_SPEC = importlib.util.spec_from_file_location(
+    "build_trackb_core_package_under_test",
+    SCRIPTS / "build_trackb_core_package.py",
+)
+core_module = importlib.util.module_from_spec(CORE_SPEC)
+assert CORE_SPEC.loader is not None
+CORE_SPEC.loader.exec_module(core_module)
+
 
 class TrackBV4MaterializationTests(unittest.TestCase):
     def test_final_v1_resolver_prefers_hash_valid_image_backed_authority_pair(self):
@@ -74,6 +82,81 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             with mock.patch.object(module, "sha256_file", side_effect=fake_sha):
                 with self.assertRaises(module.TrackBOpsError):
                     module._find_v1(root)
+
+
+    def test_core_builder_accepts_exact_s1_canonical_validation_metric_schema(self):
+        record = (
+            ROOT
+            / "journal_extension"
+            / "track_b_r07"
+            / "replay_authority"
+            / "R07_S1_ORIGINAL_RUN_RECORD.json"
+        )
+        parsed = core_module._verify_run_record(record, "S1")
+        metrics = parsed["result_summary"]["selected_metrics"]
+        self.assertIn("validation_accuracy", metrics)
+        self.assertIn("validation_balanced_accuracy", metrics)
+        self.assertIn("validation_macro_f1", metrics)
+        self.assertIn("validation_nll", metrics)
+
+    def test_core_builder_rejects_obsolete_short_metric_schema(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "run_record.json"
+            path.write_text(
+                json.dumps({
+                    "run_id": core_module.R07_RUN_RECORDS["S1"]["run_id"],
+                    "artifact_locators": {
+                        "selected_checkpoint": {
+                            "sha256": core_module.R07_CHECKPOINTS["S1"]
+                        }
+                    },
+                    "result_summary": {
+                        "selected_checkpoint_sha256": core_module.R07_CHECKPOINTS["S1"],
+                        "selected_metrics": {
+                            "accuracy": 0.98,
+                            "balanced_accuracy": 0.96,
+                            "macro_f1": 0.96,
+                            "nll": 0.10,
+                        },
+                    },
+                }),
+                encoding="utf-8",
+            )
+            with self.assertRaises(core_module.TrackBError):
+                core_module._verify_run_record(path, "S1")
+
+    def test_core_builder_accepts_recovered_continuation_record_shape(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "recovered.json"
+            path.write_text(
+                json.dumps({
+                    "run_id": core_module.R07_RUN_RECORDS["S2"]["run_id"],
+                    "artifact_locators": {
+                        "selected_checkpoint": {
+                            "sha256": core_module.R07_CHECKPOINTS["S2"]
+                        }
+                    },
+                    "result_summary": {
+                        "selected_epoch": 23,
+                        "selected_checkpoint_sha256": core_module.R07_CHECKPOINTS["S2"],
+                        "selected_metrics": {
+                            "validation_accuracy": 0.9846041055718475,
+                            "validation_balanced_accuracy": 0.9680297463314904,
+                            "validation_macro_f1": 0.9674376113284783,
+                            "validation_nll": 0.10054967464716538,
+                        },
+                    },
+                    "recovery_provenance": {
+                        "kind": "cryptographic_terminal_record_recovery"
+                    },
+                }),
+                encoding="utf-8",
+            )
+            parsed = core_module._verify_run_record(path, "S2")
+            self.assertEqual(
+                parsed["result_summary"]["selected_checkpoint_sha256"],
+                core_module.R07_CHECKPOINTS["S2"],
+            )
 
 
     def test_embedded_replay_authority_matches_frozen_trackb_contract(self):
