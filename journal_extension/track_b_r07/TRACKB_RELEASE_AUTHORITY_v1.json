@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "f31768833c205b9e00601c83d7a8dc45777d8e52f5934948d79e5b53572b66c6",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "fc6607c077012c105072ae341764bd080693e11724666fd04613e21ca98ca690",
-    "operator_attestation_sha256": "94b618efb838bdb7b8f8748c725e32a107957834d87ea6775f4a11911f00f4cf",
+    "operator_attestation_sha256": "628bce4933a6300c28587c73549021275fec13ef42fd61864e5a9a2e353ec45f",
     "operator_notebook_00_blob_sha1": "d5a82fb1f29e374cb93e7d7df102936263e8aac3",
     "operator_notebook_01_blob_sha1": "a3ede0d389d4aa3fa2c251b4635a175e8b1fdfd7"
   },
@@ -60,9 +60,13 @@
     "V1 test remains closed: SATISFIED"
   ],
   "seal_evidence": {
-    "failure_observed": "GVLiD checksum authority coverage mismatch: verified=0, authority=3477, missing=3477",
-    "remediation": "Mendeley v5 remains source identity authority. If provider transport yields zero usable images, byte materialization uses exact pinned official companion commit 878a1c7098964bb52c4c4a5c30e5b53340565258; partial provider fallback is forbidden; all 3477 images must pass pinned SHA-256 ledger.",
-    "final_exact_head_qa": "PENDING",
+    "observed_failure": "GVLiD checksum authority coverage mismatch: verified=0, authority=3477, missing=3477",
+    "remediation": "Mendeley v5 remains source identity authority. Zero-usable-image provider transport may fall back only to exact official companion commit 878a1c7098964bb52c4c4a5c30e5b53340565258; partial provider fallback is forbidden; all 3477 images must pass pinned SHA-256 ledger.",
+    "validated_commit": "c59dab67531e154ea56515d1f8140efbc3a75bcb",
+    "trackb_qa_workflow_run_id": 35531460130,
+    "trackb_qa_workflow_run_number": 566,
+    "trackb_qa_conclusion": "success",
+    "functional_gvlid_tar_tests_pass": true,
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
   }
