@@ -27,8 +27,18 @@
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_FINAL_GVLID_REPAIR",
-    "note": "Final runtime, source authority, materialization authority, and notebooks rebound after observed Kaggle GVLiD opaque-provider transport failure."
+    "workflow_run_id": 35531460130,
+    "workflow_run_number": 566,
+    "conclusion": "success",
+    "validated_commit": "c59dab67531e154ea56515d1f8140efbc3a75bcb",
+    "compile_pass": true,
+    "targeted_tests_pass": true,
+    "functional_gvlid_tar_tests_pass": true,
+    "canonical_notebook_regeneration_pass": true,
+    "static_infrastructure_validator_pass": true,
+    "v5_orchestration_validator_pass": true,
+    "sealed_release_authority_validator_pass": true,
+    "observed_failure_repaired": "GVLiD provider transport materialized zero usable images; final fallback remains fail-closed and requires all 3477 pinned hashes."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
