@@ -214,7 +214,9 @@ def discover_candidate_images(
     return rows
 
 
-def exact_duplicate_pairs(records: list[ImageAuditRecord]) -> set[tuple[str, str]]:
+def exact_duplicate_pairs(
+    records: list[ImageAuditRecord], *, max_pairs: int | None = None
+) -> set[tuple[str, str]]:
     by_hash: dict[str, list[str]] = defaultdict(list)
     for row in records:
         by_hash[row.sha256].append(row.row_id)
@@ -224,10 +226,20 @@ def exact_duplicate_pairs(records: list[ImageAuditRecord]) -> set[tuple[str, str
         for i in range(len(ids)):
             for j in range(i + 1, len(ids)):
                 edges.add((ids[i], ids[j]))
+                if max_pairs is not None and len(edges) > int(max_pairs):
+                    raise TrackBError(
+                        f"exact-duplicate candidate pairs exceed operational cap {max_pairs}"
+                    )
     return edges
 
 
-def near_hash_pairs(records: list[ImageAuditRecord], *, field: str, radius: int) -> set[tuple[str, str]]:
+def near_hash_pairs(
+    records: list[ImageAuditRecord],
+    *,
+    field: str,
+    radius: int,
+    max_pairs: int | None = None,
+) -> set[tuple[str, str]]:
     tree = BKTree64()
     value_to_ids: dict[int, list[str]] = defaultdict(list)
     edges: set[tuple[str, str]] = set()
@@ -238,6 +250,10 @@ def near_hash_pairs(records: list[ImageAuditRecord], *, field: str, radius: int)
                 a, b = sorted((row.row_id, other_id))
                 if a != b:
                     edges.add((a, b))
+                    if max_pairs is not None and len(edges) > int(max_pairs):
+                        raise TrackBError(
+                            f"{field} within-candidate pairs exceed operational cap {max_pairs}"
+                        )
         if not value_to_ids[value]:
             tree.add(value)
         value_to_ids[value].append(row.row_id)
@@ -250,6 +266,7 @@ def cross_hash_pairs(
     *,
     field: str,
     radius: int,
+    max_pairs: int | None = None,
 ) -> set[tuple[str, str]]:
     tree = BKTree64()
     value_to_hist: dict[int, list[str]] = defaultdict(list)
@@ -264,6 +281,10 @@ def cross_hash_pairs(
         for neighbor_value in tree.query(value, radius):
             for hist_id in value_to_hist[neighbor_value]:
                 out.add((row.row_id, hist_id))
+                if max_pairs is not None and len(out) > int(max_pairs):
+                    raise TrackBError(
+                        f"{field} cross-dataset pairs exceed operational cap {max_pairs}"
+                    )
     return out
 
 
