@@ -141,7 +141,7 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
-      "git_blob_sha1": "8cff8657c2788cd11bb2a90335d01764675433ca",
+      "git_blob_sha1": "b558ced230b19c4b9d46747ffd7bbc09a07601c6",
       "origin": "track_b_v3_remediation"
     },
     {
