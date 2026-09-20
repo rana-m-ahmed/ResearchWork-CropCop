@@ -741,6 +741,7 @@ def _stream_download(
     *,
     timeout: int = 1800,
     expected_checksum: str | None = None,
+    expected_bytes: int | None = None,
     attempts: int = 4,
 ) -> dict[str, str | int | bool]:
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -759,6 +760,12 @@ def _stream_download(
                     fh.write(block)
             if not partial.is_file() or partial.stat().st_size <= 0:
                 raise TrackBOpsError("source download produced an empty file")
+            observed_bytes = int(partial.stat().st_size)
+            if expected_bytes is not None and int(expected_bytes) > 0 and observed_bytes != int(expected_bytes):
+                raise TrackBOpsError(
+                    f"source byte-size mismatch for {destination.name}: "
+                    f"expected={expected_bytes}, observed={observed_bytes}"
+                )
             if not _checksum_matches(partial, expected_checksum):
                 raise TrackBOpsError(
                     f"source checksum mismatch for {destination.name}: expected={expected_checksum}"
@@ -797,8 +804,16 @@ def _safe_extract_zip(
             raise TrackBOpsError(
                 f"archive member-count safety limit exceeded: {len(infos)} > {max_members}"
             )
+        normalized_names: set[str] = set()
         total_uncompressed = 0
         for info in infos:
+            normalized_name = info.filename.replace("\\", "/").lstrip("./")
+            collision_key = normalized_name.casefold()
+            if collision_key in normalized_names:
+                raise TrackBOpsError(
+                    f"archive contains duplicate/case-colliding member path: {info.filename}"
+                )
+            normalized_names.add(collision_key)
             member = Path(info.filename)
             if member.is_absolute() or ".." in member.parts:
                 raise TrackBOpsError(f"unsafe archive member: {info.filename}")
@@ -907,7 +922,12 @@ def acquire_irish_potato(
         checksum = str(row.get("checksum") or "").strip()
         if not checksum:
             raise TrackBOpsError(f"Zenodo file lacks published checksum: {name}")
-        receipt = _stream_download(str(url), archive, expected_checksum=checksum)
+        receipt = _stream_download(
+            str(url),
+            archive,
+            expected_checksum=checksum,
+            expected_bytes=int(row.get("size")) if row.get("size") is not None else None,
+        )
         class_name = name[:-4]
         extracted_root = destination / "_extracted" / class_name
         _safe_extract_zip(archive, extracted_root)
@@ -1204,7 +1224,14 @@ def probe_external_sources() -> dict[str, object]:
         "schema_version": "1.0",
         "record_id": "8286529",
         "version": "01",
-        "files": zenodo_rows,
+        "files": [
+            {
+                "name": str(row["name"]),
+                "declared_bytes": int(row["declared_bytes"]),
+                "checksum": str(row["checksum"]),
+            }
+            for row in zenodo_rows
+        ],
     }
 
     return {
@@ -1397,6 +1424,7 @@ def acquire_gvlid_v5(
             url,
             provisional,
             expected_checksum=checksum,
+            expected_bytes=int(row.get("size", -1)) if int(row.get("size", -1)) > 0 else None,
         )
         transport_sha = str(receipt["sha256"])
         if transport_sha in seen_transport_sha:
