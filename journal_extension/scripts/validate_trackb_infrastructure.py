@@ -121,7 +121,6 @@ def main() -> int:
 
     for required in (
         "KAGGLE_API_TOKEN",
-        "CROPCOP_GITHUB_TOKEN",
         "run_trackb_r07_master.py",
         "bootstrap_trackb_runtime.py",
         "requirements-trackb.lock.txt",
@@ -147,8 +146,10 @@ def main() -> int:
         raise TrackBError("master notebook does not use the proven active-interpreter lock-repair path")
     if "VENV_PY" in master_text or "trackb_runtime_env" in master_text:
         raise TrackBError("master notebook still exposes the failed venv execution path")
-    if "verify_github_repository_push_access" not in master_text:
-        raise TrackBError("master notebook lacks fail-fast Git write preflight")
+    if "CROPCOP_GITHUB_TOKEN" in master_text or "verify_github_repository_push_access" in master_text:
+        raise TrackBError("qualification notebook must not require GitHub credentials or push preflight")
+    if "SKIPPED for prediction-blind qualification" not in master_text:
+        raise TrackBError("qualification notebook does not explicitly record skipped GitHub preflight")
     if "'--execution-mode', 'claim'" in master_text or '"--execution-mode", "claim"' in master_text:
         raise TrackBError("operator notebook exposes protected claim mode instead of qualification mode")
     if "--authorized-qualification-science-sha256" in master_text:
@@ -158,10 +159,6 @@ def main() -> int:
         raise TrackBError("qualification notebook is not pinned to the audited implementation SHA")
     if "SOURCE_REF" in master_text or "checkout', '--detach'" not in master_text:
         raise TrackBError("qualification notebook regressed to mutable branch execution")
-    git_preflight_pos = master_text.find("verify_github_repository_push_access")
-    runtime_bootstrap_pos = master_text.find("bootstrap_trackb_runtime.py")
-    if min(git_preflight_pos, runtime_bootstrap_pos) < 0 or git_preflight_pos > runtime_bootstrap_pos:
-        raise TrackBError("GitHub write preflight must execute before runtime package repair")
 
     ops_text = ops_module.read_text(encoding="utf-8")
     for required in (
@@ -265,6 +262,8 @@ def main() -> int:
         "PASS_TRACKB_PREINFERENCE_QUALIFICATION",
         "--authorized-qualification-science-sha256",
         '"--execution-mode", choices=["qualification", "claim"], default="qualification"',
+        "configure_runtime_secrets(require_github=claim_mode)",
+        "SKIPPED_QUALIFICATION_MODE",
     ):
         if required not in master_runner_text:
             raise TrackBError(f"master controller missing automated operation: {required}")
@@ -288,6 +287,14 @@ def main() -> int:
         raise TrackBError("execution lock does not default private Kaggle ownership to AUTO")
     if automation.get("kaggle_dataset_owner_mode") != "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT":
         raise TrackBError("execution lock does not require authenticated Kaggle owner auto-detection")
+    if automation.get("github_token_required_modes") != ["claim"]:
+        raise TrackBError("GitHub token must be claim-only")
+    if automation.get("github_push_preflight_modes") != ["claim"]:
+        raise TrackBError("GitHub push preflight must be claim-only")
+    if automation.get("qualification_requires_github_token") is not False:
+        raise TrackBError("qualification must not require GitHub token")
+    if automation.get("qualification_requires_github_push_preflight") is not False:
+        raise TrackBError("qualification must not require GitHub push preflight")
     kaggle_policy = lock.get("kaggle", {})
     if kaggle_policy.get("internet_required_during_claim_run") is not True:
         raise TrackBError("automated master requires Internet for orchestration/publication")
