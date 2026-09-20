@@ -1,7 +1,7 @@
 # Track B R07 — Remediation Register v1
 
 **Baseline:** `ef5e2f9d4b8b542e13f33ba5446672f0e9cd60c0`  
-**Audited implementation code head:** `64f6202dfab9d4972c14557f6506311ef5b4b614`  
+**Audited implementation code head:** `d2796cb69daec26a94113e5909719eb353b94832`  
 **Branch:** `trackb-r07-remediation-v3-20260920`  
 **Status:** **PASS — implementation remediation complete; real Kaggle qualification still required.**
 
@@ -27,12 +27,11 @@ No protected external R07 inference has been executed as part of this remediatio
 
 ## Exact-head verification
 
-At `64f6202dfab9d4972c14557f6506311ef5b4b614`:
+At `d2796cb69daec26a94113e5909719eb353b94832`:
 
-- Track B Infrastructure QA (PR): run **35492138674** — PASS
-- Track B Infrastructure QA (push): run **35492136557** — PASS
-- Validate secondary Track-A wave: run **35492138642** — PASS
-- Validate public evidence / complete CPU-safe suite: run **35492138673** — PASS
+- Track B Infrastructure QA (PR): run **35493475660** — PASS
+- Validate secondary Track-A wave: run **35493475669** — PASS
+- Validate public evidence / complete CPU-safe suite: run **35493475536** — PASS
 
 ## Remaining gates
 
