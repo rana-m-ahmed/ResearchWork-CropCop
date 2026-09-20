@@ -211,6 +211,44 @@ def _run_qualification(
     }
 
 
+def _build_qualification_bundle(
+    *,
+    output_root: Path,
+    destination: Path,
+    paired: dict,
+    qualification_result: dict,
+) -> tuple[Path, dict]:
+    if destination.exists():
+        shutil.rmtree(destination)
+    evidence_root = destination / "evidence"
+    shutil.copytree(output_root, evidence_root)
+    evidence_identity = _role_content_identity(evidence_root)
+    manifest = {
+        "schema_version": "1.0",
+        "role": "TRACKB_QUALIFICATION",
+        "status": "PASS_IMMUTABLE_PREDICTION_BLIND_QUALIFICATION",
+        "materialization_id": str(paired["materialization_id"]),
+        "repository_source_sha": str(paired["repository_source_sha"]),
+        "role_manifest_sha256": paired["role_manifest_sha256"],
+        "role_content_identity": paired["role_content_identity"],
+        "qualification_science_sha256": str(
+            qualification_result["qualification_science_sha256"]
+        ),
+        "qualification_sha256": str(qualification_result["qualification_sha256"]),
+        "preinference_qa_sha256": str(qualification_result["preinference_qa_sha256"]),
+        "protected_external_prediction_count": 0,
+        "v1_test_accessed": False,
+        "evidence_root": "evidence",
+        "evidence_content_identity": evidence_identity,
+    }
+    destination.mkdir(parents=True, exist_ok=True)
+    (destination / "TRACKB_QUALIFICATION_BUNDLE.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return destination, manifest
+
+
 def _run_claim(
     *,
     repo_root: Path,
@@ -356,6 +394,42 @@ def main() -> int:
             source_git_sha=source_git_sha,
             device=args.device,
         )
+        # Publication credentials are introduced only after prediction-blind
+        # science and independent QA have completed.
+        configure_runtime_secrets(require_github=False)
+        owner = verify_authenticated_kaggle_owner(args.kaggle_owner)
+        qualification_folder, qualification_manifest = _build_qualification_bundle(
+            output_root=output_root,
+            destination=scratch_root / "qualification_bundle",
+            paired=paired,
+            qualification_result=result,
+        )
+        qualification_slug = (
+            f"{owner}/cropcop-trackb-qualification-v5-"
+            f"{result['qualification_science_sha256'][:16]}"
+        )
+        qualification_pub = publish_private_kaggle_dataset(
+            folder=qualification_folder,
+            slug=qualification_slug,
+            title="CropCop Track B Prediction-Blind Qualification v5",
+            version_message=(
+                "Qualification "
+                f"{result['qualification_science_sha256'][:16]}"
+            ),
+            license_name="other",
+            full_roundtrip=True,
+            allow_version=False,
+        )
+        result["qualification_bundle"] = {
+            "slug": qualification_slug,
+            "manifest_sha256": sha256_file(
+                qualification_folder / "TRACKB_QUALIFICATION_BUNDLE.json"
+            ),
+            "evidence_content_identity": qualification_manifest[
+                "evidence_content_identity"
+            ],
+            "publication": qualification_pub,
+        }
     else:
         result = _run_claim(
             repo_root=repo_root,
@@ -370,8 +444,8 @@ def main() -> int:
         )
 
     receipt = {
-        "schema_version": "1.0",
-        "controller": "TRACKB_V4_ATTACHED_EXECUTION",
+        "schema_version": "2.0",
+        "controller": "TRACKB_V5_ATTACHED_EXECUTION",
         "mode": args.mode,
         "materialization_id": paired["materialization_id"],
         "repository_source_sha": source_git_sha,
