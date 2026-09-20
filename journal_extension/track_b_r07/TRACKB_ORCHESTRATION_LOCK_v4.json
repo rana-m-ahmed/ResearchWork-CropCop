@@ -5,7 +5,7 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "scientific_lock_id": "TRACKB_R07_EXECUTION_LOCK_v3",
-  "orchestration_implementation_commit": "5e278c25e976806d38b984c554e2e42dc58a143c",
+  "orchestration_implementation_commit": "c0f762803d8cdef31adea4b55eb09cc382eb728f",
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
     "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb"
@@ -50,13 +50,13 @@
     "scientific_device": "cuda:0"
   },
   "load_bearing_files": {
-    "journal_extension/scripts/trackb_v4_materialize.py": "9b84b2a8927a29872bd4b6f8eb0c5d720b4745ea",
+    "journal_extension/scripts/trackb_v4_materialize.py": "859378d7424af5bfef2d21bf8cac1598e8c1f2b0",
     "journal_extension/scripts/trackb_v4_execute_attached.py": "94205cd8afac27c76ba13a83a8ab969e9382ae68",
     "journal_extension/scripts/run_trackb_r07.py": "3437c276b789d1772039a187dce1e00fcdaea23d",
     "journal_extension/scripts/validate_trackb_preinference_qualification.py": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2",
     "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json": "de622b10b3611cd8e5d9febb829e6a88cf70ac9b",
     "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json": "e0f13839ce6632fcdac722e7ba11108b29c6c51c"
   },
-  "repository_snapshot_commit": "5e278c25e976806d38b984c554e2e42dc58a143c",
+  "repository_snapshot_commit": "c0f762803d8cdef31adea4b55eb09cc382eb728f",
   "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY"
 }
