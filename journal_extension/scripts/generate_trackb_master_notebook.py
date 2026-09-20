@@ -154,12 +154,13 @@ print(json.dumps({
     'automation_status': receipt['status'],
     'qualification_status': qualification['status'],
     'qualification_sha256': qualification['qualification_sha256'],
+    'qualification_science_sha256': qualification['qualification_science_sha256'],
     'preinference_qa_status': qa['status'],
     'preinference_qa_sha256': qa['qa_sha256'],
     'protected_external_prediction_count': qa['protected_external_prediction_count'],
     'v1_test_accessed': qa['v1_test_accessed'],
     'source_head': HEAD,
-    'next_gate': 'Independent review of Q1/Q2/Q3 evidence before freezing an exact-SHA claim notebook.',
+    'next_gate': 'Review qualification_science_sha256, then freeze the claim run with that exact digest.',
 }, indent=2, sort_keys=True))
 """),
     ]
