@@ -452,6 +452,9 @@ def _audit_candidate(
         source_ok = source_ok and bool(str(source_metadata.get("license_or_access_text", "")).strip())
         source_ok = source_ok and bool(str(source_metadata.get("retrieved_at", "")).strip())
         source_ok = source_ok and bool(str(source_metadata.get("source_url", "")).strip())
+        frozen_lineage = load_json(resolve_bundle_file(core_bundle, "execution_lock")).get("external_lineage_review", {})
+        source_ok = source_ok and source_metadata.get("lineage_review_id") == frozen_lineage.get("review_id")
+        source_ok = source_ok and source_metadata.get("lineage_review_sha256") == frozen_lineage.get("sha256")
         lineage_status = str(source_metadata.get("lineage_review_status", ""))
         known_relation = source_metadata.get("known_historical_contributor_relationship")
         source_ok = source_ok and lineage_status in {"PASS_NO_KNOWN_RELATIONSHIP", "RESIDUAL_UNCERTAINTY"}
