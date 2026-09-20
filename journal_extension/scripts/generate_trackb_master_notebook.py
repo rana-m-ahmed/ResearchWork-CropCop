@@ -20,7 +20,7 @@ def code(text: str):
 
 def build_notebook():
     cells = [
-        md("""# CropCop Track B — R07 Automated Master
+        md("""# CropCop Track B — R07 Automated Master v3
 
 This is the **single operator-facing Track-B notebook**.
 
@@ -34,20 +34,20 @@ Do **not** manually attach or publish Track-B input/evidence datasets.
 
 Kaggle's stock image is allowed to start with a different Torch stack. Before any scientific import, the notebook applies the exact Track-B requirements lock to the active Kaggle interpreter using the same execution pattern already qualified by CropCop Track A. Scientific code is then launched only in a **fresh subprocess**, so stale modules from the notebook process cannot contaminate Track B.
 
-The consumed V1 test remains forbidden. The classifier family/seeds are frozen. GVLiD is the confirmatory field cohort; Irish Potato is the complementary harder stress cohort. Candidate substitution after any external prediction is forbidden.
+The consumed V1 test remains forbidden. The classifier family/seeds are frozen. GVLiD is the frozen external grape cohort (documented source acquisition includes in-situ vineyard and ex-situ imagery); Irish Potato is the complementary harder stress cohort. Candidate substitution after any external prediction is forbidden. Large mutable inputs use /kaggle/tmp; only final evidence is retained under /kaggle/working.
 """),
         code("""from pathlib import Path
 import json, os, shutil, subprocess, sys
 
 WORK = Path('/kaggle/working')
-REPO = WORK / 'ResearchWork-CropCop-trackb-v2'
+REPO = WORK / 'ResearchWork-CropCop-trackb-v3'
 REPO_URL = 'https://github.com/rana-m-ahmed/ResearchWork-CropCop.git'
-BRANCH = 'trackb-r07-infrastructure-20260919'
+SOURCE_REF = 'trackb-r07-remediation-v3-20260920'
 
 if REPO.exists():
     shutil.rmtree(REPO)
 subprocess.run(
-    ['git', 'clone', '--depth', '1', '--branch', BRANCH, REPO_URL, str(REPO)],
+    ['git', 'clone', '--depth', '1', '--branch', SOURCE_REF, REPO_URL, str(REPO)],
     check=True,
 )
 HEAD = subprocess.check_output(['git', '-C', str(REPO), 'rev-parse', 'HEAD'], text=True).strip()
@@ -133,6 +133,7 @@ subprocess.run(
         str(MASTER),
         '--repo-root', str(REPO),
         '--workspace', str(WORKSPACE),
+        '--scratch-root', '/kaggle/tmp/cropcop_trackb_r07',
         '--device', 'cuda:0',
     ],
     cwd=REPO,
@@ -160,6 +161,7 @@ print(json.dumps({
     'automation_status': receipt['status'],
     'track_b_status': closure['status'],
     'closure_sha256': closure['closure_sha256'],
+    'trackb_science_sha256': closure['trackb_science_sha256'],
     'final_qa_sha256': qa['qa_sha256'],
     'github_public_evidence': receipt['github_public_evidence'],
     'private_kaggle_evidence': receipt['private_kaggle_evidence'],
