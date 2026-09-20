@@ -46,3 +46,16 @@ A real Notebook-00 run exposed a packaging ambiguity in the Final-V1 Kaggle data
 The v4 readiness layer now resolves exactly one authority pair only when both hash-valid files share a directory that is structurally bound to a real `dataset/train` + `dataset/val` tree. It then exposes a temporary canonical Final-V1 view to the unchanged legacy core builder. If two image-backed authority pairs exist, readiness still fails closed.
 
 This remediation changes packaging resolution only; it does not modify Final-V1 bytes, hashes, split assignments, R07 science, or the v3 scientific attestation.
+
+## R07 run-record packaging asymmetry remediation
+
+A subsequent real Notebook-00 run passed Final-V1 canonicalization but failed during core construction because the attached S1 checkpoint dataset did not physically contain the exact frozen training `run_record.json`. A broader audit showed this was not a one-off missing file: R07 S1 is a historical state with an original public run record, whereas R07 S2/S3 are v1.2 continuation states for which Track-A explicitly required cryptographic terminal-metadata recovery.
+
+The v4 readiness layer now follows the same frozen Track-A provenance paths used for final Track-A closure:
+
+- S1 uses the exact original public run record from its frozen run-evidence branch and requires its SHA-256 to equal the already-frozen Track-B S1 run-record hash.
+- S2/S3 use the frozen K3 public terminal-account report plus the exact attached selected checkpoints and Track-A terminal recovery code. The recovered records must byte-hash to the already-frozen Track-B S2/S3 run-record SHA-256 values before core construction.
+- If an attached continuation dataset lacks a usable `checkpoint_index.json`, readiness may restore the same frozen durable checkpoint locator into scratch and performs the same recovery there.
+- A new early source-qualification gate also validates Final-V1, all three R07 states, DINO, external-source reachability, and Kaggle publication identity before expensive materialization begins.
+
+No R07 training, adaptation, model selection, thresholding, external prediction, or V1-test access is introduced by this remediation.
