@@ -70,7 +70,7 @@ def main() -> int:
     if len(final.get("cells", [])) != 6:
         raise ValidationError("final execution notebook must have exactly six cells")
 
-    expected_snapshot = "cbde7382267533ec785e4dd36152681a047b9bce"
+    expected_snapshot = "fc31e7ac2c1189471e85eb97bc14330ea0b99e6a"
     if f"SOURCE_COMMIT = '{expected_snapshot}'" not in readiness_text:
         raise ValidationError("readiness notebook is not pinned to the frozen v4 repository snapshot")
     for basename in (
