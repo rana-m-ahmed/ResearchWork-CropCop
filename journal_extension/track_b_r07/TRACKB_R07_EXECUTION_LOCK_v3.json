@@ -241,7 +241,8 @@
     "operator_default_mode": "qualification",
     "independent_preinference_qa_required": true,
     "protected_claim_requires_post_qualification_exact_sha_freeze": true,
-    "qualification_must_produce_zero_protected_external_predictions": true
+    "qualification_must_produce_zero_protected_external_predictions": true,
+    "protected_claim_requires_matching_qualification_sha256": true
   },
   "runtime_bootstrap": {
     "mode": "PROVEN_KAGGLE_LOCK_REPAIR_FRESH_SUBPROCESS",
