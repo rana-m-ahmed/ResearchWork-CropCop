@@ -1001,9 +1001,14 @@ def _independent_candidate_qa(candidate, output_root: Path, audit_policy) -> dic
     return result
 
 
-def _science_preimage_manifest(output_root: Path, core, candidates) -> dict[str, Any]:
+def _prediction_blind_science_manifest(output_root: Path, core, historical, candidates) -> dict[str, Any]:
+    """Build the stable pre-inference science identity used by qualification, claim authorization and rerun ancestry.
+
+    Deliberately excludes execution timestamps, candidate seal self-hashes, acquisition retrieval timestamps,
+    and whole transport manifests whose metadata may vary across byte-identical reacquisitions.
+    """
     payload: dict[str, Any] = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "authority_id": AUTHORITY_ID,
         "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
         "execution_lock_sha256": sha256_file(resolve_bundle_file(core, "execution_lock")),
@@ -1011,30 +1016,50 @@ def _science_preimage_manifest(output_root: Path, core, candidates) -> dict[str,
         "class_map_sha256": CLASS_MAP_SHA256,
         "dataset_manifest_sha256": DATASET_MANIFEST_SHA256,
         "authorized_r07_checkpoint_sha256": R07_CHECKPOINTS,
-        "final_qa_sha256": sha256_file(output_root / "TRACKB_FINAL_QA.json"),
+        "historical_compare": {
+            "coverage_scope": historical.manifest.get("coverage_scope"),
+            "image_count": int(historical.manifest.get("image_count", -1)),
+            "maximum_evidence_grade": historical.manifest.get("maximum_evidence_grade"),
+            "historical_manifest_sha256": sha256_file(resolve_bundle_file(historical, "historical_manifest")),
+            "dino_features_sha256": sha256_file(resolve_bundle_file(historical, "dino_features")),
+            "orb_offsets_sha256": sha256_file(resolve_bundle_file(historical, "orb_offsets")),
+            "orb_xy_sha256": sha256_file(resolve_bundle_file(historical, "orb_xy")),
+            "orb_desc_sha256": sha256_file(resolve_bundle_file(historical, "orb_desc")),
+            "orb_shapes_sha256": sha256_file(resolve_bundle_file(historical, "orb_shapes")),
+        },
         "candidates": {},
     }
     for candidate in candidates:
+        cid = candidate["candidate_id"]
         root = candidate["root"]
         seal = candidate["seal"]
-        payload["candidates"][candidate["candidate_id"]] = {
-            "candidate_id": candidate["candidate_id"],
+        payload["candidates"][cid] = {
+            "candidate_id": cid,
             "source_doi": seal["source_doi"],
             "source_version": seal["source_version"],
             "grade": seal["grade"],
             "claim_mode": seal["claim_mode"],
+            "source_identity_ok": seal["source_identity_ok"],
+            "mapping_ok": seal["mapping_ok"],
+            "unresolved_lineage": seal["unresolved_lineage"],
+            "known_historical_contributor_relationship": seal["known_historical_contributor_relationship"],
             "mapping_sha256": seal["mapping_sha256"],
             "family_support": seal["family_support"],
-            "accepted_historical_link_count": seal["accepted_historical_link_count"],
+            "accepted_historical_link_count": int(seal["accepted_historical_link_count"]),
+            "historical_surface_complete": bool(seal["historical_surface_complete"]),
             "source_manifest_sha256": sha256_file(root / "raw_manifest.csv"),
+            "decode_failure_ledger_sha256": sha256_file(root / "decode_failures.jsonl"),
             "family_graph_sha256": sha256_file(root / "families.jsonl"),
             "representative_manifest_sha256": sha256_file(root / "sealed_representatives.jsonl"),
+            "exclusion_ledger_sha256": sha256_file(root / "exclusions.jsonl"),
             "accepted_within_edges_sha256": sha256_file(root / "accepted_within_edges.jsonl"),
             "accepted_historical_edges_sha256": sha256_file(root / "accepted_historical_edges.jsonl"),
+            "within_comparison_summary_sha256": sha256_file(root / "within_comparison_summary.json"),
+            "historical_comparison_summary_sha256": sha256_file(root / "historical_comparison_summary.json"),
         }
-    payload["science_preimage_sha256"] = sha256_json(payload)
+    payload["qualification_science_sha256"] = sha256_json(payload)
+    atomic_write_json(output_root / "TRACKB_PREDICTION_BLIND_SCIENCE.json", payload)
     return payload
-
 
 def _stable_science_manifest(output_root: Path, core, candidates) -> dict[str, Any]:
     payload: dict[str, Any] = {
@@ -1177,7 +1202,7 @@ def main() -> int:
     ap.add_argument("--source-git-sha", default="")
     ap.add_argument("--attempt-dataset-slug", default="")
     ap.add_argument("--attempt-id", default="")
-    ap.add_argument("--authorized-qualification-sha256", default="")
+    ap.add_argument("--authorized-qualification-science-sha256", default="")
     args = ap.parse_args()
 
     output_root = Path(args.output_root).resolve()
@@ -1250,8 +1275,15 @@ def main() -> int:
     }
     atomic_write_json(output_root / "TRACKB_PREDICTION_FIREWALL.json", firewall)
 
+    prediction_blind_science = _prediction_blind_science_manifest(
+        output_root, core, historical, (grape, potato)
+    )
     qualification = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
+        "qualification_science_sha256": prediction_blind_science["qualification_science_sha256"],
+        "prediction_blind_science_manifest_sha256": sha256_file(
+            output_root / "TRACKB_PREDICTION_BLIND_SCIENCE.json"
+        ),
         "status": "PASS_PREDICTION_BLIND_QUALIFICATION",
         "authority_id": AUTHORITY_ID,
         "downstream_authority_sha256": sha256_file(resolve_bundle_file(core, "downstream_authority")),
@@ -1294,23 +1326,30 @@ def main() -> int:
         print(json.dumps(qualification, indent=2, sort_keys=True))
         return 0
 
-    authorized_qualification = str(args.authorized_qualification_sha256).strip().lower()
-    if len(authorized_qualification) != 64 or any(ch not in "0123456789abcdef" for ch in authorized_qualification):
+    authorized_qualification_science = str(
+        args.authorized_qualification_science_sha256
+    ).strip().lower()
+    if (
+        len(authorized_qualification_science) != 64
+        or any(ch not in "0123456789abcdef" for ch in authorized_qualification_science)
+    ):
         raise TrackBError(
-            "protected claim execution requires a reviewed --authorized-qualification-sha256"
+            "protected claim execution requires a reviewed "
+            "--authorized-qualification-science-sha256"
         )
-    if qualification["qualification_sha256"] != authorized_qualification:
+    current_qualification_science = prediction_blind_science["qualification_science_sha256"]
+    if current_qualification_science != authorized_qualification_science:
         raise TrackBError(
-            "current prediction-blind qualification does not match the reviewed authorization: "
-            f"authorized={authorized_qualification}, current={qualification['qualification_sha256']}"
+            "current prediction-blind science identity does not match the reviewed qualification: "
+            f"authorized={authorized_qualification_science}, current={current_qualification_science}"
         )
     atomic_write_json(
         output_root / "TRACKB_QUALIFICATION_AUTHORIZATION.json",
         {
-            "schema_version": "1.0",
-            "status": "PASS_MATCHED_REVIEWED_QUALIFICATION",
-            "authorized_qualification_sha256": authorized_qualification,
-            "current_qualification_sha256": qualification["qualification_sha256"],
+            "schema_version": "2.0",
+            "status": "PASS_MATCHED_REVIEWED_QUALIFICATION_SCIENCE",
+            "authorized_qualification_science_sha256": authorized_qualification_science,
+            "current_qualification_science_sha256": current_qualification_science,
             "protected_inference_authorized": True,
         },
     )
@@ -1322,11 +1361,11 @@ def main() -> int:
             raise TrackBError(
                 "protected inference requires --attempt-dataset-slug, --attempt-id, and exact --source-git-sha"
             )
-        preimage = _science_preimage_manifest(output_root, core, (grape, potato))
+        preimage = prediction_blind_science
         previous = read_latest_attempt_state(args.attempt_dataset_slug)
         rerun_gate = validate_prior_attempt_for_rerun(
             previous,
-            current_science_preimage_sha256=preimage["science_preimage_sha256"],
+            current_science_preimage_sha256=preimage["qualification_science_sha256"],
         )
         attempt_state = {
             "schema_version": "1.0",
@@ -1335,7 +1374,7 @@ def main() -> int:
             "protected_inference_ever": True,
             "started_at_utc": utc_now(),
             "source_git_sha": str(args.source_git_sha),
-            "science_preimage_sha256": preimage["science_preimage_sha256"],
+            "science_preimage_sha256": preimage["qualification_science_sha256"],
             "science_preimage": preimage,
             "parent_attempt_id": rerun_gate["parent_attempt_id"],
             "prior_attempt_with_protected_inference": rerun_gate["prior_attempt_with_protected_inference"],
