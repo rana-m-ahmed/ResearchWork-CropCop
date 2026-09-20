@@ -87,6 +87,90 @@ def _load_dino(args):
     return model, identity
 
 
+def _historical_output_budget_bytes() -> int:
+    # Conservative bound: DINO features plus the frozen ORB cap (1200 descriptors/image),
+    # shapes/offsets/manifests, and a 1 GiB safety reserve for chunk files and filesystem overhead.
+    dino = SAFE_ROWS * FEATURE_WIDTH * 4
+    orb = SAFE_ROWS * 1200 * (32 + 2 * 4)
+    structural = SAFE_ROWS * (2 * 4 + 8) + 256 * 1024 * 1024
+    reserve = 1024 * 1024 * 1024
+    return int(dino + orb + structural + reserve)
+
+
+def _preflight_historical_components(rows, image_root: Path, model, *, device: str) -> dict:
+    import numpy as np
+    import torch
+    from PIL import Image
+
+    if str(device).startswith("cuda") and not torch.cuda.is_available():
+        raise TrackBError("CUDA requested for historical preflight but unavailable")
+
+    samples: list[tuple[str, str]] = []
+    for prefix in ("train/", "val/"):
+        row = next((row for row in rows if row[1].startswith(prefix)), None)
+        if row is None:
+            raise TrackBError(f"historical preflight could not select a {prefix[:-1]} sample")
+        samples.append(row)
+
+    tensors = []
+    orb_rows = []
+    for hist_id, rel in samples:
+        path = (image_root / rel).resolve()
+        if image_root not in path.parents and path != image_root:
+            raise TrackBError(f"historical preflight image path escapes root: {rel}")
+        if not path.is_file():
+            raise FileNotFoundError(f"historical preflight image missing: {path}")
+        rec, orb = make_image_record_and_orb(path, image_root)
+        if len(str(rec.sha256)) != 64:
+            raise TrackBError("historical preflight produced an invalid raw SHA-256")
+        if tuple(orb["desc"].shape[1:]) != (32,) or tuple(orb["xy"].shape[1:]) != (2,):
+            raise TrackBError(
+                f"historical ORB preflight shape mismatch: desc={orb['desc'].shape}, xy={orb['xy'].shape}"
+            )
+        with Image.open(path) as im:
+            tensors.append(ctc_v2_eval_transform(im))
+        orb_rows.append({
+            "hist_id": hist_id,
+            "relative_path": rel,
+            "orb_keypoints": int(len(orb["desc"])),
+        })
+
+    dev = torch.device(device)
+    model = model.to(dev).eval()
+    with torch.no_grad():
+        x = torch.stack(tensors).to(dev, non_blocking=True)
+        features = model.forward_features(x)
+        features = model.forward_head(features, pre_logits=True)
+    if features.ndim != 2 or tuple(features.shape) != (len(samples), FEATURE_WIDTH):
+        raise TrackBError(f"historical DINO preflight feature shape mismatch: {tuple(features.shape)}")
+    if not torch.isfinite(features).all():
+        raise TrackBError("historical DINO preflight produced non-finite features")
+    norms = torch.linalg.vector_norm(features.float(), dim=1)
+    if not torch.isfinite(norms).all() or torch.any(norms <= 0):
+        raise TrackBError("historical DINO preflight produced invalid feature norms")
+    if str(device).startswith("cuda"):
+        torch.cuda.synchronize(dev)
+
+    free_bytes = int(shutil.disk_usage(image_root).free)
+    budget_bytes = _historical_output_budget_bytes()
+    hard_required = int(budget_bytes * 1.15)
+    if free_bytes < hard_required:
+        raise TrackBError(
+            f"insufficient free disk for bounded historical package: free={free_bytes}, "
+            f"hard_required={hard_required}, estimated_output_bound={budget_bytes}"
+        )
+    return {
+        "status": "PASS",
+        "sample_count": len(samples),
+        "samples": orb_rows,
+        "dino_feature_shape": [len(samples), FEATURE_WIDTH],
+        "device": str(dev),
+        "free_disk_bytes": free_bytes,
+        "estimated_output_bound_bytes": budget_bytes,
+        "hard_required_free_bytes": hard_required,
+    }
+
+
 def _pack_orb(rows, image_root: Path, out: Path, *, workers: int, chunk_size: int):
     import numpy as np
 
@@ -270,6 +354,10 @@ def main() -> int:
     rows = _read_safe_development_rows(v1_manifest)
     started = time.perf_counter()
     model, dino_identity = _load_dino(args)
+    preflight = _preflight_historical_components(
+        rows, image_root, model, device=args.device
+    )
+    print(json.dumps({"historical_preflight": preflight}, indent=2), flush=True)
     hist_manifest, total_keypoints = _pack_orb(
         rows, image_root, out, workers=args.workers, chunk_size=args.orb_chunk_size
     )
@@ -309,6 +397,7 @@ def main() -> int:
         "dino_audit_encoder_sha256": DINO_AUDIT_SHA256,
         "code_attestation_sha256": sha256_file(args.code_attestation),
         "dino_identity": dino_identity,
+        "historical_preflight": preflight,
         "audit_feature_preprocessing": {
             "entrypoint": "cropcop_je.data.ctc_v2_eval_transform",
             "ctc_v2_config_sha256": CTC_V2_CONFIG_SHA256,
