@@ -33,6 +33,7 @@ from cropcop_je.trackb_r07 import (
     R07_CHECKPOINTS,
     R07_RUN_RECORDS,
     TrackBError,
+    audit_policy_from_lock,
     assign_candidate_grade,
     build_candidate_seal,
     discover_kaggle_inputs,
@@ -53,6 +54,7 @@ from cropcop_je.trackb_r07_audit import (
     build_family_components,
     cross_hash_pairs,
     discover_candidate_images,
+    deterministic_representative_order,
     exact_duplicate_pairs,
     make_image_record,
     near_hash_pairs,
@@ -209,11 +211,11 @@ def _load_dino(core):
     return model, identity
 
 
-def _self_dino_pairs(features, row_ids: list[str], *, device: str) -> set[tuple[str, str]]:
+def _self_dino_pairs(features, row_ids: list[str], *, device: str, top_k: int) -> set[tuple[str, str]]:
     import numpy as np
     if len(row_ids) < 2:
         return set()
-    k = min(51, len(row_ids))
+    k = min(int(top_k) + 1, len(row_ids))
     idx, _ = topk_cosine_neighbors(features, features, k=k, device=device)
     pairs = set()
     for i in range(len(row_ids)):
@@ -226,7 +228,7 @@ def _self_dino_pairs(features, row_ids: list[str], *, device: str) -> set[tuple[
             if a != b:
                 pairs.add((a, b))
                 kept += 1
-            if kept >= 50:
+            if kept >= int(top_k):
                 break
     return pairs
 
@@ -238,11 +240,15 @@ def _cross_exact_pairs(external_records, hist_rows):
     return {(ext.row_id, hist_id) for ext in external_records for hist_id in by_sha.get(ext.sha256, [])}
 
 
-def _candidate_orb_getter(records: list[ImageAuditRecord], root: Path, workers: int):
+def _candidate_orb_getter(records: list[ImageAuditRecord], root: Path, workers: int, audit_policy):
     by_id = {r.row_id: r for r in records}
     ordered = list(records)
     def build(row):
-        return row.row_id, orb_features_from_path(root / row.relative_path)
+        return row.row_id, orb_features_from_path(
+            root / row.relative_path,
+            max_side=audit_policy.orb_max_side,
+            nfeatures=audit_policy.orb_nfeatures,
+        )
     cache: dict[str, dict[str, Any]] = {}
     with ThreadPoolExecutor(max_workers=max(1, int(workers))) as pool:
         for row_id, orb in pool.map(build, ordered, chunksize=8):
@@ -262,6 +268,7 @@ def _geometric_verify_pairs(
     get_b,
     cross: bool,
     workers: int,
+    audit_policy,
     batch_size: int = 1024,
 ):
     """Verify candidate pairs with bounded concurrency; persist accepted evidence only plus a full funnel summary."""
@@ -278,7 +285,7 @@ def _geometric_verify_pairs(
                 break
             def one(pair):
                 a, b = pair
-                return pair, verify_orb_pair(get_a(a), get_b(b))
+                return pair, verify_orb_pair(get_a(a), get_b(b), policy=audit_policy)
             for (a, b), verdict in pool.map(one, batch):
                 processed += 1
                 counts[str(verdict.get("decision_stage", "UNKNOWN"))] += 1
@@ -320,6 +327,7 @@ def _audit_candidate(
     hist_rows,
     hist_features,
     hist_orb_get,
+    audit_policy,
 ) -> dict[str, Any]:
     stage(f"candidate audit :: {candidate_id}")
     candidate_out = output_root / "candidates" / candidate_id
@@ -373,19 +381,20 @@ def _audit_candidate(
 
     # Prediction-blind family construction over all eligible originals.
     exact_within = exact_duplicate_pairs(records)
-    phash_within = near_hash_pairs(records, field="phash64", radius=12)
-    dhash_within = near_hash_pairs(records, field="dhash64", radius=10)
+    phash_within = near_hash_pairs(records, field="phash64", radius=audit_policy.phash_radius)
+    dhash_within = near_hash_pairs(records, field="dhash64", radius=audit_policy.dhash_radius)
     image_paths = [data_root / r.relative_path for r in records]
     candidate_features = encode_audit_features(dino_model, image_paths, ctc_v2_eval_transform, device, batch_size=64)
-    dino_within = _self_dino_pairs(candidate_features, [r.row_id for r in records], device=device)
+    dino_within = _self_dino_pairs(candidate_features, [r.row_id for r in records], device=device, top_k=audit_policy.dino_top_k)
     candidate_pair_union = phash_within | dhash_within | dino_within | exact_within
 
-    candidate_orb_get = _candidate_orb_getter(records, data_root, workers)
+    candidate_orb_get = _candidate_orb_getter(records, data_root, workers, audit_policy)
     accepted_within = set(exact_within)
     accepted_near_within, within_geo_summary = _geometric_verify_pairs(
         candidate_pair_union - exact_within,
         evidence_path=candidate_out / "within_geometric_accepts.jsonl",
         get_a=candidate_orb_get, get_b=candidate_orb_get, cross=False, workers=workers,
+        audit_policy=audit_policy,
     )
     accepted_within.update(accepted_near_within)
     within_generation_summary = {
@@ -403,9 +412,9 @@ def _audit_candidate(
     mapped_features = candidate_features[mapped_index]
     mapped_order = [records[i] for i in mapped_index]
     exact_cross = _cross_exact_pairs(mapped_order, hist_rows)
-    phash_cross = cross_hash_pairs(mapped_order, hist_rows, field="phash64", radius=12)
-    dhash_cross = cross_hash_pairs(mapped_order, hist_rows, field="dhash64", radius=10)
-    dino_idx, _ = topk_cosine_neighbors(mapped_features, hist_features, k=50, device=device)
+    phash_cross = cross_hash_pairs(mapped_order, hist_rows, field="phash64", radius=audit_policy.phash_radius)
+    dhash_cross = cross_hash_pairs(mapped_order, hist_rows, field="dhash64", radius=audit_policy.dhash_radius)
+    dino_idx, _ = topk_cosine_neighbors(mapped_features, hist_features, k=audit_policy.dino_top_k, device=device)
     dino_cross = {
         (row.row_id, hist_rows[int(j)]["hist_id"])
         for row, neighbor_row in zip(mapped_order, dino_idx)
@@ -420,6 +429,7 @@ def _audit_candidate(
         cross_union - exact_cross,
         evidence_path=candidate_out / "historical_geometric_accepts.jsonl",
         get_a=candidate_orb_get, get_b=hist_get, cross=True, workers=workers,
+        audit_policy=audit_policy,
     )
     accepted_cross.update(accepted_near_cross)
     historical_generation_summary = {
@@ -485,7 +495,10 @@ def _audit_candidate(
         known_historical_contributor_relationship=known_relation,
     )
 
-    final_reps = [row for row in representatives if row["claim_eligible"]]
+    final_reps = deterministic_representative_order(
+        [row for row in representatives if row["claim_eligible"]],
+        seed=audit_policy.external_family_order_seed,
+    )
     final_rep_path = candidate_out / "sealed_representatives.jsonl"
     audit_write_jsonl(final_rep_path, final_reps)
     source_record = {
@@ -567,9 +580,9 @@ def _audit_candidate(
             "config_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
             "source_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8"
         },
-        "bootstrap_seed": 409883112,
-        "bootstrap_replicates": 5000,
-        "external_family_order_seed": 1936263114,
+        "bootstrap_seed": audit_policy.bootstrap_seed,
+        "bootstrap_replicates": audit_policy.bootstrap_replicates,
+        "external_family_order_seed": audit_policy.external_family_order_seed,
         "prediction_count_at_seal": 0,
     }
     seal = build_candidate_seal(seal_payload)
@@ -735,7 +748,7 @@ def _preflight(core, historical, output_root: Path, device: str):
     return authority, execution_lock, class_map, hist_rows, hist_features, hist_orb_get
 
 
-def _protected_inference(candidate, core, class_map, output_root: Path, device: str):
+def _protected_inference(candidate, core, class_map, output_root: Path, device: str, audit_policy):
     if candidate["grade"] not in {"EXT-I", "EXT-S"}:
         return None
     stage(f"5 :: protected R07 inference :: {candidate['candidate_id']}")
@@ -771,7 +784,12 @@ def _protected_inference(candidate, core, class_map, output_root: Path, device: 
         torch.cuda.empty_cache()
     validate_same_prediction_surface(prediction_sets)
     summary = three_seed_summary(seed_metrics)
-    bootstrap = bootstrap_three_seed_macro_f1(prediction_sets, mapped_indices)
+    bootstrap = bootstrap_three_seed_macro_f1(
+        prediction_sets,
+        mapped_indices,
+        replicates=audit_policy.bootstrap_replicates,
+        seed=audit_policy.bootstrap_seed,
+    )
     analysis_dir = output_root / "analysis" / candidate["candidate_id"]
     analysis_dir.mkdir(parents=True, exist_ok=True)
     atomic_write_json(analysis_dir / "seed_metrics.json", seed_metrics)
@@ -921,6 +939,7 @@ def main() -> int:
     core = inputs["core"]
     historical = inputs["historical_compare"]
     authority, lock, class_map, hist_rows, hist_features, hist_orb_get = _preflight(core, historical, output_root, args.device)
+    audit_policy = audit_policy_from_lock(lock)
     if args.mode == "preflight":
         atomic_write_json(output_root / "PREFLIGHT_PASS.json", {"status": "PASS", "authority_id": AUTHORITY_ID})
         return 0
@@ -940,6 +959,7 @@ def main() -> int:
         expected_label_support=None,
         workers=args.workers, device=args.device,
         dino_model=dino_model, hist_rows=hist_rows, hist_features=hist_features, hist_orb_get=hist_orb_get,
+        audit_policy=audit_policy,
     )
     potato = _audit_candidate(
         candidate_id="irish_potato",
@@ -974,8 +994,8 @@ def main() -> int:
     _inject_image_paths(grape, inputs["gvlid_v5"])
     _inject_image_paths(potato, inputs["irish_potato"])
     results = {
-        "gvlid_grape": _protected_inference(grape, core, class_map, output_root, args.device),
-        "irish_potato": _protected_inference(potato, core, class_map, output_root, args.device),
+        "gvlid_grape": _protected_inference(grape, core, class_map, output_root, args.device, audit_policy),
+        "irish_potato": _protected_inference(potato, core, class_map, output_root, args.device, audit_policy),
     }
 
     stage("7 :: independent closure QA")
