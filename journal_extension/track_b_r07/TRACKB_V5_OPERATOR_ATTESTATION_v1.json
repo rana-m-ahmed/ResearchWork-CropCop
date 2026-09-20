@@ -6,7 +6,7 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
   "runtime_source_commit": "3f5fbd8f450ff938561a3e737ec4298fca2d7402",
-  "preseal_operator_surface_commit": "2694f0a2b6254bddeab3fee537a94c43b5b744b2",
+  "preseal_operator_surface_commit": "710430e29efaaf9bf2e4bcf050aa52a69f0e6ffe",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
     "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
@@ -21,7 +21,7 @@
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "58e0bdc3c3d2969699b3bd8322a2f33c606b1cb7",
+      "git_blob_sha1": "eea0a3b914cfcf72da025d6bec472a018c8f4899",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
@@ -30,7 +30,7 @@
     "prior_green_run_id": 35527961502,
     "prior_green_run_number": 513,
     "prior_green_conclusion": "success",
-    "note": "Prior green run established the sealed baseline. Current operator-surface fix must receive a fresh exact-head green run before execution."
+    "note": "Deep QA found and repaired Notebook 01 runtime-symbol defects; fresh exact-head QA required before execution."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
