@@ -96,6 +96,20 @@ def main() -> int:
         raise ValidationError("Track-B core builder does not bind the sealed DINO factory to its dedicated source root")
     if "validate_teacher_factory_bundle(" not in materializer_source or "load_exact_teacher(" not in materializer_source:
         raise ValidationError("Track-B readiness must validate and instantiate the sealed DINO teacher during source qualification")
+    historical_source = (repo / "journal_extension/scripts/build_trackb_historical_compare.py").read_text(encoding="utf-8")
+    ops_source = (repo / "journal_extension/src/cropcop_je/trackb_r07_ops.py").read_text(encoding="utf-8")
+    if "dino_batch_probe_size" not in historical_source or "len(dino_samples) != 64" not in historical_source:
+        raise ValidationError("historical builder must smoke the real 64-image DINO batch before full indexing")
+    if "shutil.disk_usage(output_root).free" not in historical_source or "_historical_output_budget_bytes()" not in historical_source:
+        raise ValidationError("historical builder lacks output-filesystem disk preflight")
+    if "max_members: int = 120000" not in ops_source or "insufficient disk before archive extraction" not in ops_source:
+        raise ValidationError("Track-B archive extraction lacks bounded member/size/disk safeguards")
+    if "Irish Potato source probe found missing checksum" not in ops_source or "download_urls_valid" not in ops_source:
+        raise ValidationError("Track-B external transport preflight lacks URL/checksum/size hardening")
+    if 'infra_manifest = load_json(infra_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")' not in materializer_source:
+        raise ValidationError("Track-B publication must snapshot the infrastructure manifest before local cleanup")
+    if materializer_source.index("shutil.rmtree(infra_root, ignore_errors=True)") > materializer_source.index('infra_pub["archive_roundtrip"] = _verify_published_archive_roundtrip('):
+        raise ValidationError("Track-B infrastructure round-trip must release the local bundle before ZIP verification")
     if "source_qualification_sha256" not in readiness_text:
         raise ValidationError("readiness notebook must surface the complete source-qualification digest")
     if "CROPCOP_GITHUB_TOKEN" in readiness_text:
