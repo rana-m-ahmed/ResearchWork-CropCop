@@ -103,5 +103,21 @@
       "role_manifest_sha256",
       "role_content_identity"
     ]
+  },
+  "publication_policy": {
+    "fail_fast_capability_probe_required": true,
+    "capability_probe_stage": "BEFORE_EXTERNAL_ACQUISITION_AND_HISTORICAL_COMPUTE",
+    "capability_probe_operations": [
+      "PRIVATE_DATASET_CREATE_OR_IDENTICAL_REUSE",
+      "STATUS_READY",
+      "BOUND_MANIFEST_DOWNLOAD",
+      "FULL_BYTE_ROUNDTRIP"
+    ],
+    "dataset_existence_probe": "STATUS_ENDPOINT_FOR_GENERAL_STATE; DIRECT_BOUND_MANIFEST_DOWNLOAD_FOR_CONTENT_ADDRESSED_PUBLICATION",
+    "listdatasetfiles_existence_probe_forbidden": true,
+    "content_addressed_publication_create_first": true,
+    "ambiguous_create_resolution": "DIRECT_REMOTE_BOUND_MANIFEST_DOWNLOAD_AND_DIGEST_COMPARE",
+    "permission_failure": "FAIL_CLOSED_BEFORE_EXPENSIVE_STAGE_1",
+    "final_bundles_allow_version": false
   }
 }
