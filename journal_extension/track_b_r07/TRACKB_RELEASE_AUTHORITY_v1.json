@@ -7,17 +7,17 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
   "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
-  "runtime_source_commit": "ebf6a41aea61803ed7db0076e76537bfd98c935e",
+  "runtime_source_commit": "7db00a9b5efc8a2f60202bbbbf99ff276b45cb50",
   "bindings": {
-    "code_attestation_sha256": "1af7779f7f86f7a258667cc681807fd7e6fa0f846ed31e10817c3f33b8ce1f60",
-    "execution_lock_sha256": "cb1d04e927a839595583eaeaa0ea89d5dc1f400c2fd0e52717c3dd9bee25ca33",
-    "materialization_lock_sha256": "76f954cfb9841d5d04313e3b7a7557a43f2fd5003378a78309d2eee1c19107d1",
+    "code_attestation_sha256": "17629e480b18c91a611a821cfeb38e6f6927d9ea1dd73eb5685fbb9ad48ad3a2",
+    "execution_lock_sha256": "efd0a4a3911839d01a0e432dafaa4f2161bdf51921dacdd63a2ba3a3b193c78d",
+    "materialization_lock_sha256": "13acaf556a8e69eb57032bf639bbb3d9aeaa509e589706b76b410d9e7e38c610",
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
-    "orchestration_lock_sha256": "b9a166550888828d95a56ba3726cb9e7ee3ebeeadda2cb73515767572ba28360",
-    "operator_attestation_sha256": "b5ad892ae42d4c55b50355c23fb8cea0bf62a4f8a2b3cebc5e9b49199e2e467d",
-    "operator_notebook_00_blob_sha1": "295f4c59bf4761f139dd5af03bbd1d655bc9f9e4",
-    "operator_notebook_01_blob_sha1": "96add02be73ffb62502df6e4082d5e8be15befb6"
+    "orchestration_lock_sha256": "ab5fc5f3966af5336dc5851ac447f660c613f46c4f5aa3d79facea398ff9b2f7",
+    "operator_attestation_sha256": "2e6077af2f51c179b5f1240b5dfd2f411530769dc35ee9e58306a5a51caead34",
+    "operator_notebook_00_blob_sha1": "75ca69e442d6f110cae89e29abf7aa9be7e383ca",
+    "operator_notebook_01_blob_sha1": "5d33640f522f74a2aca16c7e324bb8478343991b"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -68,7 +68,7 @@
       "failed_stage": "PRIVATE_KAGGLE_PUBLICATION_READINESS_POLL",
       "failure": "GetDatasetStatus HTTP 403 while newly created private Version 1 was still processing"
     },
-    "remediation": "Publication success is now bound-manifest visibility plus exact byte round-trip; GetDatasetStatus is best-effort metadata only. Processing-window 403/404 is retryable for direct content visibility. Claim lease and attempt-state visibility no longer require status.",
+    "remediation": "Final publication hardening: bound-manifest plus exact byte round-trip is authoritative; status is advisory; direct content visibility retries processing 403/404/5xx; whole-dataset archive verification waits up to 5400s with processing-aware backoff; deterministic-slug ambiguous creates wait up to 900s for the exact bound manifest before failing; claim lease and attempt-state visibility use direct file reads.",
     "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
