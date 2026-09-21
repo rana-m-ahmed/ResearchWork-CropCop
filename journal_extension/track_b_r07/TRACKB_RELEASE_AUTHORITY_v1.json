@@ -7,17 +7,17 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
   "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
-  "runtime_source_commit": "18eba1bbb62d0330c5644d31f1543988f746d79c",
+  "runtime_source_commit": "ebf6a41aea61803ed7db0076e76537bfd98c935e",
   "bindings": {
-    "code_attestation_sha256": "5a35ed254fa18defe9368123206a2ab665c70db498f31a5c5bfc902d8d891aab",
-    "execution_lock_sha256": "4fe478b68221a8bcc12c99d8e99dad7ed4fc5236acaa0d327a7b854196d427af",
-    "materialization_lock_sha256": "9a08088d9646a0033a0dbb3a0c208d053afe7a3673fa18bb56f7da201f51e187",
+    "code_attestation_sha256": "1af7779f7f86f7a258667cc681807fd7e6fa0f846ed31e10817c3f33b8ce1f60",
+    "execution_lock_sha256": "cb1d04e927a839595583eaeaa0ea89d5dc1f400c2fd0e52717c3dd9bee25ca33",
+    "materialization_lock_sha256": "76f954cfb9841d5d04313e3b7a7557a43f2fd5003378a78309d2eee1c19107d1",
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
-    "orchestration_lock_sha256": "d1b5f4a17e65ca4b764ce25fa63a81d3c26efac22456abc51ebae6bcdd30870e",
-    "operator_attestation_sha256": "5b13292fdea7f4789c99d3fe1b6d3bad5f1d5e8b6ba060a8d7a061a499e1caf5",
-    "operator_notebook_00_blob_sha1": "05121881a269e207c38a4c7bbfe81484554a2386",
-    "operator_notebook_01_blob_sha1": "ce16ebff51c4233121a94b95b006f933cf06da39"
+    "orchestration_lock_sha256": "b9a166550888828d95a56ba3726cb9e7ee3ebeeadda2cb73515767572ba28360",
+    "operator_attestation_sha256": "b5ad892ae42d4c55b50355c23fb8cea0bf62a4f8a2b3cebc5e9b49199e2e467d",
+    "operator_notebook_00_blob_sha1": "295f4c59bf4761f139dd5af03bbd1d655bc9f9e4",
+    "operator_notebook_01_blob_sha1": "96add02be73ffb62502df6e4082d5e8be15befb6"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -61,22 +61,15 @@
   ],
   "seal_evidence": {
     "observed_real_run": {
-      "passed_stages": [
-        "SOURCE_QUALIFICATION",
-        "EXTERNAL_COHORTS",
-        "IMMUTABLE_CORE",
-        "SAFE_HISTORICAL_COMPARISON",
-        "INPUT_CONTRACT_PAIRING"
-      ],
-      "failed_stage": "PRIVATE_KAGGLE_PUBLICATION",
-      "failure": "HTTP 403 from listdatasetfiles existence probe for new content-addressed infrastructure slug",
-      "elapsed_seconds_at_failure": 6981.3
+      "infrastructure_dataset_created": true,
+      "infrastructure_slug": "ranamuhammadahmed6/cropcop-trackb-infrastructure-v5-14a594f454801882",
+      "infrastructure_manifest_visible": true,
+      "infrastructure_manifest_content_digest_sha256": "da00ed66e7c0c99adc031f8da08bc409ac5b16a5b36f94d2b0c8e8c800ae387f",
+      "failed_stage": "PRIVATE_KAGGLE_PUBLICATION_READINESS_POLL",
+      "failure": "GetDatasetStatus HTTP 403 while newly created private Version 1 was still processing"
     },
-    "remediation": "Publication no longer uses listdatasetfiles as an existence gate. Content-addressed publication is create-first; ambiguous writes resolve by direct bound-manifest download/digest comparison; general existence uses dataset status; and a deterministic private create/status/download/full-roundtrip capability probe runs before expensive Stage 1.",
-    "validated_commit": "3ecd7705604e4969adf457d9d90845ce97d50b43",
-    "trackb_qa_workflow_run_id": 35613436163,
-    "trackb_qa_workflow_run_number": 647,
-    "trackb_qa_conclusion": "success",
+    "remediation": "Publication success is now bound-manifest visibility plus exact byte round-trip; GetDatasetStatus is best-effort metadata only. Processing-window 403/404 is retryable for direct content visibility. Claim lease and attempt-state visibility no longer require status.",
+    "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
   }
