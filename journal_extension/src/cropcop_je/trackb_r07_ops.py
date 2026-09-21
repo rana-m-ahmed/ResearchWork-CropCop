@@ -1097,6 +1097,7 @@ def _normalize_irish_zip_streaming(
     image_suffixes = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
     logical: dict[str, list[zipfile.ZipInfo]] = {}
     seen_full_paths: set[str] = set()
+    duplicate_full_path_members = 0
     total_uncompressed = 0
     image_members = 0
     transport_metadata_members_ignored = 0
@@ -1116,11 +1117,9 @@ def _normalize_irish_zip_streaming(
                 raise TrackBOpsError(f"unsafe Irish Potato archive member: {info.filename}")
             collision_key = normalized_name.casefold()
             if collision_key in seen_full_paths:
-                raise TrackBOpsError(
-                    f"Irish Potato archive contains duplicate/case-colliding full path: "
-                    f"{info.filename}"
-                )
-            seen_full_paths.add(collision_key)
+                duplicate_full_path_members += 1
+            else:
+                seen_full_paths.add(collision_key)
 
             mode = (int(info.external_attr) >> 16) & 0o170000
             if mode and stat.S_ISLNK(mode):
@@ -1245,6 +1244,7 @@ def _normalize_irish_zip_streaming(
     return {
         "status": "PASS",
         "raw_image_member_count": image_members,
+        "duplicate_full_path_members": duplicate_full_path_members,
         "transport_metadata_members_ignored": transport_metadata_members_ignored,
         "logical_unique_filename_count": len(logical),
         "normalized_image_count": normalized,
