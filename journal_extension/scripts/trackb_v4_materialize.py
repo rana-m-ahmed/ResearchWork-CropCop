@@ -34,6 +34,7 @@ from cropcop_je.trackb_r07_ops import (
     probe_external_sources,
     publish_private_kaggle_dataset,
     run_checked,
+    verify_kaggle_publication_capability,
     verify_authenticated_kaggle_owner,
 )
 
@@ -496,6 +497,7 @@ def _write_source_qualification(
     dino: dict[str, object],
     external_probe: dict[str, object],
     kaggle_owner: str | None,
+    kaggle_publication_probe: dict[str, object] | None,
 ) -> Path:
     manifest, class_map, image_root = final_v1
     payload = {
@@ -514,6 +516,7 @@ def _write_source_qualification(
         "dino": dino,
         "external_source_probe": external_probe,
         "kaggle_publication_owner": kaggle_owner,
+        "kaggle_publication_capability": kaggle_publication_probe,
     }
     path = output_root / "TRACKB_SOURCE_QUALIFICATION.json"
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -895,10 +898,16 @@ def main() -> int:
     stage("0.5 :: complete source qualification")
     early_owner = None
     publication_token = None
+    publication_probe = None
     if not args.skip_publication:
         configure_runtime_secrets(require_github=False)
         early_owner = verify_authenticated_kaggle_owner(args.kaggle_owner)
         publication_token = os.environ.get("KAGGLE_API_TOKEN")
+        publication_probe = verify_kaggle_publication_capability(early_owner)
+        if publication_probe.get("status") != "PASS_KAGGLE_PUBLICATION_CAPABILITY":
+            raise TrackBOpsError(
+                f"Kaggle publication capability preflight did not PASS: {publication_probe}"
+            )
     external_probe = probe_external_sources()
     if external_probe.get("status") != "PASS":
         raise TrackBOpsError(f"external-source readiness probe did not PASS: {external_probe}")
@@ -918,6 +927,7 @@ def main() -> int:
         dino=dino_evidence,
         external_probe=external_probe,
         kaggle_owner=early_owner,
+        kaggle_publication_probe=publication_probe,
     )
     print(source_qualification_path.read_text(encoding="utf-8"), flush=True)
     # The Kaggle token is a publication credential, not a scientific input.
