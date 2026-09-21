@@ -1072,6 +1072,166 @@ def _load_lineage_review(path: str | Path, *, role: str, doi: str, version: str)
     return row, sha256_file(review_path), str(review.get("review_id"))
 
 
+def _normalize_irish_zip_streaming(
+    archive: str | Path,
+    class_root: str | Path,
+    *,
+    expected_count: int,
+    max_members: int = 120000,
+    max_uncompressed_bytes: int = 20 * 1024 * 1024 * 1024,
+) -> dict[str, object]:
+    """Normalize one Irish Potato ZIP without extracting duplicate copies to disk.
+
+    Zenodo/paper authority defines the logical class size by unique image filename.
+    If the archive contains multiple copies of the same filename, all copies must
+    be byte-identical; otherwise normalization fails closed.
+    """
+    archive = Path(archive).resolve()
+    class_root = Path(class_root).resolve()
+    if not archive.is_file():
+        raise TrackBOpsError(f"Irish Potato archive missing: {archive}")
+    if class_root.exists():
+        raise TrackBOpsError(f"Irish Potato class output already exists: {class_root}")
+    class_root.mkdir(parents=True, exist_ok=False)
+
+    image_suffixes = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+    logical: dict[str, list[zipfile.ZipInfo]] = {}
+    seen_full_paths: set[str] = set()
+    total_uncompressed = 0
+    image_members = 0
+
+    with zipfile.ZipFile(archive) as zf:
+        infos = [info for info in zf.infolist() if not info.is_dir()]
+        if len(infos) > int(max_members):
+            raise TrackBOpsError(
+                f"Irish Potato ZIP member-count safety limit exceeded: "
+                f"{len(infos)} > {max_members}"
+            )
+
+        for info in infos:
+            normalized_name = info.filename.replace("\\", "/").lstrip("./")
+            member = Path(normalized_name)
+            if member.is_absolute() or ".." in member.parts:
+                raise TrackBOpsError(f"unsafe Irish Potato archive member: {info.filename}")
+            collision_key = normalized_name.casefold()
+            if collision_key in seen_full_paths:
+                raise TrackBOpsError(
+                    f"Irish Potato archive contains duplicate/case-colliding full path: "
+                    f"{info.filename}"
+                )
+            seen_full_paths.add(collision_key)
+
+            mode = (int(info.external_attr) >> 16) & 0o170000
+            if mode and stat.S_ISLNK(mode):
+                raise TrackBOpsError(
+                    f"Irish Potato archive symlink member is not permitted: {info.filename}"
+                )
+
+            total_uncompressed += int(info.file_size)
+            if total_uncompressed > int(max_uncompressed_bytes):
+                raise TrackBOpsError(
+                    "Irish Potato archive uncompressed-size safety limit exceeded: "
+                    f"{total_uncompressed} > {max_uncompressed_bytes}"
+                )
+
+            suffix = member.suffix.lower()
+            if suffix not in image_suffixes:
+                continue
+
+            basename = member.name.strip()
+            if not basename:
+                raise TrackBOpsError(
+                    f"Irish Potato image member has empty basename: {info.filename}"
+                )
+            logical.setdefault(basename.casefold(), []).append(info)
+            image_members += 1
+
+        if len(logical) != int(expected_count):
+            raise TrackBOpsError(
+                "Irish Potato logical image-count drift after duplicate-name grouping: "
+                f"expected={expected_count}, unique_names={len(logical)}, "
+                f"raw_image_members={image_members}"
+            )
+
+        free_bytes = int(shutil.disk_usage(class_root.parent).free)
+        # Only one logical copy per filename is written; reserve 10% plus 256 MiB.
+        logical_bytes_upper = sum(
+            max(int(info.file_size) for info in group)
+            for group in logical.values()
+        )
+        hard_required = int(logical_bytes_upper * 1.10) + 256 * 1024 * 1024
+        if free_bytes < hard_required:
+            raise TrackBOpsError(
+                "insufficient disk before Irish Potato streaming normalization: "
+                f"free={free_bytes}, hard_required={hard_required}, "
+                f"logical_bytes_upper={logical_bytes_upper}"
+            )
+
+        duplicate_groups = 0
+        duplicate_members_collapsed = 0
+        normalized = 0
+
+        for logical_name in sorted(logical):
+            group = sorted(logical[logical_name], key=lambda info: info.filename)
+            digests: list[str] = []
+            for info in group:
+                h = hashlib.sha256()
+                with zf.open(info, "r") as src:
+                    for chunk in iter(lambda: src.read(1024 * 1024), b""):
+                        h.update(chunk)
+                digests.append(h.hexdigest())
+
+            unique_digests = sorted(set(digests))
+            if len(unique_digests) != 1:
+                raise TrackBOpsError(
+                    "Irish Potato duplicate logical filename has conflicting bytes: "
+                    f"name={logical_name!r}, copies={len(group)}, "
+                    f"digests={unique_digests[:4]}"
+                )
+
+            if len(group) > 1:
+                duplicate_groups += 1
+                duplicate_members_collapsed += len(group) - 1
+
+            selected = group[0]
+            raw_sha = unique_digests[0]
+            member_rel = selected.filename.replace("\\", "/").lstrip("./")
+            member_sha = hashlib.sha256(member_rel.encode("utf-8")).hexdigest()
+            suffix = Path(selected.filename).suffix.lower()
+            target = class_root / f"{raw_sha[:16]}_{member_sha[:12]}{suffix}"
+            if target.exists():
+                raise TrackBOpsError(
+                    f"canonical Irish Potato member collision: {target.name}"
+                )
+            with zf.open(selected, "r") as src, target.open("xb") as dst:
+                shutil.copyfileobj(src, dst, length=1024 * 1024)
+            if sha256_file(target) != raw_sha:
+                raise TrackBOpsError(
+                    f"Irish Potato canonical write hash mismatch: {target.name}"
+                )
+            normalized += 1
+
+    if normalized != int(expected_count):
+        raise TrackBOpsError(
+            f"Irish Potato normalized count mismatch: expected={expected_count}, "
+            f"observed={normalized}"
+        )
+
+    return {
+        "status": "PASS",
+        "raw_image_member_count": image_members,
+        "logical_unique_filename_count": len(logical),
+        "normalized_image_count": normalized,
+        "duplicate_filename_groups": duplicate_groups,
+        "duplicate_members_collapsed": duplicate_members_collapsed,
+        "deduplication_policy": (
+            "CASEFOLDED_UNIQUE_BASENAME_WITH_ALL_DUPLICATE_BYTES_IDENTICAL"
+        ),
+        "archive_uncompressed_bytes": total_uncompressed,
+        "logical_bytes_upper": logical_bytes_upper,
+    }
+
+
 def acquire_irish_potato(
     destination: str | Path,
     *,
@@ -1146,33 +1306,22 @@ def acquire_irish_potato(
             expected_bytes=int(row.get("size")) if row.get("size") is not None else None,
         )
         class_name = name[:-4]
-        extracted_root = destination / "_extracted" / class_name
-        _safe_extract_zip(archive, extracted_root)
-        images = sorted(
-            path for path in extracted_root.rglob("*")
-            if path.is_file() and path.suffix.lower() in image_suffixes
-        )
-        expected_count = int(expected[name])
-        if len(images) != expected_count:
-            raise TrackBOpsError(
-                f"Zenodo {name} image-count drift: expected {expected_count}, found {len(images)}"
-            )
         class_root = data_root / class_name
-        class_root.mkdir(parents=True, exist_ok=False)
-        for src in images:
-            raw_sha = sha256_file(src)
-            member_rel = src.relative_to(extracted_root).as_posix()
-            member_sha = hashlib.sha256(member_rel.encode("utf-8")).hexdigest()
-            target = class_root / f"{raw_sha[:16]}_{member_sha[:12]}{src.suffix.lower()}"
-            if target.exists():
-                raise TrackBOpsError(f"canonical Irish Potato member collision: {target.name}")
-            shutil.move(str(src), str(target))
-        observed_support[class_name] = len(images)
-        transport.append({"name": name, **receipt, "normalized_image_count": len(images)})
+        expected_count = int(expected[name])
+        normalization = _normalize_irish_zip_streaming(
+            archive,
+            class_root,
+            expected_count=expected_count,
+        )
+        observed_support[class_name] = int(normalization["normalized_image_count"])
+        transport.append({
+            "name": name,
+            **receipt,
+            "normalization": normalization,
+            "normalized_image_count": int(normalization["normalized_image_count"]),
+        })
         archive.unlink(missing_ok=True)
-        shutil.rmtree(extracted_root, ignore_errors=True)
     shutil.rmtree(destination / "_transport", ignore_errors=True)
-    shutil.rmtree(destination / "_extracted", ignore_errors=True)
     licence = metadata.get("license") or {}
     licence_text = str(licence.get("id") or licence.get("title") or "").strip()
     if not licence_text:
