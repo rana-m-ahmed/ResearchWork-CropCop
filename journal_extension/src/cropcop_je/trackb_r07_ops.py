@@ -833,9 +833,20 @@ def publish_private_kaggle_dataset(
             kind = _kaggle_publication_failure_kind(detail)
 
             # A create may have succeeded server-side even if the response path
-            # failed.  Resolve ambiguity by direct manifest download, never by
-            # listdatasetfiles.
+            # failed, or a deterministic slug from a previous run may still be
+            # processing. Resolve that ambiguity by waiting for the bound manifest
+            # and comparing its digest; never by listdatasetfiles/status.
             resolved = _read_remote_kaggle_content_manifest(slug, strict=False)
+            if resolved is None and action == "create" and kind in {"CONFLICT", "PERMISSION", "TRANSIENT"}:
+                try:
+                    resolved = _wait_remote_kaggle_content_manifest(
+                        slug,
+                        expected_digest=local_digest,
+                        timeout_seconds=900,
+                    )
+                except Exception:
+                    resolved = None
+
             if resolved is not None:
                 existed_initially = True
                 resolved_digest = str(resolved.get("content_digest_sha256", ""))
