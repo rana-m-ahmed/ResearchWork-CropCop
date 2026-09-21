@@ -151,8 +151,8 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
-      "git_blob_sha1": "5310a3c2082a55d9abb19c7dfdfc7efe3cbcd5a0",
-      "origin": "track_b_v5_hardening_kaggle_publication"
+      "git_blob_sha1": "28e503bca490934b7ff60094a9493e458c506c84",
+      "origin": "track_b_v5_hardening_kaggle_processing_visibility"
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07.py",
@@ -191,9 +191,9 @@
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json",
-      "git_blob_sha1": "627c1cabe41155a00cb4a19f1bf337a1ed404985",
+      "git_blob_sha1": "ede45ca02c422e1a9b9249e595a184bf9d4b1bab",
       "origin": "track_b_v5_materialization_authority"
     }
   ],
-  "attestation_note": "Track-B v5 runtime re-attestation after observed Kaggle publication failure at Stage 5. Content-addressed publication no longer uses listdatasetfiles as an existence gate; publication is create-first with direct bound-manifest ambiguity resolution, and a deterministic private create/status/download/round-trip capability probe is required before expensive Stage 1. Scientific thresholds, mappings, checkpoints, seeds, grade rules, and protected-inference policy are unchanged."
+  "attestation_note": "Track-B v5 runtime re-attestation after real Kaggle Stage-5 processing-state failure. Newly created private datasets may return transient 403/404 from GetDatasetStatus while processing; publication success is now bound-manifest visibility plus exact byte round-trip, with status retained only as best-effort metadata. Claim lease and attempt-state visibility use direct file reads rather than status. Scientific thresholds, mappings, checkpoints, seeds, grade rules, and protected-inference policy are unchanged."
 }
