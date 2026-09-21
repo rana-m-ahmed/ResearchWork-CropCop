@@ -507,6 +507,80 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             source.index('supports, checksum_integrity = _normalize_gvlid_tree('),
         )
 
+    def test_irish_streaming_normalizer_collapses_identical_duplicate_filenames(self):
+        import zipfile
+        from cropcop_je.trackb_r07_ops import _normalize_irish_zip_streaming
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            archive = root / "irish.zip"
+            with zipfile.ZipFile(archive, "w") as zf:
+                zf.writestr("copyA/img001.jpg", b"same")
+                zf.writestr("copyB/img001.jpg", b"same")
+                zf.writestr("copyA/img002.jpg", b"other")
+                zf.writestr("copyB/img002.jpg", b"other")
+
+            out = root / "out"
+            receipt = _normalize_irish_zip_streaming(
+                archive,
+                out,
+                expected_count=2,
+                max_members=20,
+                max_uncompressed_bytes=4096,
+            )
+            self.assertEqual(receipt["status"], "PASS")
+            self.assertEqual(receipt["raw_image_member_count"], 4)
+            self.assertEqual(receipt["logical_unique_filename_count"], 2)
+            self.assertEqual(receipt["normalized_image_count"], 2)
+            self.assertEqual(receipt["duplicate_filename_groups"], 2)
+            self.assertEqual(receipt["duplicate_members_collapsed"], 2)
+            self.assertEqual(len(list(out.glob("*.jpg"))), 2)
+
+    def test_irish_streaming_normalizer_rejects_conflicting_duplicate_filenames(self):
+        import zipfile
+        from cropcop_je.trackb_r07_ops import (
+            TrackBOpsError,
+            _normalize_irish_zip_streaming,
+        )
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            archive = root / "irish.zip"
+            with zipfile.ZipFile(archive, "w") as zf:
+                zf.writestr("copyA/img001.jpg", b"first")
+                zf.writestr("copyB/img001.jpg", b"DIFFERENT")
+
+            with self.assertRaises(TrackBOpsError):
+                _normalize_irish_zip_streaming(
+                    archive,
+                    root / "out",
+                    expected_count=1,
+                    max_members=20,
+                    max_uncompressed_bytes=4096,
+                )
+
+    def test_irish_streaming_normalizer_rejects_wrong_logical_count(self):
+        import zipfile
+        from cropcop_je.trackb_r07_ops import (
+            TrackBOpsError,
+            _normalize_irish_zip_streaming,
+        )
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            archive = root / "irish.zip"
+            with zipfile.ZipFile(archive, "w") as zf:
+                zf.writestr("a/img001.jpg", b"x")
+                zf.writestr("b/img001.jpg", b"x")
+            with self.assertRaises(TrackBOpsError):
+                _normalize_irish_zip_streaming(
+                    archive,
+                    root / "out",
+                    expected_count=2,
+                    max_members=20,
+                    max_uncompressed_bytes=4096,
+                )
+
     def test_gvlid_companion_tar_extractor_handles_canonical_tree(self):
         import io
         import tarfile
