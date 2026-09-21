@@ -151,7 +151,7 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
-      "git_blob_sha1": "0632e0158839aee571402cf9daee1e2e9f0e1fc4",
+      "git_blob_sha1": "e812f701886c556e73358edcabffb85a3bf5e47f",
       "origin": "track_b_v5_hardening_irish_zip_normalization"
     },
     {
@@ -195,5 +195,5 @@
       "origin": "track_b_v5_materialization_authority"
     }
   ],
-  "attestation_note": "Track-B v5 runtime re-attestation after observed Irish Potato Zenodo ZIP transport duplication. Provider MD5/size remain mandatory. Known macOS AppleDouble transport metadata is excluded before logical image counting; real duplicate filenames may collapse only when byte-identical; published supports 17772/20438/20499 remain unchanged. Scientific thresholds, mappings, checkpoints, seeds, grade rules, and protected-inference policy are unchanged."
+  "attestation_note": "Track-B v5 runtime re-attestation after robust Irish Potato ZIP transport normalization. Known AppleDouble metadata is excluded; exact/full-path or basename duplicate real images are allowed only when byte-identical; conflicting copies fail closed; published supports remain 17772/20438/20499."
 }
