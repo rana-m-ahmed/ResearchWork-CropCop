@@ -7,17 +7,17 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
   "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
-  "runtime_source_commit": "dda397f05a673f712c5c87a612e3804eabeae290",
+  "runtime_source_commit": "18eba1bbb62d0330c5644d31f1543988f746d79c",
   "bindings": {
-    "code_attestation_sha256": "876cdf714a27af62e9ae7cb6ac0cf88a20eccd75cfcc54ef69bf8ba028296cc7",
-    "execution_lock_sha256": "48964f75c886916bf1d6bd986a05d1c4ae56a6c71e195fc8db6424cf01508382",
-    "materialization_lock_sha256": "11394018fb023408d37386f0ae77efb7153bca1763bec51e4097aa3588804e54",
+    "code_attestation_sha256": "5a35ed254fa18defe9368123206a2ab665c70db498f31a5c5bfc902d8d891aab",
+    "execution_lock_sha256": "4fe478b68221a8bcc12c99d8e99dad7ed4fc5236acaa0d327a7b854196d427af",
+    "materialization_lock_sha256": "9a08088d9646a0033a0dbb3a0c208d053afe7a3673fa18bb56f7da201f51e187",
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
-    "orchestration_lock_sha256": "a2895252e944948876f996ccc71790b5c4b6eb9b0f32f7ea1dc4b9baf25b8da8",
-    "operator_attestation_sha256": "136771cdd62dca6db3d15dbb477cd8221f9dd882c52d688e44bbc966c753b247",
-    "operator_notebook_00_blob_sha1": "2259b2b7b40d57e622c9949bda942ba3f8080d0d",
-    "operator_notebook_01_blob_sha1": "15001efb8b47cc173863ded2297236bee82f95b8"
+    "orchestration_lock_sha256": "d1b5f4a17e65ca4b764ce25fa63a81d3c26efac22456abc51ebae6bcdd30870e",
+    "operator_attestation_sha256": "123c33ef9523ac9c896125af5f8bea281dd64e85b22764ef2fd8b1d9914be98e",
+    "operator_notebook_00_blob_sha1": "05121881a269e207c38a4c7bbfe81484554a2386",
+    "operator_notebook_01_blob_sha1": "ce16ebff51c4233121a94b95b006f933cf06da39"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -60,12 +60,20 @@
     "V1 test remains closed: SATISFIED"
   ],
   "seal_evidence": {
-    "observed_failure": "Zenodo earlyblt.zip image-count drift: expected 17772, found 35544",
-    "remediation": "Irish ZIP streaming normalizer excludes known macOS AppleDouble metadata before counting, then groups real images by published unique filename and permits exact/full-path or basename duplicates only if byte-identical. Conflicts fail closed. Provider checksum/declared bytes and supports 17772/20438/20499 remain mandatory.",
-    "validated_commit": "d8dfc31e5fe8d49a9d610d0a22c6c790fb3b5add",
-    "trackb_qa_workflow_run_id": 35557330705,
-    "trackb_qa_workflow_run_number": 618,
-    "trackb_qa_conclusion": "success",
+    "observed_real_run": {
+      "passed_stages": [
+        "SOURCE_QUALIFICATION",
+        "EXTERNAL_COHORTS",
+        "IMMUTABLE_CORE",
+        "SAFE_HISTORICAL_COMPARISON",
+        "INPUT_CONTRACT_PAIRING"
+      ],
+      "failed_stage": "PRIVATE_KAGGLE_PUBLICATION",
+      "failure": "HTTP 403 from listdatasetfiles existence probe for new content-addressed infrastructure slug",
+      "elapsed_seconds_at_failure": 6981.3
+    },
+    "remediation": "Publication no longer uses listdatasetfiles as an existence gate. Content-addressed publication is create-first, ambiguous writes resolve by direct bound-manifest download/digest comparison, general existence uses dataset status, and a deterministic private create/status/download/full-roundtrip capability probe runs before expensive Stage 1.",
+    "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
   }
