@@ -7,17 +7,17 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
   "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
-  "runtime_source_commit": "235b84ddb680c27e2814e693a75cb47b4725994a",
+  "runtime_source_commit": "dda397f05a673f712c5c87a612e3804eabeae290",
   "bindings": {
-    "code_attestation_sha256": "4e035efa3326bd6a84c026dcee0b2000c3afe0784ef2832a5090db7f249e8d72",
-    "execution_lock_sha256": "f0958e736086145500b905d566b7e3e25729b5321e52ecc3eeee139b465cca20",
+    "code_attestation_sha256": "876cdf714a27af62e9ae7cb6ac0cf88a20eccd75cfcc54ef69bf8ba028296cc7",
+    "execution_lock_sha256": "48964f75c886916bf1d6bd986a05d1c4ae56a6c71e195fc8db6424cf01508382",
     "materialization_lock_sha256": "11394018fb023408d37386f0ae77efb7153bca1763bec51e4097aa3588804e54",
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
-    "orchestration_lock_sha256": "b6f166deb7093835135c874aedb648c462e03ef7d58a522f8a129897ffc4d62e",
-    "operator_attestation_sha256": "59efe61371a4b8ad259cea3c395fe522e02066049b37ffa08f46e0084c175936",
-    "operator_notebook_00_blob_sha1": "afc1df175048519080466e44546ac13e30e78045",
-    "operator_notebook_01_blob_sha1": "c077b4c60451d410491bb2d0a227839ce7851f94"
+    "orchestration_lock_sha256": "a2895252e944948876f996ccc71790b5c4b6eb9b0f32f7ea1dc4b9baf25b8da8",
+    "operator_attestation_sha256": "d599585fbfe03e6b7447d802213e55c94aa62998c101ce1396a94b2107fd9f3d",
+    "operator_notebook_00_blob_sha1": "2259b2b7b40d57e622c9949bda942ba3f8080d0d",
+    "operator_notebook_01_blob_sha1": "15001efb8b47cc173863ded2297236bee82f95b8"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -61,7 +61,7 @@
   ],
   "seal_evidence": {
     "observed_failure": "Zenodo earlyblt.zip image-count drift: expected 17772, found 35544",
-    "remediation": "Provider MD5/declared bytes remain mandatory. Known macOS AppleDouble ZIP metadata (__MACOSX and ._ basenames) is excluded before image counting. Remaining images are grouped by published unique filename; duplicate real copies collapse only when all bytes are identical. Published supports remain 17772/20438/20499.",
+    "remediation": "Streaming ZIP normalization now excludes known AppleDouble transport metadata, validates published unique image identities, permits exact/full-path or basename duplicates only when byte-identical, rejects conflicting duplicates, and preserves provider MD5/size plus published supports 17772/20438/20499.",
     "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
