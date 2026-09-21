@@ -27,8 +27,19 @@
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_FINAL_IRISH_ZIP_HARDENING",
-    "note": "Final candidate handles AppleDouble metadata, exact duplicate ZIP paths, duplicate basenames, conflicting-byte rejection, and streaming canonicalization."
+    "workflow_run_id": 35557330705,
+    "workflow_run_number": 618,
+    "conclusion": "success",
+    "validated_commit": "d8dfc31e5fe8d49a9d610d0a22c6c790fb3b5add",
+    "compile_pass": true,
+    "targeted_tests_pass": true,
+    "apple_double_transport_test_pass": true,
+    "identical_duplicate_path_test_pass": true,
+    "conflicting_duplicate_path_rejection_pass": true,
+    "canonical_notebook_regeneration_pass": true,
+    "static_infrastructure_validator_pass": true,
+    "v5_orchestration_validator_pass": true,
+    "sealed_release_authority_validator_pass": true
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
