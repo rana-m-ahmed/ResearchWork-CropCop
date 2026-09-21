@@ -236,6 +236,49 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             source.index("_pack_orb("),
         )
 
+    def test_kaggle_publication_never_uses_list_files_as_existence_gate(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def publish_private_kaggle_dataset(")
+        end = source.index("def verify_kaggle_publication_capability(", start)
+        publish = source[start:end]
+        self.assertNotIn('["kaggle", "datasets", "files"', publish)
+        self.assertNotIn("kaggle_dataset_exists(slug)", publish)
+        self.assertIn('["kaggle", "datasets", "create"', publish)
+        self.assertIn("_read_remote_kaggle_content_manifest(slug, strict=False)", publish)
+        self.assertIn("_kaggle_publication_failure_kind", publish)
+
+    def test_kaggle_dataset_exists_uses_status_not_list_files(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def kaggle_dataset_exists(")
+        end = source.index("def _metadata_slug(", start)
+        helper = source[start:end]
+        self.assertIn('["kaggle", "datasets", "status", slug, "--format", "json"]', helper)
+        self.assertNotIn('"datasets", "files"', helper)
+
+    def test_publication_capability_probe_precedes_expensive_stage_one(self):
+        source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
+        probe = source.index("publication_probe = verify_kaggle_publication_capability(early_owner)")
+        stage_one = source.index('stage("1 :: authoritative external cohorts')
+        self.assertLess(probe, stage_one)
+        self.assertIn('"kaggle_publication_capability": kaggle_publication_probe', source)
+
+    def test_publication_capability_probe_is_content_addressed_and_roundtripped(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def verify_kaggle_publication_capability(")
+        end = source.index("def acquire_claim_lease(", start)
+        helper = source[start:end]
+        self.assertIn("probe_digest = sha256_json(payload)", helper)
+        self.assertIn("cropcop-trackb-pubprobe-v5-", helper)
+        self.assertIn("full_roundtrip=True", helper)
+        self.assertIn("allow_version=False", helper)
+        self.assertIn("PASS_KAGGLE_PUBLICATION_CAPABILITY", helper)
+
     def test_publication_releases_local_bundle_before_archive_roundtrip(self):
         source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
         infra_manifest = source.index(
