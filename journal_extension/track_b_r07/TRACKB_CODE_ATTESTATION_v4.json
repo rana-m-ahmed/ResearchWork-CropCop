@@ -151,8 +151,8 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
-      "git_blob_sha1": "65a052ef7739d7aa0f117adc047eb38665397be7",
-      "origin": "track_b_v5_hardening_gvlid_transport"
+      "git_blob_sha1": "0632e0158839aee571402cf9daee1e2e9f0e1fc4",
+      "origin": "track_b_v5_hardening_irish_zip_normalization"
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07.py",
@@ -186,14 +186,14 @@
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json",
-      "git_blob_sha1": "f03a20f362fa3053d72a2ce7bfdcbad7c57379b4",
+      "git_blob_sha1": "2ddba2d160ca6f17fe7aa5a17160af6dd2eac327",
       "origin": "track_b_v5_source_authority"
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json",
-      "git_blob_sha1": "66bf8db01be1f7505e56160bf9952c29d73f82aa",
+      "git_blob_sha1": "2ea713b98280fa5531d233b6c9967cad8aa4ac01",
       "origin": "track_b_v5_materialization_authority"
     }
   ],
-  "attestation_note": "Track-B v5 runtime re-attestation after fail-closed GVLiD opaque-provider transport remediation. Mendeley v5 remains DOI/version/stable-manifest identity authority; byte fallback is allowed only from the pinned official companion commit when provider transport yields zero usable images, and acceptance still requires all 3477 pinned SHA-256 checks. Scientific thresholds, mappings, checkpoints, seeds, grade rules, and protected-inference policy are unchanged."
+  "attestation_note": "Track-B v5 runtime re-attestation after observed Irish Potato Zenodo ZIP transport duplication. Provider MD5/size remain mandatory. Known macOS AppleDouble transport metadata is excluded before logical image counting; real duplicate filenames may collapse only when byte-identical; published supports 17772/20438/20499 remain unchanged. Scientific thresholds, mappings, checkpoints, seeds, grade rules, and protected-inference policy are unchanged."
 }
