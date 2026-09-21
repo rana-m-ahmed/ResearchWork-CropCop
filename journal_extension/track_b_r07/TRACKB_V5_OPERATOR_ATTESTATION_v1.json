@@ -5,41 +5,30 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "dda397f05a673f712c5c87a612e3804eabeae290",
-  "preseal_operator_surface_commit": "02cd8ab3dd99d8eb3a547c08f5a0be39b6c5789b",
+  "runtime_source_commit": "18eba1bbb62d0330c5644d31f1543988f746d79c",
+  "preseal_operator_surface_commit": "a06d06958765c716e4f0d6d5a23b75e013c3b0f3",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
     "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
-    "git_blob_sha1": "3e29d1fdd264a5a7ac8f4eab73036457c26e41cf",
-    "sha256": "a2895252e944948876f996ccc71790b5c4b6eb9b0f32f7ea1dc4b9baf25b8da8"
+    "git_blob_sha1": "ce6f91ad5e1f07fdf781447663b7f2ec5d849b5d",
+    "sha256": "d1b5f4a17e65ca4b764ce25fa63a81d3c26efac22456abc51ebae6bcdd30870e"
   },
   "operator_files": [
     {
       "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
-      "git_blob_sha1": "2259b2b7b40d57e622c9949bda942ba3f8080d0d",
+      "git_blob_sha1": "05121881a269e207c38a4c7bbfe81484554a2386",
       "role": "READINESS_AND_IMMUTABLE_MATERIALIZATION"
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "15001efb8b47cc173863ded2297236bee82f95b8",
+      "git_blob_sha1": "ce16ebff51c4233121a94b95b006f933cf06da39",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "workflow_run_id": 35557330705,
-    "workflow_run_number": 618,
-    "conclusion": "success",
-    "validated_commit": "d8dfc31e5fe8d49a9d610d0a22c6c790fb3b5add",
-    "compile_pass": true,
-    "targeted_tests_pass": true,
-    "apple_double_transport_test_pass": true,
-    "identical_duplicate_path_test_pass": true,
-    "conflicting_duplicate_path_rejection_pass": true,
-    "canonical_notebook_regeneration_pass": true,
-    "static_infrastructure_validator_pass": true,
-    "v5_orchestration_validator_pass": true,
-    "sealed_release_authority_validator_pass": true
+    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_KAGGLE_PUBLICATION_REPAIR",
+    "note": "Observed real run passed Stages 1-4 and failed only at Stage 5 because listdatasetfiles returned HTTP 403 for the new content-addressed slug. Publication is now create-first with direct manifest ambiguity resolution, and a tiny deterministic private create/status/download/full-roundtrip probe runs before Stage 1."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
@@ -64,6 +53,10 @@
       17772,
       20438,
       20499
-    ]
+    ],
+    "kaggle_publication_capability_probe_before_stage1": true,
+    "kaggle_listdatasetfiles_existence_gate_forbidden": true,
+    "kaggle_content_addressed_publication_create_first": true,
+    "kaggle_ambiguous_write_resolved_by_bound_manifest_digest": true
   }
 }
