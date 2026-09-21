@@ -27,8 +27,18 @@
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_KAGGLE_PUBLICATION_REPAIR",
-    "note": "Observed real run passed Stages 1-4 and failed only at Stage 5 because listdatasetfiles returned HTTP 403 for the new content-addressed slug. Publication is now create-first with direct manifest ambiguity resolution, and a tiny deterministic private create/status/download/full-roundtrip probe runs before Stage 1."
+    "workflow_run_id": 35613436163,
+    "workflow_run_number": 647,
+    "conclusion": "success",
+    "validated_commit": "3ecd7705604e4969adf457d9d90845ce97d50b43",
+    "compile_pass": true,
+    "targeted_tests_pass": true,
+    "canonical_notebook_regeneration_pass": true,
+    "static_infrastructure_validator_pass": true,
+    "v5_orchestration_validator_pass": true,
+    "sealed_release_authority_validator_pass": true,
+    "observed_real_run_stage5_failure_repaired": true,
+    "publication_fail_fast_probe_covered": true
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
