@@ -29,7 +29,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "876cdf714a27af62e9ae7cb6ac0cf88a20eccd75cfcc54ef69bf8ba028296cc7",
+  "code_attestation_sha256": "5a35ed254fa18defe9368123206a2ab665c70db498f31a5c5bfc902d8d891aab",
   "experiment_ids": [
     "TB2-AUDIT-GVLID",
     "TB2-AUDIT-POTATO",
@@ -254,7 +254,7 @@
     "publication_retry_counts_excluded_from_science_identity": true,
     "qualification_recomputed_during_claim": false
   },
-  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the final robust Irish Potato ZIP transport runtime. Provider checksum/size remain mandatory; AppleDouble metadata is excluded; duplicate real image members, including exact repeated ZIP paths, collapse only when byte-identical; conflicting copies fail closed; published support remains 17772/20438/20499.",
+  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the runtime hardened after the observed Stage-5 Kaggle publication 403. Publication is create-first, listdatasetfiles is forbidden as an existence gate, direct bound-manifest download resolves ambiguous writes, and a deterministic private create/status/download/full-roundtrip capability probe is required before expensive Stage 1.",
   "scientific_change": false,
   "orchestration": {
     "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY",
