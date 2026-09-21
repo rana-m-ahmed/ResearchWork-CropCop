@@ -66,8 +66,8 @@
     },
     {
       "path": "journal_extension/scripts/trackb_v4_materialize.py",
-      "git_blob_sha1": "89f4208c47d0097f82d98fe2aef2b768042430a4",
-      "origin": "track_b_v5_hardening_kaggle_publication"
+      "git_blob_sha1": "e815f4ef765d20b881df533b84bc491f45a44a99",
+      "origin": "track_b_v5_hardening_kaggle_processing_and_rerun"
     },
     {
       "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py",
@@ -151,8 +151,8 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
-      "git_blob_sha1": "28e503bca490934b7ff60094a9493e458c506c84",
-      "origin": "track_b_v5_hardening_kaggle_processing_visibility"
+      "git_blob_sha1": "d8a48fbddf042db5be19714bbddc868e945400aa",
+      "origin": "track_b_v5_hardening_kaggle_processing_and_rerun"
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07.py",
@@ -191,9 +191,9 @@
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json",
-      "git_blob_sha1": "ede45ca02c422e1a9b9249e595a184bf9d4b1bab",
+      "git_blob_sha1": "0d072255d6d84ecec00306a65845678e0d2f9518",
       "origin": "track_b_v5_materialization_authority"
     }
   ],
-  "attestation_note": "Track-B v5 runtime re-attestation after real Kaggle Stage-5 processing-state failure. Newly created private datasets may return transient 403/404 from GetDatasetStatus while processing; publication success is now bound-manifest visibility plus exact byte round-trip, with status retained only as best-effort metadata. Claim lease and attempt-state visibility use direct file reads rather than status. Scientific thresholds, mappings, checkpoints, seeds, grade rules, and protected-inference policy are unchanged."
+  "attestation_note": "Track-B v5 final runtime re-attestation after real Kaggle processing-window failures. Publication authority is bound manifest plus exact byte round-trip; status is advisory only; whole-dataset archive verification waits through bounded processing 403/404/5xx windows; deterministic content-addressed slugs recover idempotently after ambiguous create only when the remote bound-manifest digest exactly matches. Claim lease and attempt-state visibility use direct file reads. Scientific thresholds, mappings, checkpoints, seeds, grade rules, and protected-inference policy are unchanged."
 }
