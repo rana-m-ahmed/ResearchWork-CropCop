@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "a2895252e944948876f996ccc71790b5c4b6eb9b0f32f7ea1dc4b9baf25b8da8",
-    "operator_attestation_sha256": "d599585fbfe03e6b7447d802213e55c94aa62998c101ce1396a94b2107fd9f3d",
+    "operator_attestation_sha256": "136771cdd62dca6db3d15dbb477cd8221f9dd882c52d688e44bbc966c753b247",
     "operator_notebook_00_blob_sha1": "2259b2b7b40d57e622c9949bda942ba3f8080d0d",
     "operator_notebook_01_blob_sha1": "15001efb8b47cc173863ded2297236bee82f95b8"
   },
@@ -61,8 +61,11 @@
   ],
   "seal_evidence": {
     "observed_failure": "Zenodo earlyblt.zip image-count drift: expected 17772, found 35544",
-    "remediation": "Streaming ZIP normalization now excludes known AppleDouble transport metadata, validates published unique image identities, permits exact/full-path or basename duplicates only when byte-identical, rejects conflicting duplicates, and preserves provider MD5/size plus published supports 17772/20438/20499.",
-    "exact_head_qa": "PENDING",
+    "remediation": "Irish ZIP streaming normalizer excludes known macOS AppleDouble metadata before counting, then groups real images by published unique filename and permits exact/full-path or basename duplicates only if byte-identical. Conflicts fail closed. Provider checksum/declared bytes and supports 17772/20438/20499 remain mandatory.",
+    "validated_commit": "d8dfc31e5fe8d49a9d610d0a22c6c790fb3b5add",
+    "trackb_qa_workflow_run_id": 35557330705,
+    "trackb_qa_workflow_run_number": 618,
+    "trackb_qa_conclusion": "success",
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
   }
