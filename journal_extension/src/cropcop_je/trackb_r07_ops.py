@@ -493,9 +493,17 @@ def _download_kaggle_file(slug: str, relative_path: str, destination: Path) -> P
     return matches[0]
 
 
-def _read_remote_kaggle_content_manifest(slug: str) -> dict | None:
-    if not kaggle_dataset_exists(slug):
-        return None
+def _read_remote_kaggle_content_manifest(
+    slug: str,
+    *,
+    strict: bool = False,
+) -> dict | None:
+    """Read the bound remote manifest without a list-files existence probe.
+
+    Kaggle's listdatasetfiles endpoint may return 403 for resource states where
+    direct dataset download/status still work.  Publication therefore resolves
+    existence/content by downloading the bound manifest directly.
+    """
     with tempfile.TemporaryDirectory() as td:
         try:
             path = _download_kaggle_file(
@@ -503,7 +511,12 @@ def _read_remote_kaggle_content_manifest(slug: str) -> dict | None:
                 "TRACKB_KAGGLE_CONTENT_MANIFEST.json",
                 Path(td),
             )
-        except Exception:
+        except Exception as exc:
+            if strict:
+                raise TrackBOpsError(
+                    f"could not download remote Kaggle content manifest for {slug}: "
+                    f"{redact(str(exc))[-1600:]}"
+                ) from exc
             return None
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
@@ -512,6 +525,39 @@ def _read_remote_kaggle_content_manifest(slug: str) -> dict | None:
     if not isinstance(payload, dict) or len(str(payload.get("content_digest_sha256", ""))) != 64:
         raise TrackBOpsError(f"remote Kaggle content manifest is malformed: {slug}")
     return payload
+
+
+def _kaggle_publication_failure_kind(detail: str) -> str:
+    low = (detail or "").lower()
+    if any(marker in low for marker in (
+        "already exists",
+        "409",
+        "conflict",
+        "duplicate",
+        "url slug is already",
+    )):
+        return "CONFLICT"
+    if any(marker in low for marker in (
+        "403",
+        "forbidden",
+        "permission",
+        "not allowed to create",
+        "resources.admin",
+    )):
+        return "PERMISSION"
+    if any(marker in low for marker in (
+        "connection reset",
+        "connection aborted",
+        "temporarily unavailable",
+        "timed out",
+        "timeout",
+        "429",
+        "502",
+        "503",
+        "504",
+    )):
+        return "TRANSIENT"
+    return "OTHER"
 
 
 def _verify_remote_kaggle_content(
@@ -579,14 +625,22 @@ def publish_private_kaggle_dataset(
     local_manifest = _local_kaggle_content_manifest(folder)
     local_digest = str(local_manifest["content_digest_sha256"])
 
-    existed_initially = kaggle_dataset_exists(slug)
+    # Never gate publication on `kaggle datasets files`.  The 2.x API can
+    # return 403 from listdatasetfiles even when create/download/status are the
+    # correct authoritative operations.  Resolve an existing content-addressed
+    # dataset by direct manifest download; otherwise attempt creation first.
     errors: list[str] = []
+    existed_initially = False
+
     for attempt, delay in enumerate((0, 5, 15, 30), start=1):
         if delay:
             time.sleep(delay)
-        try:
-            existing = _read_remote_kaggle_content_manifest(slug)
-            if existing and existing.get("content_digest_sha256") == local_digest:
+
+        existing = _read_remote_kaggle_content_manifest(slug, strict=False)
+        if existing is not None:
+            existed_initially = True
+            remote_digest = str(existing.get("content_digest_sha256", ""))
+            if remote_digest == local_digest:
                 verification = _verify_remote_kaggle_content(
                     slug, local_manifest, full_roundtrip=full_roundtrip
                 )
@@ -599,62 +653,147 @@ def publish_private_kaggle_dataset(
                     "attempts": attempt,
                     **verification,
                 }
-
-            exists_now = kaggle_dataset_exists(slug)
-            if exists_now and not allow_version:
+            if not allow_version:
                 raise TrackBOpsError(
                     "content-addressed Kaggle dataset already exists with different bytes; "
-                    f"refusing to create a new version: {slug}"
+                    f"refusing mutation: {slug}"
                 )
-            if exists_now:
-                run_checked(
-                    [
-                        "kaggle", "datasets", "version",
-                        "-p", str(folder),
-                        "-m", version_message,
-                        "-q", "-r", "zip",
-                    ],
-                    timeout=7200,
-                )
-                action = "version"
-            else:
-                run_checked(
-                    [
-                        "kaggle", "datasets", "create",
-                        "-p", str(folder),
-                        "-q", "-r", "zip",
-                    ],
-                    timeout=7200,
-                )
-                action = "create"
 
-            _wait_kaggle_dataset_ready(slug)
-            verification = _verify_remote_kaggle_content(
-                slug, local_manifest, full_roundtrip=full_roundtrip
-            )
-            return {
-                "slug": slug,
-                "action": action,
-                "created": action == "create" and not existed_initially,
-                "versioned": action == "version",
-                "reused_identical_remote": False,
-                "attempts": attempt,
-                **verification,
-            }
+        command = (
+            [
+                "kaggle", "datasets", "version",
+                "-p", str(folder),
+                "-m", version_message,
+                "-q", "-r", "zip",
+            ]
+            if existing is not None and allow_version
+            else [
+                "kaggle", "datasets", "create",
+                "-p", str(folder),
+                "-q", "-r", "zip",
+            ]
+        )
+        action = "version" if command[2] == "version" else "create"
+
+        try:
+            run_checked(command, timeout=7200)
         except Exception as exc:
-            message = redact(str(exc))
-            errors.append(f"attempt={attempt} {type(exc).__name__}: {message[-1200:]}")
+            detail = redact(str(exc))
+            kind = _kaggle_publication_failure_kind(detail)
+
+            # A create may have succeeded server-side even if the response path
+            # failed.  Resolve ambiguity by direct manifest download, never by
+            # listdatasetfiles.
+            resolved = _read_remote_kaggle_content_manifest(slug, strict=False)
+            if resolved is not None:
+                existed_initially = True
+                resolved_digest = str(resolved.get("content_digest_sha256", ""))
+                if resolved_digest == local_digest:
+                    verification = _verify_remote_kaggle_content(
+                        slug, local_manifest, full_roundtrip=full_roundtrip
+                    )
+                    return {
+                        "slug": slug,
+                        "action": "reuse_after_ambiguous_write",
+                        "created": action == "create",
+                        "versioned": action == "version",
+                        "reused_identical_remote": True,
+                        "attempts": attempt,
+                        **verification,
+                    }
+                if not allow_version:
+                    raise TrackBOpsError(
+                        "Kaggle create collided with an existing content-addressed "
+                        f"dataset having different bytes: {slug}"
+                    ) from exc
+
+            if kind == "PERMISSION":
+                raise TrackBOpsError(
+                    "Kaggle dataset write permission denied. The credential can "
+                    "read source datasets but cannot complete private dataset "
+                    f"publication for {slug}. Use a Kaggle API token/OAuth token "
+                    "with dataset resource-admin/create permission for the authenticated owner. "
+                    f"Diagnostic: {detail[-1600:]}"
+                ) from exc
+
+            if kind == "CONFLICT" and not allow_version:
+                raise TrackBOpsError(
+                    "Kaggle reports the content-addressed slug already exists, but "
+                    "its bound manifest could not be verified as identical; refusing "
+                    f"to overwrite or version it: {slug}. Diagnostic: {detail[-1200:]}"
+                ) from exc
+
+            errors.append(
+                f"attempt={attempt} kind={kind} {type(exc).__name__}: {detail[-1200:]}"
+            )
             if attempt < 4:
                 print(
                     f"Private Kaggle publication attempt {attempt}/4 failed; retrying: "
-                    f"{type(exc).__name__}: {message[-500:]}",
+                    f"{kind}: {detail[-500:]}",
                     flush=True,
                 )
+                continue
+            break
+
+        _wait_kaggle_dataset_ready(slug)
+        verification = _verify_remote_kaggle_content(
+            slug, local_manifest, full_roundtrip=full_roundtrip
+        )
+        return {
+            "slug": slug,
+            "action": action,
+            "created": action == "create" and not existed_initially,
+            "versioned": action == "version",
+            "reused_identical_remote": False,
+            "attempts": attempt,
+            **verification,
+        }
 
     raise TrackBOpsError(
         "private Kaggle dataset publication failed after 4 attempts: "
         + " | ".join(errors[-4:])
     )
+
+
+def verify_kaggle_publication_capability(owner: str) -> dict[str, object]:
+    """Fail-fast test of private create/status/download before expensive Track-B work.
+
+    The probe is deterministic and content-addressed, so at most one tiny private
+    operational dataset is created for a given owner/payload.  Subsequent runs
+    reuse and re-verify it.
+    """
+    owner = str(owner).strip()
+    if not owner:
+        raise TrackBOpsError("Kaggle publication capability probe requires an owner")
+    payload = {
+        "schema_version": "1.0",
+        "status": "TRACKB_PUBLICATION_CAPABILITY_PROBE",
+        "owner": owner,
+        "purpose": "FAIL_FAST_PRIVATE_DATASET_CREATE_STATUS_DOWNLOAD",
+    }
+    probe_digest = sha256_json(payload)
+    slug = f"{owner}/cropcop-trackb-pubprobe-v5-{probe_digest[:16]}"
+    with tempfile.TemporaryDirectory() as td:
+        folder = Path(td)
+        (folder / "TRACKB_PUBLICATION_PROBE.json").write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        result = publish_private_kaggle_dataset(
+            folder=folder,
+            slug=slug,
+            title="CropCop Track B Publication Probe v5",
+            version_message="deterministic Track-B publication capability probe",
+            license_name="other",
+            full_roundtrip=True,
+            allow_version=False,
+        )
+    return {
+        "status": "PASS_KAGGLE_PUBLICATION_CAPABILITY",
+        "slug": slug,
+        "probe_payload_sha256": probe_digest,
+        "publication": result,
+    }
 
 
 
