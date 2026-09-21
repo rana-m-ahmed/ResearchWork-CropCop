@@ -118,6 +118,12 @@
     "content_addressed_publication_create_first": true,
     "ambiguous_create_resolution": "DIRECT_REMOTE_BOUND_MANIFEST_DOWNLOAD_AND_DIGEST_COMPARE",
     "permission_failure": "FAIL_CLOSED_BEFORE_EXPENSIVE_STAGE_1",
-    "final_bundles_allow_version": false
+    "final_bundles_allow_version": false,
+    "readiness_authority": "BOUND_CONTENT_MANIFEST_PLUS_EXACT_BYTE_ROUNDTRIP",
+    "status_endpoint_role": "BEST_EFFORT_METADATA_ONLY",
+    "transient_private_processing_status_403_404_retryable": true,
+    "hard_status_ready_gate_forbidden": true,
+    "claim_lease_visibility_authority": "DIRECT_LEASE_FILE_ROUNDTRIP",
+    "attempt_state_visibility_authority": "DIRECT_STATE_FILE_READ"
   }
 }
