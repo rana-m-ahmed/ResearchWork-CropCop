@@ -619,15 +619,25 @@ def _verify_published_archive_roundtrip(
     expected_manifest: dict,
     *,
     scratch_root: Path,
-    attempts: int = 3,
+    timeout_seconds: int = 5400,
 ) -> dict:
+    """Verify the whole published Kaggle dataset archive byte-for-byte.
+
+    A newly created large private dataset can expose its bound manifest before
+    Kaggle finishes preparing the full dataset archive. Processing-window
+    403/404/5xx responses are therefore retried with bounded backoff; content
+    mismatches remain immediate hard failures.
+    """
     expected_rows = expected_manifest.get("files")
     if not isinstance(expected_rows, list) or not expected_rows:
         raise TrackBOpsError("Kaggle content manifest has no files for archive verification")
     expected_payload_bytes = sum(int(row["bytes"]) for row in expected_rows)
 
+    deadline = time.monotonic() + int(timeout_seconds)
+    attempt = 0
     errors: list[str] = []
-    for attempt in range(1, int(attempts) + 1):
+    while time.monotonic() < deadline:
+        attempt += 1
         roundtrip_root = scratch_root / f"_roundtrip_{slug.split('/', 1)[-1]}_{attempt}"
         if roundtrip_root.exists():
             shutil.rmtree(roundtrip_root)
@@ -699,17 +709,49 @@ def _verify_published_archive_roundtrip(
                 "content_digest_sha256": expected_manifest["content_digest_sha256"],
                 "attempts": attempt,
                 "peak_disk_guard_payload_bytes": expected_payload_bytes,
+                "processing_visibility_wait_seconds": int(timeout_seconds),
             }
             shutil.rmtree(roundtrip_root, ignore_errors=True)
             return result
         except Exception as exc:
-            errors.append(f"attempt={attempt} {type(exc).__name__}: {exc}")
+            detail = str(exc)
+            errors.append(f"attempt={attempt} {type(exc).__name__}: {detail}")
             shutil.rmtree(roundtrip_root, ignore_errors=True)
-            if attempt < int(attempts):
-                continue
+
+            low = detail.lower()
+            retryable = any(marker in low for marker in (
+                "403",
+                "404",
+                "forbidden",
+                "not found",
+                "processing",
+                "pending",
+                "temporarily unavailable",
+                "timed out",
+                "timeout",
+                "429",
+                "502",
+                "503",
+                "504",
+                "connection reset",
+                "connection aborted",
+            ))
+            # Exact content/layout/integrity failures are not transient.
+            if not retryable:
+                raise
+            if time.monotonic() >= deadline:
+                break
+            delay = min(60, 5 + attempt * 5)
+            print(
+                f"Kaggle whole-archive visibility pending for {slug}; "
+                f"retrying in {delay}s (attempt {attempt})",
+                flush=True,
+            )
+            time.sleep(delay)
+
     raise TrackBOpsError(
-        f"Kaggle archive round-trip failed after {attempts} attempts for {slug}: "
-        + " | ".join(errors[-3:])
+        f"Kaggle archive round-trip did not become available within "
+        f"{timeout_seconds}s for {slug}: " + " | ".join(errors[-5:])
     )
 
 
