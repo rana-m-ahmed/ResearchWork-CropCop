@@ -7,17 +7,17 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
   "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
-  "runtime_source_commit": "fd3ba767e9f6c6b4a26b6a7216086d29153cc4ef",
+  "runtime_source_commit": "235b84ddb680c27e2814e693a75cb47b4725994a",
   "bindings": {
-    "code_attestation_sha256": "bc7f47b9f2ffce1b15d81c2ed9c1cfd068da229e0735236e39545ef055c9d6e5",
-    "execution_lock_sha256": "28f77b47b2bc237f31387c81d0f0a07ff5f0ffc255cfaddbd6860bd509779743",
-    "materialization_lock_sha256": "51cb7084af2511e6df9d6c8cee8abf734d3361e20efc65a4eeea17f3bfb6f012",
-    "external_source_lock_sha256": "f31768833c205b9e00601c83d7a8dc45777d8e52f5934948d79e5b53572b66c6",
+    "code_attestation_sha256": "4e035efa3326bd6a84c026dcee0b2000c3afe0784ef2832a5090db7f249e8d72",
+    "execution_lock_sha256": "f0958e736086145500b905d566b7e3e25729b5321e52ecc3eeee139b465cca20",
+    "materialization_lock_sha256": "11394018fb023408d37386f0ae77efb7153bca1763bec51e4097aa3588804e54",
+    "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
-    "orchestration_lock_sha256": "fc6607c077012c105072ae341764bd080693e11724666fd04613e21ca98ca690",
-    "operator_attestation_sha256": "628bce4933a6300c28587c73549021275fec13ef42fd61864e5a9a2e353ec45f",
-    "operator_notebook_00_blob_sha1": "d5a82fb1f29e374cb93e7d7df102936263e8aac3",
-    "operator_notebook_01_blob_sha1": "a3ede0d389d4aa3fa2c251b4635a175e8b1fdfd7"
+    "orchestration_lock_sha256": "b6f166deb7093835135c874aedb648c462e03ef7d58a522f8a129897ffc4d62e",
+    "operator_attestation_sha256": "59efe61371a4b8ad259cea3c395fe522e02066049b37ffa08f46e0084c175936",
+    "operator_notebook_00_blob_sha1": "afc1df175048519080466e44546ac13e30e78045",
+    "operator_notebook_01_blob_sha1": "c077b4c60451d410491bb2d0a227839ce7851f94"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -60,13 +60,9 @@
     "V1 test remains closed: SATISFIED"
   ],
   "seal_evidence": {
-    "observed_failure": "GVLiD checksum authority coverage mismatch: verified=0, authority=3477, missing=3477",
-    "remediation": "Mendeley v5 remains source identity authority. Zero-usable-image provider transport may fall back only to exact official companion commit 878a1c7098964bb52c4c4a5c30e5b53340565258; partial provider fallback is forbidden; all 3477 images must pass pinned SHA-256 ledger.",
-    "validated_commit": "c59dab67531e154ea56515d1f8140efbc3a75bcb",
-    "trackb_qa_workflow_run_id": 35531460130,
-    "trackb_qa_workflow_run_number": 566,
-    "trackb_qa_conclusion": "success",
-    "functional_gvlid_tar_tests_pass": true,
+    "observed_failure": "Zenodo earlyblt.zip image-count drift: expected 17772, found 35544",
+    "remediation": "Provider MD5/declared bytes remain mandatory. Known macOS AppleDouble ZIP metadata (__MACOSX and ._ basenames) is excluded before image counting. Remaining images are grouped by published unique filename; duplicate real copies collapse only when all bytes are identical. Published supports remain 17772/20438/20499.",
+    "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
   }
