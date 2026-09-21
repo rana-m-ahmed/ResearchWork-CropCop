@@ -389,8 +389,14 @@ def download_kaggle_dataset(slug: str, destination: str | Path) -> Path:
 
 
 def kaggle_dataset_exists(slug: str) -> bool:
+    """Resolve dataset existence through status, never listdatasetfiles.
+
+    The Kaggle 2.x list-files endpoint can return 403 for resource states where
+    status/create/download are the appropriate operations.  Existence checks for
+    leases/attempt state therefore use the status endpoint.
+    """
     proc = subprocess.run(
-        ["kaggle", "datasets", "files", slug, "--page-size", "1"],
+        ["kaggle", "datasets", "status", slug, "--format", "json"],
         env=dict(os.environ),
         capture_output=True,
         text=True,
@@ -398,11 +404,25 @@ def kaggle_dataset_exists(slug: str) -> bool:
         timeout=180,
     )
     if proc.returncode == 0:
+        try:
+            payload = json.loads(proc.stdout or "{}")
+        except Exception as exc:
+            raise TrackBOpsError(
+                f"Kaggle dataset status returned invalid JSON for {slug}: "
+                f"{redact(proc.stdout)[-1200:]}"
+            ) from exc
+        if not isinstance(payload, dict):
+            raise TrackBOpsError(
+                f"Kaggle dataset status payload is not an object for {slug}"
+            )
         return True
     combined = redact((proc.stdout or "") + "\n" + (proc.stderr or "")).lower()
     if any(marker in combined for marker in ("404", "not found", "dataset not found")):
         return False
-    raise TrackBOpsError(f"could not determine Kaggle dataset existence for {slug}: {combined[-2000:]}")
+    raise TrackBOpsError(
+        f"could not determine Kaggle dataset existence from status for {slug}: "
+        f"{combined[-2000:]}"
+    )
 
 
 def _metadata_slug(slug: str) -> tuple[str, str]:
