@@ -29,7 +29,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "1af7779f7f86f7a258667cc681807fd7e6fa0f846ed31e10817c3f33b8ce1f60",
+  "code_attestation_sha256": "17629e480b18c91a611a821cfeb38e6f6927d9ea1dd73eb5685fbb9ad48ad3a2",
   "experiment_ids": [
     "TB2-AUDIT-GVLID",
     "TB2-AUDIT-POTATO",
@@ -254,7 +254,7 @@
     "publication_retry_counts_excluded_from_science_identity": true,
     "qualification_recomputed_during_claim": false
   },
-  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the runtime hardened after a real Stage-5 Kaggle processing-state 403. Publication success is exact bound-manifest visibility plus byte round-trip; GetDatasetStatus is best-effort metadata only. Claim lease and attempt-state visibility use direct file reads. Scientific policy remains unchanged.",
+  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the final runtime hardened against Kaggle private-dataset processing windows and deterministic-slug reruns. Publication success is exact bound-manifest visibility plus byte round-trip; whole-archive verification waits through bounded processing errors; ambiguous creates recover only on exact remote digest match; status is advisory only.",
   "scientific_change": false,
   "orchestration": {
     "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY",
