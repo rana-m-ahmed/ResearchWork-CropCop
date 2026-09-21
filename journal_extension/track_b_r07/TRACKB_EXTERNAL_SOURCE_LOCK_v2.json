@@ -48,9 +48,20 @@
         "lateblt.zip": 20499
       },
       "expected_image_count": 58709,
-      "integrity_policy": "ALL_THREE_PROVIDER_ARCHIVES_MUST_HAVE_PROVIDER_CHECKSUMS_VERIFIED_BEFORE_NORMALIZATION",
+      "integrity_policy": "ALL_THREE_PROVIDER_ARCHIVES_MUST_PASS_PROVIDER_CHECKSUM_AND_DECLARED_BYTE_SIZE; LOGICAL IMAGE SUPPORT IS DEFINED BY UNIQUE PUBLISHED IMAGE FILENAME; DUPLICATE ARCHIVE COPIES MAY BE COLLAPSED ONLY WHEN ALL COPIES WITH THE SAME CASEFOLDED BASENAME ARE BYTE-IDENTICAL; CONFLICTING DUPLICATES FAIL CLOSED",
       "integrity_status": "PROVIDER_CHECKSUM_REQUIRED_AT_RUNTIME",
-      "materialization_permitted": true
+      "materialization_permitted": true,
+      "normalization_policy": {
+        "expected_support": {
+          "earlyblt": 17772,
+          "healthy": 20438,
+          "lateblt": 20499
+        },
+        "logical_identity": "CASEFOLDED_IMAGE_BASENAME_WITH_UNIQUE_PUBLISHED_IDENTIFIER",
+        "duplicate_transport_copies_permitted_only_if_byte_identical": true,
+        "conflicting_duplicate_bytes_forbidden": true,
+        "streaming_normalization_required": true
+      }
     }
   },
   "fail_closed": true,
@@ -58,6 +69,7 @@
     "This lock is operational/provenance hardening only and does not change frozen Track-B scientific thresholds, mappings, seeds or evidence-grade rules.",
     "The Scientific Data article names docs/checksums.txt; the official companion repository at the pinned commit publishes docs/checksums.csv. Independent verification established exactly 3477 valid SHA-256 rows with complete one-to-one image-path coverage.",
     "Mendeley v5 remains the DOI/version/stable-manifest source identity authority. If its transport object yields zero usable images, image bytes may be materialized from the authors' exact pinned official companion commit; acceptance still requires complete 3477-image SHA-256 verification against the vendored pinned ledger.",
-    "The fallback uses a public commit-addressed GitHub codeload transport and requires no GitHub credential; a transport/network failure remains fail-closed."
+    "The fallback uses a public commit-addressed GitHub codeload transport and requires no GitHub credential; a transport/network failure remains fail-closed.",
+    "Irish Potato Zenodo archives are provider-checksum-bound. The published post-preprocessing class counts are 17772/20438/20499. Archive-level duplicate copies may be collapsed only by unique published filename and only when duplicate bytes are identical; conflicting copies remain fail-closed."
   ]
 }
