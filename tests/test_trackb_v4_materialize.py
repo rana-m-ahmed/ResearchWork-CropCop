@@ -507,6 +507,34 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             source.index('supports, checksum_integrity = _normalize_gvlid_tree('),
         )
 
+    def test_irish_streaming_normalizer_ignores_macos_appledouble_jpg_metadata(self):
+        import zipfile
+        from cropcop_je.trackb_r07_ops import _normalize_irish_zip_streaming
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            archive = root / "irish.zip"
+            with zipfile.ZipFile(archive, "w") as zf:
+                zf.writestr("earlyblt/earlyblt1.jpg", b"real-one")
+                zf.writestr("earlyblt/earlyblt2.jpg", b"real-two")
+                zf.writestr("__MACOSX/earlyblt/._earlyblt1.jpg", b"appledouble-one")
+                zf.writestr("__MACOSX/earlyblt/._earlyblt2.jpg", b"appledouble-two")
+
+            out = root / "out"
+            receipt = _normalize_irish_zip_streaming(
+                archive,
+                out,
+                expected_count=2,
+                max_members=20,
+                max_uncompressed_bytes=4096,
+            )
+            self.assertEqual(receipt["status"], "PASS")
+            self.assertEqual(receipt["raw_image_member_count"], 2)
+            self.assertEqual(receipt["transport_metadata_members_ignored"], 2)
+            self.assertEqual(receipt["logical_unique_filename_count"], 2)
+            self.assertEqual(receipt["normalized_image_count"], 2)
+            self.assertEqual(len(list(out.glob("*.jpg"))), 2)
+
     def test_irish_streaming_normalizer_collapses_identical_duplicate_filenames(self):
         import zipfile
         from cropcop_je.trackb_r07_ops import _normalize_irish_zip_streaming
