@@ -27,8 +27,19 @@
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_FINAL_PUBLICATION_RESILIENCE_AUDIT",
-    "note": "Final audit additionally hardens whole-dataset archive processing waits and deterministic-slug reuse after ambiguous create. Exact byte/hash integrity remains fail-closed."
+    "workflow_run_id": 35640835016,
+    "workflow_run_number": 692,
+    "conclusion": "success",
+    "validated_commit": "cbf38e228dca7046dff0ffd074eb7ea189d796af",
+    "compile_pass": true,
+    "targeted_tests_pass": true,
+    "processing_403_recovery_tests_pass": true,
+    "deterministic_slug_rerun_recovery_tests_pass": true,
+    "whole_archive_processing_wait_tests_pass": true,
+    "canonical_notebook_regeneration_pass": true,
+    "static_infrastructure_validator_pass": true,
+    "v5_orchestration_validator_pass": true,
+    "sealed_release_authority_validator_pass": true
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
