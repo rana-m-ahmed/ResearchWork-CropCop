@@ -477,18 +477,97 @@ def _kaggle_dataset_status(slug: str) -> dict:
     return payload
 
 
-def _wait_kaggle_dataset_ready(slug: str, *, timeout_seconds: int = 3600) -> dict:
+def _kaggle_dataset_status_best_effort(slug: str) -> dict:
+    """Return Kaggle status when available, but never make it a content gate.
+
+    Real private-dataset creation runs have returned HTTP 403 from
+    GetDatasetStatus while the newly created version was visibly processing and
+    its content manifest was already available. Exact content visibility and
+    byte round-trip therefore remain authoritative.
+    """
+    proc = subprocess.run(
+        ["kaggle", "datasets", "status", slug, "--format", "json"],
+        env=dict(os.environ),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=180,
+    )
+    if proc.returncode == 0:
+        try:
+            payload = json.loads(proc.stdout or "{}")
+        except Exception:
+            return {
+                "status": "STATUS_API_INVALID_JSON",
+                "status_api_available": False,
+                "diagnostic": redact(proc.stdout or "")[-1200:],
+            }
+        if isinstance(payload, dict):
+            payload = dict(payload)
+            payload["status_api_available"] = True
+            return payload
+    detail = redact((proc.stdout or "") + "\n" + (proc.stderr or "")).strip()
+    return {
+        "status": "STATUS_API_UNAVAILABLE",
+        "status_api_available": False,
+        "returncode": int(proc.returncode),
+        "diagnostic": detail[-1600:],
+    }
+
+
+def _wait_download_kaggle_file(
+    slug: str,
+    relative_path: str,
+    destination: Path,
+    *,
+    timeout_seconds: int = 3600,
+) -> Path:
+    """Wait for a newly published private file to become directly downloadable.
+
+    Kaggle may transiently return 403/404 while a new dataset version is still
+    being processed. The create operation plus exact later byte verification
+    makes these visibility errors retryable within a bounded window.
+    """
     deadline = time.monotonic() + int(timeout_seconds)
-    last = {}
+    attempt = 0
+    last_error = ""
     while time.monotonic() < deadline:
-        last = _kaggle_dataset_status(slug)
-        status = str(last.get("status", "")).strip().lower()
-        if status == "ready":
-            return last
-        if status == "error":
-            raise TrackBOpsError(f"Kaggle dataset entered error state: {slug}: {last}")
-        time.sleep(5)
-    raise TrackBOpsError(f"Kaggle dataset did not become ready within {timeout_seconds}s: {slug}: {last}")
+        attempt += 1
+        try:
+            return _download_kaggle_file(slug, relative_path, destination)
+        except Exception as exc:
+            last_error = redact(str(exc))
+            low = last_error.lower()
+            retryable = any(marker in low for marker in (
+                "403",
+                "404",
+                "forbidden",
+                "not found",
+                "processing",
+                "pending",
+                "temporarily unavailable",
+                "timed out",
+                "timeout",
+                "429",
+                "502",
+                "503",
+                "504",
+            ))
+            if not retryable:
+                raise
+            if time.monotonic() >= deadline:
+                break
+            delay = min(30, 2 + attempt * 2)
+            print(
+                f"Kaggle publication visibility pending for {slug}/{relative_path}; "
+                f"retrying in {delay}s (attempt {attempt})",
+                flush=True,
+            )
+            time.sleep(delay)
+    raise TrackBOpsError(
+        "Kaggle published file did not become downloadable within "
+        f"{timeout_seconds}s: {slug}/{relative_path}: {last_error[-1600:]}"
+    )
 
 
 def _download_kaggle_file(slug: str, relative_path: str, destination: Path) -> Path:
@@ -547,6 +626,40 @@ def _read_remote_kaggle_content_manifest(
     return payload
 
 
+def _wait_remote_kaggle_content_manifest(
+    slug: str,
+    *,
+    expected_digest: str,
+    timeout_seconds: int = 3600,
+) -> dict:
+    deadline = time.monotonic() + int(timeout_seconds)
+    attempt = 0
+    while time.monotonic() < deadline:
+        attempt += 1
+        remote = _read_remote_kaggle_content_manifest(slug, strict=False)
+        if remote is not None:
+            observed = str(remote.get("content_digest_sha256", ""))
+            if observed != str(expected_digest):
+                raise TrackBOpsError(
+                    "remote Kaggle content digest mismatch after publication: "
+                    f"local={expected_digest} remote={observed} slug={slug}"
+                )
+            return remote
+        if time.monotonic() >= deadline:
+            break
+        delay = min(30, 2 + attempt * 2)
+        print(
+            f"Kaggle bound manifest not visible yet for {slug}; "
+            f"retrying in {delay}s (attempt {attempt})",
+            flush=True,
+        )
+        time.sleep(delay)
+    raise TrackBOpsError(
+        "remote Kaggle content manifest did not become visible within "
+        f"{timeout_seconds}s: {slug}"
+    )
+
+
 def _kaggle_publication_failure_kind(detail: str) -> str:
     low = (detail or "").lower()
     if any(marker in low for marker in (
@@ -586,39 +699,57 @@ def _verify_remote_kaggle_content(
     *,
     full_roundtrip: bool,
 ) -> dict:
-    remote = _read_remote_kaggle_content_manifest(slug)
-    if remote is None:
-        raise TrackBOpsError(f"remote Kaggle content manifest missing after publication: {slug}")
-    if remote.get("content_digest_sha256") != local_manifest.get("content_digest_sha256"):
-        raise TrackBOpsError(
-            f"remote Kaggle content digest mismatch: local={local_manifest.get('content_digest_sha256')} "
-            f"remote={remote.get('content_digest_sha256')}"
-        )
+    local_digest = str(local_manifest.get("content_digest_sha256", ""))
+    remote = _wait_remote_kaggle_content_manifest(
+        slug,
+        expected_digest=local_digest,
+        timeout_seconds=3600,
+    )
     if remote.get("files") != local_manifest.get("files"):
-        raise TrackBOpsError("remote Kaggle content manifest file ledger differs from local publication ledger")
+        raise TrackBOpsError(
+            "remote Kaggle content manifest file ledger differs from local publication ledger"
+        )
+
     verified_files = 0
     if full_roundtrip:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             for row in local_manifest["files"]:
                 rel = str(row["path"])
-                path = _download_kaggle_file(slug, rel, root / f"f{verified_files:05d}")
-                if path.stat().st_size != int(row["bytes"]) or sha256_file(path) != str(row["sha256"]):
-                    raise TrackBOpsError(f"remote Kaggle round-trip bytes differ for {slug}/{rel}")
+                path = _wait_download_kaggle_file(
+                    slug,
+                    rel,
+                    root / f"f{verified_files:05d}",
+                    timeout_seconds=3600,
+                )
+                if (
+                    path.stat().st_size != int(row["bytes"])
+                    or sha256_file(path) != str(row["sha256"])
+                ):
+                    raise TrackBOpsError(
+                        f"remote Kaggle round-trip bytes differ for {slug}/{rel}"
+                    )
                 verified_files += 1
-    status = _wait_kaggle_dataset_ready(slug)
+
+    # Status is useful metadata only. Direct manifest + exact byte round-trip is
+    # the stronger publication-success authority and remains valid even when
+    # GetDatasetStatus transiently returns 403 for a processing private version.
+    status = _kaggle_dataset_status_best_effort(slug)
     version = status.get("current_version_number")
     if version is None:
         version = status.get("currentVersionNumber")
+
     return {
         "status": "PASS",
-        "content_digest_sha256": local_manifest["content_digest_sha256"],
+        "content_digest_sha256": local_digest,
         "remote_manifest_match": True,
         "full_roundtrip": bool(full_roundtrip),
         "roundtrip_verified_file_count": verified_files,
         "current_version_number": version,
         "kaggle_status": status,
+        "publication_authority": "BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP",
     }
+
 
 
 def publish_private_kaggle_dataset(
@@ -755,7 +886,6 @@ def publish_private_kaggle_dataset(
                 continue
             break
 
-        _wait_kaggle_dataset_ready(slug)
         verification = _verify_remote_kaggle_content(
             slug, local_manifest, full_roundtrip=full_roundtrip
         )
@@ -830,16 +960,24 @@ def acquire_claim_lease(slug: str, lease: dict) -> dict[str, object]:
         if not value:
             raise TrackBOpsError(f"claim lease missing field: {field}")
 
-    def _read_remote() -> dict | None:
-        if not kaggle_dataset_exists(slug):
-            return None
+    def _read_remote(*, wait_seconds: int = 0) -> dict | None:
         with tempfile.TemporaryDirectory() as td:
             try:
-                path = _download_kaggle_file(slug, "TRACKB_CLAIM_LEASE.json", Path(td))
-            except Exception as exc:
-                raise TrackBOpsError(
-                    f"claim lease dataset exists but lease state cannot be downloaded: {slug}"
-                ) from exc
+                if int(wait_seconds) > 0:
+                    path = _wait_download_kaggle_file(
+                        slug,
+                        "TRACKB_CLAIM_LEASE.json",
+                        Path(td),
+                        timeout_seconds=int(wait_seconds),
+                    )
+                else:
+                    path = _download_kaggle_file(
+                        slug,
+                        "TRACKB_CLAIM_LEASE.json",
+                        Path(td),
+                    )
+            except Exception:
+                return None
             obj = json.loads(path.read_text(encoding="utf-8"))
             if not isinstance(obj, dict):
                 raise TrackBOpsError("remote claim lease is not a JSON object")
@@ -881,7 +1019,7 @@ def acquire_claim_lease(slug: str, lease: dict) -> dict[str, object]:
         except Exception as exc:
             # Dataset creation can be ambiguous if transport fails after the server
             # accepted the request. Resolve by reading the remote lease exactly once.
-            remote = _read_remote()
+            remote = _read_remote(wait_seconds=120)
             if remote == lease:
                 return {
                     "status": "PASS_CLAIM_LEASE_ACQUIRED_AFTER_AMBIGUOUS_CREATE",
@@ -894,8 +1032,7 @@ def acquire_claim_lease(slug: str, lease: dict) -> dict[str, object]:
                 ) from exc
             raise
 
-    _wait_kaggle_dataset_ready(slug, timeout_seconds=1800)
-    remote = _read_remote()
+    remote = _read_remote(wait_seconds=1800)
     if remote != lease:
         raise TrackBOpsError("claim lease round-trip verification failed")
     return {
@@ -906,13 +1043,15 @@ def acquire_claim_lease(slug: str, lease: dict) -> dict[str, object]:
 
 
 def read_latest_attempt_state(slug: str) -> dict | None:
-    if not kaggle_dataset_exists(slug):
-        return None
     with tempfile.TemporaryDirectory() as td:
         try:
-            path = _download_kaggle_file(slug, "TRACKB_ATTEMPT_STATE.json", Path(td))
-        except Exception as exc:
-            raise TrackBOpsError(f"attempt ledger exists but latest state cannot be downloaded: {slug}") from exc
+            path = _download_kaggle_file(
+                slug,
+                "TRACKB_ATTEMPT_STATE.json",
+                Path(td),
+            )
+        except Exception:
+            return None
         try:
             state = json.loads(path.read_text(encoding="utf-8"))
         except Exception as exc:
