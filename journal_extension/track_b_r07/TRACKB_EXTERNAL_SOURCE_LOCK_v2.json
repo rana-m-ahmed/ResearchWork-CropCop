@@ -48,7 +48,7 @@
         "lateblt.zip": 20499
       },
       "expected_image_count": 58709,
-      "integrity_policy": "ALL_THREE_PROVIDER_ARCHIVES_MUST_PASS_PROVIDER_CHECKSUM_AND_DECLARED_BYTE_SIZE; LOGICAL IMAGE SUPPORT IS DEFINED BY UNIQUE PUBLISHED IMAGE FILENAME; DUPLICATE ARCHIVE COPIES MAY BE COLLAPSED ONLY WHEN ALL COPIES WITH THE SAME CASEFOLDED BASENAME ARE BYTE-IDENTICAL; CONFLICTING DUPLICATES FAIL CLOSED",
+      "integrity_policy": "ALL_THREE_PROVIDER_ARCHIVES_MUST_PASS PROVIDER CHECKSUM AND DECLARED BYTE SIZE; KNOWN ZIP TRANSPORT METADATA (__MACOSX/APPLEDOUBLE ._ ENTRIES) IS EXCLUDED BEFORE IMAGE COUNTING; LOGICAL IMAGE SUPPORT IS THEN DEFINED BY UNIQUE PUBLISHED IMAGE FILENAME; DUPLICATE REAL-IMAGE COPIES MAY BE COLLAPSED ONLY WHEN BYTE-IDENTICAL; CONFLICTS FAIL CLOSED",
       "integrity_status": "PROVIDER_CHECKSUM_REQUIRED_AT_RUNTIME",
       "materialization_permitted": true,
       "normalization_policy": {
@@ -60,7 +60,12 @@
         "logical_identity": "CASEFOLDED_IMAGE_BASENAME_WITH_UNIQUE_PUBLISHED_IDENTIFIER",
         "duplicate_transport_copies_permitted_only_if_byte_identical": true,
         "conflicting_duplicate_bytes_forbidden": true,
-        "streaming_normalization_required": true
+        "streaming_normalization_required": true,
+        "transport_metadata_excluded": [
+          "__MACOSX subtree",
+          "AppleDouble basenames beginning ._"
+        ],
+        "transport_metadata_exclusion_reason": "ZIP transport metadata can carry .jpg suffixes but is not part of the published logical image cohort"
       }
     }
   },
