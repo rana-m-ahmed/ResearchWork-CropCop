@@ -41,7 +41,12 @@
       "logical_identity": "CASEFOLDED_IMAGE_BASENAME",
       "duplicate_copies_collapsed_only_when_byte_identical": true,
       "conflicting_duplicate_bytes_forbidden": true,
-      "expected_total_images": 58709
+      "expected_total_images": 58709,
+      "transport_metadata_excluded": [
+        "__MACOSX",
+        "._ AppleDouble entries"
+      ],
+      "logical_count_after_transport_metadata_exclusion": true
     }
   },
   "outputs": {
