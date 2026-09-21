@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "d1b5f4a17e65ca4b764ce25fa63a81d3c26efac22456abc51ebae6bcdd30870e",
-    "operator_attestation_sha256": "123c33ef9523ac9c896125af5f8bea281dd64e85b22764ef2fd8b1d9914be98e",
+    "operator_attestation_sha256": "5b13292fdea7f4789c99d3fe1b6d3bad5f1d5e8b6ba060a8d7a061a499e1caf5",
     "operator_notebook_00_blob_sha1": "05121881a269e207c38a4c7bbfe81484554a2386",
     "operator_notebook_01_blob_sha1": "ce16ebff51c4233121a94b95b006f933cf06da39"
   },
@@ -72,8 +72,11 @@
       "failure": "HTTP 403 from listdatasetfiles existence probe for new content-addressed infrastructure slug",
       "elapsed_seconds_at_failure": 6981.3
     },
-    "remediation": "Publication no longer uses listdatasetfiles as an existence gate. Content-addressed publication is create-first, ambiguous writes resolve by direct bound-manifest download/digest comparison, general existence uses dataset status, and a deterministic private create/status/download/full-roundtrip capability probe runs before expensive Stage 1.",
-    "exact_head_qa": "PENDING",
+    "remediation": "Publication no longer uses listdatasetfiles as an existence gate. Content-addressed publication is create-first; ambiguous writes resolve by direct bound-manifest download/digest comparison; general existence uses dataset status; and a deterministic private create/status/download/full-roundtrip capability probe runs before expensive Stage 1.",
+    "validated_commit": "3ecd7705604e4969adf457d9d90845ce97d50b43",
+    "trackb_qa_workflow_run_id": 35613436163,
+    "trackb_qa_workflow_run_number": 647,
+    "trackb_qa_conclusion": "success",
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false
   }
