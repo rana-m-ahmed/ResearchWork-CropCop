@@ -66,8 +66,8 @@
     },
     {
       "path": "journal_extension/scripts/trackb_v4_materialize.py",
-      "git_blob_sha1": "daedda7873f8fc90935dd2104a3ebc25c58394b0",
-      "origin": "track_b_v5_hardening"
+      "git_blob_sha1": "89f4208c47d0097f82d98fe2aef2b768042430a4",
+      "origin": "track_b_v5_hardening_kaggle_publication"
     },
     {
       "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py",
@@ -151,8 +151,8 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
-      "git_blob_sha1": "e812f701886c556e73358edcabffb85a3bf5e47f",
-      "origin": "track_b_v5_hardening_irish_zip_normalization"
+      "git_blob_sha1": "5310a3c2082a55d9abb19c7dfdfc7efe3cbcd5a0",
+      "origin": "track_b_v5_hardening_kaggle_publication"
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07.py",
@@ -191,9 +191,9 @@
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json",
-      "git_blob_sha1": "2ea713b98280fa5531d233b6c9967cad8aa4ac01",
+      "git_blob_sha1": "627c1cabe41155a00cb4a19f1bf337a1ed404985",
       "origin": "track_b_v5_materialization_authority"
     }
   ],
-  "attestation_note": "Track-B v5 runtime re-attestation after robust Irish Potato ZIP transport normalization. Known AppleDouble metadata is excluded; exact/full-path or basename duplicate real images are allowed only when byte-identical; conflicting copies fail closed; published supports remain 17772/20438/20499."
+  "attestation_note": "Track-B v5 runtime re-attestation after observed Kaggle publication failure at Stage 5. Content-addressed publication no longer uses listdatasetfiles as an existence gate; publication is create-first with direct bound-manifest ambiguity resolution, and a deterministic private create/status/download/round-trip capability probe is required before expensive Stage 1. Scientific thresholds, mappings, checkpoints, seeds, grade rules, and protected-inference policy are unchanged."
 }
