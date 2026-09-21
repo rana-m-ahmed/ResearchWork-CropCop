@@ -29,7 +29,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "bc7f47b9f2ffce1b15d81c2ed9c1cfd068da229e0735236e39545ef055c9d6e5",
+  "code_attestation_sha256": "4e035efa3326bd6a84c026dcee0b2000c3afe0784ef2832a5090db7f249e8d72",
   "experiment_ids": [
     "TB2-AUDIT-GVLID",
     "TB2-AUDIT-POTATO",
@@ -254,7 +254,7 @@
     "publication_retry_counts_excluded_from_science_identity": true,
     "qualification_recomputed_during_claim": false
   },
-  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the final v5 runtime after GVLiD opaque-provider transport remediation. Mendeley v5 remains DOI/version/stable-manifest identity authority; byte fallback is allowed only from pinned official companion commit 878a1c7098964bb52c4c4a5c30e5b53340565258 when provider transport yields zero usable images, and all 3477 images must pass the pinned checksum ledger.",
+  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the runtime hardened after the observed Irish Potato Zenodo ZIP 2x transport layout. Provider checksum/size remain mandatory; AppleDouble transport metadata is excluded before counting; duplicate logical filenames collapse only when byte-identical; published support remains 17772/20438/20499.",
   "scientific_change": false,
   "orchestration": {
     "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY",
