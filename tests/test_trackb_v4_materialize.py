@@ -245,7 +245,7 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         publish = source[start:end]
         self.assertNotIn('["kaggle", "datasets", "files"', publish)
         self.assertNotIn("kaggle_dataset_exists(slug)", publish)
-        self.assertIn('["kaggle", "datasets", "create"', publish)
+        self.assertIn('"kaggle", "datasets", "create",', publish)
         self.assertIn("_read_remote_kaggle_content_manifest(slug, strict=False)", publish)
         self.assertIn("_kaggle_publication_failure_kind", publish)
 
