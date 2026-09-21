@@ -5,30 +5,30 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "ebf6a41aea61803ed7db0076e76537bfd98c935e",
-  "preseal_operator_surface_commit": "694a9a7792d67a6104c0f69a239d5f8fa0f6dfc1",
+  "runtime_source_commit": "7db00a9b5efc8a2f60202bbbbf99ff276b45cb50",
+  "preseal_operator_surface_commit": "38577f53d8c32bbf1028c4f29617c450630fb642",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
     "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
-    "git_blob_sha1": "11d42be1377c8be65e3841ce9bdf06fa5e8ca97b",
-    "sha256": "b9a166550888828d95a56ba3726cb9e7ee3ebeeadda2cb73515767572ba28360"
+    "git_blob_sha1": "e3d3130ab7cc4601a2c7b8e6bf64962f5af59d25",
+    "sha256": "ab5fc5f3966af5336dc5851ac447f660c613f46c4f5aa3d79facea398ff9b2f7"
   },
   "operator_files": [
     {
       "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
-      "git_blob_sha1": "295f4c59bf4761f139dd5af03bbd1d655bc9f9e4",
+      "git_blob_sha1": "75ca69e442d6f110cae89e29abf7aa9be7e383ca",
       "role": "READINESS_AND_IMMUTABLE_MATERIALIZATION"
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "96add02be73ffb62502df6e4082d5e8be15befb6",
+      "git_blob_sha1": "5d33640f522f74a2aca16c7e324bb8478343991b",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_KAGGLE_PROCESSING_VISIBILITY_FIX",
-    "note": "Observed real run created infrastructure dataset successfully but GetDatasetStatus returned 403 while version was processing. Content round-trip is now authoritative; status is best-effort only."
+    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_FINAL_PUBLICATION_RESILIENCE_AUDIT",
+    "note": "Final audit additionally hardens whole-dataset archive processing waits and deterministic-slug reuse after ambiguous create. Exact byte/hash integrity remains fail-closed."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
@@ -59,6 +59,9 @@
     "kaggle_content_addressed_publication_create_first": true,
     "kaggle_ambiguous_write_resolved_by_bound_manifest_digest": true,
     "kaggle_status_is_best_effort_metadata": true,
-    "kaggle_publication_authority": "BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP"
+    "kaggle_publication_authority": "BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP",
+    "kaggle_whole_archive_processing_wait_seconds": 5400,
+    "kaggle_ambiguous_create_manifest_wait_seconds": 900,
+    "kaggle_integrity_mismatch_never_retry_as_processing": true
   }
 }
