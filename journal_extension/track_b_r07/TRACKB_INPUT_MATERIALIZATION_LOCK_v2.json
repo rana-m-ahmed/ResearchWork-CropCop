@@ -33,6 +33,15 @@
       "fallback": "PINNED_OFFICIAL_COMPANION_COMMIT_ONLY_IF_ZERO_PROVIDER_IMAGES",
       "partial_provider_fallback_forbidden": true,
       "full_3477_checksum_verification_required": true
+    },
+    "irish_potato_normalization": {
+      "provider_archive_checksum_required": true,
+      "provider_declared_bytes_required": true,
+      "streaming_normalization": true,
+      "logical_identity": "CASEFOLDED_IMAGE_BASENAME",
+      "duplicate_copies_collapsed_only_when_byte_identical": true,
+      "conflicting_duplicate_bytes_forbidden": true,
+      "expected_total_images": 58709
     }
   },
   "outputs": {
