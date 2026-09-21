@@ -5,30 +5,30 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "235b84ddb680c27e2814e693a75cb47b4725994a",
-  "preseal_operator_surface_commit": "ad4f6a0790b62733372c596010351e4750406f10",
+  "runtime_source_commit": "dda397f05a673f712c5c87a612e3804eabeae290",
+  "preseal_operator_surface_commit": "02cd8ab3dd99d8eb3a547c08f5a0be39b6c5789b",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
     "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
-    "git_blob_sha1": "8ac9af3a654b113fa65a6c52c16797093a245920",
-    "sha256": "b6f166deb7093835135c874aedb648c462e03ef7d58a522f8a129897ffc4d62e"
+    "git_blob_sha1": "3e29d1fdd264a5a7ac8f4eab73036457c26e41cf",
+    "sha256": "a2895252e944948876f996ccc71790b5c4b6eb9b0f32f7ea1dc4b9baf25b8da8"
   },
   "operator_files": [
     {
       "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
-      "git_blob_sha1": "afc1df175048519080466e44546ac13e30e78045",
+      "git_blob_sha1": "2259b2b7b40d57e622c9949bda942ba3f8080d0d",
       "role": "READINESS_AND_IMMUTABLE_MATERIALIZATION"
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "c077b4c60451d410491bb2d0a227839ce7851f94",
+      "git_blob_sha1": "15001efb8b47cc173863ded2297236bee82f95b8",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_IRISH_ZIP_REPAIR",
-    "note": "Runtime and notebooks rebound after real Kaggle earlyblt.zip produced exactly 2x the published count. New normalizer excludes known AppleDouble transport metadata, validates logical unique filenames, and collapses only byte-identical real duplicates."
+    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_FINAL_IRISH_ZIP_HARDENING",
+    "note": "Final candidate handles AppleDouble metadata, exact duplicate ZIP paths, duplicate basenames, conflicting-byte rejection, and streaming canonicalization."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
