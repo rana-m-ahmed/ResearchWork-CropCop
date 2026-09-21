@@ -323,6 +323,31 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         self.assertNotIn("_kaggle_dataset_status(", attempt)
         self.assertIn("_download_kaggle_file(", attempt)
 
+    def test_large_kaggle_archive_roundtrip_waits_through_processing_window(self):
+        source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
+        start = source.index("def _verify_published_archive_roundtrip(")
+        end = source.index("def _manifest_sha(", start)
+        helper = source[start:end]
+        self.assertIn("timeout_seconds: int = 5400", helper)
+        for marker in ('"403"', '"404"', '"processing"', '"pending"', '"503"'):
+            self.assertIn(marker, helper)
+        self.assertIn("time.sleep(delay)", helper)
+        self.assertIn("Kaggle whole-archive visibility pending", helper)
+        self.assertIn("Kaggle round-trip SHA mismatch", helper)
+        self.assertIn("unexpected payload members", helper)
+
+    def test_ambiguous_create_waits_for_deterministic_slug_manifest(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def publish_private_kaggle_dataset(")
+        end = source.index("def verify_kaggle_publication_capability(", start)
+        helper = source[start:end]
+        self.assertIn('kind in {"CONFLICT", "PERMISSION", "TRANSIENT"}', helper)
+        self.assertIn("_wait_remote_kaggle_content_manifest(", helper)
+        self.assertIn("timeout_seconds=900", helper)
+        self.assertIn('"action": "reuse_after_ambiguous_write"', helper)
+
     def test_publication_releases_local_bundle_before_archive_roundtrip(self):
         source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
         infra_manifest = source.index(
