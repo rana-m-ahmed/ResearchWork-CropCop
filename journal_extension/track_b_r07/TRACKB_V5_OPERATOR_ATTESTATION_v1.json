@@ -5,40 +5,30 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "fd3ba767e9f6c6b4a26b6a7216086d29153cc4ef",
-  "preseal_operator_surface_commit": "db91c82da59b13b096b3a476dc3da9eca7b7a6c6",
+  "runtime_source_commit": "235b84ddb680c27e2814e693a75cb47b4725994a",
+  "preseal_operator_surface_commit": "ad4f6a0790b62733372c596010351e4750406f10",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
     "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
-    "git_blob_sha1": "6af6f039422c875ee56dc26ad1cf17f431d464cd",
-    "sha256": "fc6607c077012c105072ae341764bd080693e11724666fd04613e21ca98ca690"
+    "git_blob_sha1": "8ac9af3a654b113fa65a6c52c16797093a245920",
+    "sha256": "b6f166deb7093835135c874aedb648c462e03ef7d58a522f8a129897ffc4d62e"
   },
   "operator_files": [
     {
       "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
-      "git_blob_sha1": "d5a82fb1f29e374cb93e7d7df102936263e8aac3",
+      "git_blob_sha1": "afc1df175048519080466e44546ac13e30e78045",
       "role": "READINESS_AND_IMMUTABLE_MATERIALIZATION"
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "a3ede0d389d4aa3fa2c251b4635a175e8b1fdfd7",
+      "git_blob_sha1": "c077b4c60451d410491bb2d0a227839ce7851f94",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "workflow_run_id": 35531460130,
-    "workflow_run_number": 566,
-    "conclusion": "success",
-    "validated_commit": "c59dab67531e154ea56515d1f8140efbc3a75bcb",
-    "compile_pass": true,
-    "targeted_tests_pass": true,
-    "functional_gvlid_tar_tests_pass": true,
-    "canonical_notebook_regeneration_pass": true,
-    "static_infrastructure_validator_pass": true,
-    "v5_orchestration_validator_pass": true,
-    "sealed_release_authority_validator_pass": true,
-    "observed_failure_repaired": "GVLiD provider transport materialized zero usable images; final fallback remains fail-closed and requires all 3477 pinned hashes."
+    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_IRISH_ZIP_REPAIR",
+    "note": "Runtime and notebooks rebound after real Kaggle earlyblt.zip produced exactly 2x the published count. New normalizer excludes known AppleDouble transport metadata, validates logical unique filenames, and collapses only byte-identical real duplicates."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
@@ -55,6 +45,14 @@
     "gvlid_full_3477_checksum_authority_required": true,
     "gvlid_source_identity_authority": "MENDELEY_V5_DOI_VERSION_STABLE_MANIFEST",
     "gvlid_byte_fallback": "PINNED_OFFICIAL_COMPANION_COMMIT_ONLY_IF_ZERO_PROVIDER_IMAGES",
-    "gvlid_partial_provider_fallback_forbidden": true
+    "gvlid_partial_provider_fallback_forbidden": true,
+    "irish_provider_checksum_and_declared_bytes_required": true,
+    "irish_appledouble_transport_metadata_excluded": true,
+    "irish_duplicate_real_filenames_must_be_byte_identical": true,
+    "irish_published_support_fixed": [
+      17772,
+      20438,
+      20499
+    ]
   }
 }
