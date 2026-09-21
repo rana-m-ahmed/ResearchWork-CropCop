@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "ab5fc5f3966af5336dc5851ac447f660c613f46c4f5aa3d79facea398ff9b2f7",
-    "operator_attestation_sha256": "2e6077af2f51c179b5f1240b5dfd2f411530769dc35ee9e58306a5a51caead34",
+    "operator_attestation_sha256": "06f4fb872318e159c7c1397598b3bf06872a32f91822588d18248ecdee04cd42",
     "operator_notebook_00_blob_sha1": "75ca69e442d6f110cae89e29abf7aa9be7e383ca",
     "operator_notebook_01_blob_sha1": "5d33640f522f74a2aca16c7e324bb8478343991b"
   },
@@ -71,6 +71,11 @@
     "remediation": "Final publication hardening: bound-manifest plus exact byte round-trip is authoritative; status is advisory; direct content visibility retries processing 403/404/5xx; whole-dataset archive verification waits up to 5400s with processing-aware backoff; deterministic-slug ambiguous creates wait up to 900s for the exact bound manifest before failing; claim lease and attempt-state visibility use direct file reads.",
     "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
-    "v1_test_accessed": false
+    "v1_test_accessed": false,
+    "validated_commit": "cbf38e228dca7046dff0ffd074eb7ea189d796af",
+    "trackb_qa_workflow_run_id": 35640835016,
+    "trackb_qa_workflow_run_number": 692,
+    "trackb_qa_conclusion": "success",
+    "final_publication_resilience_audit": "PASS"
   }
 }
