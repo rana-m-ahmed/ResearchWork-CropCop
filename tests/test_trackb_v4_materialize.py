@@ -279,6 +279,50 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         self.assertIn("allow_version=False", helper)
         self.assertIn("PASS_KAGGLE_PUBLICATION_CAPABILITY", helper)
 
+    def test_kaggle_publication_uses_content_roundtrip_not_status_as_authority(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        verify_start = source.index("def _verify_remote_kaggle_content(")
+        verify_end = source.index("def publish_private_kaggle_dataset(", verify_start)
+        verify = source[verify_start:verify_end]
+        self.assertIn("_wait_remote_kaggle_content_manifest(", verify)
+        self.assertIn("_wait_download_kaggle_file(", verify)
+        self.assertIn('"publication_authority": "BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP"', verify)
+        self.assertIn("_kaggle_dataset_status_best_effort(slug)", verify)
+        self.assertNotIn("_wait_kaggle_dataset_ready(", verify)
+
+    def test_kaggle_visibility_wait_retries_processing_403_and_404(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def _wait_download_kaggle_file(")
+        end = source.index("def _download_kaggle_file(", start)
+        helper = source[start:end]
+        self.assertIn('"403"', helper)
+        self.assertIn('"404"', helper)
+        self.assertIn('"processing"', helper)
+        self.assertIn('"pending"', helper)
+        self.assertIn("timeout_seconds: int = 3600", helper)
+
+    def test_claim_lease_and_attempt_state_do_not_require_status_endpoint(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        lease_start = source.index("def acquire_claim_lease(")
+        lease_end = source.index("def read_latest_attempt_state(", lease_start)
+        lease = source[lease_start:lease_end]
+        self.assertNotIn("kaggle_dataset_exists(slug)", lease)
+        self.assertNotIn("_wait_kaggle_dataset_ready(", lease)
+        self.assertIn("_wait_download_kaggle_file(", lease)
+
+        attempt_start = source.index("def read_latest_attempt_state(")
+        attempt_end = source.index("def publish_attempt_state(", attempt_start)
+        attempt = source[attempt_start:attempt_end]
+        self.assertNotIn("kaggle_dataset_exists(slug)", attempt)
+        self.assertNotIn("_kaggle_dataset_status(", attempt)
+        self.assertIn("_download_kaggle_file(", attempt)
+
     def test_publication_releases_local_bundle_before_archive_roundtrip(self):
         source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
         infra_manifest = source.index(
