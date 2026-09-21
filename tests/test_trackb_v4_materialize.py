@@ -507,6 +507,56 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             source.index('supports, checksum_integrity = _normalize_gvlid_tree('),
         )
 
+    def test_irish_streaming_normalizer_allows_identical_exact_duplicate_zip_path(self):
+        import warnings
+        import zipfile
+        from cropcop_je.trackb_r07_ops import _normalize_irish_zip_streaming
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            archive = root / "irish.zip"
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                with zipfile.ZipFile(archive, "w") as zf:
+                    zf.writestr("earlyblt/earlyblt1.jpg", b"same")
+                    zf.writestr("earlyblt/earlyblt1.jpg", b"same")
+
+            out = root / "out"
+            receipt = _normalize_irish_zip_streaming(
+                archive,
+                out,
+                expected_count=1,
+                max_members=20,
+                max_uncompressed_bytes=4096,
+            )
+            self.assertEqual(receipt["status"], "PASS")
+            self.assertEqual(receipt["duplicate_full_path_members"], 1)
+            self.assertEqual(receipt["duplicate_members_collapsed"], 1)
+            self.assertEqual(receipt["normalized_image_count"], 1)
+
+    def test_irish_streaming_normalizer_rejects_conflicting_exact_duplicate_zip_path(self):
+        import warnings
+        import zipfile
+        from cropcop_je.trackb_r07_ops import TrackBOpsError, _normalize_irish_zip_streaming
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            archive = root / "irish.zip"
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                with zipfile.ZipFile(archive, "w") as zf:
+                    zf.writestr("earlyblt/earlyblt1.jpg", b"first")
+                    zf.writestr("earlyblt/earlyblt1.jpg", b"DIFFERENT")
+
+            with self.assertRaises(TrackBOpsError):
+                _normalize_irish_zip_streaming(
+                    archive,
+                    root / "out",
+                    expected_count=1,
+                    max_members=20,
+                    max_uncompressed_bytes=4096,
+                )
+
     def test_irish_streaming_normalizer_ignores_macos_appledouble_jpg_metadata(self):
         import zipfile
         from cropcop_je.trackb_r07_ops import _normalize_irish_zip_streaming
