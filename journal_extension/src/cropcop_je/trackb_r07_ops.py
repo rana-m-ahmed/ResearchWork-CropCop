@@ -1099,6 +1099,7 @@ def _normalize_irish_zip_streaming(
     seen_full_paths: set[str] = set()
     total_uncompressed = 0
     image_members = 0
+    transport_metadata_members_ignored = 0
 
     with zipfile.ZipFile(archive) as zf:
         infos = [info for info in zf.infolist() if not info.is_dir()]
@@ -1136,6 +1137,14 @@ def _normalize_irish_zip_streaming(
 
             suffix = member.suffix.lower()
             if suffix not in image_suffixes:
+                continue
+
+            # macOS ZIPs may contain one AppleDouble resource-fork entry per
+            # image, usually under __MACOSX and/or with a ._ basename.  These
+            # are transport metadata, not dataset images, despite ending in .jpg.
+            parts_casefold = {part.casefold() for part in member.parts}
+            if "__macosx" in parts_casefold or member.name.startswith("._"):
+                transport_metadata_members_ignored += 1
                 continue
 
             basename = member.name.strip()
@@ -1236,12 +1245,13 @@ def _normalize_irish_zip_streaming(
     return {
         "status": "PASS",
         "raw_image_member_count": image_members,
+        "transport_metadata_members_ignored": transport_metadata_members_ignored,
         "logical_unique_filename_count": len(logical),
         "normalized_image_count": normalized,
         "duplicate_filename_groups": duplicate_groups,
         "duplicate_members_collapsed": duplicate_members_collapsed,
         "deduplication_policy": (
-            "CASEFOLDED_UNIQUE_BASENAME_WITH_ALL_DUPLICATE_BYTES_IDENTICAL"
+            "IGNORE_MACOS_APPLEDOUBLE_METADATA_THEN_CASEFOLDED_UNIQUE_BASENAME_WITH_ALL_DUPLICATE_BYTES_IDENTICAL"
         ),
         "archive_uncompressed_bytes": total_uncompressed,
         "logical_bytes_upper": logical_bytes_upper,
