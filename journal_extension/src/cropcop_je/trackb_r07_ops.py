@@ -1173,43 +1173,59 @@ def _normalize_irish_zip_streaming(
 
         for logical_name in sorted(logical):
             group = sorted(logical[logical_name], key=lambda info: info.filename)
-            digests: list[str] = []
-            for info in group:
-                h = hashlib.sha256()
-                with zf.open(info, "r") as src:
-                    for chunk in iter(lambda: src.read(1024 * 1024), b""):
-                        h.update(chunk)
-                digests.append(h.hexdigest())
-
-            unique_digests = sorted(set(digests))
-            if len(unique_digests) != 1:
-                raise TrackBOpsError(
-                    "Irish Potato duplicate logical filename has conflicting bytes: "
-                    f"name={logical_name!r}, copies={len(group)}, "
-                    f"digests={unique_digests[:4]}"
-                )
-
-            if len(group) > 1:
-                duplicate_groups += 1
-                duplicate_members_collapsed += len(group) - 1
-
             selected = group[0]
-            raw_sha = unique_digests[0]
-            member_rel = selected.filename.replace("\\", "/").lstrip("./")
-            member_sha = hashlib.sha256(member_rel.encode("utf-8")).hexdigest()
-            suffix = Path(selected.filename).suffix.lower()
-            target = class_root / f"{raw_sha[:16]}_{member_sha[:12]}{suffix}"
-            if target.exists():
+            logical_token = hashlib.sha256(logical_name.encode("utf-8")).hexdigest()[:20]
+            temporary = class_root / f".normalizing_{logical_token}.part"
+            if temporary.exists():
                 raise TrackBOpsError(
-                    f"canonical Irish Potato member collision: {target.name}"
+                    f"Irish Potato temporary normalization collision: {temporary.name}"
                 )
-            with zf.open(selected, "r") as src, target.open("xb") as dst:
-                shutil.copyfileobj(src, dst, length=1024 * 1024)
-            if sha256_file(target) != raw_sha:
-                raise TrackBOpsError(
-                    f"Irish Potato canonical write hash mismatch: {target.name}"
-                )
-            normalized += 1
+
+            first_hash = hashlib.sha256()
+            try:
+                with zf.open(selected, "r") as src, temporary.open("xb") as dst:
+                    for chunk in iter(lambda: src.read(1024 * 1024), b""):
+                        first_hash.update(chunk)
+                        dst.write(chunk)
+                raw_sha = first_hash.hexdigest()
+
+                conflicting: list[str] = []
+                for duplicate in group[1:]:
+                    h = hashlib.sha256()
+                    with zf.open(duplicate, "r") as src:
+                        for chunk in iter(lambda: src.read(1024 * 1024), b""):
+                            h.update(chunk)
+                    duplicate_sha = h.hexdigest()
+                    if duplicate_sha != raw_sha:
+                        conflicting.append(duplicate_sha)
+
+                if conflicting:
+                    raise TrackBOpsError(
+                        "Irish Potato duplicate logical filename has conflicting bytes: "
+                        f"name={logical_name!r}, copies={len(group)}, "
+                        f"canonical={raw_sha}, conflicting={sorted(set(conflicting))[:4]}"
+                    )
+
+                if len(group) > 1:
+                    duplicate_groups += 1
+                    duplicate_members_collapsed += len(group) - 1
+
+                member_rel = selected.filename.replace("\\", "/").lstrip("./")
+                member_sha = hashlib.sha256(member_rel.encode("utf-8")).hexdigest()
+                suffix = Path(selected.filename).suffix.lower()
+                target = class_root / f"{raw_sha[:16]}_{member_sha[:12]}{suffix}"
+                if target.exists():
+                    raise TrackBOpsError(
+                        f"canonical Irish Potato member collision: {target.name}"
+                    )
+                os.replace(temporary, target)
+                if target.stat().st_size != int(selected.file_size):
+                    raise TrackBOpsError(
+                        f"Irish Potato canonical write size mismatch: {target.name}"
+                    )
+                normalized += 1
+            finally:
+                temporary.unlink(missing_ok=True)
 
     if normalized != int(expected_count):
         raise TrackBOpsError(
