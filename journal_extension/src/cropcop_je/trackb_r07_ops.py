@@ -816,12 +816,26 @@ def publish_private_kaggle_dataset(
                 "-p", str(folder),
                 "-m", version_message,
                 "-q", "-r", "zip", "-t",
+                "--ignore-patterns", "__pycache__",
+                "--ignore-patterns", "*.pyc",
+                "--ignore-patterns", "*.pyo",
+                "--ignore-patterns", ".pytest_cache",
+                "--ignore-patterns", ".mypy_cache",
+                "--ignore-patterns", ".ruff_cache",
+                "--ignore-patterns", ".ipynb_checkpoints",
             ]
             if existing is not None and allow_version
             else [
                 "kaggle", "datasets", "create",
                 "-p", str(folder),
                 "-q", "-r", "zip", "-t",
+                "--ignore-patterns", "__pycache__",
+                "--ignore-patterns", "*.pyc",
+                "--ignore-patterns", "*.pyo",
+                "--ignore-patterns", ".pytest_cache",
+                "--ignore-patterns", ".mypy_cache",
+                "--ignore-patterns", ".ruff_cache",
+                "--ignore-patterns", ".ipynb_checkpoints",
             ]
         )
         action = "version" if command[2] == "version" else "create"
