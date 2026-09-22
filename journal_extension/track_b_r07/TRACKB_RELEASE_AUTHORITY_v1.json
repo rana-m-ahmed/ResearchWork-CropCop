@@ -7,17 +7,17 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
   "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
-  "runtime_source_commit": "eacae1d5b3a9012d65d4be3152e93cf03eefceb7",
+  "runtime_source_commit": "528b01832b86233b752942362715f9e8924f0b02",
   "bindings": {
-    "code_attestation_sha256": "75f777c71f3fc64f1c095669f767734498bbb4e047ea0f716316e9d38975e0cf",
-    "execution_lock_sha256": "2c89d77be9a04aace78068e923f5e222a644a448f33c3b275d74e3b576784118",
-    "materialization_lock_sha256": "13acaf556a8e69eb57032bf639bbb3d9aeaa509e589706b76b410d9e7e38c610",
+    "code_attestation_sha256": "02284d0323e486ef26642be7b6e1d396f5063031a6c49b9fbf55f4c833a0d9ee",
+    "execution_lock_sha256": "ab41872ef5256997e4ecbeda965a8f5ba7193962d44a59fc1d9ae14655ac317f",
+    "materialization_lock_sha256": "55c49aa8b8309daf12a539c0b589488959924f328f877de0f277c9fced51eb74",
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
-    "orchestration_lock_sha256": "eed90a7e767f5c2f20b52a9cf634f86b2e099ee2221f7630fd3e939ed1d43807",
-    "operator_attestation_sha256": "34e2881d5f899cd2252fe15fb2987e0c9d6c59dc74d98d6a9247f7e9107878b5",
-    "operator_notebook_00_blob_sha1": "8d39473b75147cd62df538b18d205457d04985ee",
-    "operator_notebook_01_blob_sha1": "61049fd0b47b8c17150af8c78a9a684051f7a984"
+    "orchestration_lock_sha256": "d682c8068f08ba77079beff523cd5e06cb0d7ce68e333b8fd5712de57b293e64",
+    "operator_attestation_sha256": "3cefd93e9b1abc2acd5d2a68b3808c6064390c569dcf0e50f750173a1f5b016e",
+    "operator_notebook_00_blob_sha1": "4c5ce4087c261bd4a192cc169eefb66240923935",
+    "operator_notebook_01_blob_sha1": "4258034e6ef52e9311118e40af4f62499a351483"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -67,22 +67,16 @@
         "IMMUTABLE_CORE",
         "SAFE_HISTORICAL_COMPARISON",
         "INPUT_CONTRACT_PAIRING",
-        "PRIVATE_INFRASTRUCTURE_PUBLICATION_MANIFEST_VISIBILITY"
+        "PRIVATE_INFRASTRUCTURE_PUBLICATION",
+        "WHOLE_ARCHIVE_DOWNLOAD"
       ],
-      "failed_stage": "WHOLE_ARCHIVE_ROUNDTRIP_VERIFIER",
-      "failure": "NameError: name 'time' is not defined at time.monotonic()",
-      "elapsed_seconds_at_failure": 4422.1
+      "failed_stage": "WHOLE_ARCHIVE_CONTENT_PARITY",
+      "failure": "Local publication manifest incorrectly included generated core/repository/.../__pycache__/_bootstrap.cpython-312.pyc, while Kaggle round-trip archive did not preserve that ephemeral bytecode artifact.",
+      "elapsed_seconds_at_failure": 8063.2
     },
-    "remediation": "Materializer imports time explicitly. CI now runs pyflakes undefined-name checks over load-bearing Track-B Python and behaviorally executes both successful and transient-retry whole-archive roundtrip paths. Existing processing-window, deterministic-slug, exact-byte, and fail-closed integrity protections remain unchanged.",
+    "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
     "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
-    "v1_test_accessed": false,
-    "validated_commit": "6a15d6a1f2302822c9b0dadebba83121f9e65db1",
-    "trackb_qa_workflow_run_id": 35683898706,
-    "trackb_qa_workflow_run_number": 716,
-    "trackb_qa_conclusion": "success",
-    "undefined_runtime_name_lint": "PASS",
-    "archive_roundtrip_behavioral_tests": "PASS",
-    "final_runtime_nameerror_remediation": "PASS"
+    "v1_test_accessed": false
   }
 }
