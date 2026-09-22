@@ -26,8 +26,8 @@
     },
     {
       "path": "journal_extension/scripts/build_trackb_core_package.py",
-      "git_blob_sha1": "9ca74998b8f1e2fac195ccc281ce885cc4a15f02",
-      "origin": "track_b_v3_remediation"
+      "git_blob_sha1": "8bd58b687df8f1fde68003a1d8f7d07cf8039d30",
+      "origin": "track_b_v5_hardening_transport_portability"
     },
     {
       "path": "journal_extension/scripts/build_trackb_historical_compare.py",
@@ -66,8 +66,8 @@
     },
     {
       "path": "journal_extension/scripts/trackb_v4_materialize.py",
-      "git_blob_sha1": "7754b06f67a490bd8428839298415b1f044b6dc1",
-      "origin": "track_b_v5_hardening_archive_roundtrip_runtime_fix"
+      "git_blob_sha1": "6243e371269498886401bbb846236c9db01ab862",
+      "origin": "track_b_v5_hardening_transport_portability"
     },
     {
       "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py",
@@ -151,8 +151,8 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
-      "git_blob_sha1": "d8a48fbddf042db5be19714bbddc868e945400aa",
-      "origin": "track_b_v5_hardening_kaggle_processing_and_rerun"
+      "git_blob_sha1": "3711c963be1102167fa45801bdaea92d7e7b34d2",
+      "origin": "track_b_v5_hardening_transport_portability"
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07.py",
@@ -191,9 +191,9 @@
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json",
-      "git_blob_sha1": "0d072255d6d84ecec00306a65845678e0d2f9518",
-      "origin": "track_b_v5_materialization_authority"
+      "git_blob_sha1": "ea60d314ef0f149bce6e65c56f7da349482d0c19",
+      "origin": "track_b_v5_materialization_transport_authority"
     }
   ],
-  "attestation_note": "Track-B v5 runtime re-attestation after real Kaggle run exposed a runtime-only NameError in the processing-aware archive verifier. The materializer now imports time explicitly. CI additionally executes the archive verifier behaviorally and rejects undefined runtime names in load-bearing Track-B Python. Scientific thresholds, mappings, checkpoints, seeds, evidence-grade rules, and protected-inference policy are unchanged."
+  "attestation_note": "Track-B v5 runtime re-attestation after a real Kaggle round-trip exposed an ephemeral Python bytecode file inside the locally hashed immutable payload. Core snapshot preparation now disables bytecode generation, repository and all Track-B roles are scrubbed and asserted transport-stable before materialization identity, Kaggle publication uses keep-tabular exact-byte mode plus defense-in-depth ignore patterns, and the early publication probe round-trips nested JSON/Python/CSV/binary payloads. Scientific thresholds, mappings, checkpoints, seeds, grade rules, historical comparison science, and protected-inference policy are unchanged."
 }
