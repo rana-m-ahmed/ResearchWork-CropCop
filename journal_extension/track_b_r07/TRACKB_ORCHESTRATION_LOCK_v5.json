@@ -9,7 +9,7 @@
   "external_source_lock_id": "TRACKB_EXTERNAL_SOURCE_LOCK_v2",
   "input_materialization_lock_id": "TRACKB_INPUT_MATERIALIZATION_LOCK_v2",
   "release_authority_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "7db00a9b5efc8a2f60202bbbbf99ff276b45cb50",
+  "runtime_source_commit": "eacae1d5b3a9012d65d4be3152e93cf03eefceb7",
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
     "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb"
