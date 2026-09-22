@@ -44,6 +44,23 @@ EXEC_SPEC.loader.exec_module(exec_module)
 
 
 class TrackBV4MaterializationTests(unittest.TestCase):
+    def test_core_builder_disables_python_bytecode_during_snapshot_preparation(self):
+        source = (SCRIPTS / "build_trackb_core_package.py").read_text(encoding="utf-8")
+        self.assertIn('sys.executable, "-B", str(prep)', source)
+        self.assertIn('prep_env["PYTHONDONTWRITEBYTECODE"] = "1"', source)
+        self.assertIn("_purge_transient_repository_artifacts(repo_copy)", source)
+        self.assertIn("_assert_repository_transport_clean(repo_copy)", source)
+
+    def test_stage4_transport_scrub_precedes_role_validation_and_identity(self):
+        source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
+        main_start = source.index("def main() -> int:")
+        main = source[main_start:]
+        scrub = main.index('transport_hygiene = {')
+        validate = main.index("_validate_roles(", scrub)
+        pair = main.index("_write_pair_receipts(", validate)
+        self.assertLess(scrub, validate)
+        self.assertLess(validate, pair)
+
     def test_core_repository_hygiene_removes_post_copy_python_bytecode(self):
         import importlib.util as _iu
 
