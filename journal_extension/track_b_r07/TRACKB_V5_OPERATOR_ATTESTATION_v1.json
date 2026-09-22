@@ -5,41 +5,30 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "7db00a9b5efc8a2f60202bbbbf99ff276b45cb50",
-  "preseal_operator_surface_commit": "38577f53d8c32bbf1028c4f29617c450630fb642",
+  "runtime_source_commit": "eacae1d5b3a9012d65d4be3152e93cf03eefceb7",
+  "preseal_operator_surface_commit": "247e194063416675da9b81b25e75344eced05c24",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
     "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
-    "git_blob_sha1": "e3d3130ab7cc4601a2c7b8e6bf64962f5af59d25",
-    "sha256": "ab5fc5f3966af5336dc5851ac447f660c613f46c4f5aa3d79facea398ff9b2f7"
+    "git_blob_sha1": "44765fc117de46a6419913935f199599ffe319b5",
+    "sha256": "eed90a7e767f5c2f20b52a9cf634f86b2e099ee2221f7630fd3e939ed1d43807"
   },
   "operator_files": [
     {
       "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
-      "git_blob_sha1": "75ca69e442d6f110cae89e29abf7aa9be7e383ca",
+      "git_blob_sha1": "8d39473b75147cd62df538b18d205457d04985ee",
       "role": "READINESS_AND_IMMUTABLE_MATERIALIZATION"
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "5d33640f522f74a2aca16c7e324bb8478343991b",
+      "git_blob_sha1": "61049fd0b47b8c17150af8c78a9a684051f7a984",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "workflow_run_id": 35640835016,
-    "workflow_run_number": 692,
-    "conclusion": "success",
-    "validated_commit": "cbf38e228dca7046dff0ffd074eb7ea189d796af",
-    "compile_pass": true,
-    "targeted_tests_pass": true,
-    "processing_403_recovery_tests_pass": true,
-    "deterministic_slug_rerun_recovery_tests_pass": true,
-    "whole_archive_processing_wait_tests_pass": true,
-    "canonical_notebook_regeneration_pass": true,
-    "static_infrastructure_validator_pass": true,
-    "v5_orchestration_validator_pass": true,
-    "sealed_release_authority_validator_pass": true
+    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_RUNTIME_NAMEERROR_FIX",
+    "note": "Real Kaggle run reached Stage 5 and failed solely because processing-aware archive verifier called time.monotonic() without importing time. Runtime now imports time; CI rejects undefined names and behaviorally executes the archive roundtrip and transient retry paths."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
@@ -73,6 +62,9 @@
     "kaggle_publication_authority": "BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP",
     "kaggle_whole_archive_processing_wait_seconds": 5400,
     "kaggle_ambiguous_create_manifest_wait_seconds": 900,
-    "kaggle_integrity_mismatch_never_retry_as_processing": true
+    "kaggle_integrity_mismatch_never_retry_as_processing": true,
+    "undefined_runtime_name_lint_required": true,
+    "archive_roundtrip_behavioral_test_required": true,
+    "archive_roundtrip_transient_retry_behavioral_test_required": true
   }
 }
