@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "d682c8068f08ba77079beff523cd5e06cb0d7ce68e333b8fd5712de57b293e64",
-    "operator_attestation_sha256": "3cefd93e9b1abc2acd5d2a68b3808c6064390c569dcf0e50f750173a1f5b016e",
+    "operator_attestation_sha256": "62f0b1e42436faa864b35b5ba5f9ebe17550dee2968f56cc2c0a4f2b74666fc3",
     "operator_notebook_00_blob_sha1": "4c5ce4087c261bd4a192cc169eefb66240923935",
     "operator_notebook_01_blob_sha1": "4258034e6ef52e9311118e40af4f62499a351483"
   },
@@ -77,6 +77,15 @@
     "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
     "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
-    "v1_test_accessed": false
+    "v1_test_accessed": false,
+    "validated_commit": "cc39ef1e30fb819cf4e5e796097864875e7d8d70",
+    "trackb_qa_workflow_run_id": 35732283033,
+    "trackb_qa_workflow_run_number": 750,
+    "trackb_qa_conclusion": "success",
+    "targeted_test_count": 90,
+    "transport_portability_qa": "PASS",
+    "exact_byte_kaggle_transport_contract": "PASS",
+    "post_copy_bytecode_regression": "PASS",
+    "final_role_transport_hygiene": "PASS"
   }
 }
