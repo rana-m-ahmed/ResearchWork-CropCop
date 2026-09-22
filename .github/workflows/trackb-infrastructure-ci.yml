@@ -42,7 +42,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          output="$(python -m pyflakes             journal_extension/scripts/trackb_v4_materialize.py             journal_extension/src/cropcop_je/trackb_r07_ops.py             journal_extension/scripts/trackb_v4_execute_attached.py             journal_extension/scripts/run_trackb_r07.py 2>&1 || true)"
+          output="$(python -m pyflakes             journal_extension/scripts/build_trackb_core_package.py             journal_extension/scripts/trackb_v4_materialize.py             journal_extension/src/cropcop_je/trackb_r07_ops.py             journal_extension/scripts/trackb_v4_execute_attached.py             journal_extension/scripts/run_trackb_r07.py 2>&1 || true)"
           printf '%s\n' "$output"
           if printf '%s\n' "$output" | grep -q "undefined name"; then
             echo "Undefined runtime name detected in Track-B load-bearing Python."
