@@ -764,6 +764,83 @@ def _manifest_sha(root: Path) -> str:
     return sha256_file(path)
 
 
+_TRANSIENT_ROLE_DIR_NAMES = {
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".ipynb_checkpoints",
+    ".cache",
+    ".huggingface",
+}
+_TRANSIENT_ROLE_FILE_NAMES = {".DS_Store", "Thumbs.db", ".coverage"}
+_TRANSIENT_ROLE_SUFFIXES = {".pyc", ".pyo"}
+
+
+def _role_transient_artifacts(root: Path) -> list[Path]:
+    root = Path(root).resolve()
+    out: list[Path] = []
+    for path in sorted(root.rglob("*")):
+        rel_parts = path.relative_to(root).parts
+        if any(part in _TRANSIENT_ROLE_DIR_NAMES for part in rel_parts):
+            out.append(path)
+            continue
+        if path.is_file() and (
+            path.name in _TRANSIENT_ROLE_FILE_NAMES
+            or path.suffix.lower() in _TRANSIENT_ROLE_SUFFIXES
+        ):
+            out.append(path)
+    return out
+
+
+def _scrub_role_transport_artifacts(root: Path) -> dict[str, object]:
+    root = Path(root).resolve()
+    removed: list[str] = []
+    for path in sorted(
+        _role_transient_artifacts(root),
+        key=lambda value: len(value.parts),
+        reverse=True,
+    ):
+        if not path.exists() and not path.is_symlink():
+            continue
+        rel = path.relative_to(root).as_posix()
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink(missing_ok=True)
+        removed.append(rel)
+
+    remaining = [
+        path.relative_to(root).as_posix()
+        for path in _role_transient_artifacts(root)
+        if path.exists() or path.is_symlink()
+    ]
+    if remaining:
+        raise TrackBOpsError(
+            "Track-B role remains transport-unstable after transient-artifact scrub: "
+            + json.dumps(remaining[:50])
+        )
+    return {
+        "status": "PASS_ROLE_TRANSPORT_HYGIENE",
+        "root": str(root),
+        "removed_count": len(set(removed)),
+        "removed_paths": sorted(set(removed)),
+    }
+
+
+def _assert_role_transport_stable(root: Path) -> None:
+    transient = [
+        path.relative_to(root).as_posix()
+        for path in _role_transient_artifacts(root)
+        if path.exists() or path.is_symlink()
+    ]
+    if transient:
+        raise TrackBOpsError(
+            "Track-B role contains non-authoritative runtime/cache artifacts: "
+            + json.dumps(transient[:50])
+        )
+
+
 def _role_content_identity(root: Path) -> dict[str, object]:
     """Cryptographically bind every regular payload file inside a Track-B role root.
 
@@ -772,6 +849,7 @@ def _role_content_identity(root: Path) -> dict[str, object]:
     across Kaggle materialization boundaries.
     """
     root = Path(root).resolve()
+    _assert_role_transport_stable(root)
     rows: list[dict[str, object]] = []
     for path in sorted(root.rglob("*")):
         if path.is_symlink():
@@ -1024,6 +1102,13 @@ def main() -> int:
     shutil.rmtree(source_views, ignore_errors=True)
 
     stage("4 :: input-contract validation and pairing")
+    transport_hygiene = {
+        "core": _scrub_role_transport_artifacts(core_root),
+        "historical_compare": _scrub_role_transport_artifacts(historical_root),
+        "gvlid_v5": _scrub_role_transport_artifacts(gvlid_root),
+        "irish_potato": _scrub_role_transport_artifacts(potato_root),
+    }
+    print(json.dumps({"transport_hygiene": transport_hygiene}, indent=2, sort_keys=True), flush=True)
     _validate_roles(core_root, historical_root, gvlid_root, potato_root)
     pairing = _write_pair_receipts(
         repo_root=repo_root,
@@ -1042,6 +1127,7 @@ def main() -> int:
             repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json"
         ),
         "publication": None,
+        "transport_hygiene": transport_hygiene,
     }
 
     if not args.skip_publication:
