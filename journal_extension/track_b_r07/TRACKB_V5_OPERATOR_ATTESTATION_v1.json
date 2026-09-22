@@ -5,41 +5,30 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "eacae1d5b3a9012d65d4be3152e93cf03eefceb7",
-  "preseal_operator_surface_commit": "247e194063416675da9b81b25e75344eced05c24",
+  "runtime_source_commit": "528b01832b86233b752942362715f9e8924f0b02",
+  "preseal_operator_surface_commit": "b86f90a64f3992c6e34ce42c8d7bf0d97cd63131",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
     "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json",
-    "git_blob_sha1": "44765fc117de46a6419913935f199599ffe319b5",
-    "sha256": "eed90a7e767f5c2f20b52a9cf634f86b2e099ee2221f7630fd3e939ed1d43807"
+    "git_blob_sha1": "88d1fd7165b8b1711895f65b741810723ee73269",
+    "sha256": "d682c8068f08ba77079beff523cd5e06cb0d7ce68e333b8fd5712de57b293e64"
   },
   "operator_files": [
     {
       "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
-      "git_blob_sha1": "8d39473b75147cd62df538b18d205457d04985ee",
+      "git_blob_sha1": "4c5ce4087c261bd4a192cc169eefb66240923935",
       "role": "READINESS_AND_IMMUTABLE_MATERIALIZATION"
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "61049fd0b47b8c17150af8c78a9a684051f7a984",
+      "git_blob_sha1": "4258034e6ef52e9311118e40af4f62499a351483",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "workflow_run_id": 35683898706,
-    "workflow_run_number": 716,
-    "conclusion": "success",
-    "validated_commit": "6a15d6a1f2302822c9b0dadebba83121f9e65db1",
-    "compile_pass": true,
-    "undefined_name_lint_pass": true,
-    "targeted_tests_pass": true,
-    "archive_roundtrip_behavioral_test_pass": true,
-    "archive_roundtrip_transient_retry_test_pass": true,
-    "canonical_notebook_regeneration_pass": true,
-    "static_infrastructure_validator_pass": true,
-    "v5_orchestration_validator_pass": true,
-    "sealed_release_authority_validator_pass": true
+    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_TRANSPORT_PORTABILITY_REMEDIATION",
+    "note": "Latest real run completed Stages 1-4 and reached Stage 5, but whole-archive verification found a local-manifest-only Python bytecode artifact (__pycache__/_bootstrap.cpython-312.pyc). Runtime now prevents bytecode creation in copied repository preparation, scrubs/forbids transient artifacts before Stage-4 identity, uses Kaggle keep-tabular exact-byte mode plus defense ignore patterns, and exercises nested JSON/Python/CSV/binary round-trip in the early publication probe."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
@@ -76,6 +65,11 @@
     "kaggle_integrity_mismatch_never_retry_as_processing": true,
     "undefined_runtime_name_lint_required": true,
     "archive_roundtrip_behavioral_test_required": true,
-    "archive_roundtrip_transient_retry_behavioral_test_required": true
+    "archive_roundtrip_transient_retry_behavioral_test_required": true,
+    "transport_stable_role_identity_required": true,
+    "python_bytecode_forbidden_in_published_roles": true,
+    "kaggle_keep_tabular_exact_byte_mode_required": true,
+    "multitype_nested_publication_probe_required": true,
+    "final_role_scrub_before_materialization_identity": true
   }
 }
