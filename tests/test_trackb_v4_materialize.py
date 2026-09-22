@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib.util
 import sys
 import json
+import hashlib
+import zipfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -42,6 +44,81 @@ EXEC_SPEC.loader.exec_module(exec_module)
 
 
 class TrackBV4MaterializationTests(unittest.TestCase):
+    def test_archive_roundtrip_behavior_executes_and_verifies_exact_bytes(self):
+        payloads = {
+            "alpha.txt": b"alpha-bytes",
+            "nested/beta.bin": b"beta-bytes",
+        }
+        rows = [
+            {
+                "path": name,
+                "bytes": len(data),
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
+            for name, data in sorted(payloads.items())
+        ]
+        manifest = {
+            "files": rows,
+            "content_digest_sha256": "a" * 64,
+        }
+
+        def fake_run_checked(command, **kwargs):
+            destination = Path(command[command.index("-p") + 1])
+            archive = destination / "roundtrip.zip"
+            with zipfile.ZipFile(archive, "w") as zf:
+                for name, data in payloads.items():
+                    zf.writestr(name, data)
+
+        with tempfile.TemporaryDirectory() as td:
+            with mock.patch.object(module, "run_checked", side_effect=fake_run_checked):
+                receipt = module._verify_published_archive_roundtrip(
+                    "owner/test-dataset",
+                    manifest,
+                    scratch_root=Path(td),
+                    timeout_seconds=5,
+                )
+
+        self.assertEqual(receipt["status"], "PASS")
+        self.assertEqual(receipt["verified_file_count"], 2)
+        self.assertEqual(receipt["content_digest_sha256"], "a" * 64)
+        self.assertEqual(receipt["attempts"], 1)
+
+    def test_archive_roundtrip_retries_transient_processing_error_then_passes(self):
+        payload = b"payload"
+        manifest = {
+            "files": [{
+                "path": "payload.bin",
+                "bytes": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }],
+            "content_digest_sha256": "b" * 64,
+        }
+        calls = {"count": 0}
+
+        def fake_run_checked(command, **kwargs):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise module.TrackBOpsError("403 Forbidden: dataset processing")
+            destination = Path(command[command.index("-p") + 1])
+            with zipfile.ZipFile(destination / "roundtrip.zip", "w") as zf:
+                zf.writestr("payload.bin", payload)
+
+        with tempfile.TemporaryDirectory() as td:
+            with (
+                mock.patch.object(module, "run_checked", side_effect=fake_run_checked),
+                mock.patch.object(module.time, "sleep", return_value=None),
+            ):
+                receipt = module._verify_published_archive_roundtrip(
+                    "owner/test-dataset",
+                    manifest,
+                    scratch_root=Path(td),
+                    timeout_seconds=30,
+                )
+
+        self.assertEqual(receipt["status"], "PASS")
+        self.assertEqual(receipt["attempts"], 2)
+        self.assertEqual(calls["count"], 2)
+
     def test_final_v1_resolver_prefers_hash_valid_image_backed_authority_pair(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
