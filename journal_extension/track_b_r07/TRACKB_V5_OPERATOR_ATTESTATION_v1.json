@@ -27,8 +27,19 @@
   ],
   "qa": {
     "workflow": "Track B Infrastructure QA",
-    "status": "PENDING_EXACT_HEAD_VALIDATION_AFTER_RUNTIME_NAMEERROR_FIX",
-    "note": "Real Kaggle run reached Stage 5 and failed solely because processing-aware archive verifier called time.monotonic() without importing time. Runtime now imports time; CI rejects undefined names and behaviorally executes the archive roundtrip and transient retry paths."
+    "workflow_run_id": 35683898706,
+    "workflow_run_number": 716,
+    "conclusion": "success",
+    "validated_commit": "6a15d6a1f2302822c9b0dadebba83121f9e65db1",
+    "compile_pass": true,
+    "undefined_name_lint_pass": true,
+    "targeted_tests_pass": true,
+    "archive_roundtrip_behavioral_test_pass": true,
+    "archive_roundtrip_transient_retry_test_pass": true,
+    "canonical_notebook_regeneration_pass": true,
+    "static_infrastructure_validator_pass": true,
+    "v5_orchestration_validator_pass": true,
+    "sealed_release_authority_validator_pass": true
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
