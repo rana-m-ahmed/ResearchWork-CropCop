@@ -75,7 +75,15 @@
       "elapsed_seconds_at_failure": 8063.2
     },
     "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
-    "exact_head_qa": "PENDING",
+    "exact_head_qa": {
+      "status": "PASS",
+      "validated_commit": "cd435423da114dc99aa44098ea3b0452d61995bb",
+      "workflow": "Track B Infrastructure QA",
+      "workflow_run_id": 35732429865,
+      "workflow_run_number": 755,
+      "conclusion": "success",
+      "note": "This evidence commit is intentionally followed only by this metadata-only recording commit; the resulting head must itself pass the same sealed validators before operator handoff."
+    },
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false,
     "validated_commit": "cc39ef1e30fb819cf4e5e796097864875e7d8d70",
