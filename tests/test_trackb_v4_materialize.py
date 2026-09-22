@@ -44,6 +44,79 @@ EXEC_SPEC.loader.exec_module(exec_module)
 
 
 class TrackBV4MaterializationTests(unittest.TestCase):
+    def test_core_repository_hygiene_removes_post_copy_python_bytecode(self):
+        import importlib.util as _iu
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "repository"
+            scripts = root / "journal_extension" / "scripts"
+            scripts.mkdir(parents=True)
+            source = scripts / "synthetic_module.py"
+            source.write_text("VALUE = 7\n", encoding="utf-8")
+
+            spec = _iu.spec_from_file_location("synthetic_trackb_cache_module", source)
+            loaded = _iu.module_from_spec(spec)
+            assert spec.loader is not None
+            spec.loader.exec_module(loaded)
+            self.assertTrue(any(root.rglob("*.pyc")))
+
+            receipt = core_module._purge_transient_repository_artifacts(root)
+            core_module._assert_repository_transport_clean(root)
+
+            self.assertEqual(receipt["status"], "PASS_REPOSITORY_TRANSPORT_HYGIENE")
+            self.assertFalse(any(root.rglob("*.pyc")))
+            self.assertFalse(any(p.name == "__pycache__" for p in root.rglob("*")))
+
+    def test_stage4_role_hygiene_scrubs_runtime_artifacts_before_identity(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "payload.txt").write_text("stable\n", encoding="utf-8")
+            cache = root / "sub" / "__pycache__"
+            cache.mkdir(parents=True)
+            (cache / "x.cpython-312.pyc").write_bytes(b"ephemeral")
+            (root / ".pytest_cache").mkdir()
+            (root / ".pytest_cache" / "state").write_text("junk", encoding="utf-8")
+
+            receipt = module._scrub_role_transport_artifacts(root)
+            identity = module._role_content_identity(root)
+
+            self.assertEqual(receipt["status"], "PASS_ROLE_TRANSPORT_HYGIENE")
+            self.assertGreaterEqual(receipt["removed_count"], 2)
+            self.assertEqual(identity["file_count"], 1)
+            self.assertEqual(identity["total_bytes"], len(b"stable\n"))
+
+    def test_stage4_role_identity_rejects_unscrubbed_runtime_artifact(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "payload.txt").write_text("stable\n", encoding="utf-8")
+            cache = root / "__pycache__"
+            cache.mkdir()
+            (cache / "x.pyc").write_bytes(b"ephemeral")
+            with self.assertRaises(module.TrackBOpsError):
+                module._role_content_identity(root)
+
+    def test_kaggle_publication_forces_keep_tabular_exact_byte_mode(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def publish_private_kaggle_dataset(")
+        end = source.index("def verify_kaggle_publication_capability(", start)
+        helper = source[start:end]
+        self.assertIn('"-r", "zip", "-t"', helper)
+
+    def test_publication_probe_exercises_nested_multitype_exact_bytes(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def verify_kaggle_publication_capability(")
+        end = source.index("def acquire_claim_lease(", start)
+        helper = source[start:end]
+        self.assertIn("NESTED_JSON_PYTHON_CSV_BINARY_EXACT_BYTES", helper)
+        self.assertIn("probe_source.py", helper)
+        self.assertIn("probe_table.csv", helper)
+        self.assertIn("probe_binary.bin", helper)
+        self.assertIn("full_roundtrip=True", helper)
+
     def test_archive_roundtrip_behavior_executes_and_verifies_exact_bytes(self):
         payloads = {
             "alpha.txt": b"alpha-bytes",
