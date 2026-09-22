@@ -29,7 +29,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "75f777c71f3fc64f1c095669f767734498bbb4e047ea0f716316e9d38975e0cf",
+  "code_attestation_sha256": "02284d0323e486ef26642be7b6e1d396f5063031a6c49b9fbf55f4c833a0d9ee",
   "experiment_ids": [
     "TB2-AUDIT-GVLID",
     "TB2-AUDIT-POTATO",
@@ -254,7 +254,7 @@
     "publication_retry_counts_excluded_from_science_identity": true,
     "qualification_recomputed_during_claim": false
   },
-  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the runtime fixing the real Kaggle-run archive-verifier NameError. The processing-aware archive verifier now imports time explicitly. QA executes the verifier behaviorally and rejects undefined names in load-bearing Track-B Python before sealing.",
+  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the transport-stable runtime: bytecode disabled in copied repository preparation; transient runtime/cache artifacts scrubbed and forbidden before role identity; Kaggle keep-tabular exact-byte mode required; mixed nested JSON/Python/CSV/binary publication probe required before expensive work. This specifically closes the observed missing __pycache__/.pyc round-trip failure without weakening integrity checks.",
   "scientific_change": false,
   "orchestration": {
     "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY",
