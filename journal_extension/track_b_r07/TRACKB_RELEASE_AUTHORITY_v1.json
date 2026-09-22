@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "eed90a7e767f5c2f20b52a9cf634f86b2e099ee2221f7630fd3e939ed1d43807",
-    "operator_attestation_sha256": "309ba117ac1d09950116ffbe6f26b5ff83bffb9edc84596edf797fcd1faf3a98",
+    "operator_attestation_sha256": "34e2881d5f899cd2252fe15fb2987e0c9d6c59dc74d98d6a9247f7e9107878b5",
     "operator_notebook_00_blob_sha1": "8d39473b75147cd62df538b18d205457d04985ee",
     "operator_notebook_01_blob_sha1": "61049fd0b47b8c17150af8c78a9a684051f7a984"
   },
@@ -76,6 +76,13 @@
     "remediation": "Materializer imports time explicitly. CI now runs pyflakes undefined-name checks over load-bearing Track-B Python and behaviorally executes both successful and transient-retry whole-archive roundtrip paths. Existing processing-window, deterministic-slug, exact-byte, and fail-closed integrity protections remain unchanged.",
     "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
-    "v1_test_accessed": false
+    "v1_test_accessed": false,
+    "validated_commit": "6a15d6a1f2302822c9b0dadebba83121f9e65db1",
+    "trackb_qa_workflow_run_id": 35683898706,
+    "trackb_qa_workflow_run_number": 716,
+    "trackb_qa_conclusion": "success",
+    "undefined_runtime_name_lint": "PASS",
+    "archive_roundtrip_behavioral_tests": "PASS",
+    "final_runtime_nameerror_remediation": "PASS"
   }
 }
