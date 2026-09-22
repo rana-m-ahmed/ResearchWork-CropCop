@@ -815,13 +815,13 @@ def publish_private_kaggle_dataset(
                 "kaggle", "datasets", "version",
                 "-p", str(folder),
                 "-m", version_message,
-                "-q", "-r", "zip",
+                "-q", "-r", "zip", "-t",
             ]
             if existing is not None and allow_version
             else [
                 "kaggle", "datasets", "create",
                 "-p", str(folder),
-                "-q", "-r", "zip",
+                "-q", "-r", "zip", "-t",
             ]
         )
         action = "version" if command[2] == "version" else "create"
@@ -927,10 +927,11 @@ def verify_kaggle_publication_capability(owner: str) -> dict[str, object]:
     if not owner:
         raise TrackBOpsError("Kaggle publication capability probe requires an owner")
     payload = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "status": "TRACKB_PUBLICATION_CAPABILITY_PROBE",
         "owner": owner,
-        "purpose": "FAIL_FAST_PRIVATE_DATASET_CREATE_STATUS_DOWNLOAD",
+        "purpose": "FAIL_FAST_PRIVATE_DATASET_CREATE_AND_EXACT_MULTITYPE_ROUNDTRIP",
+        "transport_contract": "NESTED_JSON_PYTHON_CSV_BINARY_EXACT_BYTES",
     }
     probe_digest = sha256_json(payload)
     slug = f"{owner}/cropcop-trackb-pubprobe-v5-{probe_digest[:16]}"
@@ -939,6 +940,18 @@ def verify_kaggle_publication_capability(owner: str) -> dict[str, object]:
         (folder / "TRACKB_PUBLICATION_PROBE.json").write_text(
             json.dumps(payload, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
+        )
+        nested = folder / "nested"
+        nested.mkdir(parents=True, exist_ok=False)
+        (nested / "probe_source.py").write_text(
+            "VALUE = 'trackb-exact-byte-probe'\n",
+            encoding="utf-8",
+        )
+        (nested / "probe_table.csv").write_bytes(
+            b"row_id,value\n1,alpha\n2,beta\n"
+        )
+        (nested / "probe_binary.bin").write_bytes(
+            bytes(range(256)) + b"TRACKB\x00\xffEXACT"
         )
         result = publish_private_kaggle_dataset(
             folder=folder,
