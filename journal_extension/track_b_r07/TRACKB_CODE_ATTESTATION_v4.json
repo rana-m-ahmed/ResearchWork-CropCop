@@ -66,8 +66,8 @@
     },
     {
       "path": "journal_extension/scripts/trackb_v4_materialize.py",
-      "git_blob_sha1": "e815f4ef765d20b881df533b84bc491f45a44a99",
-      "origin": "track_b_v5_hardening_kaggle_processing_and_rerun"
+      "git_blob_sha1": "7754b06f67a490bd8428839298415b1f044b6dc1",
+      "origin": "track_b_v5_hardening_archive_roundtrip_runtime_fix"
     },
     {
       "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py",
@@ -195,5 +195,5 @@
       "origin": "track_b_v5_materialization_authority"
     }
   ],
-  "attestation_note": "Track-B v5 final runtime re-attestation after real Kaggle processing-window failures. Publication authority is bound manifest plus exact byte round-trip; status is advisory only; whole-dataset archive verification waits through bounded processing 403/404/5xx windows; deterministic content-addressed slugs recover idempotently after ambiguous create only when the remote bound-manifest digest exactly matches. Claim lease and attempt-state visibility use direct file reads. Scientific thresholds, mappings, checkpoints, seeds, grade rules, and protected-inference policy are unchanged."
+  "attestation_note": "Track-B v5 runtime re-attestation after real Kaggle run exposed a runtime-only NameError in the processing-aware archive verifier. The materializer now imports time explicitly. CI additionally executes the archive verifier behaviorally and rejects undefined runtime names in load-bearing Track-B Python. Scientific thresholds, mappings, checkpoints, seeds, evidence-grade rules, and protected-inference policy are unchanged."
 }
