@@ -131,5 +131,45 @@
     "deterministic_slug_ambiguous_create_manifest_wait_seconds": 900,
     "deterministic_slug_reuse_requires_exact_content_digest": true,
     "post_create_full_archive_verification_required": true
+  },
+  "transport_portability_policy": {
+    "schema_version": "1.0",
+    "transient_artifacts_forbidden_in_role_identity": [
+      "__pycache__",
+      "*.pyc",
+      "*.pyo",
+      ".pytest_cache",
+      ".mypy_cache",
+      ".ruff_cache",
+      ".ipynb_checkpoints",
+      ".cache",
+      ".huggingface",
+      ".DS_Store",
+      "Thumbs.db",
+      ".coverage"
+    ],
+    "core_preparation_python_bytecode_disabled": true,
+    "final_role_transport_scrub_before_identity": true,
+    "role_identity_asserts_transport_stable": true,
+    "kaggle_keep_tabular_required": true,
+    "kaggle_dir_mode": "zip",
+    "kaggle_defense_in_depth_ignore_patterns": [
+      "__pycache__",
+      "*.pyc",
+      "*.pyo",
+      ".pytest_cache",
+      ".mypy_cache",
+      ".ruff_cache",
+      ".ipynb_checkpoints"
+    ],
+    "early_publication_probe_requires_nested_multitype_exact_roundtrip": true,
+    "early_publication_probe_types": [
+      "json",
+      "python_source",
+      "csv",
+      "binary"
+    ],
+    "exact_remote_byte_roundtrip_required": true,
+    "integrity_mismatch_fail_closed": true
   }
 }
