@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import math
+import os
 import shutil
 import subprocess
 import sys
@@ -33,6 +34,78 @@ EXPECTED_SOURCE_HINTS = {
     "r07_s3": "sabahatabbas/cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
     "dino_bundle": "ranamuhammadahmed6/cropcop-secondary-g1-8904b100@version-2",
 }
+
+_TRANSIENT_REPOSITORY_DIR_NAMES = {
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".ipynb_checkpoints",
+    ".cache",
+    ".huggingface",
+}
+_TRANSIENT_REPOSITORY_FILE_NAMES = {".DS_Store", "Thumbs.db", ".coverage"}
+_TRANSIENT_REPOSITORY_SUFFIXES = {".pyc", ".pyo"}
+
+
+def _repository_transient_artifacts(root: Path) -> list[Path]:
+    root = Path(root).resolve()
+    out: list[Path] = []
+    for path in sorted(root.rglob("*")):
+        rel_parts = path.relative_to(root).parts
+        if any(part in _TRANSIENT_REPOSITORY_DIR_NAMES for part in rel_parts):
+            out.append(path)
+            continue
+        if path.is_file() and (
+            path.name in _TRANSIENT_REPOSITORY_FILE_NAMES
+            or path.suffix.lower() in _TRANSIENT_REPOSITORY_SUFFIXES
+        ):
+            out.append(path)
+    return out
+
+
+def _purge_transient_repository_artifacts(root: Path) -> dict[str, object]:
+    root = Path(root).resolve()
+    candidates = _repository_transient_artifacts(root)
+    removed: list[str] = []
+    # Remove deepest entries first so nested cache trees are deterministic.
+    for path in sorted(candidates, key=lambda p: len(p.parts), reverse=True):
+        if not path.exists() and not path.is_symlink():
+            continue
+        rel = path.relative_to(root).as_posix()
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink(missing_ok=True)
+        removed.append(rel)
+    remaining = [
+        path.relative_to(root).as_posix()
+        for path in _repository_transient_artifacts(root)
+        if path.exists() or path.is_symlink()
+    ]
+    if remaining:
+        raise TrackBError(
+            "repository snapshot still contains transient runtime artifacts after purge: "
+            + json.dumps(remaining[:50])
+        )
+    return {
+        "status": "PASS_REPOSITORY_TRANSPORT_HYGIENE",
+        "removed_count": len(set(removed)),
+        "removed_paths": sorted(set(removed)),
+    }
+
+
+def _assert_repository_transport_clean(root: Path) -> None:
+    remaining = [
+        path.relative_to(root).as_posix()
+        for path in _repository_transient_artifacts(root)
+        if path.exists() or path.is_symlink()
+    ]
+    if remaining:
+        raise TrackBError(
+            "repository snapshot contains non-authoritative runtime/cache artifacts: "
+            + json.dumps(remaining[:50])
+        )
 
 
 def _copy_file(src: Path, dst: Path) -> None:
@@ -180,8 +253,23 @@ def _copy_repository(source_repo: Path, dest_repo: Path) -> str | None:
     shutil.copytree(
         source_repo / "journal_extension",
         dest_repo / "journal_extension",
-        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache"),
+        ignore=shutil.ignore_patterns(
+            "__pycache__",
+            "*.pyc",
+            "*.pyo",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".ipynb_checkpoints",
+            ".cache",
+            ".huggingface",
+            ".DS_Store",
+            "Thumbs.db",
+            ".coverage",
+        ),
     )
+    _purge_transient_repository_artifacts(dest_repo)
+    _assert_repository_transport_clean(dest_repo)
     try:
         cp = subprocess.run(
             ["git", "-C", str(source_repo), "rev-parse", "HEAD"],
@@ -271,7 +359,7 @@ def main() -> int:
 
     prep = repo_copy / "journal_extension" / "scripts" / "prepare_trackb_core_input.py"
     cmd = [
-        sys.executable, str(prep),
+        sys.executable, "-B", str(prep),
         "--package-root", str(output),
         "--repository-root", "repository",
         "--v1-validation-root", "v1_validation",
@@ -290,7 +378,12 @@ def main() -> int:
         "--dino-factory-manifest", "audit_encoder/TEACHER_FACTORY_BUNDLE.json",
         "--dino-factory-source-root", "repository/journal_extension/teacher_factory",
     ]
-    subprocess.run(cmd, cwd=repo_copy, check=True)
+    prep_env = dict(os.environ)
+    prep_env["PYTHONDONTWRITEBYTECODE"] = "1"
+    subprocess.run(cmd, cwd=repo_copy, check=True, env=prep_env)
+    hygiene = _purge_transient_repository_artifacts(repo_copy)
+    _assert_repository_transport_clean(repo_copy)
+    print(json.dumps(hygiene, indent=2, sort_keys=True), flush=True)
 
     input_manifest = json.loads((output / "TRACKB_INPUT_MANIFEST.json").read_text(encoding="utf-8"))
     if input_manifest.get("role") != "core":
