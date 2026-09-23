@@ -33,7 +33,7 @@
     "validated_commit": "cc39ef1e30fb819cf4e5e796097864875e7d8d70",
     "compile_pass": true,
     "undefined_name_lint_pass": true,
-    "targeted_tests_pass": true,
+    "targeted_tests_pass": false,
     "targeted_test_count": 90,
     "transport_hygiene_tests_pass": true,
     "post_copy_bytecode_regression_test_pass": true,
@@ -41,9 +41,10 @@
     "kaggle_keep_tabular_contract_test_pass": true,
     "nested_multitype_publication_probe_test_pass": true,
     "canonical_notebook_regeneration_pass": true,
-    "static_infrastructure_validator_pass": true,
-    "v5_orchestration_validator_pass": true,
-    "sealed_release_authority_validator_pass": true
+    "static_infrastructure_validator_pass": false,
+    "v5_orchestration_validator_pass": false,
+    "sealed_release_authority_validator_pass": false,
+    "latest_remediation_qa": "PENDING"
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
@@ -74,17 +75,21 @@
     "kaggle_content_addressed_publication_create_first": true,
     "kaggle_ambiguous_write_resolved_by_bound_manifest_digest": true,
     "kaggle_status_is_best_effort_metadata": true,
-    "kaggle_publication_authority": "BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP",
-    "kaggle_whole_archive_processing_wait_seconds": 5400,
+    "kaggle_publication_authority": "BOUND_MANIFEST_PLUS_EXACT_HANDOFF_SENTINEL_ROUNDTRIP",
     "kaggle_ambiguous_create_manifest_wait_seconds": 900,
     "kaggle_integrity_mismatch_never_retry_as_processing": true,
     "undefined_runtime_name_lint_required": true,
-    "archive_roundtrip_behavioral_test_required": true,
-    "archive_roundtrip_transient_retry_behavioral_test_required": true,
+    "archive_roundtrip_behavioral_test_required": false,
+    "archive_roundtrip_transient_retry_behavioral_test_required": false,
     "transport_stable_role_identity_required": true,
     "python_bytecode_forbidden_in_published_roles": true,
     "kaggle_keep_tabular_exact_byte_mode_required": true,
     "multitype_nested_publication_probe_required": true,
-    "final_role_scrub_before_materialization_identity": true
+    "final_role_scrub_before_materialization_identity": true,
+    "kaggle_large_download_all_archive_authoritative": false,
+    "kaggle_handoff_sentinel_roundtrip_required": true,
+    "notebook_01_full_attached_byte_verification_required": true,
+    "handoff_sentinel_behavioral_test_required": true,
+    "handoff_sentinel_byte_drift_rejection_test_required": true
   }
 }
