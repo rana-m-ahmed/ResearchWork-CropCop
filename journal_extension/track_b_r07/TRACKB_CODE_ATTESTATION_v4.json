@@ -66,8 +66,8 @@
     },
     {
       "path": "journal_extension/scripts/trackb_v4_materialize.py",
-      "git_blob_sha1": "6243e371269498886401bbb846236c9db01ab862",
-      "origin": "track_b_v5_hardening_transport_portability"
+      "git_blob_sha1": "cbb59fe22bd9b9ae4697a22a3f21e1d13ec5c1c9",
+      "origin": "track_b_v5_async_publication_hardening"
     },
     {
       "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py",
@@ -151,8 +151,8 @@
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
-      "git_blob_sha1": "3711c963be1102167fa45801bdaea92d7e7b34d2",
-      "origin": "track_b_v5_hardening_transport_portability"
+      "git_blob_sha1": "96e7408c10283970a7794f005ad0612c3bbb2fe8",
+      "origin": "track_b_v5_async_publication_hardening"
     },
     {
       "path": "journal_extension/src/cropcop_je/trackb_r07.py",
@@ -191,9 +191,9 @@
     },
     {
       "path": "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json",
-      "git_blob_sha1": "ea60d314ef0f149bce6e65c56f7da349482d0c19",
-      "origin": "track_b_v5_materialization_transport_authority"
+      "git_blob_sha1": "a72bf8d7b4753e18862e069aa7edbcdd1c555cb8",
+      "origin": "track_b_v5_async_publication_hardening"
     }
   ],
-  "attestation_note": "Track-B v5 runtime re-attestation after a real Kaggle round-trip exposed an ephemeral Python bytecode file inside the locally hashed immutable payload. Core snapshot preparation now disables bytecode generation, repository and all Track-B roles are scrubbed and asserted transport-stable before materialization identity, Kaggle publication uses keep-tabular exact-byte mode plus defense-in-depth ignore patterns, and the early publication probe round-trips nested JSON/Python/CSV/binary payloads. Scientific thresholds, mappings, checkpoints, seeds, grade rules, historical comparison science, and protected-inference policy are unchanged."
+  "attestation_note": "Track-B v5 runtime re-attestation after a real Kaggle run showed that a newly created large private dataset can expose its bound manifest and individual files while the server-generated download-all archive continues returning HTTP 404 beyond the previous 5,400-second readiness deadline. Final-bundle readiness now requires an exact remote bound-manifest match plus exact round-trip of the paired bundle receipt; Notebook 01 independently rehashes every attached role byte before qualification or protected inference. Local materialized bundles are retained until readiness closure. The deterministic small publication capability probe still exact-round-trips nested JSON/Python/CSV/binary payloads. Scientific thresholds, mappings, checkpoints, seeds, grade rules, historical-comparison science, and protected-inference policy are unchanged."
 }
