@@ -5,7 +5,7 @@
   "scientific_change": false,
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
-  "runtime_source_commit": "528b01832b86233b752942362715f9e8924f0b02",
+  "runtime_source_commit": "c31e11da2980d3d41110b1a767e8829cc4306d4c",
   "preseal_operator_surface_commit": "b86f90a64f3992c6e34ce42c8d7bf0d97cd63131",
   "orchestration_lock": {
     "id": "TRACKB_ORCHESTRATION_LOCK_v5",
@@ -16,12 +16,12 @@
   "operator_files": [
     {
       "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
-      "git_blob_sha1": "4c5ce4087c261bd4a192cc169eefb66240923935",
+      "git_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
       "role": "READINESS_AND_IMMUTABLE_MATERIALIZATION"
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "4258034e6ef52e9311118e40af4f62499a351483",
+      "git_blob_sha1": "db5445bd700c78fb391cdf4309ba998671159575",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
