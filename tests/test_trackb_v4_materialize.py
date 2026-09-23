@@ -863,6 +863,11 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         with self.assertRaises(hotfix.GuardHotfixError):
             hotfix.validate_manifest_safety("historical_compare", bad_path)
 
+        bad_surface = dict(base)
+        bad_surface["surface"] = "DS-V1-TEST-CONSUMED"
+        with self.assertRaises(hotfix.GuardHotfixError):
+            hotfix.validate_manifest_safety("historical_compare", bad_surface)
+
     def test_notebook01_uses_fast_guard_smoke_and_single_full_byte_gate(self):
         notebook = json.loads(
             (
