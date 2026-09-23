@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import os
+import subprocess
 import sys
 import json
 import tempfile
@@ -900,6 +902,82 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             "observed_content = {\n        role: _role_content_identity(path.parent)",
             controller,
         )
+
+    def test_v1_guard_hotfix_activates_in_fresh_sitecustomize_subprocess(self):
+        hotfix_path = (
+            ROOT
+            / "journal_extension"
+            / "operator_hotfixes"
+            / "trackb_v5_v1_guard_hotfix.py"
+        )
+        hotfix_sha = "29109eeabc0997b4264be8ca26ccd595446458bab50c5327ce0597a9ad239799"
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            hotfix_root = root / "hotfix"
+            hotfix_root.mkdir()
+            (hotfix_root / hotfix_path.name).write_bytes(hotfix_path.read_bytes())
+            (hotfix_root / "sitecustomize.py").write_text(
+                "from trackb_v5_v1_guard_hotfix import install\n"
+                f"install('{hotfix_sha}')\n",
+                encoding="utf-8",
+            )
+
+            input_root = root / "input"
+            for role in ("core", "gvlid_v5", "irish_potato"):
+                role_root = input_root / role
+                role_root.mkdir(parents=True)
+                (role_root / "TRACKB_INPUT_MANIFEST.json").write_text(
+                    json.dumps({"schema_version": "1.0", "role": role}),
+                    encoding="utf-8",
+                )
+            historical_root = input_root / "historical"
+            historical_root.mkdir(parents=True)
+            historical_manifest = {
+                "schema_version": "1.1",
+                "role": "historical_compare",
+                "coverage_scope": "V1_TRAIN_VAL_ONLY",
+                "v1_test_image_bytes_accessed": False,
+                "ext_i_eligible": False,
+                "maximum_evidence_grade": "EXT-S",
+            }
+            historical_path = historical_root / "TRACKB_INPUT_MANIFEST.json"
+            historical_path.write_text(json.dumps(historical_manifest), encoding="utf-8")
+
+            env = os.environ.copy()
+            env["PYTHONPATH"] = os.pathsep.join(
+                [str(hotfix_root), str(SRC), env.get("PYTHONPATH", "")]
+            )
+            code = (
+                "import json, os; "
+                "from cropcop_je.trackb_r07 import discover_kaggle_inputs; "
+                f"found=discover_kaggle_inputs({str(input_root)!r}); "
+                f"assert os.environ.get('TRACKB_V1_GUARD_HOTFIX_ACTIVE') == {hotfix_sha!r}; "
+                "print(json.dumps(sorted(found)))"
+            )
+            ok = subprocess.run(
+                [sys.executable, "-c", code],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=30,
+            )
+            self.assertEqual(ok.returncode, 0, ok.stderr or ok.stdout)
+            self.assertIn('"historical_compare"', ok.stdout)
+
+            historical_manifest["v1_test_image_bytes_accessed"] = True
+            historical_path.write_text(json.dumps(historical_manifest), encoding="utf-8")
+            bad = subprocess.run(
+                [sys.executable, "-c", code],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=30,
+            )
+            self.assertNotEqual(bad.returncode, 0)
+            self.assertIn("consumed V1-test access flag is not explicitly false", bad.stderr)
 
     def test_claim_path_requires_single_writer_lease_and_durable_state_transitions(self):
         runner = (SCRIPTS / "run_trackb_r07.py").read_text(encoding="utf-8")
