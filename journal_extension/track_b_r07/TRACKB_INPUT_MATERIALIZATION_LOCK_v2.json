@@ -60,9 +60,11 @@
       "gvlid_v5",
       "irish_potato"
     ],
-    "full_roundtrip_verification_required": true,
+    "full_roundtrip_verification_required": false,
     "paired_materialization_id_required": true,
-    "full_role_content_identity_required": true
+    "full_role_content_identity_required": true,
+    "publication_full_archive_roundtrip_required": false,
+    "consumer_full_attached_byte_verification_required": true
   },
   "historical_compare": {
     "coverage_scope": "V1_TRAIN_VAL_ONLY",
@@ -119,18 +121,23 @@
     "ambiguous_create_resolution": "DIRECT_REMOTE_BOUND_MANIFEST_DOWNLOAD_AND_DIGEST_COMPARE",
     "permission_failure": "FAIL_CLOSED_BEFORE_EXPENSIVE_STAGE_1",
     "final_bundles_allow_version": false,
-    "readiness_authority": "BOUND_CONTENT_MANIFEST_PLUS_EXACT_BYTE_ROUNDTRIP",
+    "readiness_authority": "BOUND_CONTENT_MANIFEST_PLUS_EXACT_HANDOFF_SENTINEL_ROUNDTRIP",
     "status_endpoint_role": "BEST_EFFORT_METADATA_ONLY",
     "transient_private_processing_status_403_404_retryable": true,
     "hard_status_ready_gate_forbidden": true,
     "claim_lease_visibility_authority": "DIRECT_LEASE_FILE_ROUNDTRIP",
     "attempt_state_visibility_authority": "DIRECT_STATE_FILE_READ",
-    "whole_archive_roundtrip_processing_wait_seconds": 5400,
-    "whole_archive_processing_403_404_5xx_retryable": true,
-    "whole_archive_integrity_mismatch_retryable": false,
     "deterministic_slug_ambiguous_create_manifest_wait_seconds": 900,
     "deterministic_slug_reuse_requires_exact_content_digest": true,
-    "post_create_full_archive_verification_required": true
+    "post_create_full_archive_verification_required": false,
+    "final_bundle_handoff_sentinel_roundtrip_required": true,
+    "final_bundle_handoff_sentinels": [
+      "TRACKB_INFRASTRUCTURE_BUNDLE.json",
+      "TRACKB_EXTERNAL_BUNDLE.json"
+    ],
+    "large_download_all_archive_role": "NON_AUTHORITATIVE_ASYNC_TRANSPORT_DIAGNOSTIC",
+    "post_attach_full_byte_verification_required": true,
+    "consumer_full_byte_gate": "NOTEBOOK_01_FULL_ATTACHED_ROLE_CONTENT_IDENTITY"
   },
   "transport_portability_policy": {
     "schema_version": "1.0",
@@ -169,7 +176,9 @@
       "csv",
       "binary"
     ],
-    "exact_remote_byte_roundtrip_required": true,
-    "integrity_mismatch_fail_closed": true
+    "exact_remote_byte_roundtrip_required": false,
+    "integrity_mismatch_fail_closed": true,
+    "exact_handoff_sentinel_roundtrip_required": true,
+    "full_attached_role_byte_verification_required": true
   }
 }
