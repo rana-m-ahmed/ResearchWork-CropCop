@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
-    "operator_attestation_sha256": "95e19aa0fa0cd7987b481db2b90b55b35067fb0d77062b81ea6a46c97c3fc40d",
+    "operator_attestation_sha256": "e7d96aed29b6f8f29af983514e2c14fc4a13a9b0e48fca16e0e7fed0300fe4e2",
     "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
     "operator_notebook_01_blob_sha1": "222012c3138bc99c749cd557994b935483dd733c"
   },
@@ -105,7 +105,7 @@
     },
     "latest_remediation": "Large final-bundle readiness now uses exact remote bound-manifest equality plus exact paired-bundle receipt round-trip; the asynchronous download-all archive is not an authority. Notebook 01 rehashes every attached role byte before qualification, and Notebook 00 retains local bundles through readiness closure.",
     "notebook_01_fail_fast_hardening": {
-      "status": "PENDING_QA",
+      "status": "PASS",
       "scientific_change": false,
       "scope": [
         "authenticated Kaggle owner preflight",
@@ -115,7 +115,11 @@
         "qualification/claim attachment-mixup rejection",
         "paired dataset-root role containment"
       ],
-      "frozen_runtime_source_commit": "c31e11da2980d3d41110b1a767e8829cc4306d4c"
+      "frozen_runtime_source_commit": "c31e11da2980d3d41110b1a767e8829cc4306d4c",
+      "validated_commit": "c607f6a0a5bd3e37493c7750ea1b51309165a8cb",
+      "workflow_run_id": 35824053472,
+      "workflow_run_number": 813,
+      "targeted_test_count": 97
     }
   }
 }
