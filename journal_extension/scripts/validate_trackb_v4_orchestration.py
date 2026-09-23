@@ -220,12 +220,12 @@ def main() -> int:
         ),
         "materializer",
     )
-    forbid_all = (
+    deprecated_publication_tokens = (
         "_verify_published_archive_roundtrip",
         "shutil.rmtree(infra_root",
         "shutil.rmtree(external_root",
     )
-    for token in forbid_all:
+    for token in deprecated_publication_tokens:
         if token in materializer_source:
             raise ValidationError(
                 f"materializer retains deprecated async-unsafe publication primitive: {token}"
