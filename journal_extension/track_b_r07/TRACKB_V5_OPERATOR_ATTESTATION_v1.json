@@ -21,7 +21,7 @@
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "db5445bd700c78fb391cdf4309ba998671159575",
+      "git_blob_sha1": "41c8bc09a7e76c0ff919a442ad58ec9fe8a4bb93",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
@@ -44,10 +44,13 @@
     "static_infrastructure_validator_pass": true,
     "v5_orchestration_validator_pass": true,
     "sealed_release_authority_validator_pass": true,
-    "latest_remediation_qa": "PASS",
+    "latest_remediation_qa": "PENDING_NOTEBOOK01_FAIL_FAST_QA",
     "handoff_sentinel_behavioral_tests_pass": true,
     "local_bundle_preservation_regression_pass": true,
-    "notebook_01_full_attached_byte_gate_regression_pass": true
+    "notebook_01_full_attached_byte_gate_regression_pass": true,
+    "notebook_01_fail_fast_publication_probe_pass": false,
+    "notebook_01_t4x2_preflight_pass": false,
+    "notebook_01_attachment_mixup_regressions_pass": false
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
@@ -93,6 +96,11 @@
     "kaggle_handoff_sentinel_roundtrip_required": true,
     "notebook_01_full_attached_byte_verification_required": true,
     "handoff_sentinel_behavioral_test_required": true,
-    "handoff_sentinel_byte_drift_rejection_test_required": true
+    "handoff_sentinel_byte_drift_rejection_test_required": true,
+    "notebook_01_fail_fast_publication_probe_required": true,
+    "notebook_01_authenticated_owner_preflight_required": true,
+    "notebook_01_t4x2_preflight_before_bootstrap_required": true,
+    "notebook_01_qualification_attachment_mixup_rejection_required": true,
+    "notebook_01_credential_scrub_after_probe_required": true
   }
 }
