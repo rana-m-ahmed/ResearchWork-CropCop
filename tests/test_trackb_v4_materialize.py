@@ -724,7 +724,7 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             "".join(cell.get("source") or [])
             for cell in notebook.get("cells") or []
         )
-        attached_trust = source.index("PASS_PREEXECUTION_ATTACHED_TRUST")
+        attached_trust = source.index("PASS_PRECONTROLLER_ATTACHED_AUTHORITY")
         gpu_preflight = source.index("T4 x2 preflight could not query nvidia-smi")
         bootstrap = source.index(
             "BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'"
@@ -796,6 +796,105 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         )
         self.assertIn("is outside its paired dataset root", source)
         self.assertIn("bundle receipt role mismatch", source)
+
+    def test_v1_guard_hotfix_allows_explicit_false_historical_provenance(self):
+        hotfix_path = (
+            ROOT
+            / "journal_extension"
+            / "operator_hotfixes"
+            / "trackb_v5_v1_guard_hotfix.py"
+        )
+        spec = importlib.util.spec_from_file_location(
+            "trackb_v5_v1_guard_hotfix_under_test",
+            hotfix_path,
+        )
+        hotfix = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(hotfix)
+
+        manifest = {
+            "schema_version": "1.1",
+            "role": "historical_compare",
+            "coverage_scope": "V1_TRAIN_VAL_ONLY",
+            "v1_test_image_bytes_accessed": False,
+            "ext_i_eligible": False,
+            "maximum_evidence_grade": "EXT-S",
+            "files": {
+                "historical_manifest": {
+                    "path": "historical_manifest.csv",
+                    "sha256": "a" * 64,
+                }
+            },
+        }
+        hotfix.validate_manifest_safety("historical_compare", manifest)
+
+    def test_v1_guard_hotfix_rejects_true_or_forbidden_test_surface(self):
+        hotfix_path = (
+            ROOT
+            / "journal_extension"
+            / "operator_hotfixes"
+            / "trackb_v5_v1_guard_hotfix.py"
+        )
+        spec = importlib.util.spec_from_file_location(
+            "trackb_v5_v1_guard_hotfix_reject_under_test",
+            hotfix_path,
+        )
+        hotfix = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(hotfix)
+
+        base = {
+            "role": "historical_compare",
+            "coverage_scope": "V1_TRAIN_VAL_ONLY",
+            "v1_test_image_bytes_accessed": False,
+            "ext_i_eligible": False,
+            "maximum_evidence_grade": "EXT-S",
+            "files": {},
+        }
+        bad_flag = dict(base)
+        bad_flag["v1_test_image_bytes_accessed"] = True
+        with self.assertRaises(hotfix.GuardHotfixError):
+            hotfix.validate_manifest_safety("historical_compare", bad_flag)
+
+        bad_path = dict(base)
+        bad_path["files"] = {
+            "x": {"path": "safe/v1_test/images.bin", "sha256": "a" * 64}
+        }
+        with self.assertRaises(hotfix.GuardHotfixError):
+            hotfix.validate_manifest_safety("historical_compare", bad_path)
+
+    def test_notebook01_uses_fast_guard_smoke_and_single_full_byte_gate(self):
+        notebook = json.loads(
+            (
+                ROOT
+                / "journal_extension"
+                / "kaggle"
+                / "TrackB_01_Final_Execution.ipynb"
+            ).read_text(encoding="utf-8")
+        )
+        source = "\n".join(
+            "".join(cell.get("source") or [])
+            for cell in notebook.get("cells") or []
+        )
+        self.assertIn("PASS_FAST_INPUT_DISCOVERY_SMOKE", source)
+        self.assertIn("TRACKB_V5_V1_GUARD_FALSE_POSITIVE_FIX_v1", source)
+        self.assertIn("sitecustomize.py", source)
+        self.assertIn("TRACKB_V1_GUARD_HOTFIX_ACTIVE", source)
+        self.assertIn("DEFERRED_TO_CONTROLLER_BEFORE_SCIENCE", source)
+        self.assertNotIn(
+            "observed_content = {role: _role_identity(path.parent)",
+            source,
+        )
+        controller = (
+            ROOT
+            / "journal_extension"
+            / "scripts"
+            / "trackb_v4_execute_attached.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "observed_content = {\n        role: _role_content_identity(path.parent)",
+            controller,
+        )
 
     def test_claim_path_requires_single_writer_lease_and_durable_state_transitions(self):
         runner = (SCRIPTS / "run_trackb_r07.py").read_text(encoding="utf-8")
