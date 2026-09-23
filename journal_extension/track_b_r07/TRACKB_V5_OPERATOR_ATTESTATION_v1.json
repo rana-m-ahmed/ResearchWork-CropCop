@@ -21,7 +21,7 @@
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "41c8bc09a7e76c0ff919a442ad58ec9fe8a4bb93",
+      "git_blob_sha1": "222012c3138bc99c749cd557994b935483dd733c",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
@@ -44,7 +44,7 @@
     "static_infrastructure_validator_pass": true,
     "v5_orchestration_validator_pass": true,
     "sealed_release_authority_validator_pass": true,
-    "latest_remediation_qa": "PENDING_NOTEBOOK01_FAIL_FAST_QA",
+    "latest_remediation_qa": "PENDING_NOTEBOOK01_DEEP_QA",
     "handoff_sentinel_behavioral_tests_pass": true,
     "local_bundle_preservation_regression_pass": true,
     "notebook_01_full_attached_byte_gate_regression_pass": true,
@@ -101,6 +101,9 @@
     "notebook_01_authenticated_owner_preflight_required": true,
     "notebook_01_t4x2_preflight_before_bootstrap_required": true,
     "notebook_01_qualification_attachment_mixup_rejection_required": true,
-    "notebook_01_credential_scrub_after_probe_required": true
+    "notebook_01_credential_scrub_after_probe_required": true,
+    "notebook_01_publication_probe_uses_locked_runtime": true,
+    "notebook_01_hardware_preflight_precedes_bootstrap": true,
+    "notebook_01_publication_probe_precedes_scientific_controller": true
   }
 }
