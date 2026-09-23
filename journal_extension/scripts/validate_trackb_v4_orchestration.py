@@ -214,9 +214,22 @@ def main() -> int:
             "expected_source_manifest_sha256",
             "role_content_identity",
             "_role_content_identity",
+            "verify_kaggle_published_file_roundtrip",
+            "DEFERRED_TO_ATTACHED_FULL_BYTE_VERIFICATION",
+            "NOTEBOOK_01_FULL_ATTACHED_ROLE_CONTENT_IDENTITY",
         ),
         "materializer",
     )
+    forbid_all = (
+        "_verify_published_archive_roundtrip",
+        "shutil.rmtree(infra_root",
+        "shutil.rmtree(external_root",
+    )
+    for token in forbid_all:
+        if token in materializer_source:
+            raise ValidationError(
+                f"materializer retains deprecated async-unsafe publication primitive: {token}"
+            )
     require_all(
         controller_source,
         (
@@ -249,6 +262,8 @@ def main() -> int:
             "source byte-size mismatch",
             "duplicate/case-colliding member path",
             "acquire_claim_lease",
+            "verify_kaggle_published_file_roundtrip",
+            "BOUND_MANIFEST_ONLY_PENDING_ATTACHED_BYTE_VERIFICATION",
             "allow_version",
         ),
         "Track-B operations",
