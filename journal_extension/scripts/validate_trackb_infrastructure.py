@@ -225,6 +225,9 @@ def main() -> int:
             "expected_source_manifest_sha256",
             "_role_content_identity",
             "role_content_identity",
+            "verify_kaggle_published_file_roundtrip",
+            "DEFERRED_TO_ATTACHED_FULL_BYTE_VERIFICATION",
+            "NOTEBOOK_01_FULL_ATTACHED_ROLE_CONTENT_IDENTITY",
             "PASS_TRACKB_INPUT_MATERIALIZATION",
         ),
         "materializer",
@@ -233,6 +236,15 @@ def main() -> int:
         "safe historical comparison"
     ):
         raise TrackBError("materializer runs historical compute before external source sealing")
+    _forbid(
+        materializer,
+        (
+            "_verify_published_archive_roundtrip",
+            "shutil.rmtree(infra_root",
+            "shutil.rmtree(external_root",
+        ),
+        "materializer async-safe publication path",
+    )
 
     controller = (
         root / "journal_extension/scripts/trackb_v4_execute_attached.py"
@@ -287,6 +299,8 @@ def main() -> int:
             "duplicate/case-colliding member path",
             "acquire_claim_lease",
             "TRACKB_KAGGLE_CONTENT_MANIFEST.json",
+            "verify_kaggle_published_file_roundtrip",
+            "BOUND_MANIFEST_ONLY_PENDING_ATTACHED_BYTE_VERIFICATION",
             "allow_version",
         ),
         "Track-B operations",
