@@ -21,7 +21,7 @@
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "9e50a16ff514383b714fff622c5367962732acc9",
+      "git_blob_sha1": "33a5fd7471d572055e7c43302b517fd367c6fe74",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
@@ -44,7 +44,7 @@
     "static_infrastructure_validator_pass": true,
     "v5_orchestration_validator_pass": true,
     "sealed_release_authority_validator_pass": true,
-    "latest_remediation_qa": "PENDING_V1_GUARD_HOTFIX_QA",
+    "latest_remediation_qa": "PENDING_FINAL_HOTFIX_QA",
     "handoff_sentinel_behavioral_tests_pass": true,
     "local_bundle_preservation_regression_pass": true,
     "notebook_01_full_attached_byte_gate_regression_pass": true,
@@ -111,7 +111,7 @@
     "notebook_01_hardware_preflight_precedes_bootstrap": true,
     "notebook_01_publication_probe_precedes_scientific_controller": true,
     "notebook_01_v1_guard_hotfix_required": true,
-    "notebook_01_hotfix_sha256_required": "f431b52f255a64908463804e6c96718aa229be3b568074ce505465153c0d5054",
+    "notebook_01_hotfix_sha256_required": "29109eeabc0997b4264be8ca26ccd595446458bab50c5327ce0597a9ad239799",
     "notebook_01_fast_input_discovery_before_full_byte_gate": true,
     "notebook_01_full_role_bytes_verified_once_by_controller_before_science": true,
     "historical_compare_explicit_v1_test_false_provenance_allowed": true,
@@ -121,8 +121,8 @@
     {
       "id": "TRACKB_V5_V1_GUARD_FALSE_POSITIVE_FIX_v1",
       "path": "journal_extension/operator_hotfixes/trackb_v5_v1_guard_hotfix.py",
-      "git_blob_sha1": "a15350616d4aa31a6e73376ab4d2801e0a3c8943",
-      "sha256": "f431b52f255a64908463804e6c96718aa229be3b568074ce505465153c0d5054",
+      "git_blob_sha1": "73c2320cf85c7452ec185d5120403e339a60e333",
+      "sha256": "29109eeabc0997b4264be8ca26ccd595446458bab50c5327ce0597a9ad239799",
       "scientific_change": false,
       "purpose": "Interpret explicit V1-test access=false provenance structurally while retaining fail-closed rejection of actual forbidden test paths/surfaces."
     }
