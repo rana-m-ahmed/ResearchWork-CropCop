@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
-    "operator_attestation_sha256": "5348708480605e738906ad5c87546f80041043d17ab0b3822027c5bbbadacfff",
+    "operator_attestation_sha256": "3e75268a27bd73749eacbfdaa9cf140749df380b4f134b1b27263cac19e8f926",
     "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
     "operator_notebook_01_blob_sha1": "db5445bd700c78fb391cdf4309ba998671159575"
   },
@@ -75,7 +75,16 @@
       "elapsed_seconds_at_failure": 8063.2
     },
     "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
-    "exact_head_qa": "PENDING",
+    "exact_head_qa": {
+      "status": "PASS",
+      "validated_commit": "935e8f7650e63b6f4cb4e14153a2061197044b85",
+      "workflow": "Track B Infrastructure QA",
+      "workflow_run_id": 35812273829,
+      "workflow_run_number": 789,
+      "conclusion": "success",
+      "targeted_test_count": 94,
+      "note": "This QA record is followed only by metadata-only operator/release evidence commits. The resulting head must pass the same sealed validators before Kaggle handoff."
+    },
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false,
     "validated_commit": "cc39ef1e30fb819cf4e5e796097864875e7d8d70",
@@ -86,6 +95,14 @@
     "transport_portability_qa": "PASS",
     "exact_byte_kaggle_transport_contract": "PASS",
     "post_copy_bytecode_regression": "PASS",
-    "final_role_transport_hygiene": "PASS"
+    "final_role_transport_hygiene": "PASS",
+    "latest_transport_failure": {
+      "stage": "LARGE_PRIVATE_DATASET_DOWNLOAD_ALL_ARCHIVE",
+      "symptom": "HTTP 404 from Kaggle download-all endpoint through the 5400-second readiness window after bound manifest visibility",
+      "scientific_execution_affected": false,
+      "protected_external_prediction_count": 0,
+      "v1_test_accessed": false
+    },
+    "latest_remediation": "Large final-bundle readiness now uses exact remote bound-manifest equality plus exact paired-bundle receipt round-trip; the asynchronous download-all archive is not an authority. Notebook 01 rehashes every attached role byte before qualification, and Notebook 00 retains local bundles through readiness closure."
   }
 }
