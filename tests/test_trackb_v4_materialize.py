@@ -3,8 +3,6 @@ from __future__ import annotations
 import importlib.util
 import sys
 import json
-import hashlib
-import zipfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -134,80 +132,114 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         self.assertIn("probe_binary.bin", helper)
         self.assertIn("full_roundtrip=True", helper)
 
-    def test_archive_roundtrip_behavior_executes_and_verifies_exact_bytes(self):
-        payloads = {
-            "alpha.txt": b"alpha-bytes",
-            "nested/beta.bin": b"beta-bytes",
-        }
-        rows = [
-            {
-                "path": name,
-                "bytes": len(data),
-                "sha256": hashlib.sha256(data).hexdigest(),
-            }
-            for name, data in sorted(payloads.items())
-        ]
-        manifest = {
-            "files": rows,
-            "content_digest_sha256": "a" * 64,
-        }
+    def test_final_publication_uses_exact_handoff_sentinels_not_download_all_archive(self):
+        source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
+        main = source[source.index("def main() -> int:"):]
 
-        def fake_run_checked(command, **kwargs):
-            destination = Path(command[command.index("-p") + 1])
-            archive = destination / "roundtrip.zip"
-            with zipfile.ZipFile(archive, "w") as zf:
-                for name, data in payloads.items():
-                    zf.writestr(name, data)
+        self.assertNotIn("_verify_published_archive_roundtrip(", source)
+        self.assertNotIn('"kaggle", "datasets", "download", "-d"', source)
+        self.assertIn("verify_kaggle_published_file_roundtrip(", main)
+        self.assertIn('"TRACKB_INFRASTRUCTURE_BUNDLE.json"', main)
+        self.assertIn('"TRACKB_EXTERNAL_BUNDLE.json"', main)
+        self.assertIn('"DEFERRED_TO_ATTACHED_FULL_BYTE_VERIFICATION"', main)
+        self.assertIn('"NOTEBOOK_01_FULL_ATTACHED_ROLE_CONTENT_IDENTITY"', main)
 
-        with tempfile.TemporaryDirectory() as td:
-            with mock.patch.object(module, "run_checked", side_effect=fake_run_checked):
-                receipt = module._verify_published_archive_roundtrip(
-                    "owner/test-dataset",
-                    manifest,
-                    scratch_root=Path(td),
-                    timeout_seconds=5,
-                )
+    def test_final_publication_preserves_local_bundles_until_readiness_receipt(self):
+        source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
+        main = source[source.index("def main() -> int:"):]
 
-        self.assertEqual(receipt["status"], "PASS")
-        self.assertEqual(receipt["verified_file_count"], 2)
-        self.assertEqual(receipt["content_digest_sha256"], "a" * 64)
-        self.assertEqual(receipt["attempts"], 1)
+        self.assertNotIn("shutil.rmtree(infra_root", main)
+        self.assertNotIn("shutil.rmtree(external_root", main)
+        self.assertLess(
+            main.index("verify_kaggle_published_file_roundtrip(\n            infra_slug"),
+            main.index("verify_kaggle_published_file_roundtrip(\n            external_slug"),
+        )
+        self.assertLess(
+            main.index("verify_kaggle_published_file_roundtrip(\n            external_slug"),
+            main.index('readiness["status"] = "PASS_TRACKB_INPUT_MATERIALIZATION"'),
+        )
 
-    def test_archive_roundtrip_retries_transient_processing_error_then_passes(self):
-        payload = b"payload"
-        manifest = {
-            "files": [{
-                "path": "payload.bin",
-                "bytes": len(payload),
-                "sha256": hashlib.sha256(payload).hexdigest(),
-            }],
-            "content_digest_sha256": "b" * 64,
-        }
-        calls = {"count": 0}
-
-        def fake_run_checked(command, **kwargs):
-            calls["count"] += 1
-            if calls["count"] == 1:
-                raise module.TrackBOpsError("403 Forbidden: dataset processing")
-            destination = Path(command[command.index("-p") + 1])
-            with zipfile.ZipFile(destination / "roundtrip.zip", "w") as zf:
-                zf.writestr("payload.bin", payload)
+    def test_exact_handoff_sentinel_roundtrip_verifies_bytes_and_sha(self):
+        from cropcop_je import trackb_r07_ops
 
         with tempfile.TemporaryDirectory() as td:
-            with (
-                mock.patch.object(module, "run_checked", side_effect=fake_run_checked),
-                mock.patch.object(module.time, "sleep", return_value=None),
+            root = Path(td)
+            expected = root / "TRACKB_INFRASTRUCTURE_BUNDLE.json"
+            expected.write_bytes(b'{"materialization_id":"abc"}\n')
+
+            def fake_wait(slug, relative_path, destination, *, timeout_seconds):
+                self.assertEqual(slug, "owner/test-dataset")
+                self.assertEqual(relative_path, expected.name)
+                self.assertEqual(timeout_seconds, 7)
+                destination.mkdir(parents=True, exist_ok=True)
+                observed = destination / expected.name
+                observed.write_bytes(expected.read_bytes())
+                return observed
+
+            with mock.patch.object(
+                trackb_r07_ops,
+                "_wait_download_kaggle_file",
+                side_effect=fake_wait,
             ):
-                receipt = module._verify_published_archive_roundtrip(
+                receipt = trackb_r07_ops.verify_kaggle_published_file_roundtrip(
                     "owner/test-dataset",
-                    manifest,
-                    scratch_root=Path(td),
-                    timeout_seconds=30,
+                    expected.name,
+                    expected,
+                    timeout_seconds=7,
                 )
 
-        self.assertEqual(receipt["status"], "PASS")
-        self.assertEqual(receipt["attempts"], 2)
-        self.assertEqual(calls["count"], 2)
+        self.assertEqual(receipt["status"], "PASS_EXACT_HANDOFF_SENTINEL_ROUNDTRIP")
+        self.assertEqual(receipt["bytes"], len(b'{"materialization_id":"abc"}\n'))
+        self.assertEqual(receipt["authority"], "EXACT_SINGLE_FILE_ROUNDTRIP")
+
+    def test_exact_handoff_sentinel_roundtrip_rejects_remote_byte_drift(self):
+        from cropcop_je import trackb_r07_ops
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            expected = root / "TRACKB_EXTERNAL_BUNDLE.json"
+            expected.write_bytes(b"expected")
+
+            def fake_wait(_slug, relative_path, destination, *, timeout_seconds):
+                destination.mkdir(parents=True, exist_ok=True)
+                observed = destination / relative_path
+                observed.write_bytes(b"DIFFERENT")
+                return observed
+
+            with mock.patch.object(
+                trackb_r07_ops,
+                "_wait_download_kaggle_file",
+                side_effect=fake_wait,
+            ):
+                with self.assertRaises(trackb_r07_ops.TrackBOpsError):
+                    trackb_r07_ops.verify_kaggle_published_file_roundtrip(
+                        "owner/test-dataset",
+                        expected.name,
+                        expected,
+                        timeout_seconds=7,
+                    )
+
+    def test_manifest_only_publication_does_not_overclaim_full_roundtrip(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
+        ).read_text(encoding="utf-8")
+        start = source.index("def _verify_remote_kaggle_content(")
+        end = source.index("def publish_private_kaggle_dataset(", start)
+        helper = source[start:end]
+        self.assertIn(
+            '"BOUND_MANIFEST_ONLY_PENDING_ATTACHED_BYTE_VERIFICATION"',
+            helper,
+        )
+        self.assertIn('"attached_full_byte_verification_required"', helper)
+
+    def test_attached_execution_rehashes_every_role_before_qualification(self):
+        source = (SCRIPTS / "trackb_v4_execute_attached.py").read_text(encoding="utf-8")
+        pairing_start = source.index("def _validate_pairing(")
+        pairing_end = source.index("def _run_qualification(", pairing_start)
+        pairing = source[pairing_start:pairing_end]
+        self.assertIn("_role_content_identity(path.parent)", pairing)
+        self.assertIn("declared_content != observed_content", pairing)
+        self.assertIn("attached role payload bytes differ", pairing)
 
     def test_final_v1_resolver_prefers_hash_valid_image_backed_authority_pair(self):
         with tempfile.TemporaryDirectory() as td:
