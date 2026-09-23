@@ -725,17 +725,21 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             for cell in notebook.get("cells") or []
         )
         attached_trust = source.index("PASS_PREEXECUTION_ATTACHED_TRUST")
-        operator_preflight = source.index("PASS_OPERATOR_PREFLIGHT")
+        gpu_preflight = source.index("T4 x2 preflight could not query nvidia-smi")
         bootstrap = source.index(
             "BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'"
         )
+        operator_preflight = source.index("PASS_OPERATOR_PREFLIGHT")
         controller = source.index(
             "CONTROLLER = REPO / 'journal_extension/scripts/trackb_v4_execute_attached.py'"
         )
-        self.assertLess(attached_trust, operator_preflight)
-        self.assertLess(operator_preflight, bootstrap)
-        self.assertLess(bootstrap, controller)
+        self.assertLess(attached_trust, gpu_preflight)
+        self.assertLess(gpu_preflight, bootstrap)
+        self.assertLess(bootstrap, operator_preflight)
+        self.assertLess(operator_preflight, controller)
         self.assertIn("verify_kaggle_publication_capability(observed_owner)", source)
+        self.assertIn("BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP", source)
+        self.assertIn("roundtrip_verified_file_count", source)
         self.assertIn("verify_authenticated_kaggle_owner(KAGGLE_OWNER)", source)
         self.assertIn("Track-B v5 qualification requires Kaggle T4 x2", source)
         self.assertIn("KAGGLE_OWNER = 'ranamuhammadahmed6'", source)
