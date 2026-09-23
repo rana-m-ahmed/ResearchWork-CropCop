@@ -145,9 +145,13 @@ def main() -> int:
             "TRACKB_INFRASTRUCTURE_BUNDLE.json",
             "TRACKB_EXTERNAL_BUNDLE.json",
             "TRACKB_QUALIFICATION_BUNDLE.json",
-            "PASS_PREEXECUTION_ATTACHED_TRUST",
+            "PASS_PRECONTROLLER_ATTACHED_AUTHORITY",
             "TRACKB_V5_EXECUTION_RECEIPT.json",
             "Refusing to delete/overwrite existing authoritative Track-B output",
+            "DEFERRED_TO_CONTROLLER_BEFORE_SCIENCE",
+            "PASS_FAST_INPUT_DISCOVERY_SMOKE",
+            "TRACKB_V5_V1_GUARD_FALSE_POSITIVE_FIX_v1",
+            "TRACKB_V1_GUARD_HOTFIX_ACTIVE",
         ),
         "Notebook 01",
     )
@@ -167,7 +171,12 @@ def main() -> int:
     if "os.environ.pop('CROPCOP_GITHUB_TOKEN', None)" not in nb01_text:
         raise TrackBError("Notebook 01 must scrub GitHub credentials before scientific execution")
 
-    if nb01_text.index("PASS_PREEXECUTION_ATTACHED_TRUST") > nb01_text.index(
+    if "observed_content = {role: _role_identity(path.parent)" in nb01_text:
+        raise TrackBError(
+            "Notebook 01 redundantly performs the full role-byte hash before controller"
+        )
+
+    if nb01_text.index("PASS_PRECONTROLLER_ATTACHED_AUTHORITY") > nb01_text.index(
         "BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'"
     ):
         raise TrackBError("Notebook 01 executes attached code before authenticating it")
