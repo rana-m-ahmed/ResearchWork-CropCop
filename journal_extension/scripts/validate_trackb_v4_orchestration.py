@@ -157,6 +157,14 @@ def main() -> int:
             "TRACKB_V5_EXECUTION_RECEIPT.json",
             "qualification_recomputed",
             "Refusing to delete/overwrite existing authoritative Track-B output",
+            "KAGGLE_OWNER = 'ranamuhammadahmed6'",
+            "PASS_OPERATOR_PREFLIGHT",
+            "verify_kaggle_publication_capability",
+            "verify_authenticated_kaggle_owner",
+            "Track-B v5 qualification requires Kaggle T4 x2",
+            "Qualification mode must attach only infrastructure + external handoffs",
+            "Infrastructure and external handoffs must be distinct Kaggle datasets",
+            "is outside its paired dataset root",
         ),
         "Notebook 01",
     )
@@ -176,16 +184,26 @@ def main() -> int:
     )
 
     preexec = final_text.index("PASS_PREEXECUTION_ATTACHED_TRUST")
+    operator_preflight = final_text.index("PASS_OPERATOR_PREFLIGHT")
     bootstrap = final_text.index("BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'")
-    if preexec > bootstrap:
+    if preexec > operator_preflight:
         raise ValidationError(
-            "Notebook 01 must authenticate attached bytes/code before runtime bootstrap"
+            "Notebook 01 must authenticate attached bytes/code before operator publication preflight"
+        )
+    if operator_preflight > bootstrap:
+        raise ValidationError(
+            "Notebook 01 must fail-fast on T4 x2 + Kaggle publication capability before runtime bootstrap"
         )
 
-    pop_token = final_text.index("os.environ.pop('KAGGLE_API_TOKEN', None)")
+    probe = final_text.index("publication_probe = verify_kaggle_publication_capability(observed_owner)")
+    pop_token = final_text.index("os.environ.pop('KAGGLE_API_TOKEN', None)", probe)
     controller = final_text.index(
         "CONTROLLER = REPO / 'journal_extension/scripts/trackb_v4_execute_attached.py'"
     )
+    if probe > pop_token:
+        raise ValidationError(
+            "Notebook 01 publication probe must complete before credential scrubbing"
+        )
     if pop_token > controller:
         raise ValidationError(
             "Notebook 01 must clear inherited Kaggle credentials before scientific controller launch"
