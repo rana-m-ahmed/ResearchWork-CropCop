@@ -46,6 +46,17 @@ def _iter_path_values(obj: Any):
             yield from _iter_path_values(value)
 
 
+def _iter_string_values(obj: Any):
+    if isinstance(obj, dict):
+        for value in obj.values():
+            yield from _iter_string_values(value)
+    elif isinstance(obj, list):
+        for value in obj:
+            yield from _iter_string_values(value)
+    elif isinstance(obj, str):
+        yield obj
+
+
 def _iter_access_flags(obj: Any):
     if isinstance(obj, dict):
         for child_key, value in obj.items():
@@ -65,6 +76,12 @@ def _iter_access_flags(obj: Any):
 def validate_manifest_safety(role: str, manifest: dict[str, Any]) -> None:
     if not isinstance(manifest, dict):
         raise GuardHotfixError(f"Track-B input manifest is not an object: role={role!r}")
+
+    for value in _iter_string_values(manifest):
+        if value.strip().upper() == "DS-V1-TEST-CONSUMED":
+            raise GuardHotfixError(
+                f"forbidden consumed V1-test surface referenced by input role {role!r}"
+            )
 
     for key, value in _iter_access_flags(manifest):
         if value is not False:
