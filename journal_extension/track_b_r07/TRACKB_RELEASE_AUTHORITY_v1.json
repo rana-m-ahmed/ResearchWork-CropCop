@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
-    "operator_attestation_sha256": "5bfd694e935a7e4cacc143f98b4077e2710ab6588255dffaeebed63fb763b46e",
+    "operator_attestation_sha256": "26177b3c7beddd4a412c35820e0b4fb7b7fe1e6b458889840317885216630afa",
     "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
     "operator_notebook_01_blob_sha1": "33a5fd7471d572055e7c43302b517fd367c6fe74",
     "operator_v1_guard_hotfix_sha256": "29109eeabc0997b4264be8ca26ccd595446458bab50c5327ce0597a9ad239799",
@@ -78,14 +78,11 @@
     },
     "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
     "exact_head_qa": {
-      "status": "PASS",
-      "validated_commit": "935e8f7650e63b6f4cb4e14153a2061197044b85",
-      "workflow": "Track B Infrastructure QA",
-      "workflow_run_id": 35812273829,
-      "workflow_run_number": 789,
-      "conclusion": "success",
-      "targeted_test_count": 94,
-      "note": "This QA record is followed only by metadata-only operator/release evidence commits. The resulting head must pass the same sealed validators before Kaggle handoff."
+      "status": "PENDING_METADATA_REBIND_VALIDATION",
+      "prior_validated_commit": "44fcf8f1bfae64eb70621c51bc3ce4b5b5f6bb46",
+      "prior_workflow_run_id": 35865646837,
+      "prior_workflow_run_number": 845,
+      "note": "Only operator/release QA metadata changed after the validated behavior head. The rebound head must pass the same full Track-B validation chain."
     },
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false,
@@ -124,13 +121,17 @@
       "targeted_test_count": 97
     },
     "notebook_01_v1_guard_remediation": {
-      "status": "PENDING_FINAL_QA",
+      "status": "PASS",
       "scientific_change": false,
       "observed_materialization_id": "98ff32c3c7ce2e66ffe52be97932a8b25f3ce50314c844abdd33077c99d90d78",
       "observed_failure": "historical_compare manifest explicitly declared v1_test_image_bytes_accessed=false, but legacy substring guard rejected the field name v1_test",
       "remediation": "Release-bound structural guard hotfix; explicit false access provenance is permitted, actual forbidden test paths/surfaces remain fail-closed. Notebook performs fast patched discovery smoke, while controller performs the single authoritative full-byte role verification before science.",
       "protected_external_prediction_count_at_failure": 0,
-      "v1_test_accessed": false
+      "v1_test_accessed": false,
+      "validated_commit": "44fcf8f1bfae64eb70621c51bc3ce4b5b5f6bb46",
+      "workflow_run_id": 35865646837,
+      "workflow_run_number": 845,
+      "targeted_test_count": 101
     }
   }
 }
