@@ -161,7 +161,10 @@ def main() -> int:
             "PASS_OPERATOR_PREFLIGHT",
             "verify_kaggle_publication_capability",
             "verify_authenticated_kaggle_owner",
+            "BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP",
+            "roundtrip_verified_file_count",
             "Track-B v5 qualification requires Kaggle T4 x2",
+            "Locked Track-B runtime does not expose T4 x2",
             "Qualification mode must attach only infrastructure + external handoffs",
             "Infrastructure and external handoffs must be distinct Kaggle datasets",
             "is outside its paired dataset root",
@@ -184,15 +187,20 @@ def main() -> int:
     )
 
     preexec = final_text.index("PASS_PREEXECUTION_ATTACHED_TRUST")
-    operator_preflight = final_text.index("PASS_OPERATOR_PREFLIGHT")
+    gpu_preflight = final_text.index("T4 x2 preflight could not query nvidia-smi")
     bootstrap = final_text.index("BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'")
-    if preexec > operator_preflight:
+    operator_preflight = final_text.index("PASS_OPERATOR_PREFLIGHT")
+    if preexec > gpu_preflight:
         raise ValidationError(
-            "Notebook 01 must authenticate attached bytes/code before operator publication preflight"
+            "Notebook 01 must authenticate attached bytes/code before hardware preflight"
         )
-    if operator_preflight > bootstrap:
+    if gpu_preflight > bootstrap:
         raise ValidationError(
-            "Notebook 01 must fail-fast on T4 x2 + Kaggle publication capability before runtime bootstrap"
+            "Notebook 01 must fail-fast on T4 x2 before runtime bootstrap"
+        )
+    if bootstrap > operator_preflight:
+        raise ValidationError(
+            "Notebook 01 must run publication capability probe only after locked runtime bootstrap"
         )
 
     probe = final_text.index("publication_probe = verify_kaggle_publication_capability(observed_owner)")
