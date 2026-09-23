@@ -37,6 +37,7 @@ from cropcop_je.trackb_r07_ops import (
     run_checked,
     verify_kaggle_publication_capability,
     verify_authenticated_kaggle_owner,
+    verify_kaggle_published_file_roundtrip,
 )
 
 SOURCE_SLUG_BASENAMES = {
@@ -1152,12 +1153,21 @@ def main() -> int:
             allow_version=False,
         )
         infra_manifest = load_json(infra_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")
-        shutil.rmtree(infra_root, ignore_errors=True)
-        infra_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
+        infra_pub["handoff_sentinel_roundtrip"] = verify_kaggle_published_file_roundtrip(
             infra_slug,
-            infra_manifest,
-            scratch_root=output_root,
+            "TRACKB_INFRASTRUCTURE_BUNDLE.json",
+            infra_root / "TRACKB_INFRASTRUCTURE_BUNDLE.json",
+            timeout_seconds=1800,
         )
+        infra_pub["whole_archive_roundtrip"] = {
+            "status": "DEFERRED_TO_ATTACHED_FULL_BYTE_VERIFICATION",
+            "reason": (
+                "Kaggle download-all archives for large private datasets are prepared "
+                "asynchronously and may return 404 long after authoritative files are visible."
+            ),
+            "consumer_gate": "NOTEBOOK_01_FULL_ATTACHED_ROLE_CONTENT_IDENTITY",
+            "expected_content_digest_sha256": infra_manifest["content_digest_sha256"],
+        }
 
         external_pub = publish_private_kaggle_dataset(
             folder=external_root,
@@ -1169,12 +1179,21 @@ def main() -> int:
             allow_version=False,
         )
         external_manifest = load_json(external_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")
-        shutil.rmtree(external_root, ignore_errors=True)
-        external_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
+        external_pub["handoff_sentinel_roundtrip"] = verify_kaggle_published_file_roundtrip(
             external_slug,
-            external_manifest,
-            scratch_root=output_root,
+            "TRACKB_EXTERNAL_BUNDLE.json",
+            external_root / "TRACKB_EXTERNAL_BUNDLE.json",
+            timeout_seconds=1800,
         )
+        external_pub["whole_archive_roundtrip"] = {
+            "status": "DEFERRED_TO_ATTACHED_FULL_BYTE_VERIFICATION",
+            "reason": (
+                "Kaggle download-all archives for large private datasets are prepared "
+                "asynchronously and are not a stable readiness primitive."
+            ),
+            "consumer_gate": "NOTEBOOK_01_FULL_ATTACHED_ROLE_CONTENT_IDENTITY",
+            "expected_content_digest_sha256": external_manifest["content_digest_sha256"],
+        }
 
         readiness["publication"] = {
             "owner": owner,
