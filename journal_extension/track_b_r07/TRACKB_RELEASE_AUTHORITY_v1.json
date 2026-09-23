@@ -15,9 +15,9 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
-    "operator_attestation_sha256": "465873815ad570154c18c8a47130f17c8ae1fb1a7dbe446e99d02e3ad0f60170",
+    "operator_attestation_sha256": "95e19aa0fa0cd7987b481db2b90b55b35067fb0d77062b81ea6a46c97c3fc40d",
     "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
-    "operator_notebook_01_blob_sha1": "41c8bc09a7e76c0ff919a442ad58ec9fe8a4bb93"
+    "operator_notebook_01_blob_sha1": "222012c3138bc99c749cd557994b935483dd733c"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
