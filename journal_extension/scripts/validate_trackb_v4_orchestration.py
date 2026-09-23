@@ -149,7 +149,7 @@ def main() -> int:
             "TRACKB_INFRASTRUCTURE_BUNDLE.json",
             "TRACKB_EXTERNAL_BUNDLE.json",
             "TRACKB_QUALIFICATION_BUNDLE.json",
-            "PASS_PREEXECUTION_ATTACHED_TRUST",
+            "PASS_PRECONTROLLER_ATTACHED_AUTHORITY",
             "_role_identity",
             "_git_blob_sha1",
             "requirements-trackb.lock.txt",
@@ -168,9 +168,21 @@ def main() -> int:
             "Qualification mode must attach only infrastructure + external handoffs",
             "Infrastructure and external handoffs must be distinct Kaggle datasets",
             "is outside its paired dataset root",
+            "DEFERRED_TO_CONTROLLER_BEFORE_SCIENCE",
+            "PASS_FAST_INPUT_DISCOVERY_SMOKE",
+            "TRACKB_V5_V1_GUARD_FALSE_POSITIVE_FIX_v1",
+            "trackb_v5_v1_guard_hotfix.py",
+            "sitecustomize.py",
+            "TRACKB_V1_GUARD_HOTFIX_ACTIVE",
         ),
         "Notebook 01",
     )
+    if "observed_content = {role: _role_identity(path.parent)" in final_text:
+        raise ValidationError(
+            "Notebook 01 redundantly rehashes all attached role bytes before controller; "
+            "the controller must be the single full-byte verification gate before science"
+        )
+
     forbid_all(
         final_text,
         (
@@ -186,7 +198,7 @@ def main() -> int:
         "Notebook 01",
     )
 
-    preexec = final_text.index("PASS_PREEXECUTION_ATTACHED_TRUST")
+    preexec = final_text.index("PASS_PRECONTROLLER_ATTACHED_AUTHORITY")
     gpu_preflight = final_text.index("T4 x2 preflight could not query nvidia-smi")
     bootstrap = final_text.index("BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'")
     operator_preflight = final_text.index("PASS_OPERATOR_PREFLIGHT")
@@ -231,6 +243,9 @@ def main() -> int:
     ).read_text(encoding="utf-8")
     audit_source = (
         repo / "journal_extension/src/cropcop_je/trackb_r07_audit.py"
+    ).read_text(encoding="utf-8")
+    guard_hotfix_source = (
+        repo / "journal_extension/operator_hotfixes/trackb_v5_v1_guard_hotfix.py"
     ).read_text(encoding="utf-8")
 
     require_all(
@@ -294,6 +309,21 @@ def main() -> int:
         ),
         "Track-B operations",
     )
+    require_all(
+        guard_hotfix_source,
+        (
+            "TRACKB_V5_V1_GUARD_FALSE_POSITIVE_FIX_v1",
+            "v1_test_image_bytes_accessed",
+            "V1_TRAIN_VAL_ONLY",
+            "maximum_evidence_grade",
+            "EXT-S",
+            "_path_is_forbidden",
+            "value is not False",
+            "trackb_r07.assert_no_v1_test_surface",
+        ),
+        "Track-B V1 guard operator hotfix",
+    )
+
     require_all(
         audit_source,
         (
