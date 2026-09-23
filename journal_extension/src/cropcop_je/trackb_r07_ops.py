@@ -592,6 +592,68 @@ def _download_kaggle_file(slug: str, relative_path: str, destination: Path) -> P
     return matches[0]
 
 
+def verify_kaggle_published_file_roundtrip(
+    slug: str,
+    relative_path: str,
+    expected_path: str | Path,
+    *,
+    timeout_seconds: int = 1800,
+) -> dict[str, object]:
+    """Round-trip one bound handoff file from a newly published Kaggle dataset.
+
+    Final Track-B bundles are large, and Kaggle can expose individual files
+    before its asynchronously generated download-all archive is available.
+    Readiness therefore verifies the bound content manifest plus a small,
+    authoritative pair receipt. Notebook 01 remains responsible for hashing
+    every attached role byte before any qualification or protected inference.
+    """
+    relative_path = str(relative_path).replace("\\", "/").lstrip("./")
+    rel = Path(relative_path)
+    if (
+        not relative_path
+        or rel.is_absolute()
+        or ".." in rel.parts
+        or relative_path.endswith("/")
+    ):
+        raise TrackBOpsError(
+            f"invalid Kaggle handoff sentinel path: {relative_path!r}"
+        )
+
+    expected_path = Path(expected_path).resolve()
+    if not expected_path.is_file():
+        raise TrackBOpsError(
+            f"expected Kaggle handoff sentinel is missing: {expected_path}"
+        )
+    expected_bytes = int(expected_path.stat().st_size)
+    expected_sha256 = sha256_file(expected_path)
+
+    with tempfile.TemporaryDirectory() as td:
+        observed = _wait_download_kaggle_file(
+            slug,
+            relative_path,
+            Path(td),
+            timeout_seconds=int(timeout_seconds),
+        )
+        observed_bytes = int(observed.stat().st_size)
+        observed_sha256 = sha256_file(observed)
+
+    if observed_bytes != expected_bytes or observed_sha256 != expected_sha256:
+        raise TrackBOpsError(
+            "Kaggle handoff sentinel round-trip mismatch: "
+            f"{slug}/{relative_path}: expected_bytes={expected_bytes}, "
+            f"observed_bytes={observed_bytes}, expected_sha256={expected_sha256}, "
+            f"observed_sha256={observed_sha256}"
+        )
+
+    return {
+        "status": "PASS_EXACT_HANDOFF_SENTINEL_ROUNDTRIP",
+        "relative_path": relative_path,
+        "bytes": expected_bytes,
+        "sha256": expected_sha256,
+        "authority": "EXACT_SINGLE_FILE_ROUNDTRIP",
+    }
+
+
 def _read_remote_kaggle_content_manifest(
     slug: str,
     *,
@@ -739,6 +801,11 @@ def _verify_remote_kaggle_content(
     if version is None:
         version = status.get("currentVersionNumber")
 
+    publication_authority = (
+        "BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP"
+        if full_roundtrip
+        else "BOUND_MANIFEST_ONLY_PENDING_ATTACHED_BYTE_VERIFICATION"
+    )
     return {
         "status": "PASS",
         "content_digest_sha256": local_digest,
@@ -747,7 +814,8 @@ def _verify_remote_kaggle_content(
         "roundtrip_verified_file_count": verified_files,
         "current_version_number": version,
         "kaggle_status": status,
-        "publication_authority": "BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP",
+        "publication_authority": publication_authority,
+        "attached_full_byte_verification_required": not bool(full_roundtrip),
     }
 
 
