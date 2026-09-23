@@ -478,7 +478,7 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         self.assertIn("allow_version=False", helper)
         self.assertIn("PASS_KAGGLE_PUBLICATION_CAPABILITY", helper)
 
-    def test_kaggle_publication_uses_content_roundtrip_not_status_as_authority(self):
+    def test_kaggle_publication_authority_distinguishes_probe_from_final_handoff(self):
         source = (
             ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_ops.py"
         ).read_text(encoding="utf-8")
@@ -487,7 +487,9 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         verify = source[verify_start:verify_end]
         self.assertIn("_wait_remote_kaggle_content_manifest(", verify)
         self.assertIn("_wait_download_kaggle_file(", verify)
-        self.assertIn('"publication_authority": "BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP"', verify)
+        self.assertIn('"BOUND_MANIFEST_AND_EXACT_BYTE_ROUNDTRIP"', verify)
+        self.assertIn('"BOUND_MANIFEST_ONLY_PENDING_ATTACHED_BYTE_VERIFICATION"', verify)
+        self.assertIn('"attached_full_byte_verification_required"', verify)
         self.assertIn("_kaggle_dataset_status_best_effort(slug)", verify)
         self.assertNotIn("_wait_kaggle_dataset_ready(", verify)
 
@@ -522,18 +524,13 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         self.assertNotIn("_kaggle_dataset_status(", attempt)
         self.assertIn("_download_kaggle_file(", attempt)
 
-    def test_large_kaggle_archive_roundtrip_waits_through_processing_window(self):
+    def test_large_download_all_archive_is_not_a_readiness_primitive(self):
         source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
-        start = source.index("def _verify_published_archive_roundtrip(")
-        end = source.index("def _manifest_sha(", start)
-        helper = source[start:end]
-        self.assertIn("timeout_seconds: int = 5400", helper)
-        for marker in ('"403"', '"404"', '"processing"', '"pending"', '"503"'):
-            self.assertIn(marker, helper)
-        self.assertIn("time.sleep(delay)", helper)
-        self.assertIn("Kaggle whole-archive visibility pending", helper)
-        self.assertIn("Kaggle round-trip SHA mismatch", helper)
-        self.assertIn("unexpected payload members", helper)
+        self.assertNotIn("def _verify_published_archive_roundtrip(", source)
+        self.assertNotIn("Kaggle whole-archive visibility pending", source)
+        self.assertNotIn('"kaggle", "datasets", "download", "-d"', source)
+        self.assertIn("verify_kaggle_published_file_roundtrip(", source)
+        self.assertIn("DEFERRED_TO_ATTACHED_FULL_BYTE_VERIFICATION", source)
 
     def test_ambiguous_create_waits_for_deterministic_slug_manifest(self):
         source = (
@@ -547,32 +544,32 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         self.assertIn("timeout_seconds=900", helper)
         self.assertIn('"action": "reuse_after_ambiguous_write"', helper)
 
-    def test_publication_releases_local_bundle_before_archive_roundtrip(self):
+    def test_publication_retains_local_bundle_through_readiness_closure(self):
         source = (SCRIPTS / "trackb_v4_materialize.py").read_text(encoding="utf-8")
+        self.assertNotIn("shutil.rmtree(infra_root, ignore_errors=True)", source)
+        self.assertNotIn("shutil.rmtree(external_root, ignore_errors=True)", source)
+
         infra_manifest = source.index(
             'infra_manifest = load_json(infra_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")'
         )
-        infra_delete = source.index("shutil.rmtree(infra_root, ignore_errors=True)", infra_manifest)
         infra_verify = source.index(
-            'infra_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(',
-            infra_delete,
+            'infra_pub["handoff_sentinel_roundtrip"] = verify_kaggle_published_file_roundtrip(',
+            infra_manifest,
         )
-        self.assertLess(infra_manifest, infra_delete)
-        self.assertLess(infra_delete, infra_verify)
-
         external_manifest = source.index(
             'external_manifest = load_json(external_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")'
         )
-        external_delete = source.index(
-            "shutil.rmtree(external_root, ignore_errors=True)",
+        external_verify = source.index(
+            'external_pub["handoff_sentinel_roundtrip"] = verify_kaggle_published_file_roundtrip(',
             external_manifest,
         )
-        external_verify = source.index(
-            'external_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(',
-            external_delete,
+        pass_marker = source.index(
+            'readiness["status"] = "PASS_TRACKB_INPUT_MATERIALIZATION"',
+            external_verify,
         )
-        self.assertLess(external_manifest, external_delete)
-        self.assertLess(external_delete, external_verify)
+        self.assertLess(infra_manifest, infra_verify)
+        self.assertLess(external_manifest, external_verify)
+        self.assertLess(external_verify, pass_marker)
 
     def test_external_transport_probe_requires_url_checksum_and_size(self):
         source = (
