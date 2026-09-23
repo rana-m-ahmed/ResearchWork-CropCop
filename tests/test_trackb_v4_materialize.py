@@ -711,6 +711,88 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         )
         self.assertNotIn("shutil.rmtree(output_root)", source)
 
+    def test_notebook01_fail_fast_operator_preflight_precedes_bootstrap_and_science(self):
+        notebook = json.loads(
+            (
+                ROOT
+                / "journal_extension"
+                / "kaggle"
+                / "TrackB_01_Final_Execution.ipynb"
+            ).read_text(encoding="utf-8")
+        )
+        source = "\n".join(
+            "".join(cell.get("source") or [])
+            for cell in notebook.get("cells") or []
+        )
+        attached_trust = source.index("PASS_PREEXECUTION_ATTACHED_TRUST")
+        operator_preflight = source.index("PASS_OPERATOR_PREFLIGHT")
+        bootstrap = source.index(
+            "BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'"
+        )
+        controller = source.index(
+            "CONTROLLER = REPO / 'journal_extension/scripts/trackb_v4_execute_attached.py'"
+        )
+        self.assertLess(attached_trust, operator_preflight)
+        self.assertLess(operator_preflight, bootstrap)
+        self.assertLess(bootstrap, controller)
+        self.assertIn("verify_kaggle_publication_capability(observed_owner)", source)
+        self.assertIn("verify_authenticated_kaggle_owner(KAGGLE_OWNER)", source)
+        self.assertIn("Track-B v5 qualification requires Kaggle T4 x2", source)
+        self.assertIn("KAGGLE_OWNER = 'ranamuhammadahmed6'", source)
+
+    def test_notebook01_scrubs_publication_credentials_before_scientific_controller(self):
+        notebook = json.loads(
+            (
+                ROOT
+                / "journal_extension"
+                / "kaggle"
+                / "TrackB_01_Final_Execution.ipynb"
+            ).read_text(encoding="utf-8")
+        )
+        source = "\n".join(
+            "".join(cell.get("source") or [])
+            for cell in notebook.get("cells") or []
+        )
+        probe = source.index(
+            "publication_probe = verify_kaggle_publication_capability(observed_owner)"
+        )
+        scrub = source.index("os.environ.pop('KAGGLE_API_TOKEN', None)", probe)
+        controller = source.index(
+            "CONTROLLER = REPO / 'journal_extension/scripts/trackb_v4_execute_attached.py'"
+        )
+        self.assertLess(probe, scrub)
+        self.assertLess(scrub, controller)
+        self.assertIn("finally:", source)
+        self.assertIn("os.environ.pop('CROPCOP_GITHUB_TOKEN', None)", source)
+
+    def test_notebook01_rejects_attachment_mixups_before_science(self):
+        notebook = json.loads(
+            (
+                ROOT
+                / "journal_extension"
+                / "kaggle"
+                / "TrackB_01_Final_Execution.ipynb"
+            ).read_text(encoding="utf-8")
+        )
+        source = "\n".join(
+            "".join(cell.get("source") or [])
+            for cell in notebook.get("cells") or []
+        )
+        self.assertIn(
+            "Qualification mode must attach only infrastructure + external handoffs",
+            source,
+        )
+        self.assertIn(
+            "Claim mode requires exactly one immutable qualification bundle",
+            source,
+        )
+        self.assertIn(
+            "Infrastructure and external handoffs must be distinct Kaggle datasets",
+            source,
+        )
+        self.assertIn("is outside its paired dataset root", source)
+        self.assertIn("bundle receipt role mismatch", source)
+
     def test_claim_path_requires_single_writer_lease_and_durable_state_transitions(self):
         runner = (SCRIPTS / "run_trackb_r07.py").read_text(encoding="utf-8")
         executor = (SCRIPTS / "trackb_v4_execute_attached.py").read_text(encoding="utf-8")
