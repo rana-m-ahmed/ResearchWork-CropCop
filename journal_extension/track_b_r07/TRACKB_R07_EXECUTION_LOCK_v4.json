@@ -29,7 +29,7 @@
       "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
     }
   },
-  "code_attestation_sha256": "02284d0323e486ef26642be7b6e1d396f5063031a6c49b9fbf55f4c833a0d9ee",
+  "code_attestation_sha256": "f2676e1a6b7ead1bf8ee8f99562609f0c4baa4cd0fbdaa212ed5780704182336",
   "experiment_ids": [
     "TB2-AUDIT-GVLID",
     "TB2-AUDIT-POTATO",
@@ -254,7 +254,7 @@
     "publication_retry_counts_excluded_from_science_identity": true,
     "qualification_recomputed_during_claim": false
   },
-  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the transport-stable runtime: bytecode disabled in copied repository preparation; transient runtime/cache artifacts scrubbed and forbidden before role identity; Kaggle keep-tabular exact-byte mode required; mixed nested JSON/Python/CSV/binary publication probe required before expensive work. This specifically closes the observed missing __pycache__/.pyc round-trip failure without weakening integrity checks.",
+  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the async-safe publication runtime: final large private bundles are content-addressed and remotely bound by an exact content manifest plus exact pair-receipt handoff round-trip; Kaggle's asynchronous download-all archive is non-authoritative; Notebook 01 must rehash every attached role byte before qualification or protected inference. Local materialized bundles are retained until readiness closure. The small nested multitype publication probe continues exact byte round-trip before expensive work.",
   "scientific_change": false,
   "orchestration": {
     "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY",
