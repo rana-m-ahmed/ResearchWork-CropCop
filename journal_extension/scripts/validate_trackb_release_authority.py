@@ -56,6 +56,7 @@ def main() -> int:
     requirements_lock_path = repo / "journal_extension/track_b_r07/requirements-trackb.lock.txt"
     orchestration_lock_path = repo / "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v5.json"
     operator_attestation_path = repo / "journal_extension/track_b_r07/TRACKB_V5_OPERATOR_ATTESTATION_v1.json"
+    operator_hotfix_path = repo / "journal_extension/operator_hotfixes/trackb_v5_v1_guard_hotfix.py"
 
     authority = _load(authority_path)
     source_lock = _load(source_lock_path)
@@ -95,10 +96,15 @@ def main() -> int:
             "requirements_lock_sha256",
             "orchestration_lock_sha256",
             "operator_attestation_sha256",
+            "operator_v1_guard_hotfix_sha256",
         }
         for field in sha_bindings:
             _require_hex(str(bindings.get(field, "")).lower(), 64, field)
-        for field in ("operator_notebook_00_blob_sha1", "operator_notebook_01_blob_sha1"):
+        for field in (
+            "operator_notebook_00_blob_sha1",
+            "operator_notebook_01_blob_sha1",
+            "operator_v1_guard_hotfix_blob_sha1",
+        ):
             _require_hex(str(bindings.get(field, "")).lower(), 40, field)
 
         expected_sha = {
@@ -109,6 +115,7 @@ def main() -> int:
             "requirements_lock_sha256": _sha256(requirements_lock_path),
             "orchestration_lock_sha256": _sha256(orchestration_lock_path),
             "operator_attestation_sha256": _sha256(operator_attestation_path),
+            "operator_v1_guard_hotfix_sha256": _sha256(operator_hotfix_path),
         }
         mismatches = {
             field: {"expected": expected_sha[field], "bound": str(bindings.get(field, ""))}
@@ -165,6 +172,27 @@ def main() -> int:
                 raise ReleaseAuthorityError(
                     f"operator attestation notebook binding mismatch: {rel}"
                 )
+
+        observed_hotfix_blob = _blob_sha(
+            repo,
+            "journal_extension/operator_hotfixes/trackb_v5_v1_guard_hotfix.py",
+        )
+        if observed_hotfix_blob != bindings["operator_v1_guard_hotfix_blob_sha1"]:
+            raise ReleaseAuthorityError(
+                "operator V1 guard hotfix Git blob differs from release binding"
+            )
+        hotfix_rows = operator_attestation.get("operator_hotfixes") or []
+        if len(hotfix_rows) != 1 or not isinstance(hotfix_rows[0], dict):
+            raise ReleaseAuthorityError("operator attestation must bind exactly one V1 guard hotfix")
+        hotfix_row = hotfix_rows[0]
+        if hotfix_row.get("id") != "TRACKB_V5_V1_GUARD_FALSE_POSITIVE_FIX_v1":
+            raise ReleaseAuthorityError("unexpected operator V1 guard hotfix identity")
+        if hotfix_row.get("scientific_change") is not False:
+            raise ReleaseAuthorityError("operator V1 guard hotfix must preserve frozen science")
+        if hotfix_row.get("git_blob_sha1") != observed_hotfix_blob:
+            raise ReleaseAuthorityError("operator attestation hotfix Git blob mismatch")
+        if hotfix_row.get("sha256") != bindings["operator_v1_guard_hotfix_sha256"]:
+            raise ReleaseAuthorityError("operator attestation hotfix SHA-256 mismatch")
 
     result = {
         "status": "PASS_RELEASE_AUTHORITY_STRUCTURE",
