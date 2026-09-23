@@ -7,17 +7,17 @@
   "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
   "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
   "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
-  "runtime_source_commit": "528b01832b86233b752942362715f9e8924f0b02",
+  "runtime_source_commit": "c31e11da2980d3d41110b1a767e8829cc4306d4c",
   "bindings": {
-    "code_attestation_sha256": "02284d0323e486ef26642be7b6e1d396f5063031a6c49b9fbf55f4c833a0d9ee",
-    "execution_lock_sha256": "ab41872ef5256997e4ecbeda965a8f5ba7193962d44a59fc1d9ae14655ac317f",
-    "materialization_lock_sha256": "55c49aa8b8309daf12a539c0b589488959924f328f877de0f277c9fced51eb74",
+    "code_attestation_sha256": "f2676e1a6b7ead1bf8ee8f99562609f0c4baa4cd0fbdaa212ed5780704182336",
+    "execution_lock_sha256": "bb8177e699dab55ff9b93dfad29675c2a662c3e1e3e38b219fdf2d65753a6f3e",
+    "materialization_lock_sha256": "698de2181dc89dec54ae66170746e102485c1ba0e9eb710d471aa7d1375e9c74",
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
-    "orchestration_lock_sha256": "d682c8068f08ba77079beff523cd5e06cb0d7ce68e333b8fd5712de57b293e64",
-    "operator_attestation_sha256": "62f0b1e42436faa864b35b5ba5f9ebe17550dee2968f56cc2c0a4f2b74666fc3",
-    "operator_notebook_00_blob_sha1": "4c5ce4087c261bd4a192cc169eefb66240923935",
-    "operator_notebook_01_blob_sha1": "4258034e6ef52e9311118e40af4f62499a351483"
+    "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
+    "operator_attestation_sha256": "5348708480605e738906ad5c87546f80041043d17ab0b3822027c5bbbadacfff",
+    "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
+    "operator_notebook_01_blob_sha1": "db5445bd700c78fb391cdf4309ba998671159575"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -75,15 +75,7 @@
       "elapsed_seconds_at_failure": 8063.2
     },
     "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
-    "exact_head_qa": {
-      "status": "PASS",
-      "validated_commit": "cd435423da114dc99aa44098ea3b0452d61995bb",
-      "workflow": "Track B Infrastructure QA",
-      "workflow_run_id": 35732429865,
-      "workflow_run_number": 755,
-      "conclusion": "success",
-      "note": "This evidence commit is intentionally followed only by this metadata-only recording commit; the resulting head must itself pass the same sealed validators before operator handoff."
-    },
+    "exact_head_qa": "PENDING",
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false,
     "validated_commit": "cc39ef1e30fb819cf4e5e796097864875e7d8d70",
