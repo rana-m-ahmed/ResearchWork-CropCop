@@ -15,11 +15,11 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
-    "operator_attestation_sha256": "3c2f5b7823894c154fab8fe568b796155c4b3dd72477614613b2172f8d6c26c5",
+    "operator_attestation_sha256": "5bfd694e935a7e4cacc143f98b4077e2710ab6588255dffaeebed63fb763b46e",
     "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
-    "operator_notebook_01_blob_sha1": "9e50a16ff514383b714fff622c5367962732acc9",
-    "operator_v1_guard_hotfix_sha256": "f431b52f255a64908463804e6c96718aa229be3b568074ce505465153c0d5054",
-    "operator_v1_guard_hotfix_blob_sha1": "a15350616d4aa31a6e73376ab4d2801e0a3c8943"
+    "operator_notebook_01_blob_sha1": "33a5fd7471d572055e7c43302b517fd367c6fe74",
+    "operator_v1_guard_hotfix_sha256": "29109eeabc0997b4264be8ca26ccd595446458bab50c5327ce0597a9ad239799",
+    "operator_v1_guard_hotfix_blob_sha1": "73c2320cf85c7452ec185d5120403e339a60e333"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -124,7 +124,7 @@
       "targeted_test_count": 97
     },
     "notebook_01_v1_guard_remediation": {
-      "status": "PENDING_QA",
+      "status": "PENDING_FINAL_QA",
       "scientific_change": false,
       "observed_materialization_id": "98ff32c3c7ce2e66ffe52be97932a8b25f3ce50314c844abdd33077c99d90d78",
       "observed_failure": "historical_compare manifest explicitly declared v1_test_image_bytes_accessed=false, but legacy substring guard rejected the field name v1_test",
