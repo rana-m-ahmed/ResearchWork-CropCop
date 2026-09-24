@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
-    "operator_attestation_sha256": "6eeac75efa014c758d8ac78583ab3df345fb148b4db467b6e6dd75a728d31e98",
+    "operator_attestation_sha256": "1c1d30f861bb740ec58ec134c489c97177ff805c4629f5e6971472738d899ee2",
     "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
     "operator_notebook_01_blob_sha1": "3cba27c3c62e851199d2666742924ce9d48e4f1c",
     "operator_v1_guard_hotfix_sha256": "ea582c3a390ae68e15898e9108aeaf2c480d69944094555186f2ee17c8a5da89",
@@ -78,8 +78,11 @@
     },
     "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
     "exact_head_qa": {
-      "status": "PENDING_FINAL_ORB_PERFORMANCE_QA",
-      "note": "Final operator-only ORB matcher optimization must pass the complete Track-B validation chain."
+      "status": "PENDING_METADATA_REBIND_VALIDATION",
+      "prior_validated_commit": "815e722bbe4bf82c37aabf9218c2017866076526",
+      "prior_workflow_run_id": 36000423473,
+      "prior_workflow_run_number": 916,
+      "note": "Only QA metadata changed after validated behavior. Rebound head must pass the same complete Track-B validation chain."
     },
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false,
@@ -155,14 +158,20 @@
       "note": "Two PyTorch-specific equivalence unit tests are intentionally skipped in minimal GitHub CI; the exact equivalence self-test is mandatory and executes in the frozen Kaggle Torch runtime before science."
     },
     "notebook_01_orb_performance_remediation": {
-      "status": "PENDING_QA",
+      "status": "PASS",
       "scientific_change": false,
       "remediation": [
         "Reuse one stateless cv2.BFMatcher per worker thread instead of constructing one per geometric pair",
         "Require frozen-runtime exact old-vs-new ORB verifier equivalence self-test before qualification",
         "Preserve Hamming matcher, Lowe ratio, seeded RANSAC, and all geometric acceptance thresholds"
       ],
-      "expected_effect": "Reduce per-pair C++ object construction overhead on multi-million-pair geometric verification without changing verification semantics."
+      "expected_effect": "Reduce per-pair C++ object construction overhead on multi-million-pair geometric verification without changing verification semantics.",
+      "validated_commit": "815e722bbe4bf82c37aabf9218c2017866076526",
+      "workflow_run_id": 36000423473,
+      "workflow_run_number": 916,
+      "targeted_test_count": 104,
+      "targeted_test_skipped_count": 2,
+      "note": "The two runtime-specific equivalence checks execute in the frozen Kaggle OpenCV/Torch runtime before expensive qualification; the operator-only optimization passed the full static and orchestration QA chain."
     }
   }
 }
