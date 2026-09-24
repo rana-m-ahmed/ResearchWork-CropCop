@@ -202,6 +202,81 @@ def _optimized_topk_cosine_neighbors(
     return out_idx, out_score
 
 
+def selftest_dino_topk_equivalence() -> dict[str, object]:
+    """Prove optimized top-k equals the original reference under the active Torch runtime."""
+    import numpy as np
+    import torch
+    from cropcop_je.trackb_r07 import TrackBError
+
+    def reference(q, r, *, k):
+        q = np.asarray(q, dtype=np.float32)
+        r = np.asarray(r, dtype=np.float32)
+        ref = torch.from_numpy(r)
+        out_idx = np.empty((len(q), k), dtype=np.int64)
+        out_score = np.empty((len(q), k), dtype=np.float32)
+        with torch.no_grad():
+            score = torch.from_numpy(q) @ ref.T
+            values, indices = torch.topk(score, k=k, dim=1, largest=True, sorted=True)
+            for row_index in range(len(q)):
+                threshold = values[row_index, -1]
+                strict_idx = torch.nonzero(
+                    score[row_index] > threshold, as_tuple=False
+                ).flatten()
+                tie_idx = torch.nonzero(
+                    score[row_index] == threshold, as_tuple=False
+                ).flatten()
+                slots = int(k) - int(strict_idx.numel())
+                if slots < 0:
+                    raise TrackBError("reference top-k cutoff accounting became inconsistent")
+                chosen_ties = torch.sort(tie_idx).values[:slots]
+                chosen = torch.cat((strict_idx, chosen_ties), dim=0)
+                chosen_scores = score[row_index, chosen]
+                order = torch.argsort(chosen_scores, descending=True, stable=True)
+                out_idx[row_index] = chosen[order].cpu().numpy()
+                out_score[row_index] = chosen_scores[order].cpu().numpy()
+        return out_idx, out_score
+
+    rng = np.random.default_rng(1701)
+    q = rng.normal(size=(37, 23)).astype(np.float32)
+    r = rng.normal(size=(113, 23)).astype(np.float32)
+    q /= np.linalg.norm(q, axis=1, keepdims=True)
+    r /= np.linalg.norm(r, axis=1, keepdims=True)
+
+    cases = [
+        ("random", q, r, 11),
+        (
+            "cutoff_ties",
+            np.asarray([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32),
+            np.asarray([
+                [1.0, 0.0],
+                [1.0, 0.0],
+                [1.0, 0.0],
+                [0.5, 0.5],
+                [0.5, 0.5],
+                [0.0, 1.0],
+                [0.0, 1.0],
+            ], dtype=np.float32),
+            2,
+        ),
+    ]
+
+    for name, case_q, case_r, k in cases:
+        expected_idx, expected_score = reference(case_q, case_r, k=k)
+        observed_idx, observed_score = _optimized_topk_cosine_neighbors(
+            case_q, case_r, k=k, device="cpu", block_rows=8
+        )
+        if not np.array_equal(expected_idx, observed_idx):
+            raise GuardHotfixError(f"DINO top-k equivalence index mismatch: {name}")
+        if not np.array_equal(expected_score, observed_score):
+            raise GuardHotfixError(f"DINO top-k equivalence score mismatch: {name}")
+
+    return {
+        "status": "PASS_DINO_TOPK_EXACT_EQUIVALENCE",
+        "torch_version": str(torch.__version__),
+        "cases": [name for name, *_rest in cases],
+    }
+
+
 def _observable_encode_audit_features(
     model,
     image_paths,
