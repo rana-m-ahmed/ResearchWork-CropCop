@@ -176,6 +176,7 @@ def main() -> int:
             "TRACKB_V1_GUARD_HOTFIX_ACTIVE",
             "EXACT_EQUIVALENT_VECTORIZED_CUTOFF_TIE_DETECTION",
             "science_subprocess_live_streaming",
+            ""selftest_dino_topk_equivalence",
             "DINO top-k",
         ),
         "Notebook 01",
