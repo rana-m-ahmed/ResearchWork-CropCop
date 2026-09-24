@@ -309,21 +309,6 @@ def encode_audit_features(model, image_paths: list[Path], transform, device, *, 
 
 
 def topk_cosine_neighbors(query_features, reference_features, *, k: int = 50, device="cuda", block_rows: int = 256):
-    """Exact deterministic cosine top-k with a vectorized cutoff-tie fast path.
-
-    The frozen Track-B contract requires descending similarity order and ascending
-    reference index for equal similarities.  The original implementation scanned
-    the full reference row separately for *every* query to establish cutoff ties,
-    which is exact but pathologically expensive for the 58,709 x 117,546 Irish
-    Potato comparison.  This implementation preserves the exact selection rule:
-
-    * vectorize the full-row strict/equal cutoff counts once per block;
-    * canonicalize ordinary top-k rows entirely within the returned k elements;
-    * fall back to the original full-row tie resolver only when more references
-      share the cutoff score than available top-k slots.
-
-    No candidate-generation threshold, k value, score, or ordering rule changes.
-    """
     import numpy as np
     import torch
 
@@ -333,45 +318,26 @@ def topk_cosine_neighbors(query_features, reference_features, *, k: int = 50, de
         raise TrackBError("feature matrix dimensionality mismatch")
     if len(r) < k:
         raise TrackBError(f"reference feature surface has fewer than top-k={k} rows")
-
     ref = torch.from_numpy(r).to(device)
     out_idx = np.empty((len(q), k), dtype=np.int64)
     out_score = np.empty((len(q), k), dtype=np.float32)
-
     with torch.no_grad():
         for start in range(0, len(q), int(block_rows)):
             block = torch.from_numpy(q[start:start + int(block_rows)]).to(device)
             score = block @ ref.T
             values, indices = torch.topk(score, k=k, dim=1, largest=True, sorted=True)
 
-            # Determine cutoff ambiguity with two block-wide scans instead of
-            # launching full-reference kernels once per query row.
-            threshold = values[:, -1:].clone()
-            strict_counts = (score > threshold).sum(dim=1)
-            equal_counts = (score == threshold).sum(dim=1)
-            ambiguous = (strict_counts + equal_counts) > int(k)
-
-            # For ordinary rows torch.topk has already selected the complete
-            # correct set. Canonicalize equal-score ordering by ascending index:
-            # first sort indices, then stable-sort their scores descending.
-            index_order = torch.argsort(indices, dim=1, stable=True)
-            canonical_idx = torch.gather(indices, 1, index_order)
-            canonical_values = torch.gather(values, 1, index_order)
-            score_order = torch.argsort(
-                canonical_values, dim=1, descending=True, stable=True
-            )
-            indices = torch.gather(canonical_idx, 1, score_order)
-            values = torch.gather(canonical_values, 1, score_order)
-
-            # Only genuinely ambiguous cutoff rows need the original exact
-            # full-reference resolver.
-            for row_index in torch.nonzero(ambiguous, as_tuple=False).flatten().tolist():
-                row_threshold = threshold[row_index, 0]
+            # torch.topk does not promise stable indices for equal values.  The
+            # candidate set is scientific evidence, so resolve only cutoff ties
+            # deterministically by ascending reference index without perturbing
+            # any non-tied similarity ordering.
+            for row_index in range(len(block)):
+                threshold = values[row_index, -1]
                 strict_idx = torch.nonzero(
-                    score[row_index] > row_threshold, as_tuple=False
+                    score[row_index] > threshold, as_tuple=False
                 ).flatten()
                 tie_idx = torch.nonzero(
-                    score[row_index] == row_threshold, as_tuple=False
+                    score[row_index] == threshold, as_tuple=False
                 ).flatten()
                 slots = int(k) - int(strict_idx.numel())
                 if slots < 0:
@@ -379,9 +345,7 @@ def topk_cosine_neighbors(query_features, reference_features, *, k: int = 50, de
                 chosen_ties = torch.sort(tie_idx).values[:slots]
                 chosen = torch.cat((strict_idx, chosen_ties), dim=0)
                 if int(chosen.numel()) != int(k):
-                    raise TrackBError(
-                        "deterministic top-k tie resolution did not produce k neighbors"
-                    )
+                    raise TrackBError("deterministic top-k tie resolution did not produce k neighbors")
                 chosen_scores = score[row_index, chosen]
                 order = torch.argsort(chosen_scores, descending=True, stable=True)
                 chosen = chosen[order]
