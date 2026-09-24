@@ -154,6 +154,8 @@ def main() -> int:
             "TRACKB_V1_GUARD_HOTFIX_ACTIVE",
             "EXACT_EQUIVALENT_VECTORIZED_CUTOFF_TIE_DETECTION",
             "selftest_dino_topk_equivalence",
+            "selftest_orb_verifier_equivalence",
+            "THREAD_LOCAL_STATELESS_BFMATCHER",
             "science_subprocess_live_streaming",
         ),
         "Notebook 01",
