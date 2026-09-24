@@ -913,7 +913,7 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             / "operator_hotfixes"
             / "trackb_v5_v1_guard_hotfix.py"
         )
-        hotfix_sha = "da623753bca446667075c69d0480c440788d0b9ef51ed9d7a70d48455c1cb08c"
+        hotfix_sha = "1ee18ea621a269c211100800c78bd25a21ef40bb150abdf47f17e49549f13711"
 
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
