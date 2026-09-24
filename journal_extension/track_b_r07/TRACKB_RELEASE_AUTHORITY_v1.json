@@ -15,11 +15,11 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
-    "operator_attestation_sha256": "d5118d834ad388c7348587f72acddccff3e584f8158cee2e0697c1b5804132a6",
+    "operator_attestation_sha256": "674b3ed5c8e18ed54d382a4c2f26626fb146c0b9e8c66e9503dd6079c5130d24",
     "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
-    "operator_notebook_01_blob_sha1": "e401547a5411a226bbecfc9d9ec3a553b3c0a0ad",
-    "operator_v1_guard_hotfix_sha256": "da623753bca446667075c69d0480c440788d0b9ef51ed9d7a70d48455c1cb08c",
-    "operator_v1_guard_hotfix_blob_sha1": "0bed57a6dd60df0951b6f7c1276c56d319fbed97"
+    "operator_notebook_01_blob_sha1": "3038e7e3da0bfcc8a9f449f7f2bfe21eb0760fd8",
+    "operator_v1_guard_hotfix_sha256": "1ee18ea621a269c211100800c78bd25a21ef40bb150abdf47f17e49549f13711",
+    "operator_v1_guard_hotfix_blob_sha1": "c62581f33cd436938306aaa36d702143dbfd4b6a"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -79,7 +79,7 @@
     "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
     "exact_head_qa": {
       "status": "PENDING_TIMEOUT_PERFORMANCE_QA",
-      "note": "The performance-remediated Notebook 01, hotfix, operator attestation, and release bindings must pass the complete Track-B validation chain."
+      "note": "Performance-remediated operator notebook and hotfix must pass full Track-B CI. Exact DINO equivalence is additionally asserted inside the frozen Kaggle Torch runtime before science."
     },
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false,
@@ -144,7 +144,8 @@
         "DINO feature/top-k progress logging",
         "Live scientific subprocess log streaming",
         "Existing 36000-second science timeout retained as quota safety ceiling"
-      ]
+      ],
+      "runtime_equivalence_selftest": "REQUIRED_BEFORE_SCIENCE"
     }
   }
 }
