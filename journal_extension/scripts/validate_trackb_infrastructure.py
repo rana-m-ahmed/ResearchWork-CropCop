@@ -153,6 +153,7 @@ def main() -> int:
             "TRACKB_V5_V1_GUARD_FALSE_POSITIVE_FIX_v1",
             "TRACKB_V1_GUARD_HOTFIX_ACTIVE",
             "EXACT_EQUIVALENT_VECTORIZED_CUTOFF_TIE_DETECTION",
+            "selftest_dino_topk_equivalence",
             "science_subprocess_live_streaming",
         ),
         "Notebook 01",
