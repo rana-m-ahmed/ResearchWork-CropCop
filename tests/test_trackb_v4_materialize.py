@@ -982,6 +982,47 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             self.assertNotEqual(bad.returncode, 0)
             self.assertIn("consumed V1-test access flag is not explicitly false", bad.stderr)
 
+    def test_science_stream_wrapper_enforces_timeout_when_child_is_silent(self):
+        import types
+
+        hotfix_path = (
+            ROOT
+            / "journal_extension"
+            / "operator_hotfixes"
+            / "trackb_v5_v1_guard_hotfix.py"
+        )
+        spec = importlib.util.spec_from_file_location(
+            "trackb_v5_stream_timeout_under_test",
+            hotfix_path,
+        )
+        hotfix = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(hotfix)
+
+        with tempfile.TemporaryDirectory() as td:
+            script = Path(td) / "run_trackb_r07.py"
+            script.write_text(
+                "import time\ntime.sleep(5)\n",
+                encoding="utf-8",
+            )
+            ops = types.SimpleNamespace(
+                redact=lambda text: text,
+                TrackBOpsError=RuntimeError,
+            )
+            def original_run_checked(args, *, cwd=None, timeout=3600):
+                raise AssertionError("science runner must use streamed wrapper")
+            wrapped = hotfix._stream_science_command(original_run_checked, ops)
+
+            started = time.monotonic()
+            with self.assertRaises(subprocess.TimeoutExpired):
+                wrapped(
+                    [sys.executable, str(script)],
+                    cwd=td,
+                    timeout=1,
+                )
+            elapsed = time.monotonic() - started
+            self.assertLess(elapsed, 4.0)
+
     def test_claim_path_requires_single_writer_lease_and_durable_state_transitions(self):
         runner = (SCRIPTS / "run_trackb_r07.py").read_text(encoding="utf-8")
         executor = (SCRIPTS / "trackb_v4_execute_attached.py").read_text(encoding="utf-8")
