@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import selectors
 import subprocess
 import time
 from collections import deque
@@ -335,17 +336,14 @@ def _stream_science_command(original_run_checked, ops_module):
             text=True,
             bufsize=1,
         )
+        selector = selectors.DefaultSelector()
         try:
             assert proc.stdout is not None
+            selector.register(proc.stdout, selectors.EVENT_READ)
             while True:
-                line = proc.stdout.readline()
-                if line:
-                    safe = ops_module.redact(line.rstrip("\n"))
-                    tail.append(safe)
-                    print(safe, flush=True)
-                elif proc.poll() is not None:
-                    break
-                if time.monotonic() - started > float(timeout):
+                elapsed = time.monotonic() - started
+                remaining = float(timeout) - elapsed
+                if remaining <= 0:
                     proc.terminate()
                     try:
                         proc.wait(timeout=20)
@@ -353,8 +351,25 @@ def _stream_science_command(original_run_checked, ops_module):
                         proc.kill()
                         proc.wait(timeout=20)
                     raise subprocess.TimeoutExpired(args, timeout)
+
+                events = selector.select(timeout=min(1.0, remaining))
+                if events:
+                    line = proc.stdout.readline()
+                    if line:
+                        safe = ops_module.redact(line.rstrip("\n"))
+                        tail.append(safe)
+                        print(safe, flush=True)
+
+                if proc.poll() is not None:
+                    # Drain any complete lines already buffered at process exit.
+                    for line in proc.stdout:
+                        safe = ops_module.redact(line.rstrip("\n"))
+                        tail.append(safe)
+                        print(safe, flush=True)
+                    break
             rc = proc.wait()
         finally:
+            selector.close()
             if proc.stdout is not None:
                 proc.stdout.close()
 
