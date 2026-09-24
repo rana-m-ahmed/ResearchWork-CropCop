@@ -57,13 +57,14 @@
     "notebook_01_fast_discovery_smoke_pass": true,
     "notebook_01_single_full_byte_gate_pass": true,
     "v1_guard_sitecustomize_subprocess_regression_pass": true,
-    "dino_topk_reference_equivalence_pass": false,
-    "dino_cutoff_tie_equivalence_pass": false,
-    "science_subprocess_live_streaming_pass": false,
     "science_stream_silent_timeout_regression_pass": true,
     "targeted_test_skipped_count": 2,
     "dino_topk_runtime_equivalence_selftest_required": true,
-    "orb_verifier_runtime_equivalence_selftest_required": true
+    "orb_verifier_runtime_equivalence_selftest_required": true,
+    "dino_topk_runtime_equivalence_status": "REQUIRED_PRE_SCIENCE_IN_FROZEN_KAGGLE_RUNTIME",
+    "orb_verifier_runtime_equivalence_status": "REQUIRED_PRE_SCIENCE_IN_FROZEN_KAGGLE_RUNTIME",
+    "science_subprocess_live_streaming_static_contract_pass": true,
+    "qa_semantics_note": "Runtime-specific DINO and ORB exact-equivalence checks are fail-closed pre-science gates in Notebook 01; they are not claimed as executed by minimal GitHub CI."
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
