@@ -15,11 +15,11 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
-    "operator_attestation_sha256": "674b3ed5c8e18ed54d382a4c2f26626fb146c0b9e8c66e9503dd6079c5130d24",
+    "operator_attestation_sha256": "bc82397e9e699392e700a2c8395e122ced3c57038fc03ab77149ebfc72dd01ab",
     "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
-    "operator_notebook_01_blob_sha1": "3038e7e3da0bfcc8a9f449f7f2bfe21eb0760fd8",
-    "operator_v1_guard_hotfix_sha256": "1ee18ea621a269c211100800c78bd25a21ef40bb150abdf47f17e49549f13711",
-    "operator_v1_guard_hotfix_blob_sha1": "c62581f33cd436938306aaa36d702143dbfd4b6a"
+    "operator_notebook_01_blob_sha1": "4a1b4ab9b9401362d4f68c230f88a64f7ac432eb",
+    "operator_v1_guard_hotfix_sha256": "60575bd2841c2aa63bbc6bd7ec14e1966f14c2b3f744513597f30cf825d5ce8e",
+    "operator_v1_guard_hotfix_blob_sha1": "7730625aa33c88d9fff408018af0e2d2735e551c"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -78,8 +78,8 @@
     },
     "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
     "exact_head_qa": {
-      "status": "PENDING_TIMEOUT_PERFORMANCE_QA",
-      "note": "Performance-remediated operator notebook and hotfix must pass full Track-B CI. Exact DINO equivalence is additionally asserted inside the frozen Kaggle Torch runtime before science."
+      "status": "PENDING_FINAL_TIMEOUT_PERFORMANCE_QA",
+      "note": "Final selector-safe observable performance remediation must pass the complete Track-B validation chain."
     },
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false,
@@ -131,7 +131,7 @@
       "targeted_test_count": 101
     },
     "notebook_01_timeout_performance_remediation": {
-      "status": "PENDING_QA",
+      "status": "PENDING_FINAL_QA",
       "scientific_change": false,
       "observed_failure": "Scientific runner was terminated by the controller's fixed subprocess timeout after 36000 seconds; Kaggle preflight, runtime, publication probe, and fast input discovery had already passed.",
       "observed_elapsed_seconds": 36860.1,
@@ -145,7 +145,8 @@
         "Live scientific subprocess log streaming",
         "Existing 36000-second science timeout retained as quota safety ceiling"
       ],
-      "runtime_equivalence_selftest": "REQUIRED_BEFORE_SCIENCE"
+      "runtime_equivalence_selftest": "REQUIRED_BEFORE_SCIENCE",
+      "silent_child_timeout_enforcement": "SELECTOR_POLLED"
     }
   }
 }
