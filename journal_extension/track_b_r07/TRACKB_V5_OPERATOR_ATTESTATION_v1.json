@@ -21,7 +21,7 @@
     },
     {
       "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
-      "git_blob_sha1": "3038e7e3da0bfcc8a9f449f7f2bfe21eb0760fd8",
+      "git_blob_sha1": "4a1b4ab9b9401362d4f68c230f88a64f7ac432eb",
       "role": "QUALIFICATION_AND_PROTECTED_CLAIM"
     }
   ],
@@ -44,7 +44,7 @@
     "static_infrastructure_validator_pass": true,
     "v5_orchestration_validator_pass": true,
     "sealed_release_authority_validator_pass": true,
-    "latest_remediation_qa": "PENDING_TIMEOUT_PERFORMANCE_QA",
+    "latest_remediation_qa": "PENDING_FINAL_TIMEOUT_PERFORMANCE_QA",
     "handoff_sentinel_behavioral_tests_pass": true,
     "local_bundle_preservation_regression_pass": true,
     "notebook_01_full_attached_byte_gate_regression_pass": true,
@@ -59,7 +59,8 @@
     "v1_guard_sitecustomize_subprocess_regression_pass": true,
     "dino_topk_reference_equivalence_pass": false,
     "dino_cutoff_tie_equivalence_pass": false,
-    "science_subprocess_live_streaming_pass": false
+    "science_subprocess_live_streaming_pass": false,
+    "science_stream_silent_timeout_regression_pass": false
   },
   "operator_contract": {
     "notebook_00_exact_runtime_checkout_required": true,
@@ -115,7 +116,7 @@
     "notebook_01_hardware_preflight_precedes_bootstrap": true,
     "notebook_01_publication_probe_precedes_scientific_controller": true,
     "notebook_01_v1_guard_hotfix_required": true,
-    "notebook_01_hotfix_sha256_required": "1ee18ea621a269c211100800c78bd25a21ef40bb150abdf47f17e49549f13711",
+    "notebook_01_hotfix_sha256_required": "60575bd2841c2aa63bbc6bd7ec14e1966f14c2b3f744513597f30cf825d5ce8e",
     "notebook_01_fast_input_discovery_before_full_byte_gate": true,
     "notebook_01_full_role_bytes_verified_once_by_controller_before_science": true,
     "historical_compare_explicit_v1_test_false_provenance_allowed": true,
@@ -123,14 +124,15 @@
     "notebook_01_dino_topk_exact_equivalence_required": true,
     "notebook_01_science_subprocess_live_streaming_required": true,
     "notebook_01_science_timeout_seconds": 36000,
-    "notebook_01_dino_topk_runtime_equivalence_selftest_required": true
+    "notebook_01_dino_topk_runtime_equivalence_selftest_required": true,
+    "notebook_01_silent_child_timeout_enforcement_required": true
   },
   "operator_hotfixes": [
     {
       "id": "TRACKB_V5_V1_GUARD_FALSE_POSITIVE_FIX_v1",
       "path": "journal_extension/operator_hotfixes/trackb_v5_v1_guard_hotfix.py",
-      "git_blob_sha1": "c62581f33cd436938306aaa36d702143dbfd4b6a",
-      "sha256": "1ee18ea621a269c211100800c78bd25a21ef40bb150abdf47f17e49549f13711",
+      "git_blob_sha1": "7730625aa33c88d9fff408018af0e2d2735e551c",
+      "sha256": "60575bd2841c2aa63bbc6bd7ec14e1966f14c2b3f744513597f30cf825d5ce8e",
       "scientific_change": false,
       "purpose": "Preserve V1-test safety while applying exact-equivalent vectorized DINO top-k and live scientific subprocess progress streaming for bounded Kaggle qualification."
     }
