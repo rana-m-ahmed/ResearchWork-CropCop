@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import os
+import subprocess
+import time
+from collections import deque
 from typing import Any
 
 HOTFIX_ID = "TRACKB_V5_V1_GUARD_FALSE_POSITIVE_FIX_v1"
@@ -116,6 +119,182 @@ def validate_manifest_safety(role: str, manifest: dict[str, Any]) -> None:
             )
 
 
+def _optimized_topk_cosine_neighbors(
+    query_features,
+    reference_features,
+    *,
+    k: int = 50,
+    device="cuda",
+    block_rows: int = 256,
+):
+    """Exact-equivalent deterministic cosine top-k with vectorized tie detection."""
+    import numpy as np
+    import torch
+    from cropcop_je.trackb_r07 import TrackBError
+
+    q = np.asarray(query_features, dtype=np.float32)
+    r = np.asarray(reference_features, dtype=np.float32)
+    if q.ndim != 2 or r.ndim != 2 or q.shape[1] != r.shape[1]:
+        raise TrackBError("feature matrix dimensionality mismatch")
+    if len(r) < k:
+        raise TrackBError(f"reference feature surface has fewer than top-k={k} rows")
+
+    ref = torch.from_numpy(r).to(device)
+    out_idx = np.empty((len(q), k), dtype=np.int64)
+    out_score = np.empty((len(q), k), dtype=np.float32)
+
+    with torch.no_grad():
+        for start in range(0, len(q), int(block_rows)):
+            block = torch.from_numpy(q[start:start + int(block_rows)]).to(device)
+            score = block @ ref.T
+            values, indices = torch.topk(score, k=k, dim=1, largest=True, sorted=True)
+
+            threshold = values[:, -1:].clone()
+            strict_counts = (score > threshold).sum(dim=1)
+            equal_counts = (score == threshold).sum(dim=1)
+            ambiguous = (strict_counts + equal_counts) > int(k)
+
+            index_order = torch.argsort(indices, dim=1, stable=True)
+            canonical_idx = torch.gather(indices, 1, index_order)
+            canonical_values = torch.gather(values, 1, index_order)
+            score_order = torch.argsort(
+                canonical_values, dim=1, descending=True, stable=True
+            )
+            indices = torch.gather(canonical_idx, 1, score_order)
+            values = torch.gather(canonical_values, 1, score_order)
+
+            for row_index in torch.nonzero(
+                ambiguous, as_tuple=False
+            ).flatten().tolist():
+                row_threshold = threshold[row_index, 0]
+                strict_idx = torch.nonzero(
+                    score[row_index] > row_threshold, as_tuple=False
+                ).flatten()
+                tie_idx = torch.nonzero(
+                    score[row_index] == row_threshold, as_tuple=False
+                ).flatten()
+                slots = int(k) - int(strict_idx.numel())
+                if slots < 0:
+                    raise TrackBError("top-k cutoff accounting became inconsistent")
+                chosen_ties = torch.sort(tie_idx).values[:slots]
+                chosen = torch.cat((strict_idx, chosen_ties), dim=0)
+                if int(chosen.numel()) != int(k):
+                    raise TrackBError(
+                        "deterministic top-k tie resolution did not produce k neighbors"
+                    )
+                chosen_scores = score[row_index, chosen]
+                order = torch.argsort(
+                    chosen_scores, descending=True, stable=True
+                )
+                indices[row_index] = chosen[order]
+                values[row_index] = chosen_scores[order]
+
+            out_idx[start:start + len(block)] = indices.cpu().numpy()
+            out_score[start:start + len(block)] = values.cpu().numpy()
+
+            completed = min(start + len(block), len(q))
+            if completed == len(q) or completed % max(int(block_rows) * 16, 1) == 0:
+                print(
+                    f"DINO top-k {completed:,}/{len(q):,} queries against "
+                    f"{len(r):,} references",
+                    flush=True,
+                )
+    return out_idx, out_score
+
+
+def _observable_encode_audit_features(
+    model,
+    image_paths,
+    transform,
+    device,
+    *,
+    batch_size: int = 64,
+):
+    """Exact-equivalent DINO encoding with bounded progress logging."""
+    import numpy as np
+    import torch
+    from cropcop_je.trackb_r07_audit import _canonical_rgb
+
+    model = model.to(device).eval()
+    outputs = []
+    with torch.no_grad():
+        for start in range(0, len(image_paths), int(batch_size)):
+            batch_paths = image_paths[start:start + int(batch_size)]
+            tensors = [transform(_canonical_rgb(path)) for path in batch_paths]
+            x = torch.stack(tensors, dim=0).to(device, non_blocking=True)
+            features = model.forward_features(x)
+            features = model.forward_head(features, pre_logits=True)
+            features = torch.nn.functional.normalize(features.float(), p=2, dim=1)
+            outputs.append(features.cpu().numpy().astype(np.float32, copy=False))
+            completed = min(start + len(batch_paths), len(image_paths))
+            if completed == len(image_paths) or completed % 2048 < len(batch_paths):
+                print(
+                    f"DINO feature encoding {completed:,}/{len(image_paths):,}",
+                    flush=True,
+                )
+    if not outputs:
+        return np.empty((0, 0), dtype=np.float32)
+    return np.concatenate(outputs, axis=0)
+
+
+def _stream_science_command(original_run_checked, ops_module):
+    def run_checked(args, *, cwd=None, timeout=3600):
+        is_science_runner = any(
+            str(part).endswith("/run_trackb_r07.py")
+            or str(part).endswith("\\run_trackb_r07.py")
+            for part in args
+        )
+        if not is_science_runner:
+            return original_run_checked(args, cwd=cwd, timeout=timeout)
+
+        env = dict(os.environ)
+        env["GIT_TERMINAL_PROMPT"] = "0"
+        started = time.monotonic()
+        tail = deque(maxlen=200)
+        proc = subprocess.Popen(
+            args,
+            cwd=None if cwd is None else str(cwd),
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+        try:
+            assert proc.stdout is not None
+            while True:
+                line = proc.stdout.readline()
+                if line:
+                    safe = ops_module.redact(line.rstrip("\n"))
+                    tail.append(safe)
+                    print(safe, flush=True)
+                elif proc.poll() is not None:
+                    break
+                if time.monotonic() - started > float(timeout):
+                    proc.terminate()
+                    try:
+                        proc.wait(timeout=20)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                        proc.wait(timeout=20)
+                    raise subprocess.TimeoutExpired(args, timeout)
+            rc = proc.wait()
+        finally:
+            if proc.stdout is not None:
+                proc.stdout.close()
+
+        if rc != 0:
+            detail = "\n".join(tail)
+            if len(detail) > 12000:
+                detail = detail[-12000:]
+            raise ops_module.TrackBOpsError(
+                f"command failed rc={rc}: {' '.join(map(str, args))}\n{detail}"
+            )
+        return subprocess.CompletedProcess(args, rc, stdout="", stderr="")
+
+    return run_checked
+
+
 def install(expected_source_sha256: str) -> dict[str, str]:
     expected_source_sha256 = str(expected_source_sha256).strip().lower()
     if len(expected_source_sha256) != 64 or any(
@@ -124,15 +303,28 @@ def install(expected_source_sha256: str) -> dict[str, str]:
         raise GuardHotfixError("operator hotfix source SHA-256 is missing or malformed")
 
     from cropcop_je import trackb_r07
+    from cropcop_je import trackb_r07_audit
+    from cropcop_je import trackb_r07_ops
 
     def _strict_no_v1_test_surface(inputs):
         for bundle in inputs.values():
             validate_manifest_safety(str(bundle.role), bundle.manifest)
 
     trackb_r07.assert_no_v1_test_surface = _strict_no_v1_test_surface
+    trackb_r07_audit.topk_cosine_neighbors = _optimized_topk_cosine_neighbors
+    trackb_r07_audit.encode_audit_features = _observable_encode_audit_features
+
+    original_run_checked = trackb_r07_ops.run_checked
+    trackb_r07_ops.run_checked = _stream_science_command(
+        original_run_checked, trackb_r07_ops
+    )
+
     os.environ[ACTIVE_ENV] = expected_source_sha256
     return {
-        "status": "PASS_TRACKB_V1_GUARD_HOTFIX_INSTALLED",
+        "status": "PASS_TRACKB_OPERATOR_HOTFIX_INSTALLED",
+        "dino_topk_optimization": "EXACT_EQUIVALENT_VECTORIZED_CUTOFF_TIE_DETECTION",
+        "dino_feature_progress_logging": True,
+        "science_subprocess_live_streaming": True,
         "hotfix_id": HOTFIX_ID,
         "source_sha256": expected_source_sha256,
     }
