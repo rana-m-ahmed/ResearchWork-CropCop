@@ -4,6 +4,7 @@ import os
 import selectors
 import subprocess
 import time
+import threading
 from collections import deque
 from typing import Any
 
@@ -203,6 +204,218 @@ def _optimized_topk_cosine_neighbors(
     return out_idx, out_score
 
 
+_ORIGINAL_VERIFY_ORB_PAIR = None
+_ORB_MATCHER_LOCAL = threading.local()
+
+
+def _optimized_verify_orb_pair(
+    a,
+    b,
+    *,
+    policy,
+    rng_seed: int = 0,
+):
+    """Exact verifier with one stateless BFMatcher reused per worker thread."""
+    import cv2
+    import numpy as np
+    from cropcop_je.trackb_r07_audit import _CV2_RANSAC_LOCK, _coverage
+
+    desc_a, desc_b = a["desc"], b["desc"]
+    kp_a, kp_b = a["xy"], b["xy"]
+    result = {
+        "accepted": False,
+        "decision_stage": "UNRESOLVED",
+        "good_matches": 0,
+        "normalized_good_match_ratio": 0.0,
+        "homography_inliers": 0,
+        "inlier_ratio": 0.0,
+        "coverage_a": 0.0,
+        "coverage_b": 0.0,
+        "median_symmetric_reprojection_px": None,
+    }
+    if (
+        len(desc_a) < policy.minimum_good_matches
+        or len(desc_b) < policy.minimum_good_matches
+        or len(kp_a) < policy.minimum_good_matches
+        or len(kp_b) < policy.minimum_good_matches
+    ):
+        result["decision_stage"] = "INSUFFICIENT_DESCRIPTORS"
+        return result
+
+    matcher = getattr(_ORB_MATCHER_LOCAL, "matcher", None)
+    if matcher is None:
+        matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
+        _ORB_MATCHER_LOCAL.matcher = matcher
+    pairs = matcher.knnMatch(desc_a, desc_b, k=2)
+    good = [m for m, n in pairs if m.distance < policy.lowe_ratio * n.distance]
+    result["good_matches"] = len(good)
+    ratio = len(good) / max(min(len(kp_a), len(kp_b)), 1)
+    result["normalized_good_match_ratio"] = ratio
+    if (
+        len(good) < policy.minimum_good_matches
+        or ratio < policy.minimum_normalized_good_match_ratio
+    ):
+        result["decision_stage"] = "GOOD_MATCH_GATE"
+        return result
+
+    pts_a = np.float32([kp_a[m.queryIdx] for m in good])
+    pts_b = np.float32([kp_b[m.trainIdx] for m in good])
+    with _CV2_RANSAC_LOCK:
+        cv2.setRNGSeed(int(rng_seed) & 0x7FFFFFFF)
+        H, mask = cv2.findHomography(
+            pts_a,
+            pts_b,
+            cv2.RANSAC,
+            policy.homography_ransac_reprojection_px,
+        )
+    if H is None or mask is None:
+        result["decision_stage"] = "HOMOGRAPHY_FAIL"
+        return result
+
+    mask = mask.reshape(-1).astype(bool)
+    inliers = int(mask.sum())
+    inlier_ratio = inliers / len(good)
+    result["homography_inliers"] = inliers
+    result["inlier_ratio"] = inlier_ratio
+    if (
+        inliers < policy.minimum_homography_inliers
+        or inlier_ratio < policy.minimum_inlier_ratio
+    ):
+        result["decision_stage"] = "INLIER_GATE"
+        return result
+
+    in_a, in_b = pts_a[mask], pts_b[mask]
+    cov_a, cov_b = _coverage(in_a, a["shape"]), _coverage(in_b, b["shape"])
+    result["coverage_a"], result["coverage_b"] = cov_a, cov_b
+    if (
+        cov_a < policy.minimum_convex_hull_coverage_each_image
+        or cov_b < policy.minimum_convex_hull_coverage_each_image
+    ):
+        result["decision_stage"] = "COVERAGE_GATE"
+        return result
+
+    try:
+        H_inv = np.linalg.inv(H)
+    except np.linalg.LinAlgError:
+        result["decision_stage"] = "HOMOGRAPHY_INVERSE_FAIL"
+        return result
+
+    fwd = cv2.perspectiveTransform(in_a.reshape(-1, 1, 2), H).reshape(-1, 2)
+    rev = cv2.perspectiveTransform(in_b.reshape(-1, 1, 2), H_inv).reshape(-1, 2)
+    symmetric = 0.5 * (
+        np.linalg.norm(fwd - in_b, axis=1)
+        + np.linalg.norm(rev - in_a, axis=1)
+    )
+    median = float(np.median(symmetric))
+    result["median_symmetric_reprojection_px"] = median
+    result["accepted"] = bool(
+        median <= policy.maximum_median_symmetric_reprojection_px
+    )
+    result["decision_stage"] = (
+        "ACCEPT" if result["accepted"] else "REPROJECTION_GATE"
+    )
+    return result
+
+
+def selftest_orb_verifier_equivalence() -> dict[str, object]:
+    """Prove BFMatcher reuse preserves the frozen verifier exactly."""
+    import types
+    import cv2
+    import numpy as np
+
+    if _ORIGINAL_VERIFY_ORB_PAIR is None:
+        raise GuardHotfixError("original ORB verifier is unavailable for equivalence QA")
+
+    policy = types.SimpleNamespace(
+        lowe_ratio=0.75,
+        minimum_good_matches=20,
+        minimum_normalized_good_match_ratio=0.12,
+        homography_ransac_reprojection_px=5.0,
+        minimum_homography_inliers=12,
+        minimum_inlier_ratio=0.35,
+        minimum_convex_hull_coverage_each_image=0.1,
+        maximum_median_symmetric_reprojection_px=3.0,
+    )
+    rng = np.random.default_rng(1907)
+
+    # Case 1: descriptor-count rejection.
+    small_desc = rng.integers(0, 256, size=(8, 32), dtype=np.uint8)
+    small_xy = rng.uniform(0, 255, size=(8, 2)).astype(np.float32)
+    cases = [
+        (
+            "insufficient",
+            {"desc": small_desc, "xy": small_xy, "shape": (256, 256)},
+            {"desc": small_desc.copy(), "xy": small_xy.copy(), "shape": (256, 256)},
+            11,
+        )
+    ]
+
+    # Case 2: normal random pair expected to fail the Lowe/good-match gate.
+    random_a = rng.integers(0, 256, size=(96, 32), dtype=np.uint8)
+    random_b = rng.integers(0, 256, size=(104, 32), dtype=np.uint8)
+    cases.append(
+        (
+            "random_gate",
+            {
+                "desc": random_a,
+                "xy": rng.uniform(0, 255, size=(96, 2)).astype(np.float32),
+                "shape": (256, 256),
+            },
+            {
+                "desc": random_b,
+                "xy": rng.uniform(0, 255, size=(104, 2)).astype(np.float32),
+                "shape": (256, 256),
+            },
+            17,
+        )
+    )
+
+    # Case 3: a deterministic translated surface that should traverse homography,
+    # coverage, and reprojection logic.
+    side = 8
+    xs, ys = np.meshgrid(
+        np.linspace(20, 220, side, dtype=np.float32),
+        np.linspace(20, 220, side, dtype=np.float32),
+    )
+    xy_a = np.stack((xs.reshape(-1), ys.reshape(-1)), axis=1)
+    xy_b = xy_a + np.asarray([7.0, 5.0], dtype=np.float32)
+    desc = rng.integers(0, 256, size=(len(xy_a), 32), dtype=np.uint8)
+    cases.append(
+        (
+            "translated_accept",
+            {"desc": desc, "xy": xy_a, "shape": (256, 256)},
+            {"desc": desc.copy(), "xy": xy_b, "shape": (256, 256)},
+            23,
+        )
+    )
+
+    for name, a, b, seed in cases:
+        expected = _ORIGINAL_VERIFY_ORB_PAIR(
+            a,
+            b,
+            policy=policy,
+            rng_seed=seed,
+        )
+        observed = _optimized_verify_orb_pair(
+            a,
+            b,
+            policy=policy,
+            rng_seed=seed,
+        )
+        if expected != observed:
+            raise GuardHotfixError(
+                f"ORB verifier equivalence mismatch for {name}: "
+                f"expected={expected!r}, observed={observed!r}"
+            )
+
+    return {
+        "status": "PASS_ORB_VERIFIER_EXACT_EQUIVALENCE",
+        "opencv_version": str(cv2.__version__),
+        "cases": [name for name, *_rest in cases],
+        "matcher_reuse": "THREAD_LOCAL_STATELESS_BFMATCHER",
+    }
+
+
 def selftest_dino_topk_equivalence() -> dict[str, object]:
     """Prove optimized top-k equals the original reference under the active Torch runtime."""
     import numpy as np
@@ -400,9 +613,13 @@ def install(expected_source_sha256: str) -> dict[str, str]:
         for bundle in inputs.values():
             validate_manifest_safety(str(bundle.role), bundle.manifest)
 
+    global _ORIGINAL_VERIFY_ORB_PAIR
+    _ORIGINAL_VERIFY_ORB_PAIR = trackb_r07_audit.verify_orb_pair
+
     trackb_r07.assert_no_v1_test_surface = _strict_no_v1_test_surface
     trackb_r07_audit.topk_cosine_neighbors = _optimized_topk_cosine_neighbors
     trackb_r07_audit.encode_audit_features = _observable_encode_audit_features
+    trackb_r07_audit.verify_orb_pair = _optimized_verify_orb_pair
 
     original_run_checked = trackb_r07_ops.run_checked
     trackb_r07_ops.run_checked = _stream_science_command(
@@ -414,6 +631,7 @@ def install(expected_source_sha256: str) -> dict[str, str]:
         "status": "PASS_TRACKB_OPERATOR_HOTFIX_INSTALLED",
         "dino_topk_optimization": "EXACT_EQUIVALENT_VECTORIZED_CUTOFF_TIE_DETECTION",
         "dino_feature_progress_logging": True,
+        "orb_matcher_reuse": "THREAD_LOCAL_STATELESS_BFMATCHER",
         "science_subprocess_live_streaming": True,
         "hotfix_id": HOTFIX_ID,
         "source_sha256": expected_source_sha256,
