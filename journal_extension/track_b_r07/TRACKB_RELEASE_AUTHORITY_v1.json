@@ -15,11 +15,11 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
-    "operator_attestation_sha256": "26177b3c7beddd4a412c35820e0b4fb7b7fe1e6b458889840317885216630afa",
+    "operator_attestation_sha256": "d5118d834ad388c7348587f72acddccff3e584f8158cee2e0697c1b5804132a6",
     "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
-    "operator_notebook_01_blob_sha1": "33a5fd7471d572055e7c43302b517fd367c6fe74",
-    "operator_v1_guard_hotfix_sha256": "29109eeabc0997b4264be8ca26ccd595446458bab50c5327ce0597a9ad239799",
-    "operator_v1_guard_hotfix_blob_sha1": "73c2320cf85c7452ec185d5120403e339a60e333"
+    "operator_notebook_01_blob_sha1": "e401547a5411a226bbecfc9d9ec3a553b3c0a0ad",
+    "operator_v1_guard_hotfix_sha256": "da623753bca446667075c69d0480c440788d0b9ef51ed9d7a70d48455c1cb08c",
+    "operator_v1_guard_hotfix_blob_sha1": "0bed57a6dd60df0951b6f7c1276c56d319fbed97"
   },
   "supported_operator_notebooks": [
     "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
@@ -78,11 +78,8 @@
     },
     "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
     "exact_head_qa": {
-      "status": "PENDING_METADATA_REBIND_VALIDATION",
-      "prior_validated_commit": "44fcf8f1bfae64eb70621c51bc3ce4b5b5f6bb46",
-      "prior_workflow_run_id": 35865646837,
-      "prior_workflow_run_number": 845,
-      "note": "Only operator/release QA metadata changed after the validated behavior head. The rebound head must pass the same full Track-B validation chain."
+      "status": "PENDING_TIMEOUT_PERFORMANCE_QA",
+      "note": "The performance-remediated Notebook 01, hotfix, operator attestation, and release bindings must pass the complete Track-B validation chain."
     },
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false,
@@ -132,6 +129,22 @@
       "workflow_run_id": 35865646837,
       "workflow_run_number": 845,
       "targeted_test_count": 101
+    },
+    "notebook_01_timeout_performance_remediation": {
+      "status": "PENDING_QA",
+      "scientific_change": false,
+      "observed_failure": "Scientific runner was terminated by the controller's fixed subprocess timeout after 36000 seconds; Kaggle preflight, runtime, publication probe, and fast input discovery had already passed.",
+      "observed_elapsed_seconds": 36860.1,
+      "subprocess_timeout_seconds": 36000,
+      "observed_materialization_id": "98ff32c3c7ce2e66ffe52be97932a8b25f3ce50314c844abdd33077c99d90d78",
+      "protected_external_prediction_count_at_failure": 0,
+      "v1_test_accessed": false,
+      "remediation": [
+        "Exact-equivalent vectorized DINO top-k cutoff-tie detection",
+        "DINO feature/top-k progress logging",
+        "Live scientific subprocess log streaming",
+        "Existing 36000-second science timeout retained as quota safety ceiling"
+      ]
     }
   }
 }
