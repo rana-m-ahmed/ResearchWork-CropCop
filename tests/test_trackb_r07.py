@@ -31,7 +31,7 @@ from cropcop_je.trackb_r07 import (
 )
 from cropcop_je.hashing import sha256_json
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
-from cropcop_je.trackb_r07_audit import ImageAuditRecord, deterministic_representative_order, representative_manifest
+from cropcop_je.trackb_r07_audit import ImageAuditRecord, deterministic_representative_order, representative_manifest, topk_cosine_neighbors
 from cropcop_je.trackb_r07_ops import _checksum_matches, _classify_github_push_failure, _parse_gvlid_checksum_authority, load_kaggle_secret
 
 
@@ -464,6 +464,78 @@ class TrackBR07Tests(unittest.TestCase):
         drifted["external_family_order_seed"] = 1
         with self.assertRaises(TrackBError):
             validate_execution_lock(drifted)
+
+    def test_topk_cosine_neighbors_matches_reference_on_random_surface(self):
+        import numpy as np
+        import torch
+
+        rng = np.random.default_rng(1701)
+        q = rng.normal(size=(37, 23)).astype(np.float32)
+        r = rng.normal(size=(113, 23)).astype(np.float32)
+        q /= np.linalg.norm(q, axis=1, keepdims=True)
+        r /= np.linalg.norm(r, axis=1, keepdims=True)
+
+        observed_idx, observed_score = topk_cosine_neighbors(
+            q, r, k=11, device="cpu", block_rows=8
+        )
+
+        score = torch.from_numpy(q) @ torch.from_numpy(r).T
+        expected_idx = []
+        expected_score = []
+        for row in score:
+            values, _indices = torch.topk(row, k=11, largest=True, sorted=True)
+            threshold = values[-1]
+            strict_idx = torch.nonzero(row > threshold, as_tuple=False).flatten()
+            tie_idx = torch.nonzero(row == threshold, as_tuple=False).flatten()
+            slots = 11 - int(strict_idx.numel())
+            chosen = torch.cat((strict_idx, torch.sort(tie_idx).values[:slots]))
+            chosen_scores = row[chosen]
+            order = torch.argsort(chosen_scores, descending=True, stable=True)
+            expected_idx.append(chosen[order].numpy())
+            expected_score.append(chosen_scores[order].numpy())
+
+        np.testing.assert_array_equal(observed_idx, np.stack(expected_idx))
+        np.testing.assert_allclose(
+            observed_score, np.stack(expected_score), rtol=0.0, atol=0.0
+        )
+
+    def test_topk_cosine_neighbors_matches_reference_on_cutoff_ties(self):
+        import numpy as np
+        import torch
+
+        q = np.asarray([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+        r = np.asarray([
+            [1.0, 0.0],
+            [1.0, 0.0],
+            [1.0, 0.0],
+            [0.5, 0.5],
+            [0.5, 0.5],
+            [0.0, 1.0],
+            [0.0, 1.0],
+        ], dtype=np.float32)
+        observed_idx, observed_score = topk_cosine_neighbors(
+            q, r, k=2, device="cpu", block_rows=2
+        )
+
+        score = torch.from_numpy(q) @ torch.from_numpy(r).T
+        expected_idx = []
+        expected_score = []
+        for row in score:
+            values, _indices = torch.topk(row, k=2, largest=True, sorted=True)
+            threshold = values[-1]
+            strict_idx = torch.nonzero(row > threshold, as_tuple=False).flatten()
+            tie_idx = torch.nonzero(row == threshold, as_tuple=False).flatten()
+            slots = 2 - int(strict_idx.numel())
+            chosen = torch.cat((strict_idx, torch.sort(tie_idx).values[:slots]))
+            chosen_scores = row[chosen]
+            order = torch.argsort(chosen_scores, descending=True, stable=True)
+            expected_idx.append(chosen[order].numpy())
+            expected_score.append(chosen_scores[order].numpy())
+
+        np.testing.assert_array_equal(observed_idx, np.stack(expected_idx))
+        np.testing.assert_allclose(
+            observed_score, np.stack(expected_score), rtol=0.0, atol=0.0
+        )
 
     def test_operator_sources_fail_closed_to_qualification(self):
         master = (ROOT / "journal_extension" / "scripts" / "run_trackb_r07_master.py").read_text(encoding="utf-8")
