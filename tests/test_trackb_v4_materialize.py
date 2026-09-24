@@ -887,6 +887,9 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         self.assertIn("TRACKB_V5_V1_GUARD_FALSE_POSITIVE_FIX_v1", source)
         self.assertIn("sitecustomize.py", source)
         self.assertIn("TRACKB_V1_GUARD_HOTFIX_ACTIVE", source)
+        self.assertIn("EXACT_EQUIVALENT_VECTORIZED_CUTOFF_TIE_DETECTION", source)
+        self.assertIn("DINO top-k", source)
+        self.assertIn("science_subprocess_live_streaming", source)
         self.assertIn("DEFERRED_TO_CONTROLLER_BEFORE_SCIENCE", source)
         self.assertNotIn(
             "observed_content = {role: _role_identity(path.parent)",
@@ -910,7 +913,7 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             / "operator_hotfixes"
             / "trackb_v5_v1_guard_hotfix.py"
         )
-        hotfix_sha = "29109eeabc0997b4264be8ca26ccd595446458bab50c5327ce0597a9ad239799"
+        hotfix_sha = "da623753bca446667075c69d0480c440788d0b9ef51ed9d7a70d48455c1cb08c"
 
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
