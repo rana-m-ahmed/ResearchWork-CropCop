@@ -174,6 +174,9 @@ def main() -> int:
             "trackb_v5_v1_guard_hotfix.py",
             "sitecustomize.py",
             "TRACKB_V1_GUARD_HOTFIX_ACTIVE",
+            "EXACT_EQUIVALENT_VECTORIZED_CUTOFF_TIE_DETECTION",
+            "science_subprocess_live_streaming",
+            "DINO top-k",
         ),
         "Notebook 01",
     )
@@ -320,6 +323,11 @@ def main() -> int:
             "_path_is_forbidden",
             "value is not False",
             "trackb_r07.assert_no_v1_test_surface",
+            "_optimized_topk_cosine_neighbors",
+            "_observable_encode_audit_features",
+            "_stream_science_command",
+            "DINO top-k",
+            "science_subprocess_live_streaming",
         ),
         "Track-B V1 guard operator hotfix",
     )
