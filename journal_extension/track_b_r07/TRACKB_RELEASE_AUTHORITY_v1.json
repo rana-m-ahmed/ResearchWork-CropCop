@@ -15,7 +15,7 @@
     "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
     "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
     "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
-    "operator_attestation_sha256": "bc82397e9e699392e700a2c8395e122ced3c57038fc03ab77149ebfc72dd01ab",
+    "operator_attestation_sha256": "bf36a0687c17030ff857f7683c660dee4fde45e54276183feb4d114f450ca9a3",
     "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
     "operator_notebook_01_blob_sha1": "4a1b4ab9b9401362d4f68c230f88a64f7ac432eb",
     "operator_v1_guard_hotfix_sha256": "60575bd2841c2aa63bbc6bd7ec14e1966f14c2b3f744513597f30cf825d5ce8e",
@@ -78,8 +78,11 @@
     },
     "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
     "exact_head_qa": {
-      "status": "PENDING_FINAL_TIMEOUT_PERFORMANCE_QA",
-      "note": "Final selector-safe observable performance remediation must pass the complete Track-B validation chain."
+      "status": "PENDING_METADATA_REBIND_VALIDATION",
+      "prior_validated_commit": "edda08757e3535c0dcd073fba0e8adf530782389",
+      "prior_workflow_run_id": 35964219360,
+      "prior_workflow_run_number": 898,
+      "note": "Only QA metadata changed after validated behavior. Rebound head must pass the same complete Track-B chain."
     },
     "protected_external_prediction_count": 0,
     "v1_test_accessed": false,
@@ -131,7 +134,7 @@
       "targeted_test_count": 101
     },
     "notebook_01_timeout_performance_remediation": {
-      "status": "PENDING_FINAL_QA",
+      "status": "PASS",
       "scientific_change": false,
       "observed_failure": "Scientific runner was terminated by the controller's fixed subprocess timeout after 36000 seconds; Kaggle preflight, runtime, publication probe, and fast input discovery had already passed.",
       "observed_elapsed_seconds": 36860.1,
@@ -146,7 +149,13 @@
         "Existing 36000-second science timeout retained as quota safety ceiling"
       ],
       "runtime_equivalence_selftest": "REQUIRED_BEFORE_SCIENCE",
-      "silent_child_timeout_enforcement": "SELECTOR_POLLED"
+      "silent_child_timeout_enforcement": "SELECTOR_POLLED",
+      "validated_commit": "edda08757e3535c0dcd073fba0e8adf530782389",
+      "workflow_run_id": 35964219360,
+      "workflow_run_number": 898,
+      "targeted_test_count": 104,
+      "targeted_test_skipped_count": 2,
+      "note": "Two PyTorch-specific equivalence unit tests are intentionally skipped in minimal GitHub CI; the exact equivalence self-test is mandatory and executes in the frozen Kaggle Torch runtime before science."
     }
   }
 }
