@@ -891,6 +891,8 @@ class TrackBV4MaterializationTests(unittest.TestCase):
         self.assertIn("EXACT_EQUIVALENT_VECTORIZED_CUTOFF_TIE_DETECTION", source)
         self.assertIn("DINO top-k", source)
         self.assertIn("science_subprocess_live_streaming", source)
+        self.assertIn("selftest_orb_verifier_equivalence", source)
+        self.assertIn("THREAD_LOCAL_STATELESS_BFMATCHER", source)
         self.assertIn("DEFERRED_TO_CONTROLLER_BEFORE_SCIENCE", source)
         self.assertNotIn(
             "observed_content = {role: _role_identity(path.parent)",
@@ -914,7 +916,7 @@ class TrackBV4MaterializationTests(unittest.TestCase):
             / "operator_hotfixes"
             / "trackb_v5_v1_guard_hotfix.py"
         )
-        hotfix_sha = "60575bd2841c2aa63bbc6bd7ec14e1966f14c2b3f744513597f30cf825d5ce8e"
+        hotfix_sha = "ea582c3a390ae68e15898e9108aeaf2c480d69944094555186f2ee17c8a5da89"
 
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
