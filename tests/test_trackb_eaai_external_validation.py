@@ -13,6 +13,10 @@ import sys
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from cropcop_je.trackb_eaai_audit import (  # noqa: E402
+    build_external_manifest,
+    write_invalid_manifest_csv,
+) 
 from cropcop_je.trackb_eaai_common import (  # noqa: E402
     CHECKPOINTS,
     Bundle,
@@ -35,7 +39,7 @@ class TrackBEAAISimplifiedTests(unittest.TestCase):
             ROOT
             / "journal_extension"
             / "track_b_r07"
-            / "TRACKB_EAAI_PROTOCOL_v1.json"
+            / "TRACKB_EAAI_PROTOCOL_v2.json"
         )
         self.runner_path = (
             ROOT
@@ -48,7 +52,7 @@ class TrackBEAAISimplifiedTests(unittest.TestCase):
         protocol = load_protocol(self.protocol_path)
         self.assertEqual(
             protocol["protocol_id"],
-            "TRACKB_EAAI_EXTERNAL_VALIDATION_v1",
+            "TRACKB_EAAI_EXTERNAL_VALIDATION_v2",
         )
         self.assertEqual(protocol["status"], "FROZEN_PRE_RESULTS")
         self.assertFalse(
@@ -75,6 +79,18 @@ class TrackBEAAISimplifiedTests(unittest.TestCase):
         )
         self.assertFalse(
             protocol["leakage_surface"]["v1_test_accessed"]
+        )
+        quality = protocol["data_quality_policy"]
+        self.assertTrue(quality["strict_decode_required"])
+        self.assertFalse(quality["pillow_load_truncated_images"])
+        self.assertTrue(
+            quality["decode_invalid_files_excluded_from_all_metric_cohorts"]
+        )
+        self.assertTrue(
+            quality["decode_invalid_files_must_be_reported_with_raw_sha256_label_path_and_error"]
+        )
+        self.assertFalse(
+            protocol["amendment"]["protected_external_predictions_observed_before_amendment"]
         )
 
     def test_prediction_policy_is_native_120_and_no_renormalization(self):
@@ -261,6 +277,63 @@ class TrackBEAAISimplifiedTests(unittest.TestCase):
             self.assertNotIn(forbidden, source)
         self.assertIn("leakage_clean_primary", source)
         self.assertIn("mapped_scope", source.lower())
+
+    def test_decode_invalid_source_is_reported_and_excluded_before_metrics(self):
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for label in ("healthy", "earlyblt"):
+                (root / label).mkdir(parents=True)
+
+            Image.new("RGB", (8, 8), (10, 20, 30)).save(
+                root / "healthy" / "valid.jpg"
+            )
+            Image.new("RGB", (8, 8), (40, 50, 60)).save(
+                root / "earlyblt" / "valid.jpg"
+            )
+            bad = root / "earlyblt" / "broken.jpg"
+            bad.write_bytes(b"this-is-not-an-image")
+
+            rows, invalid, audit = build_external_manifest(
+                dataset_id="synthetic",
+                data_root=root,
+                mapping={
+                    "healthy": "potato_healthy",
+                    "earlyblt": "potato_early_blight",
+                },
+                expected_count=3,
+                expected_support={"healthy": 1, "earlyblt": 2},
+                historical_sha={sha256_file(bad)},
+                workers=2,
+            )
+
+            self.assertEqual(len(rows), 2)
+            self.assertEqual(len(invalid), 1)
+            self.assertEqual(audit["published_file_count"], 3)
+            self.assertEqual(audit["decode_valid_row_count"], 2)
+            self.assertEqual(audit["decode_invalid_count"], 1)
+            self.assertEqual(
+                audit["decode_invalid_exact_v1_train_val_overlap_count"],
+                1,
+            )
+            self.assertEqual(
+                invalid[0]["relative_path"],
+                "earlyblt/broken.jpg",
+            )
+            self.assertEqual(invalid[0]["raw_sha256"], sha256_file(bad))
+            self.assertTrue(invalid[0]["exact_v1_train_val_overlap"])
+            self.assertEqual(invalid[0]["decode_status"], "INVALID")
+            self.assertIn(
+                invalid[0]["error_type"],
+                {"UnidentifiedImageError", "OSError"},
+            )
+
+            invalid_csv = root / "invalid.csv"
+            write_invalid_manifest_csv(invalid_csv, invalid)
+            text = invalid_csv.read_text(encoding="utf-8")
+            self.assertIn("earlyblt/broken.jpg", text)
+            self.assertIn(sha256_file(bad), text)
 
     def test_materialization_pair_accepts_matching_receipts_and_rejects_mixup(self):
         with tempfile.TemporaryDirectory() as td:
