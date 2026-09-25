@@ -33,7 +33,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install minimal QA dependency
-        run: python -m pip install --disable-pip-version-check "numpy==2.5.2" "pyflakes==3.4.0"
+        run: python -m pip install --disable-pip-version-check "numpy==2.5.2" "Pillow==12.3.0" "pyflakes==3.4.0"
 
       - name: Compile Track-B Python
         run: |
