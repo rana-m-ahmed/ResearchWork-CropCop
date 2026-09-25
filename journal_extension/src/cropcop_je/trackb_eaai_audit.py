@@ -72,7 +72,7 @@ def build_external_manifest(
     expected_support: dict[str, int] | None,
     historical_sha: set[str],
     workers: int,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     from PIL import Image, ImageFile, ImageOps, UnidentifiedImageError
 
     # Fail closed on truncated/corrupt payloads. We report and exclude them;
