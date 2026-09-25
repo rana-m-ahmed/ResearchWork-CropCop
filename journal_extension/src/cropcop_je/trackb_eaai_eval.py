@@ -118,8 +118,8 @@ class ExternalDataset:
         )
 
 
-def run_inference(
-    model,
+def run_three_seed_inference(
+    models: dict[str, Any],
     rows: list[dict[str, Any]],
     root: Path,
     class_map: dict[str, int],
@@ -127,114 +127,87 @@ def run_inference(
     device: str,
     batch_size: int,
     workers: int,
-) -> list[dict[str, Any]]:
+) -> dict[str, list[dict[str, Any]]]:
+    """Decode/transform each external image once, then evaluate S1/S2/S3 in FP32."""
     import torch
     from torch.utils.data import DataLoader
 
-    dataset = ExternalDataset(
-        rows,
-        root,
-        class_map,
-    )
+    if set(models) != {"S1", "S2", "S3"}:
+        raise TrackBEAAIError(
+            "three-seed inference requires exactly S1/S2/S3 models"
+        )
+
+    dataset = ExternalDataset(rows, root, class_map)
     loader = DataLoader(
         dataset,
         batch_size=int(batch_size),
         shuffle=False,
         num_workers=max(0, int(workers)),
         pin_memory=device.startswith("cuda"),
+        persistent_workers=bool(int(workers) > 0),
     )
-    by_id = {
-        row["row_id"]: row
-        for row in rows
-    }
-    output: list[dict[str, Any]] = []
+    by_id = {row["row_id"]: row for row in rows}
+    output = {seed: [] for seed in ("S1", "S2", "S3")}
 
-    model.eval()
+    for model in models.values():
+        model.eval()
+
+    total_batches = math.ceil(len(dataset) / int(batch_size))
     with torch.inference_mode():
-        for batch_index, (
-            x,
-            target,
-            row_ids,
-        ) in enumerate(loader):
-            logits = model(
-                x.to(
-                    device,
-                    non_blocking=True,
-                )
-            )
-            if (
-                logits.ndim != 2
-                or logits.shape[1] != 120
-            ):
-                raise TrackBEAAIError(
-                    "native classifier output must "
-                    f"be [N,120], got {tuple(logits.shape)}"
-                )
-
-            predicted = (
-                logits.argmax(dim=1)
-                .cpu()
-                .tolist()
-            )
+        for batch_index, (x, target, row_ids) in enumerate(loader):
+            x_device = x.to(device, non_blocking=True)
             targets = target.cpu().tolist()
+            predictions_by_seed: dict[str, list[int]] = {}
 
-            for row_id, target_idx, pred_idx in zip(
-                row_ids,
-                targets,
-                predicted,
+            for seed in ("S1", "S2", "S3"):
+                logits = models[seed](x_device)
+                if logits.ndim != 2 or logits.shape[1] != 120:
+                    raise TrackBEAAIError(
+                        f"{seed} native classifier output must be [N,120], "
+                        f"got {tuple(logits.shape)}"
+                    )
+                predictions_by_seed[seed] = (
+                    logits.argmax(dim=1).cpu().tolist()
+                )
+                del logits
+
+            for row_index, (row_id, target_idx) in enumerate(
+                zip(row_ids, targets)
             ):
                 source = by_id[str(row_id)]
-                output.append(
-                    {
-                        "row_id": str(row_id),
-                        "relative_path": source[
-                            "relative_path"
-                        ],
-                        "source_label": source[
-                            "source_label"
-                        ],
-                        "target_class_name": source[
-                            "target_class_name"
-                        ],
-                        "target_class_index": int(
-                            target_idx
-                        ),
-                        "predicted_class_index": int(
-                            pred_idx
-                        ),
-                        "correct": (
-                            int(target_idx)
-                            == int(pred_idx)
-                        ),
-                    }
-                )
+                common = {
+                    "row_id": str(row_id),
+                    "relative_path": source["relative_path"],
+                    "source_label": source["source_label"],
+                    "target_class_name": source["target_class_name"],
+                    "target_class_index": int(target_idx),
+                }
+                for seed in ("S1", "S2", "S3"):
+                    pred_idx = int(predictions_by_seed[seed][row_index])
+                    output[seed].append(
+                        {
+                            **common,
+                            "predicted_class_index": pred_idx,
+                            "correct": int(target_idx) == pred_idx,
+                        }
+                    )
 
-            if (
-                batch_index + 1
-            ) % 100 == 0:
+            if (batch_index + 1) % 100 == 0 or (batch_index + 1) == total_batches:
                 print(
-                    "inference batches completed: "
-                    f"{batch_index + 1:,}/"
-                    f"{math.ceil(len(dataset) / int(batch_size)):,}",
+                    "three-seed inference batches completed: "
+                    f"{batch_index + 1:,}/{total_batches:,}",
                     flush=True,
                 )
 
-    if (
-        len(output) != len(rows)
-        or len(
-            {
-                row["row_id"]
-                for row in output
-            }
-        )
-        != len(rows)
-    ):
-        raise TrackBEAAIError(
-            "prediction row count/identity mismatch"
-        )
+    expected_ids = [row["row_id"] for row in rows]
+    for seed in ("S1", "S2", "S3"):
+        observed_ids = [row["row_id"] for row in output[seed]]
+        if observed_ids != expected_ids:
+            raise TrackBEAAIError(
+                f"{seed} prediction row order/identity mismatch"
+            )
 
     return output
-
 
 def metrics(
     rows: Iterable[dict[str, Any]],
