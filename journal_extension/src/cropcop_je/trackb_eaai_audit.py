@@ -73,7 +73,11 @@ def build_external_manifest(
     historical_sha: set[str],
     workers: int,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    from PIL import Image, ImageOps
+    from PIL import Image, ImageFile, ImageOps, UnidentifiedImageError
+
+    # Fail closed on truncated/corrupt payloads. We report and exclude them;
+    # we never ask Pillow to synthesize pixels from a damaged source file.
+    ImageFile.LOAD_TRUNCATED_IMAGES = False
 
     items = discover_images(data_root, set(mapping))
     if len(items) != int(expected_count):
@@ -94,36 +98,72 @@ def build_external_manifest(
                 f"observed={dict(support)} expected={expected}"
             )
 
-    def one(item: tuple[Path, str]) -> dict[str, Any]:
+    def one(
+        item: tuple[Path, str],
+    ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
         path, label = item
         raw_sha = sha256_file(path)
-        with Image.open(path) as image:
-            canonical = ImageOps.exif_transpose(image).convert("RGB")
-            canonical.load()
-            width, height = canonical.size
-
         rel = path.relative_to(data_root).as_posix()
         row_id = hashlib.sha256(
             f"{dataset_id}|{rel}|{raw_sha}".encode("utf-8")
         ).hexdigest()
-        return {
+        common = {
             "row_id": row_id,
             "relative_path": rel,
             "source_label": label,
             "target_class_name": mapping[label],
             "raw_sha256": raw_sha,
             "bytes": path.stat().st_size,
+        }
+
+        try:
+            with Image.open(path) as image:
+                canonical = ImageOps.exif_transpose(image).convert("RGB")
+                canonical.load()
+                width, height = canonical.size
+        except (
+            UnidentifiedImageError,
+            OSError,
+            SyntaxError,
+            ValueError,
+            Image.DecompressionBombError,
+        ) as exc:
+            invalid = {
+                **common,
+                "decode_status": "INVALID",
+                "error_type": type(exc).__name__,
+                "error_message": str(exc)[:500],
+            }
+            return None, invalid
+
+        row = {
+            **common,
             "width": int(width),
             "height": int(height),
+            "decode_status": "VALID",
             "exact_v1_train_val_overlap": raw_sha in historical_sha,
         }
+        return row, None
 
     with ThreadPoolExecutor(
         max_workers=max(1, int(workers))
     ) as pool:
-        rows = list(pool.map(one, items, chunksize=16))
+        scanned = list(pool.map(one, items, chunksize=16))
 
+    rows = [row for row, invalid in scanned if row is not None]
+    invalid_rows = [
+        invalid for row, invalid in scanned if invalid is not None
+    ]
     rows.sort(key=lambda row: row["row_id"])
+    invalid_rows.sort(key=lambda row: row["row_id"])
+
+    valid_support = Counter(row["source_label"] for row in rows)
+    missing_valid_labels = sorted(set(mapping) - set(valid_support))
+    if missing_valid_labels:
+        raise TrackBEAAIError(
+            f"{dataset_id}: mapped labels have no strictly decodable images: "
+            f"{missing_valid_labels}"
+        )
 
     by_sha: dict[str, list[str]] = defaultdict(list)
     for row in rows:
@@ -160,8 +200,19 @@ def build_external_manifest(
 
     audit = {
         "dataset_id": dataset_id,
-        "published_row_count": len(rows),
-        "source_support": dict(sorted(support.items())),
+        "published_file_count": len(items),
+        "published_source_support": dict(sorted(support.items())),
+        "decode_valid_row_count": len(rows),
+        "decode_valid_support": dict(sorted(valid_support.items())),
+        "decode_invalid_count": len(invalid_rows),
+        "decode_invalid_support": dict(
+            sorted(Counter(row["source_label"] for row in invalid_rows).items())
+        ),
+        "decode_policy": {
+            "strict_decode_required": True,
+            "load_truncated_images": False,
+            "decode_invalid_files_excluded_from_metrics": True,
+        },
         "exact_v1_train_val_overlap_count": len(overlap_rows),
         "leakage_clean_primary_count": len(clean_rows),
         "exact_deduplicated_sensitivity_count": len(
@@ -175,7 +226,33 @@ def build_external_manifest(
         ),
         "v1_test_accessed": False,
     }
-    return rows, audit
+    return rows, invalid_rows, audit
+
+
+def write_invalid_manifest_csv(
+    path: Path,
+    rows: list[dict[str, Any]],
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fields = [
+        "row_id",
+        "relative_path",
+        "source_label",
+        "target_class_name",
+        "raw_sha256",
+        "bytes",
+        "decode_status",
+        "error_type",
+        "error_message",
+    ]
+    with path.open(
+        "w",
+        encoding="utf-8",
+        newline="",
+    ) as fh:
+        writer = csv.DictWriter(fh, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def write_manifest_csv(
@@ -192,6 +269,7 @@ def write_manifest_csv(
         "bytes",
         "width",
         "height",
+        "decode_status",
         "exact_v1_train_val_overlap",
         "exact_duplicate_group_size",
         "exact_duplicate_representative",
