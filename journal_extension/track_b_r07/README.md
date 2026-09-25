@@ -1,140 +1,126 @@
-# CropCop Track B — R07 External Validation
+# CropCop Track B — EAAI External Validation
 
-## Current operator architecture: v4
+## Active path
 
-Track B keeps the frozen v3 scientific design and replaces only the operator/orchestration layer.
+The supported Track-B experiment is now:
 
-**Supported operator notebooks:**
+- `journal_extension/track_b_r07/TRACKB_EAAI_PROTOCOL_v2.json`
+- `journal_extension/scripts/run_trackb_eaai_external_validation.py`
+- `journal_extension/kaggle/TrackB_EAAI_External_Validation.ipynb` (generated after the behavior commit is QA-pinned)
 
-1. `journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb`
-2. `journal_extension/kaggle/TrackB_01_Final_Execution.ipynb`
+Track B is a **cross-source external evaluation** of the frozen CropCop R07
+classifier on seven mapped classes from two public datasets. It is not a claim
+of external validation across all 120 classes.
 
-All older Track-B notebooks are historical/recovery surfaces and are **not supported for new v4 execution**.
+### External sources
 
-## Scientific boundary
+- GVLiD v5 — DOI `10.17632/wkymf8bhcg.5`, 3,477 images, four grape classes.
+- Irish Potato — DOI `10.5281/zenodo.8286529`, 58,709 images, three potato classes.
 
-The v4 orchestration makes **no scientific change** to:
+The already completed Notebook-00 materialization is reused. Notebook 00 must
+not be rerun merely to execute the simplified Track-B experiment.
 
-- downstream authority `EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3`;
-- R07 ConvNeXt-Tiny S1/S2/S3;
-- native 120-way predictions;
-- CTC-v2 preprocessing;
-- GVLiD v5 and Irish Potato Version 01;
-- frozen source→CropCop mappings;
-- V1 train+validation historical comparison only (92,744 images);
-- EXT-S ceiling for the executable post-closure historical route;
-- pHash/dHash/DINO/ORB audit thresholds;
-- 50-family minimum support;
-- 5,000 bootstrap replicates, seed `409883112`;
-- external-family order seed `1936263114`;
-- consumed V1 test closure;
-- no training/adaptation/reselection.
+## Scientific contract
 
-The scientific runner remains `journal_extension/scripts/run_trackb_r07.py`.
+The active protocol freezes, before external inference:
 
-## Notebook 00 — Readiness & Materialization
+- R07 S1/S2/S3 checkpoint identities;
+- the seven source-to-CropCop class mappings;
+- CTC-v2 deterministic evaluation preprocessing;
+- the native 120-class output space;
+- no external retraining, fine-tuning or calibration;
+- no mapped-subset logit renormalization;
+- out-of-mapped-scope predictions count as errors;
+- mapped-scope Macro-F1 as the primary metric;
+- accuracy, balanced accuracy, per-class metrics, confusion matrices and
+  out-of-mapped-scope rate as secondary metrics;
+- paired, class-stratified 5,000-replicate percentile bootstrap for primary
+  Macro-F1 uncertainty;
+- the V1 test surface remains closed.
 
-Use Kaggle T4 x2 with Internet ON and secret `KAGGLE_API_TOKEN`.
+## Strict-decode data quality
 
-Attach exactly the five frozen internal source datasets listed in
-`TRACKB_INPUT_MATERIALIZATION_LOCK_v1.json`.
+Before any model is loaded, every external file is hashed and strictly decoded with Pillow. Files that cannot be decoded are never repaired or silently ignored: they are written to `decode_invalid_manifest.csv` with path, label, raw SHA-256 and decode error, and are excluded from all metric cohorts. Published source counts remain frozen; metric denominators use the strictly decodable subset. The v2 amendment was frozen after a prediction-free v1 audit failure and before any external model prediction or metric was observed.
 
-The readiness notebook:
+## Leakage screening and cohorts
 
-1. checks out the exact frozen v4 orchestration source;
-2. repairs/verifies the exact Track-B runtime;
-3. reads the five internal datasets from attached `/kaggle/input` mounts rather than downloading them;
-4. builds the immutable core package;
-5. builds the safe 92,744-image historical comparison package;
-6. acquires and verifies the exact public GVLiD v5 and Irish Potato Version 01 cohorts;
-7. prepares the two candidate packages;
-8. creates a common `materialization_id` binding all four role manifests, repository source, v3 execution lock and v3 scientific attestation;
-9. publishes exactly two private Kaggle datasets:
-   - `cropcop-trackb-r07-infrastructure-v4`
-   - `cropcop-trackb-r07-external-v4`
-10. performs full private-Kaggle round-trip content verification.
+The historical comparison package contains the frozen V1 **train + validation**
+surface only (92,744 rows). The active leakage audit uses exact raw SHA-256.
 
-Readiness is prediction-blind and must finish with
-`PASS_TRACKB_INPUT_MATERIALIZATION`, zero protected external predictions, and no V1-test access.
+Three cohorts are reported:
 
-Heavy one-time materialization lives under `/kaggle/tmp`; only the readiness receipt is retained in `/kaggle/working`.
+1. **full_published** — all valid mapped source images;
+2. **leakage_clean_primary** — excludes exact raw-SHA matches to V1 train+val;
+3. **exact_deduplicated_sensitivity** — leakage-clean plus one deterministic
+   representative for each identical external raw-SHA group.
 
-## Notebook 01 — Final Execution
+No DINO, ORB, homography or geometric-family graph is required by the active
+protocol.
 
-Attach only the exact two private dataset versions produced by Notebook 00.
+## Why the prior path was retired
 
-The final notebook performs no Mendeley/Zenodo acquisition, no Kaggle dataset downloading, and no Git clone. It executes from the repository snapshot embedded in the attached `core` package.
+Before any protected external performance result was observed, the prior
+qualification design repeatedly exceeded the Kaggle execution budget. The
+Irish Potato audit generated multi-million-pair geometric verification work
+that was not proportionate to the paper claim.
 
-### Qualification mode
+The amendment therefore preserves the model, mappings, metric definitions and
+V1-test closure while replacing the expensive near-duplicate qualification
+machinery with exact-content leakage screening.
 
-Default:
+## Legacy / forensic only
 
-`RUN_MODE = 'qualification'`
+The following mechanisms are **not supported for new Track-B runs**:
 
-Secrets required: **none**.
+- v5 qualification -> claim orchestration;
+- EXT-I / EXT-S / EXT-X runtime grading;
+- DINO top-k duplicate candidate generation;
+- ORB/BFMatcher/homography pair verification;
+- qualification-dataset publication;
+- claim leases and Kaggle attempt ledgers;
+- Kaggle-owner-bound execution;
+- staged v6 qualification/checkpoint execution.
 
-Qualification:
+Their history is retained in Git for provenance. They are not dependencies of
+the EAAI external-validation runner.
 
-- validates the two paired bundle receipts;
-- validates exactly four Track-B input roles;
-- repairs/verifies the exact runtime;
-- launches the scientific controller in a fresh subprocess;
-- replays R07 S1/S2/S3 on the frozen V1 validation surface;
-- runs both complete prediction-blind candidate audits;
-- freezes grades, families and seals;
-- writes `TRACKB_PREINFERENCE_QUALIFICATION.json`;
-- runs independent pre-inference QA;
-- asserts zero protected external predictions and V1-test access false;
-- stops.
+## Execution
 
-The key handoff is `qualification_science_sha256`.
+The new Kaggle notebook requires the two already-materialized Track-B datasets:
 
-### Claim mode
+- infrastructure bundle containing `core` and `historical_compare`;
+- external bundle containing `gvlid_v5` and `irish_potato`.
 
-Only after independent review of qualification:
+No Kaggle API token or account-specific owner value is part of the scientific
+protocol.
 
-`RUN_MODE = 'claim'`
+A single supported run performs:
 
-and set the exact reviewed
-`AUTHORIZED_QUALIFICATION_SCIENCE_SHA256`.
+1. source/protocol/checkpoint validation;
+2. exact SHA-256 leakage screening;
+3. S1/S2/S3 native-120 inference on both external datasets;
+4. full, leakage-clean and exact-deduplicated metric computation;
+5. paired bootstrap confidence intervals;
+6. paper-table and per-image evidence export;
+7. final hash manifest.
 
-Claim mode must use the exact same two attached dataset versions.
+Scientific performance is never used as an execution gate. Low external
+performance is a result to report, not a reason to fail or redesign the run.
 
-Secret required: `KAGGLE_API_TOKEN` only.
+## Definition of done
 
-The runner recomputes the prediction-blind science identity and refuses protected inference unless it matches the reviewed digest exactly. Before the first protected R07 forward pass, it writes the durable attempt ledger. After terminal QA it builds the complete/public evidence packages and archives restricted evidence to private Kaggle with round-trip verification.
+Track B is complete when the final runner produces
+`PASS_TRACKB_EAAI_EXTERNAL_VALIDATION` and the output package contains:
 
-GitHub credentials are intentionally excluded from the scientific run.
+- protocol and environment records;
+- source authority and leakage audit;
+- per-image predictions for S1/S2/S3;
+- full/clean/deduplicated metrics;
+- primary confusion matrices;
+- paired bootstrap intervals;
+- `paper_table.csv`;
+- `summary.json`;
+- `TRACKB_FINAL_MANIFEST.json`.
 
-## Publication boundary
-
-GitHub is a post-closure dissemination layer, not part of the estimator.
-
-After `TRACK_B_CLOSED`, use the public-safe evidence archive produced by Notebook 01 and commit it to:
-
-`journal_extension/evidence/public/track_b/<science-sha-prefix>/`
-
-through a reviewed repository branch/PR.
-
-A GitHub publication failure must never trigger a scientific rerun.
-
-## v4 operational locks
-
-- `TRACKB_INPUT_MATERIALIZATION_LOCK_v1.json`
-- `TRACKB_ORCHESTRATION_LOCK_v4.json`
-
-These operational locks sit above the unchanged scientific:
-
-- `TRACKB_R07_EXECUTION_LOCK_v3.json`
-- `TRACKB_CODE_ATTESTATION_v3.json`
-- `TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json`
-
-## Current gate
-
-Until Notebook 00 completes successfully on real Kaggle and the two published bundles are independently verified:
-
-**HOLD — REAL MATERIALIZATION REQUIRED**
-
-Until Notebook 01 qualification passes and its `qualification_science_sha256` is reviewed:
-
-**HOLD — PROTECTED EXTERNAL INFERENCE FORBIDDEN**
+No further Track-B infrastructure should be added unless required by a
+reviewer or by a concrete reproducibility defect.

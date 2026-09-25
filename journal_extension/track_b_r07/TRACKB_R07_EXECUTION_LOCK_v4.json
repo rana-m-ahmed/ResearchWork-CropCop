@@ -1,0 +1,278 @@
+{
+  "authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "bootstrap": {
+    "interval": "percentile_95",
+    "no_new_nhst_family": true,
+    "replicates": 5000,
+    "same_resample_indices_for_all_three_seeds": true,
+    "seed": 409883112,
+    "stratify_within_mapped_class": true,
+    "unit": "family_representative"
+  },
+  "candidate_generation": {
+    "dhash": {
+      "bits": 64,
+      "hamming_max": 10,
+      "implementation": "9x8 EXIF-aware grayscale LANCZOS; adjacent horizontal comparison"
+    },
+    "dino_feature_preprocessing": {
+      "ctc_v2_config_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+      "entrypoint": "cropcop_je.data.ctc_v2_eval_transform",
+      "source_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+      "status": "PROSPECTIVELY_FROZEN_TRACKB_IMPLEMENTATION_OF_03R_DETERMINISTIC_EVAL_PREPROCESSING"
+    },
+    "dino_top_k": 50,
+    "exact_raw_sha256": true,
+    "phash": {
+      "bits": 64,
+      "hamming_max": 12,
+      "implementation": "32x32 EXIF-aware grayscale LANCZOS; float32 2-D DCT; top-left 8x8; median threshold over the 64 coefficients"
+    }
+  },
+  "code_attestation_sha256": "f2676e1a6b7ead1bf8ee8f99562609f0c4baa4cd0fbdaa212ed5780704182336",
+  "experiment_ids": [
+    "TB2-AUDIT-GVLID",
+    "TB2-AUDIT-POTATO",
+    "TB2-R07-GVLID-S1",
+    "TB2-R07-GVLID-S2",
+    "TB2-R07-GVLID-S3",
+    "TB2-R07-POTATO-S1",
+    "TB2-R07-POTATO-S2",
+    "TB2-R07-POTATO-S3",
+    "TB2-ANALYSIS-GVLID",
+    "TB2-ANALYSIS-POTATO",
+    "TB2-FINAL-CLOSURE"
+  ],
+  "external_family_order_seed": 1936263114,
+  "geometric_acceptance": {
+    "bfmatcher_norm": "HAMMING",
+    "homography_ransac_reprojection_px": 5,
+    "lowe_ratio": 0.75,
+    "max_image_side": 800,
+    "maximum_median_symmetric_reprojection_px": 3,
+    "minimum_convex_hull_coverage_each_image": 0.1,
+    "minimum_good_matches": 20,
+    "minimum_homography_inliers": 12,
+    "minimum_inlier_ratio": 0.35,
+    "minimum_normalized_good_match_ratio": 0.12,
+    "orb_features_max": 1200
+  },
+  "grade_rules": {
+    "any_accepted_historical_link_permanently_blocks_ext_i": true,
+    "ext_s_requires_minimum_support": true,
+    "ext_x_if_minimum_support_fails": true,
+    "known_historical_contributor_relationship_is_ext_x": true,
+    "minimum_independent_families_per_required_mapped_class": 50,
+    "performance_cannot_change_grade": true,
+    "residual_lineage_uncertainty_max_grade": "EXT-S"
+  },
+  "historical_compare": {
+    "expected_image_count": 117546,
+    "partial_surface_max_grade": "EXT-S",
+    "required_for_ext_i": true,
+    "safe_postclosure_route": {
+      "coverage_scope": "V1_TRAIN_VAL_ONLY",
+      "image_count": 92744,
+      "train_image_count": 76376,
+      "validation_image_count": 16368,
+      "v1_test_image_bytes_accessed": false,
+      "maximum_evidence_grade": "EXT-S"
+    },
+    "full_ext_i_route": {
+      "image_count": 117546,
+      "authorization": "RECOVERED_PRE_TEST_CRYPTOGRAPHIC_REPRESENTATION_ONLY",
+      "raw_postclosure_rebuild_forbidden": true,
+      "status": "DORMANT_REQUIRES_FORMAL_PRE_TEST_PROVENANCE_BINDING"
+    }
+  },
+  "identities": {
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "ctc_v2_config_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+    "ctc_v2_eval_entrypoint": "cropcop_je.data.ctc_v2_eval_transform",
+    "ctc_v2_source_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+    "dataset_manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "dino_audit_encoder_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+    "r07_s1_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "r07_s2_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
+    "r07_s3_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37",
+    "track_a_replay_tolerance": 0.000001,
+    "dino_factory_manifest_sha256": "df70164ef227878353dde5430e8e0386b8853b53a2b66c20602e4cecd4dab7f1",
+    "r07_s1_run_record_sha256": "0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516",
+    "r07_s2_run_record_sha256": "0e48fdc0907a44042110f146ec27f796ea3d185fad1e2fc008cd1332bfd0ae15",
+    "r07_s3_run_record_sha256": "6ba1f3a7348f5c4ba0347621edef0e75e311b89bd38ff13ec4288cd81cf70050"
+  },
+  "kaggle": {
+    "autosaved_working_disk_gb": 20,
+    "clean_save_and_run_all_required": true,
+    "ddp": false,
+    "internet_required_during_claim_run": true,
+    "multi_gpu_training": false,
+    "runtime_margin_policy": "preflight must project completion with material margin; optimize implementation, never scientific thresholds",
+    "scientific_device": "cuda:0",
+    "session_hard_limit_hours": 12,
+    "target_accelerator": "T4x2",
+    "internet_role": "RUNTIME_REPAIR_AND_DURABLE_KAGGLE_PUBLICATION_ONLY",
+    "protected_inference_network_dependency": false,
+    "storage_policy": {
+      "persistent_root": "/kaggle/working/trackb_master",
+      "scratch_root": "/kaggle/tmp/cropcop_trackb_r07",
+      "raw_external_images_persistent": false,
+      "source_model_files_persistent": false,
+      "partial_downloads_persistent": false,
+      "final_evidence_persistent": true
+    },
+    "publication_reserve_minutes": 90
+  },
+  "lock_id": "TRACKB_R07_EXECUTION_LOCK_v4",
+  "metrics": {
+    "macro_f1_labels": "required mapped ground-truth classes only",
+    "mapped_subset_logit_renormalization": false,
+    "native_output_space": 120,
+    "predictions_outside_mapped_scope_are_errors": true,
+    "primary": "mapped_scope_macro_f1",
+    "secondary": [
+      "accuracy",
+      "balanced_accuracy",
+      "per_class_precision_recall_f1_support",
+      "confusion_matrix",
+      "out_of_mapped_subset_prediction_rate"
+    ]
+  },
+  "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+  "schema_version": "4.0",
+  "software": {
+    "Pillow": "12.3.0",
+    "huggingface_hub": "1.30.0",
+    "numpy": "2.5.2",
+    "opencv_python_headless": "4.13.0.92",
+    "python": "3.12.13",
+    "safetensors": "0.8.0",
+    "torch": "2.12.1",
+    "torchvision": "0.27.1",
+    "transformers": "5.0.0",
+    "timm": "1.0.26",
+    "kaggle": "2.2.4"
+  },
+  "status": "PRE_EXECUTION_LOCK_V4",
+  "candidate_a": {
+    "id": "gvlid_grape",
+    "role": "gvlid_v5",
+    "doi": "10.17632/wkymf8bhcg.5",
+    "version": "5",
+    "article_doi": "10.1038/s41597-026-07431-9",
+    "expected_original_images": 3477,
+    "mapping": {
+      "Black Rot": "grape_black_rot",
+      "Esca": "grape_esca",
+      "Healthy": "grape_healthy",
+      "Leaf Blight": "grape_leaf_blight"
+    },
+    "scope": "SCOPE-GRAPE-4",
+    "expected_source_support": null,
+    "source_count_policy": "ENUMERATE_AND_FREEZE_OBSERVED_SUPPORT",
+    "published_class_count_table_consistency": "KNOWN_ONE_IMAGE_ARITHMETIC_ANOMALY_DO_NOT_HARDCODE",
+    "minimum_independent_families_per_required_mapped_class": 50
+  },
+  "candidate_b": {
+    "id": "irish_potato",
+    "role": "irish_potato",
+    "doi": "10.5281/zenodo.8286529",
+    "version": "01",
+    "expected_original_images": 58709,
+    "expected_source_support": {
+      "earlyblt": 17772,
+      "healthy": 20438,
+      "lateblt": 20499
+    },
+    "mapping": {
+      "earlyblt": "potato_early_blight",
+      "healthy": "potato_healthy",
+      "lateblt": "potato_late_blight"
+    },
+    "scope": "SCOPE-POTATO-3"
+  },
+  "runtime_bootstrap": {
+    "mode": "PROVEN_KAGGLE_LOCK_REPAIR_FRESH_SUBPROCESS",
+    "python": "3.12.13",
+    "requirements_lock": "journal_extension/track_b_r07/requirements-trackb.lock.txt",
+    "pip_install_strategy": "ACTIVE_INTERPRETER_EXACT_LOCK_BEFORE_SCIENTIFIC_IMPORTS",
+    "pip_index": "PYPI_DEFAULT",
+    "pip_cache_disabled": true,
+    "venv_required": false,
+    "ensurepip_required": false,
+    "scientific_execution_process": "FRESH_SUBPROCESS_AFTER_LOCK_REPAIR",
+    "parent_kernel_scientific_imports_after_repair_forbidden": true,
+    "provenance": "reuses qualified Track-A Kaggle exact-stack repair pattern",
+    "technical_relock": {
+      "opencv_from": "4.12.0.88",
+      "opencv_to": "4.13.0.92",
+      "reason": "4.12.0.88 requires numpy<2.3 on Python>=3.9 while frozen Track-A numpy is 2.5.2; 4.13.0.92 accepts numpy>=2",
+      "protected_external_predictions_before_relock": false
+    }
+  },
+  "external_lineage_review": {
+    "review_id": "TRACKB_EXTERNAL_LINEAGE_REVIEW_v1",
+    "sha256": "fda8ebf32ce19854679289d72a16f9a7adbe9319e9d0d90046697498f9b645b0",
+    "required_status": "PRE_RESULTS_FROZEN",
+    "required_candidate_status": "RESIDUAL_UNCERTAINTY"
+  },
+  "source_integrity": {
+    "irish_potato_official_archive_checksum_required": true,
+    "gvlid_pinned_official_companion_ledger_required": true,
+    "gvlid_official_companion_commit": "878a1c7098964bb52c4c4a5c30e5b53340565258",
+    "gvlid_official_companion_blob_sha1": "5c953cf0381614d8e3744737bfeed98ea1162f9c",
+    "external_source_manifest_toc_tou_binding_required": true,
+    "atomic_download_required": true,
+    "bounded_download_retries": 4,
+    "full_attached_role_content_binding_required": true,
+    "transport_order_may_not_define_scientific_identity": true,
+    "canonical_member_identity": "raw_sha256_plus_source_member_path_digest"
+  },
+  "runtime_policy": {
+    "execution_lock_is_single_source_of_truth": true,
+    "seeded_representative_ordering": true,
+    "representative_order_rng": "numpy.random.PCG64",
+    "opencv_internal_threads": 1,
+    "opencv_ransac_pair_seeded": true,
+    "torch_deterministic_algorithms_required": true,
+    "dino_topk_cutoff_ties_stable_by_reference_index": true,
+    "max_audit_candidate_pairs_per_surface": 5000000
+  },
+  "closure_policy": {
+    "order": [
+      "protected inference complete",
+      "independent QA PASS",
+      "stable science manifest written",
+      "complete/public evidence archives built",
+      "archives CRC/member-hash verified",
+      "package manifest written",
+      "TRACK_B_CLOSED written"
+    ],
+    "stable_science_identity": "trackb_science_sha256",
+    "execution_instance_identity": "closure_sha256",
+    "elapsed_time_excluded_from_science_identity": true,
+    "publication_retry_counts_excluded_from_science_identity": true,
+    "qualification_recomputed_during_claim": false
+  },
+  "operational_rebind_note": "V4 execution lock rebinds unchanged Track-B science to the async-safe publication runtime: final large private bundles are content-addressed and remotely bound by an exact content manifest plus exact pair-receipt handoff round-trip; Kaggle's asynchronous download-all archive is non-authoritative; Notebook 01 must rehash every attached role byte before qualification or protected inference. Local materialized bundles are retained until readiness closure. The small nested multitype publication probe continues exact byte round-trip before expensive work.",
+  "scientific_change": false,
+  "orchestration": {
+    "operator_notebook_policy": "TWO_SUPPORTED_NOTEBOOKS_ONLY",
+    "attached_code_authenticated_before_execution": true,
+    "full_role_content_binding_required": true,
+    "content_addressed_private_datasets": true,
+    "immutable_qualification_bundle_required": true,
+    "claim_recomputes_qualification": false,
+    "claim_single_writer_lease_required": true,
+    "qualification_protected_prediction_count": 0,
+    "qualification_requires_github_token": false,
+    "claim_requires_github_token": false,
+    "v1_test_reopen_forbidden": true,
+    "durable_attempt_states": [
+      "PROTECTED_INFERENCE_STARTED",
+      "SCIENCE_QA_PASS",
+      "PRIVATE_ARCHIVE_VERIFIED",
+      "TRACK_B_CLOSED"
+    ]
+  }
+}

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 import hashlib
 from pathlib import Path
@@ -33,7 +35,9 @@ from cropcop_je.trackb_r07_ops import (
     probe_external_sources,
     publish_private_kaggle_dataset,
     run_checked,
+    verify_kaggle_publication_capability,
     verify_authenticated_kaggle_owner,
+    verify_kaggle_published_file_roundtrip,
 )
 
 SOURCE_SLUG_BASENAMES = {
@@ -44,8 +48,8 @@ SOURCE_SLUG_BASENAMES = {
     "dino_bundle": "cropcop-secondary-g1-8904b100",
 }
 
-INFRA_DATASET_NAME = "cropcop-trackb-r07-infrastructure-v4"
-EXTERNAL_DATASET_NAME = "cropcop-trackb-r07-external-v4"
+INFRA_DATASET_PREFIX = "cropcop-trackb-infrastructure-v5"
+EXTERNAL_DATASET_PREFIX = "cropcop-trackb-external-v5"
 
 
 def stage(name: str) -> None:
@@ -68,6 +72,51 @@ def _resolve_attached_root(input_root: Path, basename: str) -> Path:
             f"found {[str(p) for p in candidates]}"
         )
     return candidates[0]
+
+
+def _resolve_all_attached_roots(
+    input_root: Path,
+    basenames: dict[str, str],
+) -> dict[str, Path]:
+    wanted = set(basenames.values())
+    found: dict[str, list[Path]] = {name: [] for name in wanted}
+    for path in input_root.rglob("*"):
+        if path.is_dir() and path.name in wanted:
+            resolved = path.resolve()
+            if resolved not in found[path.name]:
+                found[path.name].append(resolved)
+    out: dict[str, Path] = {}
+    for role, basename in basenames.items():
+        direct = (input_root / basename).resolve()
+        candidates = list(found.get(basename, []))
+        if direct.is_dir() and direct not in candidates:
+            candidates.insert(0, direct)
+        if len(candidates) != 1:
+            raise TrackBOpsError(
+                f"expected exactly one attached Kaggle dataset mount named {basename!r}; "
+                f"found {[str(path) for path in candidates]}"
+            )
+        out[role] = candidates[0]
+    return out
+
+
+def _enforce_external_source_lock(repo_root: Path) -> dict:
+    path = repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json"
+    lock = load_json(path)
+    if lock.get("lock_id") != "TRACKB_EXTERNAL_SOURCE_LOCK_v2":
+        raise TrackBOpsError("unexpected Track-B external-source lock identity")
+    candidates = lock.get("candidates") or {}
+    blocked = [
+        role
+        for role, row in candidates.items()
+        if not isinstance(row, dict) or row.get("materialization_permitted") is not True
+    ]
+    if blocked:
+        raise TrackBOpsError(
+            "Track-B external source authority is fail-closed; materialization is forbidden "
+            f"until these roles are resolved: {blocked}"
+        )
+    return lock
 
 
 def _find_v1(root: Path) -> tuple[Path, Path, Path]:
@@ -450,6 +499,7 @@ def _write_source_qualification(
     dino: dict[str, object],
     external_probe: dict[str, object],
     kaggle_owner: str | None,
+    kaggle_publication_probe: dict[str, object] | None,
 ) -> Path:
     manifest, class_map, image_root = final_v1
     payload = {
@@ -468,6 +518,7 @@ def _write_source_qualification(
         "dino": dino,
         "external_source_probe": external_probe,
         "kaggle_publication_owner": kaggle_owner,
+        "kaggle_publication_capability": kaggle_publication_probe,
     }
     path = output_root / "TRACKB_SOURCE_QUALIFICATION.json"
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -565,111 +616,118 @@ def _prepare_candidate(repo_root: Path, role: str, package_root: Path) -> None:
     )
 
 
-def _verify_published_archive_roundtrip(
-    slug: str,
-    expected_manifest: dict,
-    *,
-    scratch_root: Path,
-    attempts: int = 3,
-) -> dict:
-    expected_rows = expected_manifest.get("files")
-    if not isinstance(expected_rows, list) or not expected_rows:
-        raise TrackBOpsError("Kaggle content manifest has no files for archive verification")
-    expected_payload_bytes = sum(int(row["bytes"]) for row in expected_rows)
-
-    errors: list[str] = []
-    for attempt in range(1, int(attempts) + 1):
-        roundtrip_root = scratch_root / f"_roundtrip_{slug.split('/', 1)[-1]}_{attempt}"
-        if roundtrip_root.exists():
-            shutil.rmtree(roundtrip_root)
-        roundtrip_root.mkdir(parents=True, exist_ok=False)
-        try:
-            free_bytes = int(shutil.disk_usage(roundtrip_root).free)
-            hard_required = int(expected_payload_bytes * 1.05) + 256 * 1024 * 1024
-            if free_bytes < hard_required:
-                raise TrackBOpsError(
-                    f"insufficient disk for Kaggle archive round-trip: slug={slug}, "
-                    f"free={free_bytes}, hard_required={hard_required}, "
-                    f"payload_bytes={expected_payload_bytes}"
-                )
-            run_checked(
-                ["kaggle", "datasets", "download", "-d", slug, "-p", str(roundtrip_root), "-q"],
-                timeout=7200,
-            )
-            archives = sorted(roundtrip_root.glob("*.zip"))
-            if len(archives) != 1:
-                raise TrackBOpsError(
-                    f"expected one Kaggle round-trip ZIP for {slug}; found {archives}"
-                )
-            archive = archives[0]
-            verified = 0
-            with zipfile.ZipFile(archive) as zf:
-                info_by_name = {
-                    info.filename.replace("\\", "/").lstrip("./"): info
-                    for info in zf.infolist()
-                    if not info.is_dir()
-                }
-                manifest_names = {
-                    str(row["path"]).replace("\\", "/").lstrip("./")
-                    for row in expected_rows
-                }
-                unexpected_payload = sorted(
-                    name for name in info_by_name
-                    if name not in manifest_names
-                    and name not in {"dataset-metadata.json", "TRACKB_KAGGLE_CONTENT_MANIFEST.json"}
-                )
-                if unexpected_payload:
-                    raise TrackBOpsError(
-                        f"Kaggle round-trip archive has unexpected payload members for {slug}: "
-                        f"{unexpected_payload[:20]}"
-                    )
-                for row in expected_rows:
-                    rel = str(row["path"]).replace("\\", "/").lstrip("./")
-                    info = info_by_name.get(rel)
-                    if info is None:
-                        raise TrackBOpsError(
-                            f"Kaggle round-trip archive missing member: {slug}/{rel}"
-                        )
-                    if int(info.file_size) != int(row["bytes"]):
-                        raise TrackBOpsError(
-                            f"Kaggle round-trip size mismatch: {slug}/{rel}"
-                        )
-                    h = hashlib.sha256()
-                    with zf.open(info, "r") as handle:
-                        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                            h.update(chunk)
-                    if h.hexdigest() != str(row["sha256"]):
-                        raise TrackBOpsError(
-                            f"Kaggle round-trip SHA mismatch: {slug}/{rel}"
-                        )
-                    verified += 1
-            result = {
-                "status": "PASS",
-                "archive_sha256": sha256_file(archive),
-                "verified_file_count": verified,
-                "content_digest_sha256": expected_manifest["content_digest_sha256"],
-                "attempts": attempt,
-                "peak_disk_guard_payload_bytes": expected_payload_bytes,
-            }
-            shutil.rmtree(roundtrip_root, ignore_errors=True)
-            return result
-        except Exception as exc:
-            errors.append(f"attempt={attempt} {type(exc).__name__}: {exc}")
-            shutil.rmtree(roundtrip_root, ignore_errors=True)
-            if attempt < int(attempts):
-                continue
-    raise TrackBOpsError(
-        f"Kaggle archive round-trip failed after {attempts} attempts for {slug}: "
-        + " | ".join(errors[-3:])
-    )
-
-
-
 def _manifest_sha(root: Path) -> str:
     path = root / "TRACKB_INPUT_MANIFEST.json"
     if not path.is_file():
         raise TrackBOpsError(f"Track-B input manifest missing: {path}")
     return sha256_file(path)
+
+
+_TRANSIENT_ROLE_DIR_NAMES = {
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".ipynb_checkpoints",
+    ".cache",
+    ".huggingface",
+}
+_TRANSIENT_ROLE_FILE_NAMES = {".DS_Store", "Thumbs.db", ".coverage"}
+_TRANSIENT_ROLE_SUFFIXES = {".pyc", ".pyo"}
+
+
+def _role_transient_artifacts(root: Path) -> list[Path]:
+    root = Path(root).resolve()
+    out: list[Path] = []
+    for path in sorted(root.rglob("*")):
+        rel_parts = path.relative_to(root).parts
+        if any(part in _TRANSIENT_ROLE_DIR_NAMES for part in rel_parts):
+            out.append(path)
+            continue
+        if path.is_file() and (
+            path.name in _TRANSIENT_ROLE_FILE_NAMES
+            or path.suffix.lower() in _TRANSIENT_ROLE_SUFFIXES
+        ):
+            out.append(path)
+    return out
+
+
+def _scrub_role_transport_artifacts(root: Path) -> dict[str, object]:
+    root = Path(root).resolve()
+    removed: list[str] = []
+    for path in sorted(
+        _role_transient_artifacts(root),
+        key=lambda value: len(value.parts),
+        reverse=True,
+    ):
+        if not path.exists() and not path.is_symlink():
+            continue
+        rel = path.relative_to(root).as_posix()
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink(missing_ok=True)
+        removed.append(rel)
+
+    remaining = [
+        path.relative_to(root).as_posix()
+        for path in _role_transient_artifacts(root)
+        if path.exists() or path.is_symlink()
+    ]
+    if remaining:
+        raise TrackBOpsError(
+            "Track-B role remains transport-unstable after transient-artifact scrub: "
+            + json.dumps(remaining[:50])
+        )
+    return {
+        "status": "PASS_ROLE_TRANSPORT_HYGIENE",
+        "root": str(root),
+        "removed_count": len(set(removed)),
+        "removed_paths": sorted(set(removed)),
+    }
+
+
+def _assert_role_transport_stable(root: Path) -> None:
+    transient = [
+        path.relative_to(root).as_posix()
+        for path in _role_transient_artifacts(root)
+        if path.exists() or path.is_symlink()
+    ]
+    if transient:
+        raise TrackBOpsError(
+            "Track-B role contains non-authoritative runtime/cache artifacts: "
+            + json.dumps(transient[:50])
+        )
+
+
+def _role_content_identity(root: Path) -> dict[str, object]:
+    """Cryptographically bind every regular payload file inside a Track-B role root.
+
+    Pair receipts live above the role roots, so this ledger cannot hash itself.
+    Symlinks are forbidden in published role payloads because they are not portable
+    across Kaggle materialization boundaries.
+    """
+    root = Path(root).resolve()
+    _assert_role_transport_stable(root)
+    rows: list[dict[str, object]] = []
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise TrackBOpsError(f"published Track-B role contains a symlink: {path}")
+        if not path.is_file():
+            continue
+        rel = path.relative_to(root).as_posix()
+        rows.append({
+            "path": rel,
+            "bytes": int(path.stat().st_size),
+            "sha256": sha256_file(path),
+        })
+    if not rows:
+        raise TrackBOpsError(f"Track-B role payload is empty: {root}")
+    return {
+        "file_count": len(rows),
+        "total_bytes": sum(int(row["bytes"]) for row in rows),
+        "content_sha256": sha256_json(rows),
+    }
 
 
 def _validate_roles(
@@ -713,6 +771,18 @@ def _write_pair_receipts(
     core = load_json(core_root / "TRACKB_INPUT_MANIFEST.json")
     execution_lock = _resolve_core_file(core_root, core, "execution_lock")
     code_attestation = _resolve_core_file(core_root, core, "code_attestation")
+    external_source_lock = (
+        repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json"
+    ).resolve()
+    materialization_lock = (
+        repo_root / "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v2.json"
+    ).resolve()
+    for policy_path, label in (
+        (external_source_lock, "external-source lock"),
+        (materialization_lock, "input-materialization lock"),
+    ):
+        if not policy_path.is_file():
+            raise TrackBOpsError(f"required {label} missing from runtime repository: {policy_path}")
     source_sha = run_checked(
         ["git", "-C", str(repo_root), "rev-parse", "HEAD"], timeout=120
     ).stdout.strip()
@@ -725,17 +795,26 @@ def _write_pair_receipts(
         "gvlid_v5": _manifest_sha(gvlid_root),
         "irish_potato": _manifest_sha(potato_root),
     }
+    role_content_identity = {
+        "core": _role_content_identity(core_root),
+        "historical_compare": _role_content_identity(historical_root),
+        "gvlid_v5": _role_content_identity(gvlid_root),
+        "irish_potato": _role_content_identity(potato_root),
+    }
     pairing_preimage = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "repository_source_sha": source_sha,
         "scientific_execution_lock_sha256": sha256_file(execution_lock),
         "scientific_code_attestation_sha256": sha256_file(code_attestation),
+        "external_source_lock_sha256": sha256_file(external_source_lock),
+        "input_materialization_lock_sha256": sha256_file(materialization_lock),
         "role_manifest_sha256": role_manifest_sha256,
+        "role_content_identity": role_content_identity,
     }
     materialization_id = sha256_json(pairing_preimage)
 
     common = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "status": "PASS_PAIRED_TRACKB_INPUT_BUNDLE",
         "materialization_id": materialization_id,
         **pairing_preimage,
@@ -764,8 +843,11 @@ def _write_pair_receipts(
         "materialization_id": materialization_id,
         "repository_source_sha": source_sha,
         "role_manifest_sha256": role_manifest_sha256,
+        "role_content_identity": role_content_identity,
         "scientific_execution_lock_sha256": pairing_preimage["scientific_execution_lock_sha256"],
         "scientific_code_attestation_sha256": pairing_preimage["scientific_code_attestation_sha256"],
+        "external_source_lock_sha256": pairing_preimage["external_source_lock_sha256"],
+        "input_materialization_lock_sha256": pairing_preimage["input_materialization_lock_sha256"],
     }
 
 
@@ -789,17 +871,23 @@ def main() -> int:
     output_root.mkdir(parents=True, exist_ok=False)
 
     stage("0 :: attached-input discovery")
-    mounts = {
-        role: _resolve_attached_root(input_root, basename)
-        for role, basename in SOURCE_SLUG_BASENAMES.items()
-    }
+    mounts = _resolve_all_attached_roots(input_root, SOURCE_SLUG_BASENAMES)
     print(json.dumps({key: str(value) for key, value in mounts.items()}, indent=2, sort_keys=True))
 
+    source_lock = _enforce_external_source_lock(repo_root)
     stage("0.5 :: complete source qualification")
     early_owner = None
+    publication_token = None
+    publication_probe = None
     if not args.skip_publication:
         configure_runtime_secrets(require_github=False)
         early_owner = verify_authenticated_kaggle_owner(args.kaggle_owner)
+        publication_token = os.environ.get("KAGGLE_API_TOKEN")
+        publication_probe = verify_kaggle_publication_capability(early_owner)
+        if publication_probe.get("status") != "PASS_KAGGLE_PUBLICATION_CAPABILITY":
+            raise TrackBOpsError(
+                f"Kaggle publication capability preflight did not PASS: {publication_probe}"
+            )
     external_probe = probe_external_sources()
     if external_probe.get("status") != "PASS":
         raise TrackBOpsError(f"external-source readiness probe did not PASS: {external_probe}")
@@ -819,10 +907,14 @@ def main() -> int:
         dino=dino_evidence,
         external_probe=external_probe,
         kaggle_owner=early_owner,
+        kaggle_publication_probe=publication_probe,
     )
     print(source_qualification_path.read_text(encoding="utf-8"), flush=True)
+    # The Kaggle token is a publication credential, not a scientific input.
+    # Remove it before external normalization/core/historical subprocesses.
+    if publication_token:
+        os.environ.pop("KAGGLE_API_TOKEN", None)
 
-    stage("1 :: immutable core")
     infra_root = output_root / "infrastructure_bundle"
     external_root = output_root / "external_bundle"
     core_root = infra_root / "core"
@@ -831,20 +923,51 @@ def main() -> int:
     potato_root = external_root / "irish_potato"
     infra_root.mkdir(parents=True)
     external_root.mkdir(parents=True)
+
+    stage("1 :: authoritative external cohorts — fail-fast sealed acquisition")
+    lineage_review = repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json"
+    gvlid_authority = (
+        (source_lock.get("candidates") or {})
+        .get("gvlid_v5", {})
+        .get("checksum_authority", {})
+    )
+    gvlid_ledger = repo_root / str(gvlid_authority.get("vendored_ledger", ""))
+    acquire_gvlid_v5(
+        gvlid_root,
+        lineage_review_path=lineage_review,
+        checksum_ledger_path=gvlid_ledger,
+        expected_checksum_ledger_git_blob_sha1=str(
+            gvlid_authority.get("official_blob_sha1", "")
+        ),
+        expected_source_manifest_sha256=str(
+            (external_probe.get("gvlid_v5") or {}).get("public_api_manifest_sha256", "")
+        ),
+    )
+    _prepare_candidate(repo_root, "gvlid_v5", gvlid_root)
+    acquire_irish_potato(
+        potato_root,
+        lineage_review_path=lineage_review,
+        expected_source_manifest_sha256=str(
+            (external_probe.get("irish_potato") or {}).get("source_manifest_sha256", "")
+        ),
+    )
+    _prepare_candidate(repo_root, "irish_potato", potato_root)
+
+    stage("2 :: immutable core")
     _run_core_builder(repo_root, mounts, core_root, final_v1_view, r07_views)
 
-    stage("2 :: safe historical comparison")
+    stage("3 :: safe historical comparison")
     _run_historical_builder(repo_root, mounts["final_v1"], core_root, historical_root, args.device)
     shutil.rmtree(source_views, ignore_errors=True)
 
-    stage("3 :: authoritative external cohorts")
-    lineage_review = repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json"
-    acquire_gvlid_v5(gvlid_root, lineage_review_path=lineage_review)
-    _prepare_candidate(repo_root, "gvlid_v5", gvlid_root)
-    acquire_irish_potato(potato_root, lineage_review_path=lineage_review)
-    _prepare_candidate(repo_root, "irish_potato", potato_root)
-
     stage("4 :: input-contract validation and pairing")
+    transport_hygiene = {
+        "core": _scrub_role_transport_artifacts(core_root),
+        "historical_compare": _scrub_role_transport_artifacts(historical_root),
+        "gvlid_v5": _scrub_role_transport_artifacts(gvlid_root),
+        "irish_potato": _scrub_role_transport_artifacts(potato_root),
+    }
+    print(json.dumps({"transport_hygiene": transport_hygiene}, indent=2, sort_keys=True), flush=True)
     _validate_roles(core_root, historical_root, gvlid_root, potato_root)
     pairing = _write_pair_receipts(
         repo_root=repo_root,
@@ -859,45 +982,76 @@ def main() -> int:
         "v1_test_accessed": False,
         "materialization": pairing,
         "source_qualification_sha256": sha256_file(source_qualification_path),
+        "external_source_lock_sha256": sha256_file(
+            repo_root / "journal_extension/track_b_r07/TRACKB_EXTERNAL_SOURCE_LOCK_v2.json"
+        ),
         "publication": None,
+        "transport_hygiene": transport_hygiene,
     }
 
     if not args.skip_publication:
         stage("5 :: private Kaggle publication and full round-trip verification")
+        if not publication_token:
+            raise TrackBOpsError("Kaggle publication credential was not prequalified")
+        os.environ["KAGGLE_API_TOKEN"] = publication_token
         owner = early_owner or verify_authenticated_kaggle_owner(args.kaggle_owner)
-        infra_slug = f"{owner}/{INFRA_DATASET_NAME}"
-        external_slug = f"{owner}/{EXTERNAL_DATASET_NAME}"
+        infra_slug = (
+            f"{owner}/{INFRA_DATASET_PREFIX}-{pairing['materialization_id'][:16]}"
+        )
+        external_slug = (
+            f"{owner}/{EXTERNAL_DATASET_PREFIX}-{pairing['materialization_id'][:16]}"
+        )
         infra_pub = publish_private_kaggle_dataset(
             folder=infra_root,
             slug=infra_slug,
-            title="CropCop Track B R07 Infrastructure v4",
+            title="CropCop Track B R07 Infrastructure v5",
             version_message=f"Track-B materialization {pairing['materialization_id'][:16]}",
             license_name="other",
             full_roundtrip=False,
+            allow_version=False,
         )
         infra_manifest = load_json(infra_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")
-        shutil.rmtree(infra_root, ignore_errors=True)
-        infra_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
+        infra_pub["handoff_sentinel_roundtrip"] = verify_kaggle_published_file_roundtrip(
             infra_slug,
-            infra_manifest,
-            scratch_root=output_root,
+            "TRACKB_INFRASTRUCTURE_BUNDLE.json",
+            infra_root / "TRACKB_INFRASTRUCTURE_BUNDLE.json",
+            timeout_seconds=1800,
         )
+        infra_pub["whole_archive_roundtrip"] = {
+            "status": "DEFERRED_TO_ATTACHED_FULL_BYTE_VERIFICATION",
+            "reason": (
+                "Kaggle download-all archives for large private datasets are prepared "
+                "asynchronously and may return 404 long after authoritative files are visible."
+            ),
+            "consumer_gate": "NOTEBOOK_01_FULL_ATTACHED_ROLE_CONTENT_IDENTITY",
+            "expected_content_digest_sha256": infra_manifest["content_digest_sha256"],
+        }
 
         external_pub = publish_private_kaggle_dataset(
             folder=external_root,
             slug=external_slug,
-            title="CropCop Track B R07 External Cohorts v4",
+            title="CropCop Track B R07 External Cohorts v5",
             version_message=f"Track-B materialization {pairing['materialization_id'][:16]}",
             license_name="other",
             full_roundtrip=False,
+            allow_version=False,
         )
         external_manifest = load_json(external_root / "TRACKB_KAGGLE_CONTENT_MANIFEST.json")
-        shutil.rmtree(external_root, ignore_errors=True)
-        external_pub["archive_roundtrip"] = _verify_published_archive_roundtrip(
+        external_pub["handoff_sentinel_roundtrip"] = verify_kaggle_published_file_roundtrip(
             external_slug,
-            external_manifest,
-            scratch_root=output_root,
+            "TRACKB_EXTERNAL_BUNDLE.json",
+            external_root / "TRACKB_EXTERNAL_BUNDLE.json",
+            timeout_seconds=1800,
         )
+        external_pub["whole_archive_roundtrip"] = {
+            "status": "DEFERRED_TO_ATTACHED_FULL_BYTE_VERIFICATION",
+            "reason": (
+                "Kaggle download-all archives for large private datasets are prepared "
+                "asynchronously and are not a stable readiness primitive."
+            ),
+            "consumer_gate": "NOTEBOOK_01_FULL_ATTACHED_ROLE_CONTENT_IDENTITY",
+            "expected_content_digest_sha256": external_manifest["content_digest_sha256"],
+        }
 
         readiness["publication"] = {
             "owner": owner,

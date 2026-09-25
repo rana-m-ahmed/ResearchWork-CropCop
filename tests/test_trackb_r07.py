@@ -31,8 +31,8 @@ from cropcop_je.trackb_r07 import (
 )
 from cropcop_je.hashing import sha256_json
 from cropcop_je.trackb_r07_analysis import bootstrap_three_seed_macro_f1
-from cropcop_je.trackb_r07_audit import ImageAuditRecord, deterministic_representative_order, representative_manifest
-from cropcop_je.trackb_r07_ops import _checksum_matches, _classify_github_push_failure, _parse_sha256_ledger, load_kaggle_secret
+from cropcop_je.trackb_r07_audit import ImageAuditRecord, deterministic_representative_order, representative_manifest, topk_cosine_neighbors
+from cropcop_je.trackb_r07_ops import _checksum_matches, _classify_github_push_failure, _parse_gvlid_checksum_authority, load_kaggle_secret
 
 
 class TrackBR07Tests(unittest.TestCase):
@@ -221,7 +221,7 @@ class TrackBR07Tests(unittest.TestCase):
             f = root / "x.py"
             f.write_text("print('ok')\n", encoding="utf-8")
             att = {
-                "attestation_id": "TRACKB_CODE_ATTESTATION_v3",
+                "attestation_id": "TRACKB_CODE_ATTESTATION_v4",
                 "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
                 "files": [{"path": "x.py", "git_blob_sha1": git_blob_sha1(f)}],
             }
@@ -245,81 +245,69 @@ class TrackBR07Tests(unittest.TestCase):
             },
         )
 
-    def test_v3_lock_requires_automated_publication_boundaries(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+    def test_v4_lock_requires_hardened_orchestration_boundaries(self):
+        lock = load_json(
+            ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v4.json"
+        )
         validate_execution_lock(lock)
-        automation = lock["automation"]
-        self.assertTrue(automation["single_master_notebook"])
-        self.assertTrue(automation["auto_commit_public_safe_evidence_to_github"])
-        self.assertTrue(automation["auto_archive_complete_restricted_evidence_to_private_kaggle"])
-        self.assertFalse(automation["raw_images_to_github"])
-        self.assertFalse(automation["checkpoints_to_github"])
-        self.assertEqual(automation["kaggle_dataset_owner_default"], "AUTO")
-        self.assertEqual(
-            automation["kaggle_dataset_owner_mode"],
-            "AUTHENTICATED_TOKEN_OWNER_AUTO_DETECT",
-        )
-        self.assertTrue(lock["kaggle"]["internet_required_during_claim_run"])
-        self.assertEqual(
-            lock["kaggle"]["internet_role"],
-            "ORCHESTRATION_AND_EVIDENCE_PUBLICATION_ONLY",
-        )
-        self.assertFalse(lock["kaggle"]["protected_inference_network_dependency"])
-        self.assertEqual(lock["software"]["timm"], "1.0.26")
-        self.assertEqual(lock["software"]["opencv_python_headless"], "4.13.0.92")
-        self.assertEqual(lock["software"]["kaggle"], "2.2.4")
-        bootstrap = lock["runtime_bootstrap"]
-        self.assertEqual(bootstrap["mode"], "PROVEN_KAGGLE_LOCK_REPAIR_FRESH_SUBPROCESS")
-        self.assertEqual(bootstrap["python"], "3.12.13")
-        self.assertEqual(
-            bootstrap["pip_install_strategy"],
-            "ACTIVE_INTERPRETER_EXACT_LOCK_BEFORE_SCIENTIFIC_IMPORTS",
-        )
-        self.assertFalse(bootstrap["venv_required"])
-        self.assertFalse(bootstrap["ensurepip_required"])
-        self.assertEqual(
-            bootstrap["scientific_execution_process"],
-            "FRESH_SUBPROCESS_AFTER_LOCK_REPAIR",
-        )
-        self.assertTrue(bootstrap["parent_kernel_scientific_imports_after_repair_forbidden"])
-        self.assertEqual(
-            automation["github_push_preflight_transport"],
-            "GIT_PUSH_DRY_RUN_SAME_AS_PUBLICATION",
-        )
-        self.assertTrue(automation["github_push_preflight_before_runtime_repair"])
-        self.assertTrue(automation["private_evidence_archive_before_github_publication"])
-        self.assertEqual(automation["github_publication_retry_attempts"], 4)
-        self.assertEqual(automation["private_kaggle_publication_retry_attempts"], 4)
-        self.assertTrue(automation["github_publication_failure_preserves_scientific_closure"])
-        self.assertEqual(automation["operator_default_mode"], "qualification")
-        self.assertTrue(automation["independent_preinference_qa_required"])
-        self.assertTrue(automation["protected_claim_requires_post_qualification_exact_sha_freeze"])
-        self.assertTrue(automation["qualification_must_produce_zero_protected_external_predictions"])
-        self.assertTrue(automation["protected_claim_requires_matching_qualification_science_sha256"])
-        self.assertTrue(automation["qualification_science_identity_excludes_execution_timestamps"])
-        self.assertTrue(automation["qualification_science_identity_reused_for_attempt_ancestry"])
-        self.assertEqual(automation["github_token_required_modes"], ["claim"])
-        self.assertEqual(automation["github_push_preflight_modes"], ["claim"])
-        self.assertFalse(automation["qualification_requires_github_token"])
-        self.assertFalse(automation["qualification_requires_github_push_preflight"])
 
-        drifted = dict(lock)
-        drifted["automation"] = dict(automation)
-        drifted["automation"]["raw_images_to_github"] = True
+        orchestration = lock["orchestration"]
+        self.assertEqual(
+            orchestration["operator_notebook_policy"],
+            "TWO_SUPPORTED_NOTEBOOKS_ONLY",
+        )
+        self.assertTrue(orchestration["attached_code_authenticated_before_execution"])
+        self.assertTrue(orchestration["full_role_content_binding_required"])
+        self.assertTrue(orchestration["content_addressed_private_datasets"])
+        self.assertTrue(orchestration["immutable_qualification_bundle_required"])
+        self.assertFalse(orchestration["claim_recomputes_qualification"])
+        self.assertTrue(orchestration["claim_single_writer_lease_required"])
+        self.assertEqual(orchestration["qualification_protected_prediction_count"], 0)
+        self.assertFalse(orchestration["qualification_requires_github_token"])
+        self.assertFalse(orchestration["claim_requires_github_token"])
+        self.assertTrue(orchestration["v1_test_reopen_forbidden"])
+        self.assertEqual(
+            orchestration["durable_attempt_states"],
+            [
+                "PROTECTED_INFERENCE_STARTED",
+                "SCIENCE_QA_PASS",
+                "PRIVATE_ARCHIVE_VERIFIED",
+                "TRACK_B_CLOSED",
+            ],
+        )
+
+        source_integrity = lock["source_integrity"]
+        self.assertTrue(source_integrity["gvlid_pinned_official_companion_ledger_required"])
+        self.assertTrue(source_integrity["irish_potato_official_archive_checksum_required"])
+        self.assertTrue(source_integrity["external_source_manifest_toc_tou_binding_required"])
+        self.assertTrue(source_integrity["full_attached_role_content_binding_required"])
+
+        runtime = lock["runtime_policy"]
+        self.assertTrue(runtime["torch_deterministic_algorithms_required"])
+        self.assertTrue(runtime["opencv_ransac_pair_seeded"])
+        self.assertTrue(runtime["dino_topk_cutoff_ties_stable_by_reference_index"])
+        self.assertEqual(runtime["max_audit_candidate_pairs_per_surface"], 5000000)
+
+        self.assertEqual(lock["kaggle"]["target_accelerator"], "T4x2")
+        self.assertEqual(lock["kaggle"]["publication_reserve_minutes"], 90)
+        self.assertFalse(lock["kaggle"]["protected_inference_network_dependency"])
+        self.assertFalse(lock["closure_policy"]["qualification_recomputed_during_claim"])
+
+        import copy
+        drifted = copy.deepcopy(lock)
+        drifted["orchestration"]["claim_recomputes_qualification"] = True
         with self.assertRaises(TrackBError):
             validate_execution_lock(drifted)
 
-        drifted_owner = dict(lock)
-        drifted_owner["automation"] = dict(automation)
-        drifted_owner["automation"]["kaggle_dataset_owner_default"] = "someone"
+        drifted = copy.deepcopy(lock)
+        drifted["runtime_policy"]["opencv_ransac_pair_seeded"] = False
         with self.assertRaises(TrackBError):
-            validate_execution_lock(drifted_owner)
+            validate_execution_lock(drifted)
 
-        drifted_network = dict(lock)
-        drifted_network["kaggle"] = dict(lock["kaggle"])
-        drifted_network["kaggle"]["protected_inference_network_dependency"] = True
+        drifted = copy.deepcopy(lock)
+        drifted["source_integrity"]["full_attached_role_content_binding_required"] = False
         with self.assertRaises(TrackBError):
-            validate_execution_lock(drifted_network)
+            validate_execution_lock(drifted)
 
     def test_github_push_failure_classifier_distinguishes_bad_token(self):
         message = _classify_github_push_failure(
@@ -394,7 +382,7 @@ class TrackBR07Tests(unittest.TestCase):
         verify_candidate_seal(build_candidate_seal(payload))
 
     def test_execution_lock_binds_replay_records_and_dino_factory(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v4.json")
         validate_execution_lock(lock)
         ids = lock["identities"]
         self.assertEqual(ids["dino_factory_manifest_sha256"], DINO_FACTORY_MANIFEST_SHA256)
@@ -410,7 +398,7 @@ class TrackBR07Tests(unittest.TestCase):
             validate_execution_lock(drifted)
 
     def test_execution_lock_forbids_postclosure_full_raw_rebuild(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v4.json")
         validate_execution_lock(lock)
         drifted = dict(lock)
         drifted["historical_compare"] = dict(lock["historical_compare"])
@@ -438,7 +426,7 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertEqual(rows[0]["representative_raw_sha256"], "0" * 64)
 
     def test_audit_policy_is_executable_lock_source_of_truth(self):
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v4.json")
         policy = audit_policy_from_lock(lock)
         self.assertEqual(policy.phash_radius, 12)
         self.assertEqual(policy.dhash_radius, 10)
@@ -451,7 +439,7 @@ class TrackBR07Tests(unittest.TestCase):
 
     def test_lock_rejects_operational_threshold_drift(self):
         import copy
-        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v3.json")
+        lock = load_json(ROOT / "journal_extension" / "track_b_r07" / "TRACKB_R07_EXECUTION_LOCK_v4.json")
         mutations = [
             ("candidate_generation", "dino_top_k", 49),
             ("geometric_acceptance", "lowe_ratio", 0.74),
@@ -477,6 +465,84 @@ class TrackBR07Tests(unittest.TestCase):
         with self.assertRaises(TrackBError):
             validate_execution_lock(drifted)
 
+    def test_topk_cosine_neighbors_matches_reference_on_random_surface(self):
+        import numpy as np
+        try:
+            import torch
+        except ModuleNotFoundError:
+            self.skipTest("PyTorch equivalence is executed in the frozen Kaggle runtime preflight")
+
+        rng = np.random.default_rng(1701)
+        q = rng.normal(size=(37, 23)).astype(np.float32)
+        r = rng.normal(size=(113, 23)).astype(np.float32)
+        q /= np.linalg.norm(q, axis=1, keepdims=True)
+        r /= np.linalg.norm(r, axis=1, keepdims=True)
+
+        observed_idx, observed_score = topk_cosine_neighbors(
+            q, r, k=11, device="cpu", block_rows=8
+        )
+
+        score = torch.from_numpy(q) @ torch.from_numpy(r).T
+        expected_idx = []
+        expected_score = []
+        for row in score:
+            values, _indices = torch.topk(row, k=11, largest=True, sorted=True)
+            threshold = values[-1]
+            strict_idx = torch.nonzero(row > threshold, as_tuple=False).flatten()
+            tie_idx = torch.nonzero(row == threshold, as_tuple=False).flatten()
+            slots = 11 - int(strict_idx.numel())
+            chosen = torch.cat((strict_idx, torch.sort(tie_idx).values[:slots]))
+            chosen_scores = row[chosen]
+            order = torch.argsort(chosen_scores, descending=True, stable=True)
+            expected_idx.append(chosen[order].numpy())
+            expected_score.append(chosen_scores[order].numpy())
+
+        np.testing.assert_array_equal(observed_idx, np.stack(expected_idx))
+        np.testing.assert_allclose(
+            observed_score, np.stack(expected_score), rtol=0.0, atol=0.0
+        )
+
+    def test_topk_cosine_neighbors_matches_reference_on_cutoff_ties(self):
+        import numpy as np
+        try:
+            import torch
+        except ModuleNotFoundError:
+            self.skipTest("PyTorch equivalence is executed in the frozen Kaggle runtime preflight")
+
+        q = np.asarray([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+        r = np.asarray([
+            [1.0, 0.0],
+            [1.0, 0.0],
+            [1.0, 0.0],
+            [0.5, 0.5],
+            [0.5, 0.5],
+            [0.0, 1.0],
+            [0.0, 1.0],
+        ], dtype=np.float32)
+        observed_idx, observed_score = topk_cosine_neighbors(
+            q, r, k=2, device="cpu", block_rows=2
+        )
+
+        score = torch.from_numpy(q) @ torch.from_numpy(r).T
+        expected_idx = []
+        expected_score = []
+        for row in score:
+            values, _indices = torch.topk(row, k=2, largest=True, sorted=True)
+            threshold = values[-1]
+            strict_idx = torch.nonzero(row > threshold, as_tuple=False).flatten()
+            tie_idx = torch.nonzero(row == threshold, as_tuple=False).flatten()
+            slots = 2 - int(strict_idx.numel())
+            chosen = torch.cat((strict_idx, torch.sort(tie_idx).values[:slots]))
+            chosen_scores = row[chosen]
+            order = torch.argsort(chosen_scores, descending=True, stable=True)
+            expected_idx.append(chosen[order].numpy())
+            expected_score.append(chosen_scores[order].numpy())
+
+        np.testing.assert_array_equal(observed_idx, np.stack(expected_idx))
+        np.testing.assert_allclose(
+            observed_score, np.stack(expected_score), rtol=0.0, atol=0.0
+        )
+
     def test_operator_sources_fail_closed_to_qualification(self):
         master = (ROOT / "journal_extension" / "scripts" / "run_trackb_r07_master.py").read_text(encoding="utf-8")
         runner = (ROOT / "journal_extension" / "scripts" / "run_trackb_r07.py").read_text(encoding="utf-8")
@@ -490,10 +556,13 @@ class TrackBR07Tests(unittest.TestCase):
         self.assertIn('current_qualification_science', runner)
         self.assertIn('TRACKB_QUALIFICATION_AUTHORIZATION.json', runner)
         self.assertIn('validate_trackb_preinference_qualification.py', master)
-        self.assertIn('choices=["preflight", "qualification", "all"]', runner)
+        self.assertIn('choices=["preflight", "qualification", "claim", "all"]', runner)
+        self.assertIn('--qualification-root', runner)
+        self.assertIn('claim mode requires --qualification-root', runner)
+        self.assertIn('qualification_recomputed": False', runner)
         self.assertLess(
-            runner.index('if args.mode == "qualification":'),
-            runner.index("claim_candidates ="),
+            runner.index('if args.mode == "claim":'),
+            runner.index('stage("1-4 :: prediction-blind source verification'),
         )
         self.assertIn("--execution-mode", notebook)
         self.assertIn("qualification", notebook)
@@ -568,19 +637,18 @@ class TrackBR07Tests(unittest.TestCase):
             self.assertTrue(_checksum_matches(path, f"sha256:{sha}"))
             self.assertFalse(_checksum_matches(path, "md5:" + "0" * 32))
 
-    def test_gvlid_checksum_ledger_parser_is_deterministic(self):
-        import tempfile
-        with tempfile.TemporaryDirectory() as td:
-            path = Path(td) / "checksums.txt"
-            h1, h2 = "1" * 64, "2" * 64
-            path.write_text(
-                f"{h1}  data/Black Rot/a.jpg\n"
-                f"data/Healthy/b.jpg,{h2}\n",
-                encoding="utf-8",
-            )
-            parsed = _parse_sha256_ledger(path)
-            self.assertEqual(parsed["data/black rot/a.jpg"], h1)
-            self.assertEqual(parsed["data/healthy/b.jpg"], h2)
+    def test_gvlid_checksum_authority_parser_is_deterministic(self):
+        path = (
+            ROOT
+            / "journal_extension"
+            / "track_b_r07"
+            / "external_authority"
+            / "gvlid_v5_checksums.csv"
+        )
+        first = _parse_gvlid_checksum_authority(path)
+        second = _parse_gvlid_checksum_authority(path)
+        self.assertEqual(first, second)
+        self.assertEqual(len(first), 3477)
 
     def test_attempt_rerun_gate_allows_only_unchanged_interrupted_attempt(self):
         digest = "a" * 64
@@ -619,6 +687,39 @@ class TrackBR07Tests(unittest.TestCase):
                         },
                         current_science_preimage_sha256=digest,
                     )
+
+    def test_v5_deterministic_orb_ransac_contract_is_source_locked(self):
+        source = (
+            ROOT / "journal_extension" / "src" / "cropcop_je" / "trackb_r07_audit.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("_CV2_RANSAC_LOCK", source)
+        self.assertIn("with _CV2_RANSAC_LOCK:", source)
+        self.assertIn("cv2.setRNGSeed(int(rng_seed) & 0x7FFFFFFF)", source)
+        self.assertIn("cv2.findHomography(", source)
+
+    def test_v5_time_budget_guards_cover_qualification_claim_and_packaging(self):
+        source = (
+            ROOT / "journal_extension" / "scripts" / "run_trackb_r07.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("def _require_remaining_time(", source)
+        self.assertIn('required_seconds=5 * 3600', source)
+        self.assertIn('stage_name="prediction-blind qualification"', source)
+        self.assertIn('required_seconds=2 * 3600', source)
+        self.assertIn('stage_name="protected claim"', source)
+        self.assertIn('required_seconds=45 * 60', source)
+        self.assertIn('stage_name="claim evidence packaging"', source)
+
+    def test_v5_capacity_preflight_enforces_t4x2_vram_and_scratch(self):
+        source = (
+            ROOT / "journal_extension" / "scripts" / "run_trackb_r07.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("def _preflight_kaggle_capacity(", source)
+        self.assertIn("device_count < 2", source)
+        self.assertIn('"T4" not in name.upper()', source)
+        self.assertIn("min_total_vram = 12 * 1024**3", source)
+        self.assertIn("min_free_vram = 8 * 1024**3", source)
+        self.assertIn("shutil.disk_usage(scratch_root).free", source)
+        self.assertIn("expected_external_images=0 if args.mode == \"claim\" else 3477 + 58709", source)
 
     def test_bootstrap_is_reproducible_and_shared_across_seeds(self):
         rows = []

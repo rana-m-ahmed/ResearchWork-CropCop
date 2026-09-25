@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import Any, Iterable
 from .trackb_r07 import TrackBAuditPolicy, TrackBError
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+_CV2_RANSAC_LOCK = threading.Lock()
 
 
 @dataclass(frozen=True)
@@ -212,7 +214,9 @@ def discover_candidate_images(
     return rows
 
 
-def exact_duplicate_pairs(records: list[ImageAuditRecord]) -> set[tuple[str, str]]:
+def exact_duplicate_pairs(
+    records: list[ImageAuditRecord], *, max_pairs: int | None = None
+) -> set[tuple[str, str]]:
     by_hash: dict[str, list[str]] = defaultdict(list)
     for row in records:
         by_hash[row.sha256].append(row.row_id)
@@ -222,10 +226,20 @@ def exact_duplicate_pairs(records: list[ImageAuditRecord]) -> set[tuple[str, str
         for i in range(len(ids)):
             for j in range(i + 1, len(ids)):
                 edges.add((ids[i], ids[j]))
+                if max_pairs is not None and len(edges) > int(max_pairs):
+                    raise TrackBError(
+                        f"exact-duplicate candidate pairs exceed operational cap {max_pairs}"
+                    )
     return edges
 
 
-def near_hash_pairs(records: list[ImageAuditRecord], *, field: str, radius: int) -> set[tuple[str, str]]:
+def near_hash_pairs(
+    records: list[ImageAuditRecord],
+    *,
+    field: str,
+    radius: int,
+    max_pairs: int | None = None,
+) -> set[tuple[str, str]]:
     tree = BKTree64()
     value_to_ids: dict[int, list[str]] = defaultdict(list)
     edges: set[tuple[str, str]] = set()
@@ -236,6 +250,10 @@ def near_hash_pairs(records: list[ImageAuditRecord], *, field: str, radius: int)
                 a, b = sorted((row.row_id, other_id))
                 if a != b:
                     edges.add((a, b))
+                    if max_pairs is not None and len(edges) > int(max_pairs):
+                        raise TrackBError(
+                            f"{field} within-candidate pairs exceed operational cap {max_pairs}"
+                        )
         if not value_to_ids[value]:
             tree.add(value)
         value_to_ids[value].append(row.row_id)
@@ -248,6 +266,7 @@ def cross_hash_pairs(
     *,
     field: str,
     radius: int,
+    max_pairs: int | None = None,
 ) -> set[tuple[str, str]]:
     tree = BKTree64()
     value_to_hist: dict[int, list[str]] = defaultdict(list)
@@ -262,6 +281,10 @@ def cross_hash_pairs(
         for neighbor_value in tree.query(value, radius):
             for hist_id in value_to_hist[neighbor_value]:
                 out.add((row.row_id, hist_id))
+                if max_pairs is not None and len(out) > int(max_pairs):
+                    raise TrackBError(
+                        f"{field} cross-dataset pairs exceed operational cap {max_pairs}"
+                    )
     return out
 
 
@@ -303,6 +326,33 @@ def topk_cosine_neighbors(query_features, reference_features, *, k: int = 50, de
             block = torch.from_numpy(q[start:start + int(block_rows)]).to(device)
             score = block @ ref.T
             values, indices = torch.topk(score, k=k, dim=1, largest=True, sorted=True)
+
+            # torch.topk does not promise stable indices for equal values.  The
+            # candidate set is scientific evidence, so resolve only cutoff ties
+            # deterministically by ascending reference index without perturbing
+            # any non-tied similarity ordering.
+            for row_index in range(len(block)):
+                threshold = values[row_index, -1]
+                strict_idx = torch.nonzero(
+                    score[row_index] > threshold, as_tuple=False
+                ).flatten()
+                tie_idx = torch.nonzero(
+                    score[row_index] == threshold, as_tuple=False
+                ).flatten()
+                slots = int(k) - int(strict_idx.numel())
+                if slots < 0:
+                    raise TrackBError("top-k cutoff accounting became inconsistent")
+                chosen_ties = torch.sort(tie_idx).values[:slots]
+                chosen = torch.cat((strict_idx, chosen_ties), dim=0)
+                if int(chosen.numel()) != int(k):
+                    raise TrackBError("deterministic top-k tie resolution did not produce k neighbors")
+                chosen_scores = score[row_index, chosen]
+                order = torch.argsort(chosen_scores, descending=True, stable=True)
+                chosen = chosen[order]
+                chosen_scores = chosen_scores[order]
+                indices[row_index] = chosen
+                values[row_index] = chosen_scores
+
             out_idx[start:start + len(block)] = indices.cpu().numpy()
             out_score[start:start + len(block)] = values.cpu().numpy()
     return out_idx, out_score
@@ -354,6 +404,7 @@ def verify_orb_pair(
     b: dict[str, Any],
     *,
     policy: TrackBAuditPolicy,
+    rng_seed: int = 0,
 ) -> dict[str, Any]:
     import cv2
     import numpy as np
@@ -390,9 +441,13 @@ def verify_orb_pair(
         return result
     pts_a = np.float32([kp_a[m.queryIdx] for m in good])
     pts_b = np.float32([kp_b[m.trainIdx] for m in good])
-    H, mask = cv2.findHomography(
-        pts_a, pts_b, cv2.RANSAC, policy.homography_ransac_reprojection_px
-    )
+    # OpenCV's RNG is process-global.  Seed + serialize only the RANSAC
+    # section so threaded pair verification remains deterministic.
+    with _CV2_RANSAC_LOCK:
+        cv2.setRNGSeed(int(rng_seed) & 0x7FFFFFFF)
+        H, mask = cv2.findHomography(
+            pts_a, pts_b, cv2.RANSAC, policy.homography_ransac_reprojection_px
+        )
     if H is None or mask is None:
         result["decision_stage"] = "HOMOGRAPHY_FAIL"
         return result
