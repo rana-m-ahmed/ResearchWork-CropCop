@@ -205,6 +205,9 @@ def build_external_manifest(
         "decode_valid_row_count": len(rows),
         "decode_valid_support": dict(sorted(valid_support.items())),
         "decode_invalid_count": len(invalid_rows),
+        "decode_invalid_exact_v1_train_val_overlap_count": sum(
+            int(row["exact_v1_train_val_overlap"]) for row in invalid_rows
+        ),
         "decode_invalid_support": dict(
             sorted(Counter(row["source_label"] for row in invalid_rows).items())
         ),
@@ -243,6 +246,7 @@ def write_invalid_manifest_csv(
         "bytes",
         "decode_status",
         "error_type",
+        "exact_v1_train_val_overlap",
         "error_message",
     ]
     with path.open(
