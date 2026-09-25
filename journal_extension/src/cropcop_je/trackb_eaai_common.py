@@ -9,6 +9,7 @@ from typing import Any
 
 PROTOCOL_ID = "TRACKB_EAAI_EXTERNAL_VALIDATION_v1"
 REQUIRED_ROLES = {"core", "historical_compare", "gvlid_v5", "irish_potato"}
+CLASS_MAP_SHA256 = "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2"
 CHECKPOINTS = {
     "S1": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
     "S2": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
@@ -153,6 +154,68 @@ def discover_bundles(input_root: str | Path) -> dict[str, Bundle]:
                 f"{key}={hist.get(key)!r}"
             )
     return found
+
+
+def validate_materialization_pair(
+    input_root: str | Path,
+    bundles: dict[str, Bundle],
+    expected_materialization_id: str,
+) -> dict[str, Any]:
+    root = Path(input_root).resolve()
+    infra = sorted(root.glob("**/TRACKB_INFRASTRUCTURE_BUNDLE.json"))
+    external = sorted(root.glob("**/TRACKB_EXTERNAL_BUNDLE.json"))
+    if len(infra) != 1 or len(external) != 1:
+        raise TrackBEAAIError(
+            "expected exactly one infrastructure and one external bundle receipt"
+        )
+    infra_obj = load_json(infra[0])
+    external_obj = load_json(external[0])
+    for obj, role in (
+        (infra_obj, "TRACKB_INFRASTRUCTURE"),
+        (external_obj, "TRACKB_EXTERNAL"),
+    ):
+        if obj.get("status") != "PASS_PAIRED_TRACKB_INPUT_BUNDLE":
+            raise TrackBEAAIError(f"{role} bundle receipt is not PASS")
+        if obj.get("bundle_role") != role:
+            raise TrackBEAAIError(f"{role} bundle receipt role mismatch")
+        if str(obj.get("materialization_id", "")) != str(
+            expected_materialization_id
+        ):
+            raise TrackBEAAIError(
+                f"{role} materialization ID does not match the frozen protocol"
+            )
+
+    shared_fields = (
+        "materialization_id",
+        "repository_source_sha",
+        "scientific_execution_lock_sha256",
+        "scientific_code_attestation_sha256",
+        "external_source_lock_sha256",
+        "input_materialization_lock_sha256",
+        "role_manifest_sha256",
+    )
+    for field in shared_fields:
+        if infra_obj.get(field) != external_obj.get(field):
+            raise TrackBEAAIError(
+                f"paired bundle receipts disagree on {field}"
+            )
+
+    expected_manifest_hashes = infra_obj.get("role_manifest_sha256") or {}
+    observed_manifest_hashes = {
+        role: sha256_file(bundle.manifest_path)
+        for role, bundle in bundles.items()
+    }
+    if observed_manifest_hashes != expected_manifest_hashes:
+        raise TrackBEAAIError(
+            "attached role manifests do not match the paired materialization receipt"
+        )
+    return {
+        "materialization_id": str(infra_obj["materialization_id"]),
+        "repository_source_sha": str(infra_obj["repository_source_sha"]),
+        "role_manifest_sha256": observed_manifest_hashes,
+        "infrastructure_receipt_sha256": sha256_file(infra[0]),
+        "external_receipt_sha256": sha256_file(external[0]),
+    }
 
 
 def resolve_file(bundle: Bundle, key: str) -> Path:
