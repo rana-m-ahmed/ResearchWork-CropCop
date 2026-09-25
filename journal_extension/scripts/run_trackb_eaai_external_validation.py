@@ -36,7 +36,7 @@ from cropcop_je.trackb_eaai_eval import (
     load_model,
     metrics,
     paired_stratified_bootstrap,
-    run_inference,
+    run_three_seed_inference,
     write_confusion_csv,
     write_predictions,
 )
@@ -432,24 +432,29 @@ def main() -> int:
                     f"{dataset_id}: cohort {cohort} is empty"
                 )
 
-        predictions: dict[str, list[dict[str, Any]]] = {}
-        for seed in SEEDS:
-            print(f"--- inference {dataset_id} {seed}", flush=True)
-            model = load_model(
+        print(
+            f"--- loading frozen S1/S2/S3 models for {dataset_id}",
+            flush=True,
+        )
+        models = {
+            seed: load_model(
                 checkpoint_paths[seed],
                 seed,
                 args.device,
             )
-            prediction_rows = run_inference(
-                model,
-                rows,
-                data_root,
-                class_map,
-                device=args.device,
-                batch_size=args.batch_size,
-                workers=args.loader_workers,
-            )
-            predictions[seed] = prediction_rows
+            for seed in SEEDS
+        }
+        predictions = run_three_seed_inference(
+            models,
+            rows,
+            data_root,
+            class_map,
+            device=args.device,
+            batch_size=args.batch_size,
+            workers=args.loader_workers,
+        )
+        for seed in SEEDS:
+            prediction_rows = predictions[seed]
             total_predictions += len(prediction_rows)
             write_predictions(
                 output_root
@@ -458,9 +463,9 @@ def main() -> int:
                 prediction_rows,
                 mapped_indices,
             )
-            del model
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+        del models
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         cohort_results: dict[str, Any] = {}
         for cohort, cohort_source_rows in cohort_rows.items():
