@@ -423,7 +423,7 @@ class TrackBEAAISimplifiedTests(unittest.TestCase):
             for cell in notebook.get("cells") or []
         )
         self.assertIn(
-            "6fe1f6f55ea2254c2c03563241cad0ab6afac41f",
+            "7d9c09dfc6ec6bad640ee8af429abd1f6ab688d1",
             source,
         )
         self.assertIn(
