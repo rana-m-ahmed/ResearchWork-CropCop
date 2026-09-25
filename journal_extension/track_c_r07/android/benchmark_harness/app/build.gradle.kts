@@ -35,5 +35,6 @@ kotlin {
 
 dependencies {
     implementation("org.pytorch:executorch-android:1.3.1")
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
     testImplementation("junit:junit:4.13.2")
 }
