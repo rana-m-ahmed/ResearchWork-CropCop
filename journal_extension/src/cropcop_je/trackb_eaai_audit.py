@@ -114,6 +114,7 @@ def build_external_manifest(
             "target_class_name": mapping[label],
             "raw_sha256": raw_sha,
             "bytes": path.stat().st_size,
+            "exact_v1_train_val_overlap": raw_sha in historical_sha,
         }
 
         try:
@@ -141,7 +142,6 @@ def build_external_manifest(
             "width": int(width),
             "height": int(height),
             "decode_status": "VALID",
-            "exact_v1_train_val_overlap": raw_sha in historical_sha,
         }
         return row, None
 
