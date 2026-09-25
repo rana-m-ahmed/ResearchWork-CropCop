@@ -30,6 +30,7 @@ evidence/restricted/*/*
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.tmp-trackc-pytest/
 .venv/
 venv/
 
