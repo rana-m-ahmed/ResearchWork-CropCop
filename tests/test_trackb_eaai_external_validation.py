@@ -350,7 +350,7 @@ class TrackBEAAISimplifiedTests(unittest.TestCase):
             for cell in notebook.get("cells") or []
         )
         self.assertIn(
-            "d9e9a323834ae6d2d6b745e18e4023f8789a6c7e",
+            "6fe1f6f55ea2254c2c03563241cad0ab6afac41f",
             source,
         )
         self.assertIn(
@@ -367,6 +367,10 @@ class TrackBEAAISimplifiedTests(unittest.TestCase):
         self.assertNotIn("claim", source.lower())
         self.assertNotIn("BFMatcher", source)
         self.assertNotIn("topk_cosine_neighbors", source)
+        self.assertIn("PASS_FRESH_RUNTIME", source)
+        self.assertIn("PASS_V7_IMPORT_SMOKE", source)
+        self.assertIn("run_retry", source)
+        self.assertIn("free_working_gib", source)
 
     def test_protocol_performance_never_controls_execution_pass(self):
         protocol = json.loads(self.protocol_path.read_text(encoding="utf-8"))
