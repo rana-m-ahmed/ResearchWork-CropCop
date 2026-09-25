@@ -13,6 +13,7 @@ import _bootstrap  # noqa: F401
 from cropcop_je.trackb_eaai_audit import (
     build_external_manifest,
     read_historical_sha_set,
+    write_invalid_manifest_csv,
     write_manifest_csv,
 )
 from cropcop_je.trackb_eaai_common import (
@@ -342,7 +343,7 @@ def main() -> int:
                 f"{dataset_id}: mapping is not one-to-one"
             )
 
-        rows, dataset_audit = build_external_manifest(
+        rows, invalid_rows, dataset_audit = build_external_manifest(
             dataset_id=dataset_id,
             data_root=resolve_dir(bundle, "data_root"),
             mapping=spec["mapping"],
@@ -356,6 +357,15 @@ def main() -> int:
         write_manifest_csv(
             output_root / dataset_id / "source_manifest.csv",
             rows,
+        )
+        write_invalid_manifest_csv(
+            output_root / dataset_id / "decode_invalid_manifest.csv",
+            invalid_rows,
+        )
+        print(
+            f"{dataset_id}: strict decode audit "
+            f"valid={len(rows):,}, invalid={len(invalid_rows):,}",
+            flush=True,
         )
 
     atomic_json(output_root / "source_authority.json", source_authority)
