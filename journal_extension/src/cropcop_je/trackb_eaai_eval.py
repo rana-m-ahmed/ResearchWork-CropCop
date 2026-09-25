@@ -15,51 +15,7 @@ from .trackb_eaai_common import (
 )
 
 
-def deterministic_pad_resize(image, size: int = 256):
-    from PIL import ImageOps, ImageStat
-    from torchvision.transforms import InterpolationMode
-    from torchvision.transforms import functional as TF
-
-    image = ImageOps.exif_transpose(image).convert("RGB")
-    mean = tuple(
-        int(round(value))
-        for value in ImageStat.Stat(image).mean[:3]
-    )
-    width, height = image.size
-    side = max(width, height)
-    left = (side - width) // 2
-    top = (side - height) // 2
-    image = ImageOps.expand(
-        image,
-        border=(
-            left,
-            top,
-            side - width - left,
-            side - height - top,
-        ),
-        fill=mean,
-    )
-    return TF.resize(
-        image,
-        [size, size],
-        interpolation=InterpolationMode.BICUBIC,
-        antialias=True,
-    )
-
-
-def eval_transform(image, size: int = 256):
-    import torch
-    from torchvision.transforms import functional as TF
-
-    x = TF.pil_to_tensor(
-        deterministic_pad_resize(image, size)
-    ).to(torch.float32).div_(255.0)
-    return TF.normalize(
-        x,
-        [.485, .456, .406],
-        [.229, .224, .225],
-    )
-
+from .data import ctc_v2_eval_transform
 
 def _checkpoint_state(payload: Any) -> dict[str, Any]:
     if isinstance(payload, dict):
@@ -149,7 +105,7 @@ class ExternalDataset:
                 f"{row['relative_path']}"
             )
         with Image.open(path) as image:
-            x = eval_transform(image)
+            x = ctc_v2_eval_transform(image)
 
         return (
             x,
