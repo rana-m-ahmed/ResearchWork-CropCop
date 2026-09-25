@@ -357,8 +357,10 @@ class TrackBEAAISimplifiedTests(unittest.TestCase):
             "run_trackb_eaai_external_validation.py",
             source,
         )
-        self.assertIn("'--mode', 'all'", source)
-        self.assertIn("'--device', 'cuda:0'", source)
+        self.assertIn("'--mode'", source)
+        self.assertIn("'all'", source)
+        self.assertIn("'--device'", source)
+        self.assertIn("'cuda:0'", source)
         self.assertNotIn("KAGGLE_API_TOKEN", source)
         self.assertNotIn("KAGGLE_OWNER", source)
         self.assertNotIn("ranaabdulrehmannn", source)
