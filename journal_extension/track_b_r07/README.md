@@ -4,7 +4,7 @@
 
 The supported Track-B experiment is now:
 
-- `journal_extension/track_b_r07/TRACKB_EAAI_PROTOCOL_v1.json`
+- `journal_extension/track_b_r07/TRACKB_EAAI_PROTOCOL_v2.json`
 - `journal_extension/scripts/run_trackb_eaai_external_validation.py`
 - `journal_extension/kaggle/TrackB_EAAI_External_Validation.ipynb` (generated after the behavior commit is QA-pinned)
 
@@ -37,6 +37,10 @@ The active protocol freezes, before external inference:
 - paired, class-stratified 5,000-replicate percentile bootstrap for primary
   Macro-F1 uncertainty;
 - the V1 test surface remains closed.
+
+## Strict-decode data quality
+
+Before any model is loaded, every external file is hashed and strictly decoded with Pillow. Files that cannot be decoded are never repaired or silently ignored: they are written to `decode_invalid_manifest.csv` with path, label, raw SHA-256 and decode error, and are excluded from all metric cohorts. Published source counts remain frozen; metric denominators use the strictly decodable subset. The v2 amendment was frozen after a prediction-free v1 audit failure and before any external model prediction or metric was observed.
 
 ## Leakage screening and cohorts
 
