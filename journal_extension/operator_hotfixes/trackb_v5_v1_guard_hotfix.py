@@ -135,10 +135,7 @@ def _optimized_topk_cosine_neighbors(
     from cropcop_je.trackb_r07 import TrackBError
 
     q = np.asarray(query_features, dtype=np.float32)
-    # Historical DINO features are attached as a read-only memmap.  Make the
-    # reference matrix explicitly writable before torch.from_numpy so PyTorch
-    # never wraps a non-writable array; values remain byte-identical float32.
-    r = np.array(reference_features, dtype=np.float32, copy=True, order="C")
+    r = np.asarray(reference_features, dtype=np.float32)
     if q.ndim != 2 or r.ndim != 2 or q.shape[1] != r.shape[1]:
         raise TrackBError("feature matrix dimensionality mismatch")
     if len(r) < k:
