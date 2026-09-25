@@ -8,6 +8,8 @@ object BenchmarkContract {
     const val artifactBytes = 28_555_872L
     const val executorchVersion = "1.3.1"
     const val requestedThreads = 4
+    const val tensorManifestSha256 = "a2be311ed3b182c478a0482d78ee4ca05cc0575cdf16b16d9ee79355762c073a"
+    const val inputLockSha256 = "1380b926aaf7dd144bec50c7194dd6b3a31428ae1bb0da7bba121ce595f697c8"
     val modes = setOf(
         "tensor_fidelity",
         "raw_fidelity",

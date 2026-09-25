@@ -8,6 +8,8 @@ import org.json.JSONObject
 import org.pytorch.executorch.EValue
 import org.pytorch.executorch.Module
 import org.pytorch.executorch.Tensor
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.io.File
 
 class BenchmarkActivity : Activity() {
@@ -42,15 +44,58 @@ class BenchmarkActivity : Activity() {
 
         if (mode == "load") return report.put("artifact_sha256", BenchmarkContract.artifactSha256)
 
-        if (mode in setOf("tensor_fidelity", "raw_fidelity", "model_latency", "end_to_end", "warmup_transition")) {
-            error("TRACKC_INPUT_MANIFEST_NOT_MATERIALIZED")
+        if (mode == "raw_fidelity") error("TRACKC_RAW_PIPELINE_NOT_IMPLEMENTED_EXACT_CTC_V2")
+        val tensors = verifiedTensors()
+        fun forward(index: Int): FloatArray {
+            val value = Tensor.fromBlob(readTensor(tensors[index]), longArrayOf(1, 3, 256, 256))
+            return module.forward(EValue.from(value))?.firstOrNull()?.toTensor()?.dataAsFloatArray
+                ?: error("TRACKC_FORWARD_EMPTY")
+        }
+        fun top1(values: FloatArray): Int = values.indices.maxBy { values[it] }
+        val evidence = File(filesDir, "trackc/evidence").apply { mkdirs() }
+        fun runTimed(name: String, count: Int, includeRead: Boolean): JSONObject {
+            val output = File(evidence, "$name.csv")
+            output.printWriter().use { writer ->
+                writer.println("sample_index,elapsed_ns,top1")
+                repeat(count) { i ->
+                    val start = System.nanoTime()
+                    val logits = forward(i % tensors.size)
+                    val elapsed = System.nanoTime() - start
+                    require(logits.size == 120) { "TRACKC_OUTPUT_WIDTH_MISMATCH" }
+                    writer.println("${i % tensors.size},$elapsed,${top1(logits)}")
+                }
+            }
+            return JSONObject().put("samples", count).put("evidence", output.name).put("evidence_sha256", BenchmarkContract.sha256(output))
         }
 
-        // This is unreachable for current frozen modes, but retains the exact forward boundary.
-        val tensor = Tensor.fromBlob(FloatArray(1 * 3 * 256 * 256), longArrayOf(1, 3, 256, 256))
-        val logits = module.forward(EValue.from(tensor))?.firstOrNull()?.toTensor()?.dataAsFloatArray
-            ?: error("TRACKC_FORWARD_EMPTY")
-        require(logits.size == 120) { "TRACKC_OUTPUT_WIDTH_MISMATCH" }
-        return report.put("output_width", logits.size)
+        return when (mode) {
+            "tensor_fidelity" -> runTimed("tensor_fidelity", 256, true)
+                .put("input_manifest_sha256", BenchmarkContract.tensorManifestSha256)
+            "warmup_transition" -> runTimed("warmup_transition", 10, false)
+            "model_latency" -> {
+                repeat(50) { forward(it % tensors.size) }
+                runTimed("model_latency", 1000, false).put("untimed_warmups", 50)
+            }
+            "end_to_end" -> runTimed("end_to_end", 768, true)
+            else -> error("TRACKC_MODE_DISPATCH_ERROR")
+        }.also { report.put("result", it) }
+    }
+
+    private fun verifiedTensors(): List<File> {
+        val root = File(filesDir, "trackc/inputs")
+        val manifest = File(root, "manifests/DS_DEVICE_TENSOR_256_R07_manifest.csv")
+        require(BenchmarkContract.sha256(manifest) == BenchmarkContract.tensorManifestSha256) { "TRACKC_TENSOR_MANIFEST_SHA256_MISMATCH" }
+        require(BenchmarkContract.sha256(File(root, "locks/TRACKC_R07_DEVICE_INPUT_LOCK_v1.json")) == BenchmarkContract.inputLockSha256) { "TRACKC_INPUT_LOCK_SHA256_MISMATCH" }
+        val tensors = File(root, "tensor_256").listFiles { file -> file.name.endsWith(".f32le.bin") }?.sortedBy { it.name }
+            ?: error("TRACKC_TENSOR_DIRECTORY_UNAVAILABLE")
+        require(tensors.size == 256) { "TRACKC_TENSOR_COUNT_MISMATCH:${tensors.size}" }
+        require(tensors.all { it.length() == 786432L }) { "TRACKC_TENSOR_BYTES_MISMATCH" }
+        return tensors
+    }
+
+    private fun readTensor(file: File): FloatArray {
+        val bytes = file.readBytes()
+        require(bytes.size == 786432) { "TRACKC_TENSOR_BYTES_MISMATCH" }
+        return FloatArray(196608).also { ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer().get(it) }
     }
 }
