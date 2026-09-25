@@ -15,9 +15,12 @@ if str(SRC) not in sys.path:
 
 from cropcop_je.trackb_eaai_common import (  # noqa: E402
     CHECKPOINTS,
+    Bundle,
     TrackBEAAIError,
     _contains_forbidden_test_surface,
     load_protocol,
+    sha256_file,
+    validate_materialization_pair,
 )
 from cropcop_je.trackb_eaai_eval import (  # noqa: E402
     aggregate_three_seed,
@@ -258,6 +261,81 @@ class TrackBEAAISimplifiedTests(unittest.TestCase):
             self.assertNotIn(forbidden, source)
         self.assertIn("leakage_clean_primary", source)
         self.assertIn("mapped_scope", source.lower())
+
+    def test_materialization_pair_accepts_matching_receipts_and_rejects_mixup(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            roles = {}
+            role_hashes = {}
+            for role in ("core", "historical_compare", "gvlid_v5", "irish_potato"):
+                role_root = root / role
+                role_root.mkdir()
+                manifest_path = role_root / "TRACKB_INPUT_MANIFEST.json"
+                manifest = {"schema_version": "1.0", "role": role}
+                manifest_path.write_text(
+                    json.dumps(manifest, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                role_hashes[role] = sha256_file(manifest_path)
+                roles[role] = Bundle(
+                    role=role,
+                    root=role_root.resolve(),
+                    manifest_path=manifest_path.resolve(),
+                    manifest=manifest,
+                )
+
+            materialization_id = "9" * 64
+            common = {
+                "schema_version": "2.0",
+                "status": "PASS_PAIRED_TRACKB_INPUT_BUNDLE",
+                "materialization_id": materialization_id,
+                "repository_source_sha": "a" * 40,
+                "scientific_execution_lock_sha256": "b" * 64,
+                "scientific_code_attestation_sha256": "c" * 64,
+                "external_source_lock_sha256": "d" * 64,
+                "input_materialization_lock_sha256": "e" * 64,
+                "role_manifest_sha256": role_hashes,
+            }
+            infra = {
+                **common,
+                "bundle_role": "TRACKB_INFRASTRUCTURE",
+            }
+            external = {
+                **common,
+                "bundle_role": "TRACKB_EXTERNAL",
+            }
+            infra_path = root / "TRACKB_INFRASTRUCTURE_BUNDLE.json"
+            external_path = root / "TRACKB_EXTERNAL_BUNDLE.json"
+            infra_path.write_text(
+                json.dumps(infra, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            external_path.write_text(
+                json.dumps(external, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+
+            receipt = validate_materialization_pair(
+                root,
+                roles,
+                materialization_id,
+            )
+            self.assertEqual(
+                receipt["materialization_id"],
+                materialization_id,
+            )
+
+            external["materialization_id"] = "8" * 64
+            external_path.write_text(
+                json.dumps(external, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            with self.assertRaises(TrackBEAAIError):
+                validate_materialization_pair(
+                    root,
+                    roles,
+                    materialization_id,
+                )
 
     def test_kaggle_notebook_is_pinned_account_independent_and_single_run(self):
         notebook_path = (
