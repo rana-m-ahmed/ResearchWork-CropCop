@@ -259,6 +259,37 @@ class TrackBEAAISimplifiedTests(unittest.TestCase):
         self.assertIn("leakage_clean_primary", source)
         self.assertIn("mapped_scope", source.lower())
 
+    def test_kaggle_notebook_is_pinned_account_independent_and_single_run(self):
+        notebook_path = (
+            ROOT
+            / "journal_extension"
+            / "kaggle"
+            / "TrackB_EAAI_External_Validation.ipynb"
+        )
+        notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
+        source = "\n".join(
+            "".join(cell.get("source") or [])
+            for cell in notebook.get("cells") or []
+        )
+        self.assertIn(
+            "8699c7d555035e3c6c3677dfcba942b39492489e",
+            source,
+        )
+        self.assertIn(
+            "run_trackb_eaai_external_validation.py",
+            source,
+        )
+        self.assertIn("'--mode', 'all'", source)
+        self.assertIn("'--device', 'cuda:0'", source)
+        self.assertNotIn("KAGGLE_API_TOKEN", source)
+        self.assertNotIn("KAGGLE_OWNER", source)
+        self.assertNotIn("ranaabdulrehmannn", source)
+        self.assertNotIn("ranamuhammadahmed6", source)
+        self.assertNotIn("qualification_science_sha256", source)
+        self.assertNotIn("claim", source.lower())
+        self.assertNotIn("BFMatcher", source)
+        self.assertNotIn("topk_cosine_neighbors", source)
+
     def test_protocol_performance_never_controls_execution_pass(self):
         protocol = json.loads(self.protocol_path.read_text(encoding="utf-8"))
         self.assertTrue(
