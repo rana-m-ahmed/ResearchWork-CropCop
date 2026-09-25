@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-PROTOCOL_ID = "TRACKB_EAAI_EXTERNAL_VALIDATION_v1"
+PROTOCOL_ID = "TRACKB_EAAI_EXTERNAL_VALIDATION_v2"
 REQUIRED_ROLES = {"core", "historical_compare", "gvlid_v5", "irish_potato"}
 CLASS_MAP_SHA256 = "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2"
 CHECKPOINTS = {
