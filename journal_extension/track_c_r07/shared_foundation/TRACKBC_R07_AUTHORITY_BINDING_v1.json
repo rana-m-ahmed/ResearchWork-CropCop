@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "binding_id": "TRACKBC_R07_AUTHORITY_BINDING_v1",
+  "status": "PASS",
+  "gate": "F0 PASS - CURRENT R07 DOWNSTREAM AUTHORITY VERIFIED",
+  "created_utc": "2026-09-22T19:00:00Z",
+  "qa_locked_plan_sha256": "c2a354cb0f9e5033742deb354b1fc42b49181e8884f5b6dfde14d2d5018a59c0",
+  "repository": {
+    "name": "rana-m-ahmed/ResearchWork-CropCop",
+    "authority_branch": "origin/fix/trackb-v5-final-hardening-20260920",
+    "authority_commit": "8f0aa4f7b4d401d29d7d01ee65d55529b63b684f",
+    "binding_branch": "foundation/r07-prompt1-20260922"
+  },
+  "effective_authority": {
+    "authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+    "status": "ACTIVE_PRE_EXECUTION",
+    "selected_scientific_family": "R07",
+    "selected_family_description": "R07 / ConvNeXt-Tiny Context",
+    "track_c_deployment_representative": "R07-S1",
+    "track_c_experiment_id": "R07-CNXTT-CONTEXT-S1",
+    "selection_basis": "frozen Track-A development evidence before any Track-B or Track-C protected outcome",
+    "track_b_results_may_change_representative": false,
+    "track_c_results_may_change_representative": false
+  },
+  "track_a_closure": {
+    "commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+    "formal_status": "PASS",
+    "track_a_closed": true,
+    "downstream_handoff_authorized": true,
+    "sealed_primary_family": "R07",
+    "final_audit_self_hash": "1c7d98fa47a12ae6eaa53e1c6e91b4e6eef2d04bb717c2d58c7ae2ebae2b51c6"
+  },
+  "scientific_identities": {
+    "dataset_manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "ctc_v2_config_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+    "r07_s1_checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "r07_s1_run_id": "JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01",
+    "r07_s1_run_record_sha256": "0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516",
+    "track_a_replay_tolerance": 0.000001,
+    "num_classes": 120,
+    "selected_epoch": 27,
+    "scientific_source_commit": "8904b100d223e4319776199c87ab397db23600ce"
+  },
+  "authoritative_material": [
+    {
+      "role": "canonical_v3_authority_object",
+      "path": "journal_extension/amendments/track_bc_r07_downstream_v3.json",
+      "sha256": "17efb4e60cc7dd9e44c11575d4d2a1e9e9de11a6a73af9e407e610f50504c2c2",
+      "git_blob_sha1": "6602aa605659674d4f7037cf4ceea5e0f78b7624"
+    },
+    {
+      "role": "live_authority_and_execution_validator",
+      "path": "journal_extension/src/cropcop_je/trackb_r07.py",
+      "sha256": "5d9553396d1f7d8953b78ea8857c38a4eb569da8291b041ca6e49b4d5a6d8784",
+      "git_blob_sha1": "55c8eb7df5c90102c05ecc705ac5359ca483850a"
+    },
+    {
+      "role": "current_scientific_execution_lock",
+      "path": "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v4.json",
+      "sha256": "ab41872ef5256997e4ecbeda965a8f5ba7193962d44a59fc1d9ae14655ac317f",
+      "git_blob_sha1": "c15548eecf351d58b42e36c6f3503f462f21e807"
+    },
+    {
+      "role": "current_code_attestation",
+      "path": "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v4.json",
+      "sha256": "02284d0323e486ef26642be7b6e1d396f5063031a6c49b9fbf55f4c833a0d9ee",
+      "git_blob_sha1": "b16eb149e9b7ac82ed6751233edb3e09db3d3ea0"
+    },
+    {
+      "role": "formal_track_a_comprehensive_closure",
+      "path": "journal_extension/evidence/public/track_a/final_closure_20260919/TRACKA_COMPREHENSIVE_CLOSURE.json",
+      "sha256": "d425f188ba7038eb108d9a68b5ba93b5454cb31e54755b1ceb03b9bb0a2e8907",
+      "git_blob_sha1": "1598c1147c4835923d2a429c1266733485291d26"
+    },
+    {
+      "role": "formal_track_a_final_audit",
+      "path": "journal_extension/evidence/public/track_a/final_closure_20260919/TRACKA_FINAL_CLOSURE_AUDIT.json",
+      "sha256": "683ffbd505280a909dcbe74d216d8611263113d14f06dfd6f6c1b127cb4df2e9",
+      "git_blob_sha1": "0072f39a6ebb6bee95b31e30ef5a3254c5853db6"
+    }
+  ],
+  "provenance": {
+    "representation": "The v3 authority is a standalone amendment object consumed by cropcop_je.trackb_r07.validate_downstream_authority and bound by TRACKB_R07_EXECUTION_LOCK_v4 plus TRACKB_CODE_ATTESTATION_v4.",
+    "stale_v1_recreated": false,
+    "track_b_science_mutated": false,
+    "historical_locks_mutated": false
+  },
+  "protected_surface_attestation": {
+    "v1_test_status": "CLOSED",
+    "v1_test_accessed_for_binding": false,
+    "track_b_protected_results_used_for_representative_selection": false,
+    "track_c_protected_results_used_for_representative_selection": false,
+    "s2_or_s3_substituted": false,
+    "dino_audit_encoder_confused_with_r07": false
+  },
+  "validation": {
+    "authority_validator": "cropcop_je.trackb_r07.validate_downstream_authority",
+    "execution_lock_validator": "cropcop_je.trackb_r07.validate_execution_lock",
+    "code_attestation_validator": "cropcop_je.trackb_r07.verify_code_attestation",
+    "targeted_test": "python -m pytest tests/test_trackb_r07.py -q",
+    "targeted_test_result": "PASS: 37 passed"
+  },
+  "canonical_self_hash_scheme": "sha256(canonical JSON with canonical_self_sha256 omitted; UTF-8; sorted keys; separators comma/colon; ensure_ascii=false)",
+  "canonical_self_sha256": "b419430a3f19e1834e17648a8d3e4d3ba1d4bf17c24c255cb4637f17488eea92"
+}

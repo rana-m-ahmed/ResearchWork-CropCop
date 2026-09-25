@@ -1,0 +1,20 @@
+{
+  "bundle": {
+    "bytes": 369025295,
+    "sha256": "a5ebcf84368ca5d56945009fe45483c52de10a142c8ef3ecfe6d7d714156c920"
+  },
+  "canonical_self_sha256": "a5ac816a836cf84715f08e88f71fd83a56ba683745da51b87bc730c9f70ce11e",
+  "executor_sha256": "a39b4df4d913ec68c4491be3385c34b425554e47a7dd891def18e4fa27e1d8d7",
+  "final_handoff": {
+    "canonical_self_sha256": "de704b46151572b004d56345439fcbdd5d3e14c480ef041ee69596aa9e07444c",
+    "file_sha256": "8bb0b352b768fbd146e49a6acfca9b1e3bda79cc8e229db5f4d62854ce1366b2",
+    "next_prompt": "PROMPT_2",
+    "next_prompt_authorized": true,
+    "status": "PASS"
+  },
+  "notebook_sha256": "1ec200afdac0371c49116dfe17dfe969a9f394da8e29acc7dceb0cba5da5b796",
+  "repository_head_before_acceptance": "4a442cc2f9a41b91bbb950c9d086fced48e5036f",
+  "schema_version": "1.0",
+  "selected_production_artifact_sha256": "2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8",
+  "status": "PASS"
+}

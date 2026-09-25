@@ -1,0 +1,25 @@
+{
+  "canonical_self_sha256": "239b3721c15b2cd68183c9f14500db2eec7afee0259ab4ed70e0e05343c04a75",
+  "checkpoint_bytes": 335202763,
+  "checkpoint_certificate_sha256": "ed5e3e6ad7aca3bb934ca7ed4bccf2ca4e72f9b29deeab37b46e17542563b7b6",
+  "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "ctc_canonical_sha256": "ed2331e63455e35ade00b548217fe987a9504f26a41e6c5d8a794e38741550bb",
+  "ctc_file_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+  "forbidden_surface_attestation": {
+    "track_b_protected_results_used": false,
+    "v1_test_accessed": false
+  },
+  "gate": "F1",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "model_id": "R07-CNXTT-CONTEXT-S1",
+  "next_gate_authorized": true,
+  "num_classes": 120,
+  "reconstruction_contract_sha256": "48dab3895aac9740ce16642787b50068debf4272db76578176ccfeb57cd57daf",
+  "run_record_sha256": "0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516",
+  "schema_version": "1.0",
+  "selected_epoch": 27,
+  "source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "status": "PASS",
+  "validation_replay_report_sha256": "0c4fbc74b498e9be1b084060d1f6d980a4692775dfe4784df926a8fc96e4ae56"
+}

@@ -1,0 +1,32 @@
+{
+  "canonical_self_sha256": "6089cfd1bd55f444c3d24152812d01cec53d6b5c2407469208b224cfed204a7a",
+  "checkpoint": {
+    "bytes": 335202763,
+    "identity_sha256": "81b607e71b49321eaadf332b8bbfe72068fa3ad4915d9f5f9397dff58411c081",
+    "selected_epoch": 27,
+    "sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974"
+  },
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "ctc_canonical_sha256": "ed2331e63455e35ade00b548217fe987a9504f26a41e6c5d8a794e38741550bb",
+  "gate": "F1",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "run_record_sha256": "0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516",
+  "schema_version": "1.0",
+  "source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "status": "PASS",
+  "strict_reconstruction": {
+    "adapter_underlying_exact_equal": true,
+    "adapter_underlying_max_abs_error": 0.0,
+    "construction": "torchvision.models.convnext_tiny(weights=None, num_classes=120)",
+    "controlled_input_seed": 21270083,
+    "controlled_input_shape": [
+      2,
+      3,
+      256,
+      256
+    ],
+    "controlled_logits_sha256": "2ae45ce9bceb1864241151e7de6581c419bfa634a1c63162d0f3ae100c735948",
+    "missing_keys": [],
+    "unexpected_keys": []
+  }
+}

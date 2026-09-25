@@ -1,0 +1,41 @@
+{
+  "absolute_deltas": {
+    "validation_accuracy": 0.0,
+    "validation_balanced_accuracy": 0.0,
+    "validation_macro_f1": 1.1102230246251565e-16,
+    "validation_nll": 0.0
+  },
+  "canonical_self_sha256": "e08f2c0af0d40124e1a8672d33fada1dac6e5dc6ff0829827851052b39d0ae25",
+  "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+  "elapsed_seconds": 174.524150974,
+  "executor_sha256": "a39b4df4d913ec68c4491be3385c34b425554e47a7dd891def18e4fa27e1d8d7",
+  "expected_metrics": {
+    "validation_accuracy": 0.9853983382209188,
+    "validation_balanced_accuracy": 0.966641504228933,
+    "validation_macro_f1": 0.9681638484931451,
+    "validation_nll": 0.09627299043618485
+  },
+  "forbidden_surface_attestation": {
+    "track_b_external_results_opened": false,
+    "v1_test_opened": false
+  },
+  "gate": "F1",
+  "model_id": "R07-CNXTT-CONTEXT-S1",
+  "observed_metrics": {
+    "validation_accuracy": 0.9853983382209188,
+    "validation_balanced_accuracy": 0.966641504228933,
+    "validation_macro_f1": 0.968163848493145,
+    "validation_nll": 0.09627299043618485
+  },
+  "row_ids_sha256": "91b78c0fa0869a8aa2ec4cb02601bf437a1729e79a9962cc69049c38bfd79735",
+  "schema_version": "1.0",
+  "selected_epoch": 27,
+  "source_batch_size": 16,
+  "source_device": "cuda",
+  "source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+  "source_logits_sha256": "10223304d16b3ed36801b42ee199b383e30f1aeb64922090fcb24b2f230a6ea6",
+  "status": "PASS",
+  "targets_sha256": "0585db7bb0700dad52f5f140ca8bfafa56b146f488fd4126aaf1cbb2c3fb0629",
+  "tolerance": 1e-06,
+  "validation_rows": 16368
+}
