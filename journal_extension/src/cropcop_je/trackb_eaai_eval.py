@@ -88,7 +88,14 @@ def load_model(
     device: str,
 ):
     import torch
+    import torchvision
     from torchvision.models import convnext_tiny
+
+    version = torchvision.__version__.split("+", 1)[0]
+    if version != "0.27.1":
+        raise TrackBEAAIError(
+            f"torchvision version drift: expected 0.27.1, got {version}"
+        )
 
     expected = CHECKPOINTS[seed]
     actual = sha256_file(checkpoint)
