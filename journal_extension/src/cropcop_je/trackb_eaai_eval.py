@@ -654,12 +654,31 @@ def environment_record(
     import torch
     import torchvision
 
-    return {
-        "python": platform.python_version(),
-        "torch": torch.__version__,
-        "torchvision": torchvision.__version__,
+    observed = {
+        "torch": torch.__version__.split("+", 1)[0],
+        "torchvision": torchvision.__version__.split("+", 1)[0],
         "numpy": np.__version__,
         "Pillow": PIL.__version__,
+    }
+    expected = {
+        "torch": "2.12.1",
+        "torchvision": "0.27.1",
+        "numpy": "2.5.2",
+        "Pillow": "12.3.0",
+    }
+    drift = {
+        key: {"expected": expected[key], "observed": observed[key]}
+        for key in expected
+        if observed[key] != expected[key]
+    }
+    if drift:
+        raise TrackBEAAIError(
+            f"model-critical runtime drift: {drift}"
+        )
+
+    return {
+        "python": platform.python_version(),
+        **observed,
         "cuda_available": (
             torch.cuda.is_available()
         ),
