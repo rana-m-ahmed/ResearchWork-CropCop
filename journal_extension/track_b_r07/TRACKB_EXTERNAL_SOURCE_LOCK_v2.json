@@ -1,0 +1,80 @@
+{
+  "schema_version": "2.0",
+  "lock_id": "TRACKB_EXTERNAL_SOURCE_LOCK_v2",
+  "status": "PASS_EXTERNAL_SOURCE_AUTHORITY",
+  "scientific_change": false,
+  "protected_external_predictions_allowed": false,
+  "authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "candidates": {
+    "gvlid_v5": {
+      "role": "gvlid_v5",
+      "doi": "10.17632/wkymf8bhcg.5",
+      "version": "5",
+      "provider": "MENDELEY_DATA",
+      "dataset_id": "wkymf8bhcg",
+      "expected_image_count": 3477,
+      "integrity_policy": "MENDELEY_V5_DOI_VERSION_AND_STABLE_MANIFEST_REMAIN_SOURCE_IDENTITY_AUTHORITY; IF_PROVIDER_TRANSPORT_MATERIALIZES_ZERO_USABLE_IMAGES_ONLY, IMAGE_BYTES_MAY_FALL_BACK_TO_PINNED_OFFICIAL_COMPANION_COMMIT; ALL_3477_IMAGES_MUST_MATCH_PINNED_OFFICIAL_CHECKSUM_LEDGER",
+      "integrity_status": "PASS_PINNED_OFFICIAL_COMPANION_LEDGER",
+      "required_resolution": [],
+      "materialization_permitted": true,
+      "checksum_authority": {
+        "provenance_record": "journal_extension/track_b_r07/external_authority/GVLID_V5_CHECKSUM_AUTHORITY_v1.json",
+        "vendored_ledger": "journal_extension/track_b_r07/external_authority/gvlid_v5_checksums.csv",
+        "official_repository": "MilindGayakwad/DNN",
+        "official_commit": "878a1c7098964bb52c4c4a5c30e5b53340565258",
+        "official_blob_sha1": "5c953cf0381614d8e3744737bfeed98ea1162f9c",
+        "ledger_rows": 3477
+      },
+      "byte_materialization_policy": {
+        "primary": "MENDELEY_PUBLIC_API_BYTES_WHEN_USABLE_IMAGES_ARE_EXPOSED",
+        "fallback_condition": "ZERO_USABLE_IMAGES_MATERIALIZED_FROM_PROVIDER_TRANSPORT",
+        "fallback": "PINNED_OFFICIAL_COMPANION_COMMIT_ARCHIVE",
+        "official_repository": "MilindGayakwad/DNN",
+        "official_commit": "878a1c7098964bb52c4c4a5c30e5b53340565258",
+        "full_checksum_coverage_required": true,
+        "expected_verified_images": 3477,
+        "partial_provider_materialization_fallback_forbidden": true
+      }
+    },
+    "irish_potato": {
+      "role": "irish_potato",
+      "doi": "10.5281/zenodo.8286529",
+      "version": "01",
+      "provider": "ZENODO",
+      "record_id": "8286529",
+      "required_archives": {
+        "earlyblt.zip": 17772,
+        "healthy.zip": 20438,
+        "lateblt.zip": 20499
+      },
+      "expected_image_count": 58709,
+      "integrity_policy": "ALL_THREE_PROVIDER_ARCHIVES_MUST_PASS PROVIDER CHECKSUM AND DECLARED BYTE SIZE; KNOWN ZIP TRANSPORT METADATA (__MACOSX/APPLEDOUBLE ._ ENTRIES) IS EXCLUDED BEFORE IMAGE COUNTING; LOGICAL IMAGE SUPPORT IS THEN DEFINED BY UNIQUE PUBLISHED IMAGE FILENAME; DUPLICATE REAL-IMAGE COPIES MAY BE COLLAPSED ONLY WHEN BYTE-IDENTICAL; CONFLICTS FAIL CLOSED",
+      "integrity_status": "PROVIDER_CHECKSUM_REQUIRED_AT_RUNTIME",
+      "materialization_permitted": true,
+      "normalization_policy": {
+        "expected_support": {
+          "earlyblt": 17772,
+          "healthy": 20438,
+          "lateblt": 20499
+        },
+        "logical_identity": "CASEFOLDED_IMAGE_BASENAME_WITH_UNIQUE_PUBLISHED_IDENTIFIER",
+        "duplicate_transport_copies_permitted_only_if_byte_identical": true,
+        "conflicting_duplicate_bytes_forbidden": true,
+        "streaming_normalization_required": true,
+        "transport_metadata_excluded": [
+          "__MACOSX subtree",
+          "AppleDouble basenames beginning ._"
+        ],
+        "transport_metadata_exclusion_reason": "ZIP transport metadata can carry .jpg suffixes but is not part of the published logical image cohort"
+      }
+    }
+  },
+  "fail_closed": true,
+  "notes": [
+    "This lock is operational/provenance hardening only and does not change frozen Track-B scientific thresholds, mappings, seeds or evidence-grade rules.",
+    "The Scientific Data article names docs/checksums.txt; the official companion repository at the pinned commit publishes docs/checksums.csv. Independent verification established exactly 3477 valid SHA-256 rows with complete one-to-one image-path coverage.",
+    "Mendeley v5 remains the DOI/version/stable-manifest source identity authority. If its transport object yields zero usable images, image bytes may be materialized from the authors' exact pinned official companion commit; acceptance still requires complete 3477-image SHA-256 verification against the vendored pinned ledger.",
+    "The fallback uses a public commit-addressed GitHub codeload transport and requires no GitHub credential; a transport/network failure remains fail-closed.",
+    "Irish Potato Zenodo archives are provider-checksum-bound. The published post-preprocessing class counts are 17772/20438/20499. Archive-level duplicate copies may be collapsed only by unique published filename and only when duplicate bytes are identical; conflicting copies remain fail-closed."
+  ]
+}

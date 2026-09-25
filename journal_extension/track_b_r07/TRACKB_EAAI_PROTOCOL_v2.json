@@ -1,0 +1,151 @@
+{
+  "schema_version": "1.0",
+  "protocol_id": "TRACKB_EAAI_EXTERNAL_VALIDATION_v2",
+  "status": "FROZEN_PRE_RESULTS",
+  "purpose": "Cross-source external evaluation of the frozen CropCop R07 classifier on seven mapped classes from two public datasets, without retraining, calibration, mapped-subset renormalization, or V1-test access.",
+  "amendment": {
+    "supersedes_active_execution_paths": [
+      "TRACKB_V5_QUALIFICATION_CLAIM",
+      "TRACKB_STAGED_QUALIFICATION_V6"
+    ],
+    "reason": "The exhaustive near-duplicate geometric qualification path generated multi-million-pair CPU workloads and repeatedly exceeded the available Kaggle execution budget before external model performance was observed.",
+    "protected_external_predictions_observed_before_amendment": false,
+    "external_metric_results_used_to_design_amendment": false,
+    "frozen_model_checkpoints_changed": false,
+    "frozen_class_mappings_changed": false,
+    "primary_metric_changed": false,
+    "previous_protocol_id": "TRACKB_EAAI_EXTERNAL_VALIDATION_v1",
+    "amendment_reason": "The v1 execution stopped during prediction-free source auditing because the published Irish Potato corpus contains at least one file with an image extension that Pillow cannot strictly decode. No external model was loaded and no external prediction or performance metric was observed before this amendment.",
+    "triggering_failure_stage": "PREDICTION_FREE_EXTERNAL_SOURCE_AUDIT",
+    "model_or_mapping_change": false,
+    "data_quality_policy_added": true
+  },
+  "materialization": {
+    "materialization_id": "98ff32c3c7ce2e66ffe52be97932a8b25f3ce50314c844abdd33077c99d90d78",
+    "required_roles": [
+      "core",
+      "historical_compare",
+      "gvlid_v5",
+      "irish_potato"
+    ],
+    "notebook_00_rerun_required": false
+  },
+  "datasets": {
+    "gvlid_grape": {
+      "role": "gvlid_v5",
+      "doi": "10.17632/wkymf8bhcg.5",
+      "version": "5",
+      "expected_original_images": 3477,
+      "scope": "SCOPE-GRAPE-4",
+      "mapping": {
+        "Black Rot": "grape_black_rot",
+        "Esca": "grape_esca",
+        "Healthy": "grape_healthy",
+        "Leaf Blight": "grape_leaf_blight"
+      }
+    },
+    "irish_potato": {
+      "role": "irish_potato",
+      "doi": "10.5281/zenodo.8286529",
+      "version": "01",
+      "expected_original_images": 58709,
+      "expected_source_support": {
+        "earlyblt": 17772,
+        "healthy": 20438,
+        "lateblt": 20499
+      },
+      "scope": "SCOPE-POTATO-3",
+      "mapping": {
+        "earlyblt": "potato_early_blight",
+        "healthy": "potato_healthy",
+        "lateblt": "potato_late_blight"
+      }
+    }
+  },
+  "checkpoints": {
+    "S1": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "S2": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310",
+    "S3": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37"
+  },
+  "preprocessing": {
+    "entrypoint": "cropcop_je.data.ctc_v2_eval_transform",
+    "config_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+    "source_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8"
+  },
+  "leakage_surface": {
+    "role": "historical_compare",
+    "coverage_scope": "V1_TRAIN_VAL_ONLY",
+    "image_count": 92744,
+    "train_image_count": 76376,
+    "validation_image_count": 16368,
+    "v1_test_accessed": false,
+    "exact_raw_sha256_required": true
+  },
+  "cohorts": {
+    "full_published": "All strictly decodable mapped source images from the frozen published corpus; decode-invalid source files are reported separately and excluded before model loading.",
+    "leakage_clean_primary": "Strictly decodable cohort excluding external images whose raw SHA-256 exactly matches the frozen V1 train+validation surface.",
+    "exact_deduplicated_sensitivity": "Leakage-clean strictly decodable cohort with one deterministic representative per external raw SHA-256 group."
+  },
+  "prediction_policy": {
+    "native_output_classes": 120,
+    "mapped_subset_logit_renormalization": false,
+    "predictions_outside_mapped_scope_are_errors": true,
+    "external_retraining": false,
+    "external_finetuning": false,
+    "external_calibration": false,
+    "best_seed_selection_forbidden": true
+  },
+  "metrics": {
+    "primary": "mapped_scope_macro_f1",
+    "secondary": [
+      "accuracy",
+      "balanced_accuracy",
+      "per_class_precision_recall_f1_support",
+      "confusion_matrix",
+      "out_of_mapped_scope_prediction_rate"
+    ],
+    "report_each_seed": true,
+    "aggregate_across_seeds": "mean_and_sample_sd"
+  },
+  "bootstrap": {
+    "replicates": 5000,
+    "interval": "percentile_95",
+    "seed": 409883112,
+    "stratified_within_mapped_class": true,
+    "same_resample_indices_for_all_three_seeds": true,
+    "primary_cohort": "leakage_clean_primary"
+  },
+  "output_policy": {
+    "keep_per_image_predictions": true,
+    "keep_protocol_and_environment": true,
+    "keep_leakage_audit": true,
+    "keep_full_clean_deduplicated_sensitivity": true,
+    "publish_kaggle_dataset_required": false,
+    "kaggle_secret_required": false
+  },
+  "stop_conditions": {
+    "scientific_performance_never_causes_execution_failure": true,
+    "fail_on": [
+      "source_identity_or_count_mismatch",
+      "checkpoint_hash_mismatch",
+      "class_mapping_mismatch",
+      "V1_test_surface_exposure",
+      "incomplete_or_duplicate_predictions",
+      "metric_recomputation_mismatch",
+      "published_source_count_or_label_support_mismatch",
+      "mapped_label_has_zero_strictly_decodable_images",
+      "decode_invalid_file_not_reported"
+    ]
+  },
+  "data_quality_policy": {
+    "expected_original_counts_refer_to_published_files": true,
+    "strict_decode_required": true,
+    "pillow_load_truncated_images": false,
+    "decode_invalid_files_excluded_from_all_metric_cohorts": true,
+    "decode_invalid_files_must_be_reported_with_raw_sha256_label_path_and_error": true,
+    "invalid_file_exclusion_decided_before_model_loading": true,
+    "fail_if_any_mapped_label_has_zero_strictly_decodable_images": true,
+    "fail_if_source_file_count_or_published_label_support_differs_from_frozen_source": true,
+    "do_not_repair_or_reencode_invalid_source_files": true
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "schema_version": "4.0",
+  "attestation_id": "TRACKB_CODE_ATTESTATION_v3",
+  "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8",
+  "scope": "load-bearing Track-B v3 scientific execution, stable prediction-blind qualification/Q3 verification, reviewed-science claim authorization, deterministic audit policy, source integrity, attempt chronology, evidence durability, and frozen Track-A dependencies",
+  "files": [
+    {
+      "path": "journal_extension/amendments/track_bc_r07_downstream_v3.json",
+      "git_blob_sha1": "6602aa605659674d4f7037cf4ceea5e0f78b7624",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/configs/common/ctc_v2.json",
+      "git_blob_sha1": "517d6fcc38e3a8e480fb1edcd97bac87907c5b5c",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/scripts/_bootstrap.py",
+      "git_blob_sha1": "a10d813c8b64762bab3e3d5cb683d5df66243f03",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/scripts/bootstrap_trackb_runtime.py",
+      "git_blob_sha1": "b51bd2b5afb9823f675a3913681bd0f3b3a07679",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/scripts/build_trackb_core_package.py",
+      "git_blob_sha1": "115b91fdfebdd8c19b91f5be32fda8383c19f328",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/scripts/build_trackb_historical_compare.py",
+      "git_blob_sha1": "28778000e2f0accf64c033a2b6aa591c88a850cd",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/scripts/prepare_trackb_candidate_input.py",
+      "git_blob_sha1": "b02a26770d55a8d256f4fd13c919db1cd31fb28e",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/scripts/prepare_trackb_core_input.py",
+      "git_blob_sha1": "950c1c63e22b0d580ec367ea8f8b40366c50bf63",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/scripts/prepare_trackb_historical_source_input.py",
+      "git_blob_sha1": "ddc9a4e6a551882d96d70d6113cdb9d8750ab095",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/scripts/run_trackb_r07_master.py",
+      "git_blob_sha1": "fee639f2b5ea72ec3859ddfff5660b2a7db4bb25",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/scripts/run_trackb_r07.py",
+      "git_blob_sha1": "3437c276b789d1772039a187dce1e00fcdaea23d",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "git_blob_sha1": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2",
+      "origin": "track_b_infrastructure",
+      "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/atomic_io.py",
+      "git_blob_sha1": "600a4f401a4836ee856764317bf8bc8eb2228280",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/checkpointing.py",
+      "git_blob_sha1": "f30744db5b1fdddd917052eea9b0db0b3c8b02b4",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/data.py",
+      "git_blob_sha1": "9871ece382e0345bcab2e832d3116611855c3de7",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/frozen_v1_manifest.py",
+      "git_blob_sha1": "121834f7f573d0818ac914b67e290cc4f20546ed",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/g1.py",
+      "git_blob_sha1": "94aa6262b36a72903053a1c8376023f541afaedd",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/hashing.py",
+      "git_blob_sha1": "d31dda0c7f900c4d4b648c970d4ea299d7d4ef67",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/models.py",
+      "git_blob_sha1": "c7db1155de1621e751c4bdbad7e9c4096ab06746",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/publication.py",
+      "git_blob_sha1": "ad128de285c8897fd7768bfaf7c5e413dff01b77",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/smoke_handoff.py",
+      "git_blob_sha1": "9785a87db41a534f6bba08d62127eadf564e19fa",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/tensor_identity.py",
+      "git_blob_sha1": "00120944a069f2c70d9affe11727f456878259a1",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/tracka_v12_analysis.py",
+      "git_blob_sha1": "da16543f5140b26390b5326ae5a66d2ed921feb5",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/tracka_v12_evidence.py",
+      "git_blob_sha1": "f8b929e3a459d038120a02005f2631f08a49e94e",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/tracka_v12_posttraining.py",
+      "git_blob_sha1": "0f51992fc0d378e52a98361841be18cdd5c6b9cd",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/trackb_r07_analysis.py",
+      "git_blob_sha1": "c83711c239585cf2466236f7a326db8a16b26463",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/trackb_r07_audit.py",
+      "git_blob_sha1": "7378c7936d880216ea7173a56499ac9e586f8982",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
+      "git_blob_sha1": "d207375871ba6b00235ba3a8bff06dde964021d2",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/trackb_r07.py",
+      "git_blob_sha1": "bee395ec66711503614bb02073e6032833d268e4",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/teacher_factory/historical_dino_tiny.py",
+      "git_blob_sha1": "5503f289a27fc65f2259745ed9ef8b1794f56329",
+      "origin": "parent_track_a_closure"
+    },
+    {
+      "path": "journal_extension/track_b_r07/requirements-trackb.lock.txt",
+      "git_blob_sha1": "e93426372402c67af62c28d59cbdfdc1ba5aa934",
+      "origin": "track_b_v3_remediation"
+    },
+    {
+      "path": "journal_extension/track_b_r07/TRACKB_EXTERNAL_LINEAGE_REVIEW_v1.json",
+      "git_blob_sha1": "40c1d0487ef51b907ae58ae08452c745e8925b15",
+      "origin": "track_b_v3_remediation"
+    }
+  ],
+  "attestation_note": "Release-hardening re-attestation: exact 64-image historical DINO preflight batch assertion, output-filesystem disk budgeting, bounded archive extraction, stronger external transport preflight, low-peak publication round-trip ordering, dedicated DINO factory root, and canonical R07 metric schema. No scientific dataset, checkpoint, mapping, threshold, seed, evidence-grade rule, or replay tolerance changed."
+}

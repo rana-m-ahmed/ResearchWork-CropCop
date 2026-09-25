@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
+import os
 import shutil
 import subprocess
 import sys
@@ -32,6 +34,78 @@ EXPECTED_SOURCE_HINTS = {
     "r07_s3": "sabahatabbas/cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
     "dino_bundle": "ranamuhammadahmed6/cropcop-secondary-g1-8904b100@version-2",
 }
+
+_TRANSIENT_REPOSITORY_DIR_NAMES = {
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".ipynb_checkpoints",
+    ".cache",
+    ".huggingface",
+}
+_TRANSIENT_REPOSITORY_FILE_NAMES = {".DS_Store", "Thumbs.db", ".coverage"}
+_TRANSIENT_REPOSITORY_SUFFIXES = {".pyc", ".pyo"}
+
+
+def _repository_transient_artifacts(root: Path) -> list[Path]:
+    root = Path(root).resolve()
+    out: list[Path] = []
+    for path in sorted(root.rglob("*")):
+        rel_parts = path.relative_to(root).parts
+        if any(part in _TRANSIENT_REPOSITORY_DIR_NAMES for part in rel_parts):
+            out.append(path)
+            continue
+        if path.is_file() and (
+            path.name in _TRANSIENT_REPOSITORY_FILE_NAMES
+            or path.suffix.lower() in _TRANSIENT_REPOSITORY_SUFFIXES
+        ):
+            out.append(path)
+    return out
+
+
+def _purge_transient_repository_artifacts(root: Path) -> dict[str, object]:
+    root = Path(root).resolve()
+    candidates = _repository_transient_artifacts(root)
+    removed: list[str] = []
+    # Remove deepest entries first so nested cache trees are deterministic.
+    for path in sorted(candidates, key=lambda p: len(p.parts), reverse=True):
+        if not path.exists() and not path.is_symlink():
+            continue
+        rel = path.relative_to(root).as_posix()
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink(missing_ok=True)
+        removed.append(rel)
+    remaining = [
+        path.relative_to(root).as_posix()
+        for path in _repository_transient_artifacts(root)
+        if path.exists() or path.is_symlink()
+    ]
+    if remaining:
+        raise TrackBError(
+            "repository snapshot still contains transient runtime artifacts after purge: "
+            + json.dumps(remaining[:50])
+        )
+    return {
+        "status": "PASS_REPOSITORY_TRANSPORT_HYGIENE",
+        "removed_count": len(set(removed)),
+        "removed_paths": sorted(set(removed)),
+    }
+
+
+def _assert_repository_transport_clean(root: Path) -> None:
+    remaining = [
+        path.relative_to(root).as_posix()
+        for path in _repository_transient_artifacts(root)
+        if path.exists() or path.is_symlink()
+    ]
+    if remaining:
+        raise TrackBError(
+            "repository snapshot contains non-authoritative runtime/cache artifacts: "
+            + json.dumps(remaining[:50])
+        )
 
 
 def _copy_file(src: Path, dst: Path) -> None:
@@ -151,9 +225,24 @@ def _verify_run_record(path: Path, seed: str) -> dict:
     if str(selected_sha) != R07_CHECKPOINTS[seed]:
         raise TrackBError(f"R07 {seed} run record does not bind selected checkpoint")
     metrics = (obj.get("result_summary") or {}).get("selected_metrics") or {}
-    for key in ("accuracy", "balanced_accuracy", "macro_f1", "nll"):
-        if key not in metrics:
-            raise TrackBError(f"R07 {seed} run record lacks selected metric {key}")
+    required_metrics = (
+        "validation_accuracy",
+        "validation_balanced_accuracy",
+        "validation_macro_f1",
+        "validation_nll",
+    )
+    missing = [key for key in required_metrics if key not in metrics]
+    if missing:
+        raise TrackBError(
+            f"R07 {seed} run record lacks canonical selected replay metrics: {missing}"
+        )
+    for key in required_metrics:
+        try:
+            value = float(metrics[key])
+        except (TypeError, ValueError) as exc:
+            raise TrackBError(f"R07 {seed} selected replay metric is non-numeric: {key}") from exc
+        if not math.isfinite(value):
+            raise TrackBError(f"R07 {seed} selected replay metric is non-finite: {key}")
     return obj
 
 
@@ -164,8 +253,23 @@ def _copy_repository(source_repo: Path, dest_repo: Path) -> str | None:
     shutil.copytree(
         source_repo / "journal_extension",
         dest_repo / "journal_extension",
-        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache"),
+        ignore=shutil.ignore_patterns(
+            "__pycache__",
+            "*.pyc",
+            "*.pyo",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".ipynb_checkpoints",
+            ".cache",
+            ".huggingface",
+            ".DS_Store",
+            "Thumbs.db",
+            ".coverage",
+        ),
     )
+    _purge_transient_repository_artifacts(dest_repo)
+    _assert_repository_transport_clean(dest_repo)
     try:
         cp = subprocess.run(
             ["git", "-C", str(source_repo), "rev-parse", "HEAD"],
@@ -255,13 +359,13 @@ def main() -> int:
 
     prep = repo_copy / "journal_extension" / "scripts" / "prepare_trackb_core_input.py"
     cmd = [
-        sys.executable, str(prep),
+        sys.executable, "-B", str(prep),
         "--package-root", str(output),
         "--repository-root", "repository",
         "--v1-validation-root", "v1_validation",
-        "--downstream-authority", "repository/journal_extension/amendments/track_bc_r07_downstream_v2.json",
-        "--execution-lock", "repository/journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v2.json",
-        "--code-attestation", "repository/journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v2.json",
+        "--downstream-authority", "repository/journal_extension/amendments/track_bc_r07_downstream_v3.json",
+        "--execution-lock", "repository/journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v4.json",
+        "--code-attestation", "repository/journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v4.json",
         "--class-map", "authority/v1/class_to_idx.json",
         "--v1-manifest", "authority/v1/final_manifest.csv",
         "--r07-s1", "models/r07_s1.pt",
@@ -272,9 +376,14 @@ def main() -> int:
         "--r07-s3-run-record", "models/r07_s3_run_record.json",
         "--dino-checkpoint", "audit_encoder/DINO_TEACHER.pt",
         "--dino-factory-manifest", "audit_encoder/TEACHER_FACTORY_BUNDLE.json",
-        "--dino-factory-source-root", "repository",
+        "--dino-factory-source-root", "repository/journal_extension/teacher_factory",
     ]
-    subprocess.run(cmd, cwd=repo_copy, check=True)
+    prep_env = dict(os.environ)
+    prep_env["PYTHONDONTWRITEBYTECODE"] = "1"
+    subprocess.run(cmd, cwd=repo_copy, check=True, env=prep_env)
+    hygiene = _purge_transient_repository_artifacts(repo_copy)
+    _assert_repository_transport_clean(repo_copy)
+    print(json.dumps(hygiene, indent=2, sort_keys=True), flush=True)
 
     input_manifest = json.loads((output / "TRACKB_INPUT_MANIFEST.json").read_text(encoding="utf-8"))
     if input_manifest.get("role") != "core":
