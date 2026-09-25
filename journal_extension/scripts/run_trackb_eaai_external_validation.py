@@ -17,6 +17,7 @@ from cropcop_je.trackb_eaai_audit import (
 )
 from cropcop_je.trackb_eaai_common import (
     CHECKPOINTS,
+    CLASS_MAP_SHA256,
     TrackBEAAIError,
     atomic_json,
     discover_bundles,
@@ -25,6 +26,7 @@ from cropcop_je.trackb_eaai_common import (
     load_protocol,
     resolve_dir,
     resolve_file,
+    validate_materialization_pair,
     sha256_file,
     sha256_json,
 )
@@ -292,8 +294,18 @@ def main() -> int:
 
     shutil.copy2(args.protocol, output_root / "protocol.json")
 
+    materialization = validate_materialization_pair(
+        args.input_root,
+        bundles,
+        protocol["materialization"]["materialization_id"],
+    )
+    atomic_json(output_root / "materialization_receipt.json", materialization)
+
     core = bundles["core"]
-    class_map = load_class_map(resolve_file(core, "class_map"))
+    class_map_path = resolve_file(core, "class_map")
+    if sha256_file(class_map_path) != CLASS_MAP_SHA256:
+        raise TrackBEAAIError("frozen 120-way class-map SHA-256 mismatch")
+    class_map = load_class_map(class_map_path)
     class_names_by_index = {value: key for key, value in class_map.items()}
 
     historical = bundles["historical_compare"]
