@@ -1,0 +1,32 @@
+{
+  "schema_version": "TRACKC_SECONDARY_DEVICE_PREFLIGHT_V1",
+  "status": "PASS_PRE_FORWARD_PREFLIGHT",
+  "device": {
+    "manufacturer": "Xiaomi",
+    "marketed_model": "POCO M3",
+    "model": "M2010J19CG",
+    "device": "citrus",
+    "board_platform": "bengal",
+    "soc_vendor": "QTI",
+    "soc_model": "SM6115",
+    "abis": ["arm64-v8a", "armeabi-v7a", "armeabi"],
+    "android_release": "12",
+    "sdk": 31,
+    "build_fingerprint": "POCO/citrus_global/citrus:12/SKQ1.211202.001/V14.0.2.0.SJFMIXM:user/release-keys",
+    "ram_kb": 3802472,
+    "data_available_kb": 103511332
+  },
+  "cpu_features_observed": ["fp", "asimd", "evtstrm", "aes", "pmull", "sha1", "sha2", "crc32", "cpuid"],
+  "thermal_status": 0,
+  "battery": {"ac_powered": true, "status": "charging", "level_percent": 12, "temperature_tenths_c": 362},
+  "apk": {"bytes": 29924924, "sha256": "b6f0c4533aa1bc8b13a467d7d7ac83cd978f3928222da22ca7df5d2d15954d26"},
+  "artifact": {"bytes": 28555872, "sha256": "2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8"},
+  "inputs": {
+    "archive_sha256": "55d8b5e3e24b3f65f47a7638aca4d7958b0046a5ac6d77acb607fd69ae4a261b",
+    "tensor_manifest_sha256": "a2be311ed3b182c478a0482d78ee4ca05cc0575cdf16b16d9ee79355762c073a",
+    "raw_manifest_sha256": "73c2beed647fd874be9a4187a872d33455a4a5dacf1e2b1180582a74b8a0a1ac",
+    "input_lock_sha256": "1380b926aaf7dd144bec50c7194dd6b3a31428ae1bb0da7bba121ce595f697c8",
+    "tensor_count": 256,
+    "raw_count": 256
+  }
+}
