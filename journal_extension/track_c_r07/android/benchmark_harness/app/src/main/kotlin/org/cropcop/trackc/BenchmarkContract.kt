@@ -9,7 +9,8 @@ object BenchmarkContract {
     const val artifactBytes = 28_555_872L
     const val fp32ArtifactSha256 = "61556330cd9fc4725b4ff4759aef3835696b81865b2cbe030f815a4c0e8d5aec"
     const val fp32ArtifactBytes = 111_741_536L
-    const val executorchVersion = "1.3.1"
+    val executorchVersion: String
+        get() = BuildConfig.EXECUTORCH_VERSION
     const val requestedThreads = 4
     const val tensorManifestSha256 = "a2be311ed3b182c478a0482d78ee4ca05cc0575cdf16b16d9ee79355762c073a"
     const val rawManifestSha256 = "73c2beed647fd874be9a4187a872d33455a4a5dacf1e2b1180582a74b8a0a1ac"
