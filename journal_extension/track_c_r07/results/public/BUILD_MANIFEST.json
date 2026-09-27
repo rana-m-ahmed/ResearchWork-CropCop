@@ -1,0 +1,33 @@
+{
+  "schema_version": "TRACKC_BUILD_MANIFEST_V1",
+  "device": {
+    "manufacturer": "Google",
+    "model": "Pixel 7",
+    "codename": "panther",
+    "abi": "arm64-v8a",
+    "android_release": "17",
+    "sdk": 37,
+    "build_fingerprint": "google/panther/panther:17/CP2A.260705.006/15641320:user/release-keys"
+  },
+  "runtime": {
+    "name": "ExecuTorch Android",
+    "version": "1.3.1",
+    "backend": "XNNPACK CPU",
+    "requested_threads": 4
+  },
+  "apk": {
+    "bytes": 29924924,
+    "sha256": "b6f0c4533aa1bc8b13a467d7d7ac83cd978f3928222da22ca7df5d2d15954d26"
+  },
+  "artifacts": {
+    "int8": {
+      "bytes": 28555872,
+      "sha256": "2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8"
+    },
+    "fp32": {
+      "bytes": 111741536,
+      "sha256": "61556330cd9fc4725b4ff4759aef3835696b81865b2cbe030f815a4c0e8d5aec"
+    }
+  },
+  "energy": "unavailable_no_defensible_instrument"
+}

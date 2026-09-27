@@ -1,5 +1,9 @@
 {
   "files": {
+    "BUILD_MANIFEST.json": {
+      "bytes": 902,
+      "sha256": "82f7279253f737d5adeee06866a512de8346d33e8a16826c7af63288143d6474"
+    },
     "analysis_summary.json": {
       "bytes": 1243,
       "sha256": "d10921a482403e0ec87d3bccfdb12c10db862a84ee5f4f14ca20201311450442"
