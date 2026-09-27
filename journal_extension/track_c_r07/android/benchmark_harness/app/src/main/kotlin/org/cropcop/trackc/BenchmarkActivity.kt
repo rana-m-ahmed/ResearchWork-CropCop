@@ -51,10 +51,11 @@ class BenchmarkActivity : Activity() {
         if (mode == "load") return report.put("artifact_sha256", BenchmarkContract.artifactSha256)
 
         val tensors = verifiedTensors()
+        fun forwardValue(value: Tensor): FloatArray = module.forward(EValue.from(value))?.firstOrNull()?.toTensor()?.dataAsFloatArray
+            ?: error("TRACKC_FORWARD_EMPTY")
         fun forward(index: Int): FloatArray {
             val value = Tensor.fromBlob(readTensor(tensors[index]), longArrayOf(1, 3, 256, 256))
-            return module.forward(EValue.from(value))?.firstOrNull()?.toTensor()?.dataAsFloatArray
-                ?: error("TRACKC_FORWARD_EMPTY")
+            return forwardValue(value)
         }
         fun top1(values: FloatArray): Int = values.indices.maxBy { values[it] }
         fun rawForward(index: Int): FloatArray {
@@ -62,13 +63,14 @@ class BenchmarkActivity : Activity() {
             return module.forward(EValue.from(value))?.firstOrNull()?.toTensor()?.dataAsFloatArray ?: error("TRACKC_FORWARD_EMPTY")
         }
         val evidence = File(filesDir, "trackc/evidence").apply { mkdirs() }
-        fun runTimed(name: String, count: Int, includeRead: Boolean): JSONObject {
+        fun runTimed(name: String, count: Int, inputFor: (Int) -> Tensor): JSONObject {
             val output = File(evidence, "$name.csv")
             output.printWriter().use { writer ->
                 writer.println("sample_index,elapsed_ns,top1")
                 repeat(count) { i ->
+                    val input = inputFor(i)
                     val start = System.nanoTime()
-                    val logits = forward(i % tensors.size)
+                    val logits = forwardValue(input)
                     val elapsed = System.nanoTime() - start
                     require(logits.size == 120) { "TRACKC_OUTPUT_WIDTH_MISMATCH" }
                     writer.println("${i % tensors.size},$elapsed,${top1(logits)}")
@@ -78,12 +80,16 @@ class BenchmarkActivity : Activity() {
         }
 
         return when (mode) {
-            "tensor_fidelity" -> runTimed("tensor_fidelity", 256, true)
+            "tensor_fidelity" -> runTimed("tensor_fidelity", 256) { i -> Tensor.fromBlob(readTensor(tensors[i]), longArrayOf(1, 3, 256, 256)) }
                 .put("input_manifest_sha256", BenchmarkContract.tensorManifestSha256)
-            "warmup_transition" -> runTimed("warmup_transition", 10, false)
+            "warmup_transition" -> {
+                val input = Tensor.fromBlob(readTensor(tensors[0]), longArrayOf(1, 3, 256, 256))
+                runTimed("warmup_transition", 10) { input }
+            }
             "model_latency" -> {
-                repeat(50) { forward(it % tensors.size) }
-                runTimed("model_latency", 1000, false).put("untimed_warmups", 50)
+                val input = Tensor.fromBlob(readTensor(tensors[0]), longArrayOf(1, 3, 256, 256))
+                repeat(50) { forwardValue(input) }
+                runTimed("model_latency", 1000) { input }.put("untimed_warmups", 50)
             }
             "end_to_end" -> {
                 val output = File(evidence, "end_to_end.csv")
@@ -156,23 +162,58 @@ class BenchmarkActivity : Activity() {
         return resizeBicubicAntialias(square)
     }
 
-    // This bounded cubic implementation replaces Android's bilinear scaler.
-    // Its raw-vs-canonical agreement is measured, not assumed equivalent.
+    // Separable Keys cubic (a=-0.5), with a scale-aware support window and
+    // clamped-edge normalization. This is the deterministic CTC-v2 bicubic
+    // antialias contract, without Android's bilinear Bitmap scaler.
     private fun resizeBicubicAntialias(source: Bitmap): FloatArray {
         val width = source.width; val height = source.height; val pixels = IntArray(width * height)
         source.getPixels(pixels, 0, width, 0, 0, width, height)
-        val sx = width / 256.0; val sy = height / 256.0
+        data class Contribution(val indices: IntArray, val weights: FloatArray)
         fun kernel(x: Double): Double { val a = -0.5; val t = kotlin.math.abs(x); return when { t < 1 -> (a + 2)*t*t*t - (a + 3)*t*t + 1; t < 2 -> a*t*t*t - 5*a*t*t + 8*a*t - 4*a; else -> 0.0 } }
-        fun sample(x: Int, y: Int, channel: Int): Int { val p = pixels[y.coerceIn(0,height-1)*width+x.coerceIn(0,width-1)]; return when(channel){0->Color.red(p);1->Color.green(p);else->Color.blue(p)} }
+        fun contributions(inputSize: Int): Array<Contribution> {
+            val scale = inputSize / 256.0
+            val filterScale = maxOf(1.0, scale)
+            val support = 2.0 * filterScale
+            return Array(256) { destination ->
+                val center = (destination + 0.5) * scale
+                val left = kotlin.math.ceil(center - support).toInt()
+                val right = kotlin.math.floor(center + support).toInt()
+                val indices = IntArray(right - left + 1)
+                val weights = FloatArray(indices.size)
+                var total = 0.0
+                for (offset in indices.indices) {
+                    val sourceIndex = left + offset
+                    indices[offset] = sourceIndex.coerceIn(0, inputSize - 1)
+                    val weight = kernel((sourceIndex - center + 0.5) / filterScale)
+                    weights[offset] = weight.toFloat()
+                    total += weight
+                }
+                for (offset in weights.indices) weights[offset] = (weights[offset] / total).toFloat()
+                Contribution(indices, weights)
+            }
+        }
+        val horizontal = contributions(width); val vertical = contributions(height)
+        val intermediate = FloatArray(height * 256 * 3)
+        for (y in 0 until height) for (x in 0 until 256) {
+            val contribution = horizontal[x]
+            for (c in 0..2) {
+                var sum = 0f
+                for (k in contribution.indices.indices) {
+                    val pixel = pixels[y * width + contribution.indices[k]]
+                    val channel = when (c) { 0 -> Color.red(pixel); 1 -> Color.green(pixel); else -> Color.blue(pixel) }
+                    sum += channel * contribution.weights[k]
+                }
+                intermediate[(y * 256 + x) * 3 + c] = sum
+            }
+        }
         return FloatArray(3 * 256 * 256).also { out ->
             for (y in 0 until 256) for (x in 0 until 256) for (c in 0..2) {
-                val cx=(x+.5)*sx-.5; val cy=(y+.5)*sy-.5; val rx=2.0; val ry=2.0
-                var sum=0.0; var weight=0.0
-                for (iy in kotlin.math.floor(cy-ry).toInt()..kotlin.math.ceil(cy+ry).toInt()) for (ix in kotlin.math.floor(cx-rx).toInt()..kotlin.math.ceil(cx+rx).toInt()) {
-                    val wx=kernel(cx-ix); val wy=kernel(cy-iy); val w=wx*wy; sum+=w*sample(ix,iy,c); weight+=w
-                }
-                val v=(sum/weight/255.0).toFloat(); val i=y*256+x+c*65536
-                out[i]=when(c){0->(v-.485f)/.229f;1->(v-.456f)/.224f;else->(v-.406f)/.225f}
+                val contribution = vertical[y]; var sum = 0f
+                for (k in contribution.indices.indices) sum += intermediate[(contribution.indices[k] * 256 + x) * 3 + c] * contribution.weights[k]
+                // TorchVision resizes the PIL image before pil_to_tensor, so
+                // the resampled channel is quantized to uint8 at this boundary.
+                val v = kotlin.math.round(sum).toInt().coerceIn(0, 255) / 255f; val i = y * 256 + x + c * 65536
+                out[i] = when (c) { 0 -> (v - .485f) / .229f; 1 -> (v - .456f) / .224f; else -> (v - .406f) / .225f }
             }
         }
     }
