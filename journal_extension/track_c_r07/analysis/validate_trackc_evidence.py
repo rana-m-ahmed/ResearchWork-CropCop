@@ -48,9 +48,13 @@ def main() -> None:
     for name, expected in manifest["files"].items():
         path = root / name
         require(path.is_file(), f"missing {name}")
-        actual = hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+        canonical_bytes = path.read_bytes().replace(b"\r\n", b"\n")
+        actual = hashlib.sha256(canonical_bytes).hexdigest()
         require(actual == expected["sha256"], f"hash mismatch {name}")
-        require(path.stat().st_size == expected["bytes"], f"byte count mismatch {name}")
+        require(
+            len(canonical_bytes) == expected["bytes"],
+            f"Git-canonical byte count mismatch {name}",
+        )
 
     expected_counts = {
         "model_latency_int8.csv": 1000,

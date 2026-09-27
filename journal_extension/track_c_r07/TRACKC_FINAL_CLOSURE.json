@@ -98,7 +98,7 @@
     "analysis_summary_git_blob": "47418e2dc3483fe1b619aaa39af351fe80d36f30",
     "build_manifest_git_blob": "b8783f8409e3391909cac4a77f2fe2c66fe45de5",
     "analysis_script_git_blob": "b7c24e7147c1f2c159c47e4d356451a8b60169ec",
-    "validator_script_git_blob": "3eba60a73f571f0f6dc078c8391d862c9869bbdf",
+    "validator_script_git_blob": "a12b4a6737b32d75bd4d949c47406ecc2251137c",
     "execution_report_git_blob": "4bf7aedd10c4cf109814b39bd49d4176f6eb18fc",
     "hostile_audit_git_blob": "56d3568d8444c904d5eda2e8553c671af967ecf8",
     "manuscript_handoff_git_blob": "3754588b00a1ef1ce0866418aca4fbef2e19d363"
@@ -137,5 +137,6 @@
     "universal real-time capability",
     "NPU or GPU performance",
     "energy efficiency"
-  ]
+  ],
+  "audit_portability_note": "Evidence hash and byte-count validation use Git-canonical LF text bytes so Windows CRLF checkout conversion cannot create a false failure."
 }
