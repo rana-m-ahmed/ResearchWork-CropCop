@@ -2,11 +2,11 @@
   "files": {
     "analysis_summary.json": {
       "bytes": 1243,
-      "sha256": "f0040c345be2f9f7a91afcc4c0bedbb029b46f3f6cf31bb532e3d7ade46b3ff3"
+      "sha256": "d10921a482403e0ec87d3bccfdb12c10db862a84ee5f4f14ca20201311450442"
     },
     "cpu_memory_observation_int8.txt": {
       "bytes": 575,
-      "sha256": "bc88f8900585db707b99c8e13ffa5e25d1abfd2cdee83ca86b10620c275d2833"
+      "sha256": "ab9b04052d6e00fab2a22aa36a38caa09be3aeee55f3f1409c28454bf8a9a31d"
     },
     "end_to_end_int8.csv": {
       "bytes": 12845,
@@ -14,11 +14,11 @@
     },
     "fp32_host_device_fidelity.csv": {
       "bytes": 4082,
-      "sha256": "0849065dfa1d14d28f7620f91f2fdf7ce9400896a92b39df953032da70551b59"
+      "sha256": "813c891cfee8f083b422d3e0ef986b31df40ad4236dab297301ccda30ab00030"
     },
     "int8_host_device_fidelity.csv": {
       "bytes": 4080,
-      "sha256": "f60aece6f9612097312310c4118f0a0cacf475af05ef7bd2eb1220912094ec01"
+      "sha256": "b022aa8f3aecf6b26ab2ebdc72c48a0124cc04a300f1ec09f19bdb3cfdec0ea3"
     },
     "int8_tensor_fidelity_device.csv": {
       "bytes": 4192,
@@ -26,7 +26,7 @@
     },
     "load_trials_int8.csv": {
       "bytes": 90,
-      "sha256": "efa3319890e2afda755652494715873746fe09e4a77dc1b90e7dbd4dab347140"
+      "sha256": "b663740c2d6f184b416221c56003a6144d6a0c94d7910cde7b3eeae535ef7872"
     },
     "model_latency_fp32.csv": {
       "bytes": 15589,
@@ -45,5 +45,6 @@
       "sha256": "faeb409a1751dc0bb602151e8c3f8a2d1aee8efc8de65d22d2128fbf577e0347"
     }
   },
+  "hash_semantics": "sha256 over Git-canonical LF text bytes",
   "schema_version": "TRACKC_PUBLIC_EVIDENCE_V1"
 }

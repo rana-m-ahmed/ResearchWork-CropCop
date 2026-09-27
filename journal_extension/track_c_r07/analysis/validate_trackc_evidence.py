@@ -23,7 +23,9 @@ def main() -> None:
     for name, expected in manifest["files"].items():
         path = root / name
         require(path.is_file(), f"missing {name}")
-        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        # Evidence is public text committed through Git; canonicalize Windows
+        # line endings before comparing against the Git-canonical manifest.
+        actual = hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
         require(actual == expected["sha256"], f"hash mismatch {name}")
 
     for name, count in {
