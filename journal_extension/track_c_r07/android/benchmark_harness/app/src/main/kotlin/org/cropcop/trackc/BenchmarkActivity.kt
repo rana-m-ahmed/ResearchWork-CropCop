@@ -21,7 +21,7 @@ import java.io.File
 class BenchmarkActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val report = runCatching { execute(intent.getStringExtra("trackc_mode") ?: "system_snapshot") }
+        val report = runCatching { execute(intent.getStringExtra("trackc_mode") ?: "system_snapshot", intent.getStringExtra("trackc_variant") ?: "int8") }
             .fold(
                 onSuccess = { it.put("status", "READY_NONCLAIM") },
                 onFailure = { JSONObject().put("status", "BLOCKED").put("reason", it.message) },
@@ -29,8 +29,9 @@ class BenchmarkActivity : Activity() {
         setContentView(TextView(this).apply { text = report.toString() })
     }
 
-    private fun execute(requestedMode: String): JSONObject {
+    private fun execute(requestedMode: String, requestedVariant: String): JSONObject {
         val mode = BenchmarkContract.requireMode(requestedMode)
+        val artifactSpec = BenchmarkContract.artifact(requestedVariant)
         val report = JSONObject()
             .put("mode", mode)
             .put("pid", Process.myPid())
@@ -40,15 +41,15 @@ class BenchmarkActivity : Activity() {
 
         if (mode == "system_snapshot") return report
 
-        val artifact = File(filesDir, "trackc/r07_s1_xnnpack_int8.pte")
-        BenchmarkContract.verifyArtifact(artifact)
+        val artifact = File(filesDir, "trackc/${artifactSpec.filename}")
+        BenchmarkContract.verifyArtifact(artifact, artifactSpec)
         val module = Module.load(
             artifact.absolutePath,
             Module.LOAD_MODE_FILE,
             BenchmarkContract.requestedThreads,
         ) ?: error("TRACKC_MODULE_LOAD_NULL")
 
-        if (mode == "load") return report.put("artifact_sha256", BenchmarkContract.artifactSha256)
+        if (mode == "load") return report.put("artifact_variant", artifactSpec.id).put("artifact_sha256", artifactSpec.sha256)
 
         val tensors = verifiedTensors()
         fun forwardValue(value: Tensor): FloatArray = module.forward(EValue.from(value))?.firstOrNull()?.toTensor()?.dataAsFloatArray
@@ -63,8 +64,9 @@ class BenchmarkActivity : Activity() {
             return module.forward(EValue.from(value))?.firstOrNull()?.toTensor()?.dataAsFloatArray ?: error("TRACKC_FORWARD_EMPTY")
         }
         val evidence = File(filesDir, "trackc/evidence").apply { mkdirs() }
+        fun evidenceName(name: String): String = if (artifactSpec.id == "int8") name else "${name}_${artifactSpec.id}"
         fun runTimed(name: String, count: Int, inputFor: (Int) -> Tensor): JSONObject {
-            val output = File(evidence, "$name.csv")
+            val output = File(evidence, "${evidenceName(name)}.csv")
             output.printWriter().use { writer ->
                 writer.println("sample_index,elapsed_ns,top1")
                 repeat(count) { i ->
@@ -92,7 +94,7 @@ class BenchmarkActivity : Activity() {
                 runTimed("model_latency", 1000) { input }.put("untimed_warmups", 50)
             }
             "end_to_end" -> {
-                val output = File(evidence, "end_to_end.csv")
+                val output = File(evidence, "${evidenceName("end_to_end")}.csv")
                 output.printWriter().use { writer ->
                     writer.println("sample_index,elapsed_ns,top1")
                     repeat(768) { i ->
@@ -106,7 +108,7 @@ class BenchmarkActivity : Activity() {
                 JSONObject().put("samples", 768).put("evidence", output.name).put("evidence_sha256", BenchmarkContract.sha256(output)).put("boundary", "raw_decode_preprocess_forward")
             }
             "raw_fidelity" -> {
-                val output = File(evidence, "raw_fidelity.csv")
+                val output = File(evidence, "${evidenceName("raw_fidelity")}.csv")
                 var matches = 0
                 output.printWriter().use { writer ->
                     writer.println("sample_index,raw_top1,tensor_top1,match")

@@ -4,8 +4,11 @@ import java.io.File
 import java.security.MessageDigest
 
 object BenchmarkContract {
+    data class ArtifactSpec(val id: String, val filename: String, val sha256: String, val bytes: Long)
     const val artifactSha256 = "2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8"
     const val artifactBytes = 28_555_872L
+    const val fp32ArtifactSha256 = "61556330cd9fc4725b4ff4759aef3835696b81865b2cbe030f815a4c0e8d5aec"
+    const val fp32ArtifactBytes = 111_741_536L
     const val executorchVersion = "1.3.1"
     const val requestedThreads = 4
     const val tensorManifestSha256 = "a2be311ed3b182c478a0482d78ee4ca05cc0575cdf16b16d9ee79355762c073a"
@@ -24,10 +27,16 @@ object BenchmarkContract {
     fun requireMode(value: String): String =
         value.also { require(it in modes) { "TRACKC_UNKNOWN_MODE:$it" } }
 
-    fun verifyArtifact(file: File) {
+    fun artifact(variant: String): ArtifactSpec = when (variant) {
+        "int8" -> ArtifactSpec("int8", "r07_s1_xnnpack_int8.pte", artifactSha256, artifactBytes)
+        "fp32" -> ArtifactSpec("fp32", "r07_s1_xnnpack_fp32.pte", fp32ArtifactSha256, fp32ArtifactBytes)
+        else -> error("TRACKC_UNKNOWN_ARTIFACT_VARIANT:$variant")
+    }
+
+    fun verifyArtifact(file: File, spec: ArtifactSpec) {
         require(file.isFile) { "TRACKC_ARTIFACT_UNAVAILABLE:${file.absolutePath}" }
-        require(file.length() == artifactBytes) { "TRACKC_ARTIFACT_BYTES_MISMATCH" }
-        require(sha256(file) == artifactSha256) { "TRACKC_ARTIFACT_SHA256_MISMATCH" }
+        require(file.length() == spec.bytes) { "TRACKC_ARTIFACT_BYTES_MISMATCH" }
+        require(sha256(file) == spec.sha256) { "TRACKC_ARTIFACT_SHA256_MISMATCH" }
     }
 
     fun sha256(file: File): String {
