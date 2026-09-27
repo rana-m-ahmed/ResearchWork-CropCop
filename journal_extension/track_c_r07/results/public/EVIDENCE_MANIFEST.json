@@ -5,11 +5,11 @@
       "sha256": "fc84e1ff28111035ae814b6932c807d24559044e5ed6175b4b44214b3f11c356"
     },
     "analysis_summary.json": {
-      "bytes": 1256,
+      "bytes": 1206,
       "sha256": "f59b7e72dbba4000f076893d8c2f9dacf99cab5f591836e3cb785a6197d8e5f0"
     },
     "cpu_memory_observation_int8.txt": {
-      "bytes": 575,
+      "bytes": 565,
       "sha256": "ab9b04052d6e00fab2a22aa36a38caa09be3aeee55f3f1409c28454bf8a9a31d"
     },
     "end_to_end_int8.csv": {
@@ -17,11 +17,11 @@
       "sha256": "de47b24be1c6d128e7c0de6fc3c46b72d5edfeff48a8876e641cf233dc72f3dc"
     },
     "fp32_host_device_fidelity.csv": {
-      "bytes": 4082,
+      "bytes": 3825,
       "sha256": "813c891cfee8f083b422d3e0ef986b31df40ad4236dab297301ccda30ab00030"
     },
     "int8_host_device_fidelity.csv": {
-      "bytes": 4080,
+      "bytes": 3823,
       "sha256": "b022aa8f3aecf6b26ab2ebdc72c48a0124cc04a300f1ec09f19bdb3cfdec0ea3"
     },
     "int8_tensor_fidelity_device.csv": {
@@ -29,7 +29,7 @@
       "sha256": "c00f586e4ff16e5135caa4fc25068bccc20f82677b3b62f12416c78dff82f898"
     },
     "load_trials_int8.csv": {
-      "bytes": 90,
+      "bytes": 79,
       "sha256": "a856c3477ecca3180c44de67efae402d08b014b8b2ff2572a22d56657d49d7bd"
     },
     "model_latency_fp32.csv": {
