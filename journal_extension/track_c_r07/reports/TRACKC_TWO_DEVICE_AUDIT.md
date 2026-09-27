@@ -35,9 +35,11 @@ device certificate is independently validated by
 ## Live secondary-device recheck
 
 On 2026-09-27, the attached POCO M3 (`M2010J19CG`, Android 12) was rechecked
-with the exact APK and staged inputs. Direct app-private hashing confirmed the
-artifact, both manifests, and input lock above; 256 tensor and 256 RAW files
-were present. `load` succeeds. Launching `tensor_fidelity` with the explicit
+with the exact APK and staged inputs. The on-device `base.apk` hash was
+`b6f0c4533aa1bc8b13a467d7d7ac83cd978f3928222da22ca7df5d2d15954d26`, matching
+the sealed benchmark APK. Direct app-private hashing confirmed the artifact,
+both manifests, and input lock above; 256 tensor and 256 RAW files were
+present. `load` succeeds. Launching `tensor_fidelity` with the explicit
 registered activity component reproduced Android exit reason `APP
 CRASH(NATIVE)`, status 4, with `SIGILL`/`ILL_ILLOPC` in
 `libexecutorch_jni.so`. Its output CSV remained zero bytes.
