@@ -1,0 +1,50 @@
+{
+  "end_to_end": {
+    "mean_ms": 366.89455336848954,
+    "median_ms": 234.019816,
+    "p95_ms": 598.41298265,
+    "sample_sd_ms": 381.32851096265483,
+    "samples": 768,
+    "throughput_per_s": 2.725578755037153
+  },
+  "load": {
+    "mean_ms": 247.3,
+    "median_ms": 245.5,
+    "p95_ms": 262.7,
+    "sample_sd_ms": 9.695932709704163,
+    "samples": 10
+  },
+  "model_latency": {
+    "mean_ms": 158.238588699,
+    "median_ms": 175.7252405,
+    "p95_ms": 191.9073915,
+    "sample_sd_ms": 35.96735760307637,
+    "samples": 1000,
+    "throughput_per_s": 6.31957102386821
+  },
+  "model_latency_fp32": {
+    "mean_ms": 357.720710255,
+    "median_ms": 366.2635095,
+    "p95_ms": 377.75026095,
+    "sample_sd_ms": 27.53709444820767,
+    "samples": 1000,
+    "throughput_per_s": 2.795476949844904
+  },
+  "raw_pipeline_fidelity": {
+    "agreement": 0.9921875,
+    "matches": 254,
+    "mismatches": 2,
+    "samples": 256
+  },
+  "tensor_fidelity": {
+    "samples": 256
+  },
+  "warmup_transition": {
+    "mean_ms": 99.39224859999999,
+    "median_ms": 85.7454625,
+    "p95_ms": 160.81837394999988,
+    "sample_sd_ms": 43.03443789076232,
+    "samples": 10,
+    "throughput_per_s": 10.061146760291729
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "files": {
+    "analysis_summary.json": {
+      "bytes": 1243,
+      "sha256": "f0040c345be2f9f7a91afcc4c0bedbb029b46f3f6cf31bb532e3d7ade46b3ff3"
+    },
+    "cpu_memory_observation_int8.txt": {
+      "bytes": 575,
+      "sha256": "bc88f8900585db707b99c8e13ffa5e25d1abfd2cdee83ca86b10620c275d2833"
+    },
+    "end_to_end_int8.csv": {
+      "bytes": 12845,
+      "sha256": "de47b24be1c6d128e7c0de6fc3c46b72d5edfeff48a8876e641cf233dc72f3dc"
+    },
+    "fp32_host_device_fidelity.csv": {
+      "bytes": 4082,
+      "sha256": "0849065dfa1d14d28f7620f91f2fdf7ce9400896a92b39df953032da70551b59"
+    },
+    "int8_host_device_fidelity.csv": {
+      "bytes": 4080,
+      "sha256": "f60aece6f9612097312310c4118f0a0cacf475af05ef7bd2eb1220912094ec01"
+    },
+    "int8_tensor_fidelity_device.csv": {
+      "bytes": 4192,
+      "sha256": "c00f586e4ff16e5135caa4fc25068bccc20f82677b3b62f12416c78dff82f898"
+    },
+    "load_trials_int8.csv": {
+      "bytes": 90,
+      "sha256": "efa3319890e2afda755652494715873746fe09e4a77dc1b90e7dbd4dab347140"
+    },
+    "model_latency_fp32.csv": {
+      "bytes": 15589,
+      "sha256": "3b492edcd20ffd6eb89e89f9354a41f0d6b686b337e1d82fb8f6476c6c73fdce"
+    },
+    "model_latency_int8.csv": {
+      "bytes": 15568,
+      "sha256": "2e0374b23c234f6d80fc58f5b05fcc5070f4e0e694bca341cd743be29bd7c0a2"
+    },
+    "raw_pipeline_fidelity.csv": {
+      "bytes": 3821,
+      "sha256": "d5f6d7576e0735fb7a6dd57783442a749d8f3dc118c64adad4015ba0e171ffc0"
+    },
+    "warmup_transition_int8.csv": {
+      "bytes": 160,
+      "sha256": "faeb409a1751dc0bb602151e8c3f8a2d1aee8efc8de65d22d2128fbf577e0347"
+    }
+  },
+  "schema_version": "TRACKC_PUBLIC_EVIDENCE_V1"
+}
