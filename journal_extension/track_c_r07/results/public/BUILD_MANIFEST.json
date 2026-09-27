@@ -15,9 +15,15 @@
     "backend": "XNNPACK CPU",
     "requested_threads": 4
   },
-  "apk": {
-    "bytes": 29924924,
-    "sha256": "b6f0c4533aa1bc8b13a467d7d7ac83cd978f3928222da22ca7df5d2d15954d26"
+  "apks": {
+    "int8_campaign": {
+      "bytes": 29924924,
+      "sha256": "a2bdd74088ff893447c869470c9fa9eabd65d79791042b87e985e340a541c67d"
+    },
+    "fp32_campaign": {
+      "bytes": 29924924,
+      "sha256": "b6f0c4533aa1bc8b13a467d7d7ac83cd978f3928222da22ca7df5d2d15954d26"
+    }
   },
   "artifacts": {
     "int8": {

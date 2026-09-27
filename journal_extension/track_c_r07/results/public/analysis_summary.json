@@ -8,10 +8,10 @@
     "throughput_per_s": 2.725578755037153
   },
   "load": {
-    "mean_ms": 247.3,
-    "median_ms": 245.5,
-    "p95_ms": 262.7,
-    "sample_sd_ms": 9.695932709704163,
+    "mean_ms": 249.4,
+    "median_ms": 242.0,
+    "p95_ms": 284.59999999999997,
+    "sample_sd_ms": 19.83935482821959,
     "samples": 10
   },
   "model_latency": {

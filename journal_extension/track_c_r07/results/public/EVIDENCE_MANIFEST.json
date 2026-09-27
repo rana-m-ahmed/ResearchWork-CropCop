@@ -1,12 +1,12 @@
 {
   "files": {
     "BUILD_MANIFEST.json": {
-      "bytes": 902,
-      "sha256": "82f7279253f737d5adeee06866a512de8346d33e8a16826c7af63288143d6474"
+      "bytes": 1074,
+      "sha256": "fc84e1ff28111035ae814b6932c807d24559044e5ed6175b4b44214b3f11c356"
     },
     "analysis_summary.json": {
-      "bytes": 1243,
-      "sha256": "d10921a482403e0ec87d3bccfdb12c10db862a84ee5f4f14ca20201311450442"
+      "bytes": 1256,
+      "sha256": "f59b7e72dbba4000f076893d8c2f9dacf99cab5f591836e3cb785a6197d8e5f0"
     },
     "cpu_memory_observation_int8.txt": {
       "bytes": 575,
@@ -30,7 +30,7 @@
     },
     "load_trials_int8.csv": {
       "bytes": 90,
-      "sha256": "b663740c2d6f184b416221c56003a6144d6a0c94d7910cde7b3eeae535ef7872"
+      "sha256": "a856c3477ecca3180c44de67efae402d08b014b8b2ff2572a22d56657d49d7bd"
     },
     "model_latency_fp32.csv": {
       "bytes": 15589,
