@@ -21,12 +21,19 @@ import java.io.File
 class BenchmarkActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val report = runCatching { execute(intent.getStringExtra("trackc_mode") ?: "system_snapshot", intent.getStringExtra("trackc_variant") ?: "int8") }
-            .fold(
+        setContentView(TextView(this).apply { text = "RUNNING_NONCLAIM" })
+        Thread {
+            val report = runCatching {
+                execute(
+                    intent.getStringExtra("trackc_mode") ?: "system_snapshot",
+                    intent.getStringExtra("trackc_variant") ?: "int8",
+                )
+            }.fold(
                 onSuccess = { it.put("status", "READY_NONCLAIM") },
                 onFailure = { JSONObject().put("status", "BLOCKED").put("reason", it.message) },
             )
-        setContentView(TextView(this).apply { text = report.toString() })
+            runOnUiThread { setContentView(TextView(this).apply { text = report.toString() }) }
+        }.start()
     }
 
     private fun execute(requestedMode: String, requestedVariant: String): JSONObject {

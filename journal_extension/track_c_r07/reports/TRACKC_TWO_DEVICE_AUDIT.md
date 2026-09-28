@@ -48,9 +48,26 @@ This confirms the earlier POCO certificate rather than converting it into a
 performance result. No artifact, quantization, model, input, or runtime was
 changed.
 
-## Remaining boundary
+## Separately versioned POCO compatibility campaign
 
-There is no unresolved Pixel 7 evidence gate. A successful POCO head-to-head
-benchmark requires a separately versioned, device-compatible runtime/build or
-a different compatible secondary device. Either would be a new experiment and
-must not overwrite or be represented as the frozen Track-C result.
+The blocked frozen-runtime certificate above remains valid and is deliberately
+retained. A separate, source-built generic runtime was then used only to test
+whether the exact sealed INT8 artifact and inputs could execute on this POCO:
+ExecuTorch source tag `v1.3.1`, XNNPACK, four requested threads, with ARM
+dot-product paths disabled. This candidate runtime is identified as
+`1.3.1-poco-generic-dotprod-off`; its version-5 APK and every resulting CSV
+are hash-locked in `results/public/device2_poco_m3_compat/`.
+
+The completed compatibility campaign produced: TENSOR-256 255/256 agreement
+with the frozen host labels (one mismatch at 155); RAW-256 253/256 agreement
+with the candidate tensor path (mismatches 11, 155, and 255); ten fresh load
+readiness confirmations; ten warm-up observations; 1,000 model-only timing
+rows (median 654.168 ms, p95 742.031 ms); and 768 raw end-to-end rows (median
+874.760 ms, p95 1,647.855 ms). No ANR, SIGILL, fatal signal, or fatal exception
+occurred during those completed candidate runs.
+
+This proves a device-specific INT8 compatibility result for the exact frozen
+model and inputs. It is **not** a direct Pixel 7 vs. POCO M3 performance
+comparison: the runtime binaries differ, the POCO candidate is a debug worker
+APK, and the primary Pixel closure remains unchanged. The public validator
+`analysis/validate_trackc_poco_compatibility.py` fail-closes these boundaries.
