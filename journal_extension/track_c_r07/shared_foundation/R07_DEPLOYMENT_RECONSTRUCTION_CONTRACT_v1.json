@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "contract_id": "R07-DEPLOYMENT-RECONSTRUCTION-v1",
+  "status": "FROZEN",
+  "model": {
+    "experiment_id": "R07-CNXTT-CONTEXT-S1",
+    "family": "R07",
+    "architecture": "torchvision.models.convnext_tiny",
+    "construction": {
+      "weights": null,
+      "num_classes": 120
+    },
+    "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "checkpoint_bytes": 335202763,
+    "checkpoint_state_key": "student",
+    "load_state_dict_strict": true,
+    "selected_epoch": 27,
+    "training_initialization_note": "ConvNeXt_Tiny_Weights.IMAGENET1K_V1 is training provenance only and must not be downloaded or reapplied during replay/export."
+  },
+  "scientific_identity": {
+    "source_git_commit": "8904b100d223e4319776199c87ab397db23600ce",
+    "original_run_record_sha256": "0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516",
+    "dataset_manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "ctc_v2_file_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+    "ctc_v2_canonical_json_sha256": "ed2331e63455e35ade00b548217fe987a9504f26a41e6c5d8a794e38741550bb",
+    "s1_config_file_sha256": "15b2e8d2c288f05e8f5fc915d7c7de50cca5554b76544a4c773bc8d60f814793",
+    "s1_config_canonical_json_sha256": "a70cc70b11074fae07e5a6116bbb80e850a8011cce76bc52fc4406758abcb8d5",
+    "torchvision": "0.27.1"
+  },
+  "evaluation_preprocessing": [
+    "EXIF-aware orientation exactly once",
+    "RGB conversion",
+    "per-image RGB channel mean",
+    "Python round to integer",
+    "square mean-color pad with odd remainder on right/bottom",
+    "bicubic resize to 256x256 with antialias",
+    "float32 division by 255",
+    "ImageNet normalization",
+    "NCHW tensor"
+  ],
+  "validation_replay": {
+    "surface": "DS-V1-VAL",
+    "row_count": 16368,
+    "tolerance": 0.000001,
+    "expected": {
+      "validation_accuracy": 0.9853983382209188,
+      "validation_balanced_accuracy": 0.966641504228933,
+      "validation_macro_f1": 0.9681638484931451,
+      "validation_nll": 0.09627299043618485
+    },
+    "forbidden_surfaces": [
+      "DS-V1-TEST-CONSUMED",
+      "DS-EXT-*-SEALED",
+      "DS-HIST-COMPARE"
+    ]
+  },
+  "canonicalization": {
+    "algorithm": "SHA-256",
+    "method": "UTF-8 JSON with sorted keys and separators(',', ':'), with canonical_self_sha256 set to 64 zeroes during hashing",
+    "canonical_self_sha256": "253d0672d0d1abec75c1835e1c98b49af89d2a78074b63a1736d9e6c796f2aa2"
+  }
+}

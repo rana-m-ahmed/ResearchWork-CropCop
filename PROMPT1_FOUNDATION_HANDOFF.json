@@ -1,0 +1,50 @@
+{
+  "canonical_self_sha256": "de704b46151572b004d56345439fcbdd5d3e14c480ef041ee69596aa9e07444c",
+  "clean_tree_at_input": true,
+  "clean_tree_at_seal": true,
+  "created_at_utc": "2026-09-23T18:14:33.847465+00:00",
+  "executor_sha256": "a39b4df4d913ec68c4491be3385c34b425554e47a7dd891def18e4fa27e1d8d7",
+  "forbidden_surface_attestation": {
+    "phone_performance_used_for_selection": false,
+    "s2_or_s3_substituted": false,
+    "track_b_protected_results_used": false,
+    "v1_test_accessed": false
+  },
+  "gates": {
+    "F0": "PASS_BOUND_BY_CURRENT_DOWNSTREAM_AUTHORITY",
+    "F1": "PASS",
+    "F2": "PASS",
+    "F3": "PASS",
+    "F4": "PASS_INT8_LOCKED",
+    "F5": "PASS",
+    "F6": "PASS",
+    "F7": "PASS",
+    "P0": "PASS_BOUND_BY_PRIOR_MOBILE_AUDIT"
+  },
+  "identities": {
+    "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "ctc_canonical_sha256": "ed2331e63455e35ade00b548217fe987a9504f26a41e6c5d8a794e38741550bb",
+    "ctc_file_sha256": "53937a6d8e87d18b7de086ecd1c000700d946770c523e50bb85cf124048764c4",
+    "deployment_bundle_seal_sha256": "a0f51963f2c28bd4e7250f86037ea2651f534b8fd1f3ebc6207e5cc034b92046",
+    "device_policy_sha256": "7bda1a24c2d2e806c6a67e0877d2b6f86480b2d86eaf7b2465caaddc404190dd",
+    "fp32_artifact_sha256": "61556330cd9fc4725b4ff4759aef3835696b81865b2cbe030f815a4c0e8d5aec",
+    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "production_bundle_manifest_sha256": "98de20529c8cc914da7f85ef3046476da18ea5c4389f977ad6f1caf3f9be6162",
+    "restricted_bundle_manifest_sha256": "ab2455967ee31deb4eafd1eaa4f6339734d1a5ede8e445530e7fb0c404c0efa8",
+    "run_record_sha256": "0f403138ee43b1f0e464f092b51cf4f80a13233c9bc8ed4b17e86cf7446c5516",
+    "runtime_selection_sha256": "e0cc5c11e7b9910ba3498641b879034de973b08c93703baaa88e9b7d777cb78a",
+    "selected_production_artifact_sha256": "2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8"
+  },
+  "next_prompt": "PROMPT_2",
+  "next_prompt_authorized": true,
+  "plan_sha256": "c2a354cb0f9e5033742deb354b1fc42b49181e8884f5b6dfde14d2d5018a59c0",
+  "prompt_id": "PROMPT_1",
+  "repository": {
+    "branch": "prompt1-kaggle-runtime",
+    "commit": "bc1558e25bc79722a1ecc2d4887731f0bbe6a61d",
+    "dirty": false
+  },
+  "schema_version": "2.0",
+  "status": "PASS"
+}
