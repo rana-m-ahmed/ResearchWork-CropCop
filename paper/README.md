@@ -14,6 +14,6 @@ The arXiv preprint is the historical v1 record. It establishes leakage-controlle
 
 **Separating External-Source Behavior from Runtime Fidelity in Plant-Health Recognition**
 
-The journal extension adds controlled family selection, prediction-blind external evaluation, exact research-to-runtime lineage, physical Pixel execution and a POCO runtime-compatibility counterexample. Its paper-facing materials live under [\`eaai/\`](eaai/).
+The journal extension adds controlled family selection, prediction-blind external evaluation, exact research-to-runtime lineage, physical Pixel execution and a POCO runtime-compatibility counterexample. Its paper-facing materials live under [`eaai/`](eaai/).
 
 Final journal authorship metadata and declarations remain author-controlled until submission approval.
