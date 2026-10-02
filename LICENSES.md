@@ -4,8 +4,8 @@ This is a multi-licence research repository. Public availability and redistribut
 
 | Material | Licence / redistribution status |
 | --- | --- |
-| Python, shell scripts, CI workflows and sanitized notebooks | MIT License (\`LICENSE\`) |
-| Original manuscript/supplement source, documentation, diagrams and derived research tables | Creative Commons Attribution 4.0 International (\`LICENSES/CC-BY-4.0.txt\`) |
+| Python, shell scripts, CI workflows and sanitized notebooks | MIT License (`LICENSE`) |
+| Original manuscript/supplement source, documentation, diagrams and derived research tables | Creative Commons Attribution 4.0 International (`LICENSES/CC-BY-4.0.txt`) |
 | Third-party pretrained model code/weights | Governed by original upstream licences; not relicensed here |
 | CropCop consolidated source-image corpus | Not redistributed by this repository; individual source datasets remain subject to provider terms |
 | Final R07-S1 checkpoint | Identity-bound but not redistributed pending upstream/licence review |
