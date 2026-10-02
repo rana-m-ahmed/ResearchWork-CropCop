@@ -53,10 +53,16 @@ See:
 - [`../../docs/REPRODUCIBILITY.md`](../../docs/REPRODUCIBILITY.md) — reproduction routes;
 - [`../../docs/EVIDENCE_BOUNDARIES.md`](../../docs/EVIDENCE_BOUNDARIES.md) — claim boundaries.
 
+## Step 3
+
+The submission-engineering layer contains the final manuscript/declaration pass, cover letter, highlights, title-page template, portal metadata, preprint disclosure, author sign-off checklist, and Editorial Manager upload map.
+
+See [`PART3_RELEASE_STATUS.md`](PART3_RELEASE_STATUS.md). The remaining gate is author-controlled metadata/declaration confirmation, not additional scientific experimentation.
+
 ## Availability boundary
 
 The complete private Track-B evidence archive, consolidated benchmark images, model checkpoint, PTE binaries and raw logits are not stored in ordinary public Git history. Their cryptographic identities and authorized verification routes are documented instead.
 
 ## Status
 
-See [`PART1_RELEASE_STATUS.md`](PART1_RELEASE_STATUS.md), [`PART2_RELEASE_STATUS.md`](PART2_RELEASE_STATUS.md), and the repository-level [`MANUSCRIPT_STATUS.md`](../../MANUSCRIPT_STATUS.md).
+See [`PART1_RELEASE_STATUS.md`](PART1_RELEASE_STATUS.md), [`PART2_RELEASE_STATUS.md`](PART2_RELEASE_STATUS.md), [`PART3_RELEASE_STATUS.md`](PART3_RELEASE_STATUS.md), and the repository-level [`MANUSCRIPT_STATUS.md`](../../MANUSCRIPT_STATUS.md).
