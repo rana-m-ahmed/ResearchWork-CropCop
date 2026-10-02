@@ -6,32 +6,41 @@
 
 This directory is the paper-facing bridge between the EAAI manuscript/Supplement release and the canonical research evidence under `journal_extension/`.
 
+> **Start here for evidence navigation:** [`docs/PAPER_EVIDENCE_AUTHORITY.md`](../../docs/PAPER_EVIDENCE_AUTHORITY.md)
+
 ## Scientific freeze
 
-- final benchmark: 109,107 images / 120 classes;
-- selected family: R07 / ConvNeXt-Tiny;
-- Track-B external states: R07 S1/S2/S3;
-- Track-C deployment representative: `R07-CNXTT-CONTEXT-S1`;
-- exact checkpoint, class-map, manifest, FP32 and INT8 artifact identities;
+- final benchmark: **109,107 images / 120 classes**;
+- selected family: **R07 / ConvNeXt-Tiny**;
+- Track-B external states: **R07 S1/S2/S3**;
+- Track-C deployment representative: **R07-CNXTT-CONTEXT-S1**;
 - native 120-way external inference with seven mapped labels;
-- layered runtime interpretation: artifact transformation ≠ device execution ≠ raw-input processing ≠ runtime–hardware compatibility.
+- exact checkpoint, class-map, manifest, FP32 and INT8 artifact identities;
+- layered interpretation: **artifact transformation ≠ device execution ≠ raw-input processing ≠ runtime–hardware compatibility**.
 
 ## Part 2
 
-The production Part-2 package contains:
+The QA-enhanced Part-2 delivery contains:
 
-- standalone Supplement S1–S13 PDF;
+- readable, standalone Supplement S1–S13 PDF;
 - clean Overleaf/LaTeX source;
-- machine-readable Supplement source data;
+- exhaustive machine-readable Supplement source data;
 - reproducibility release with identity/replay, quantization/artifact and Pixel/POCO evidence;
-- claim/evidence and Part-1↔Part-2 consistency audits;
-- release/licensing boundaries.
+- refreshed claim/evidence and Part-1↔Part-2 consistency audits;
+- explicit public/restricted release boundaries.
 
-The complete generated publication bundle is distributed as the reviewed Part-2 handoff rather than committing generated PDFs/ZIPs or restricted evidence into ordinary Git history.
+The Supplement intentionally keeps exhaustive inventories in machine-readable companion files rather than shrinking them into unreadable PDF tables.
+
+Generated PDFs/ZIPs and redistribution-controlled evidence are distributed through the reviewed handoff/archive rather than committed into ordinary Git history.
 
 ## Canonical evidence
 
-See [`source_data/README.md`](source_data/README.md) for the paper-facing map from Supplement sections to canonical repository evidence.
+See:
+
+- [`../../docs/PAPER_EVIDENCE_AUTHORITY.md`](../../docs/PAPER_EVIDENCE_AUTHORITY.md) — current paper-to-evidence authority map;
+- [`source_data/README.md`](source_data/README.md) — Supplement section-to-evidence map;
+- [`../../docs/REPRODUCIBILITY.md`](../../docs/REPRODUCIBILITY.md) — reproduction routes;
+- [`../../docs/EVIDENCE_BOUNDARIES.md`](../../docs/EVIDENCE_BOUNDARIES.md) — claim boundaries.
 
 ## Availability boundary
 
