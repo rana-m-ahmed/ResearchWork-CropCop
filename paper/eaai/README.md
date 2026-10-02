@@ -18,6 +18,17 @@ This directory is the paper-facing bridge between the EAAI manuscript/Supplement
 - exact checkpoint, class-map, manifest, FP32 and INT8 artifact identities;
 - layered interpretation: **artifact transformation ≠ device execution ≠ raw-input processing ≠ runtime–hardware compatibility**.
 
+## Part 1
+
+The QA-enhanced Part-1 delivery contains:
+
+- the 19-page EAAI main manuscript;
+- clean Overleaf and flat Editorial Manager LaTeX source;
+- exact approved Figures 1–4;
+- scientific-regression, reference, typography, rendered-PDF and build-reproduction audits.
+
+See [`PART1_RELEASE_STATUS.md`](PART1_RELEASE_STATUS.md) for the manuscript production state.
+
 ## Part 2
 
 The QA-enhanced Part-2 delivery contains:
@@ -48,4 +59,4 @@ The complete private Track-B evidence archive, consolidated benchmark images, mo
 
 ## Status
 
-See [`PART2_RELEASE_STATUS.md`](PART2_RELEASE_STATUS.md) and the repository-level [`MANUSCRIPT_STATUS.md`](../../MANUSCRIPT_STATUS.md).
+See [`PART1_RELEASE_STATUS.md`](PART1_RELEASE_STATUS.md), [`PART2_RELEASE_STATUS.md`](PART2_RELEASE_STATUS.md), and the repository-level [`MANUSCRIPT_STATUS.md`](../../MANUSCRIPT_STATUS.md).
