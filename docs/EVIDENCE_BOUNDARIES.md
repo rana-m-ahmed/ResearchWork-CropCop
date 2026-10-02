@@ -25,8 +25,8 @@
 
 ### Runtime lineage
 
-- Exact \`R07-CNXTT-CONTEXT-S1\` checkpoint identity and epoch.
-- 16,368-row validation replay within \`1e-6\`.
+- Exact `R07-CNXTT-CONTEXT-S1` checkpoint identity and epoch.
+- 16,368-row validation replay within `1e-6`.
 - FP32/INT8 artifacts identity-bound.
 - FP32→INT8 canonical top-1 = 252/256; changes 11, 27, 155, 255.
 - Pixel FP32 host-device = 256/256.
