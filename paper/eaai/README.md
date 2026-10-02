@@ -4,14 +4,14 @@
 
 **Separating External-Source Behavior from Runtime Fidelity in Plant-Health Recognition**
 
-This directory is the paper-facing bridge between the EAAI manuscript/Supplement release and the canonical research evidence under \`journal_extension/\`.
+This directory is the paper-facing bridge between the EAAI manuscript/Supplement release and the canonical research evidence under `journal_extension/`.
 
 ## Scientific freeze
 
 - final benchmark: 109,107 images / 120 classes;
 - selected family: R07 / ConvNeXt-Tiny;
 - Track-B external states: R07 S1/S2/S3;
-- Track-C deployment representative: \`R07-CNXTT-CONTEXT-S1\`;
+- Track-C deployment representative: `R07-CNXTT-CONTEXT-S1`;
 - exact checkpoint, class-map, manifest, FP32 and INT8 artifact identities;
 - native 120-way external inference with seven mapped labels;
 - layered runtime interpretation: artifact transformation ≠ device execution ≠ raw-input processing ≠ runtime–hardware compatibility.
@@ -31,7 +31,7 @@ The complete generated publication bundle is distributed as the reviewed Part-2 
 
 ## Canonical evidence
 
-See [\`source_data/README.md\`](source_data/README.md) for the paper-facing map from Supplement sections to canonical repository evidence.
+See [`source_data/README.md`](source_data/README.md) for the paper-facing map from Supplement sections to canonical repository evidence.
 
 ## Availability boundary
 
@@ -39,4 +39,4 @@ The complete private Track-B evidence archive, consolidated benchmark images, mo
 
 ## Status
 
-See [\`PART2_RELEASE_STATUS.md\`](PART2_RELEASE_STATUS.md) and the repository-level [\`MANUSCRIPT_STATUS.md\`](../../MANUSCRIPT_STATUS.md).
+See [`PART2_RELEASE_STATUS.md`](PART2_RELEASE_STATUS.md) and the repository-level [`MANUSCRIPT_STATUS.md`](../../MANUSCRIPT_STATUS.md).
