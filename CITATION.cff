@@ -1,22 +1,25 @@
 cff-version: 1.2.0
-message: "If you use CropCop, please cite the submitted preprint and this versioned reproducibility repository."
-title: "ResearchWork-CropCop: Auditable Plant-Health Recognition Artifacts"
+message: "If you use the public CropCop research record, please cite arXiv:2608.25539 and the exact repository commit/release used. The EAAI journal extension should be cited only after that version receives a public identifier."
+title: "ResearchWork-CropCop: EAAI Journal-Extension Evidence and Reproducibility Repository"
 type: software
 authors:
   - family-names: "Ahmed"
     given-names: "Rana Muhammad"
   - family-names: "Abbas"
     given-names: "Sabahat"
-version: "0.2.0-rc2"
-date-released: "2026-08-25"
+version: "0.3.0-rc1"
+date-released: "2026-10-02"
 repository-code: "https://github.com/rana-m-ahmed/ResearchWork-CropCop"
 license: "MIT"
 keywords:
   - plant-health recognition
   - computer vision
   - dataset leakage
+  - external-source evaluation
+  - model lineage
   - quantization
   - ExecuTorch
+  - runtime fidelity
   - reproducible research
 preferred-citation:
   type: article
@@ -27,5 +30,6 @@ preferred-citation:
       given-names: "Sabahat"
   title: "CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact"
   year: 2026
-  notes: "Submitted to arXiv; public identifier pending"
-  url: "https://github.com/rana-m-ahmed/ResearchWork-CropCop"
+  doi: "10.48550/arXiv.2608.25539"
+  url: "https://arxiv.org/abs/2608.25539"
+  notes: "arXiv:2608.25539v1. The EAAI journal extension is maintained separately until it receives a public identifier."
