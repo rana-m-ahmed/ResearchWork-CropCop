@@ -1,5 +1,7 @@
 # Reproducibility guide — EAAI journal extension
 
+> Paper-to-evidence navigation: [`PAPER_EVIDENCE_AUTHORITY.md`](PAPER_EVIDENCE_AUTHORITY.md)
+
 ## Reproduction layers
 
 CropCop separates identity, analysis, execution and archival reproducibility rather than collapsing them into a single “code available” claim.
@@ -35,11 +37,11 @@ Retained cohorts:
 
 All three fixed R07 states are evaluated under native 120-way inference with exactly seven mapped labels. Out-of-mapped-scope predictions remain errors; there is no mapped-logit renormalization.
 
-The final accepted Track-B evidence archive is identity-bound at:
+The accepted Track-B evidence archive is identity-bound at:
 
 `22a6c865ead6f28319a9dc8a4168f3ff7fb60108339710dcbd99e1aa047981a3`
 
-The complete archive is not stored in ordinary public Git. Its expected file inventory and fail-closed verifier are preserved in the Part-2 release package. The verifier performs no inference; it verifies accepted bytes and derives reviewer-grade per-class/confusion/dedup tables from those bytes.
+The complete private archive is not stored in ordinary public Git. Its exact expected member inventory and fail-closed verifier are preserved in the reviewed Part-2 release package. The verifier performs no inference.
 
 ## Track C — exact state reconstruction
 
@@ -68,7 +70,7 @@ Produced binaries are not redistributed in ordinary public Git pending licence r
 
 ## Runtime evidence reproduction
 
-Public Track-C CSVs support independent checking of:
+Public Track-C evidence supports independent checking of:
 
 - FP32-host vs INT8-host = 252/256; mismatches 11, 27, 155, 255;
 - FP32 host vs Pixel FP32 = 256/256;
@@ -83,3 +85,5 @@ These comparisons answer different questions and must not be collapsed into one 
 ## Public/restricted boundary
 
 Restricted assets include the consolidated benchmark images, final R07-S1 checkpoint, produced FP32/INT8 PTEs, raw logits and the complete private Track-B evidence archive. Hashes and reconstruction contracts are published where permitted so authorized reviewers can verify identity.
+
+An immutable release/tag should be created only after the final journal-facing documentation and submission state are frozen.
