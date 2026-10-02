@@ -16,7 +16,7 @@ This preprint reports the earlier internal benchmark/model-retention/software-ru
 
 **Separating External-Source Behavior from Runtime Fidelity in Plant-Health Recognition**
 
-Status: **submission-production stage**. Part 1 (main manuscript) and Part 2 (Supplement + reproducibility package) have both completed dedicated QA-enhancement passes and are scientifically cross-checked. Final Editorial Manager metadata, declarations and author-controlled archival decisions remain outside this repository release candidate.
+Status: **submission-engineering stage**. Part 1 and Part 2 have completed dedicated QA-enhancement passes, and Step 3 has prepared the submission-facing manuscript/declaration layer and portal assets. The remaining gate is final author metadata, author-controlled declarations and archival/redistribution approval.
 
 The journal extension adds controlled four-family Track-A selection, prediction-blind external-cohort selection, three-state R07 external evaluation, exact-content sensitivity, exact R07-S1 reconstruction/replay, a single frozen PT2E/XNNPACK export route, Pixel physical execution, and POCO runtime-compatibility evidence.
 
@@ -32,6 +32,10 @@ Key identities:
 - FP32 PTE SHA-256: `61556330cd9fc4725b4ff4759aef3835696b81865b2cbe030f815a4c0e8d5aec`
 - INT8 PTE SHA-256: `2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8`
 - accepted Track-B evidence ZIP SHA-256: `22a6c865ead6f28319a9dc8a4168f3ff7fb60108339710dcbd99e1aa047981a3`
+
+## Funding status
+
+The journal manuscript uses the finalized no-specific-grant statement: “This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.”
 
 ## Public/restricted boundary
 
