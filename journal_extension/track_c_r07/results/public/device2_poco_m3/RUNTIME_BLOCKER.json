@@ -1,0 +1,17 @@
+{
+  "schema_version": "TRACKC_SECONDARY_DEVICE_RUNTIME_BLOCKER_V1",
+  "status": "BLOCKED_TRACKC_SECONDARY_RUNTIME_SIGILL",
+  "attempted_mode": "tensor_fidelity",
+  "attempted_artifact_sha256": "2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8",
+  "harness_preflight": "READY_NONCLAIM",
+  "failure": {
+    "application_exit_reason": "APP CRASH(NATIVE)",
+    "exit_status": 4,
+    "signal": "SIGILL",
+    "native_library": "libexecutorch_jni.so",
+    "stage": "first forward after successful exact-artifact load",
+    "produced_tensor_fidelity_rows": 0
+  },
+  "interpretation": "The ARM64 ABI gate and all artifact/input identity gates passed, but this frozen ExecuTorch/XNNPACK runtime did not execute a forward on this POCO M3. The observed SIGILL is consistent with an unsupported native instruction path on the device's older ARM feature set; this is not asserted as a universal cause beyond the recorded device/runtime pair.",
+  "protocol_action": "No artifact, quantization, training state, tensor input, or primary-device evidence was changed. No further claim-producing runs were performed."
+}

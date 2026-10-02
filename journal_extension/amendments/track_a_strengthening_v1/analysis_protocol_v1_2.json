@@ -1,0 +1,80 @@
+{
+  "architecture_efficiency": {
+    "device_latency_source": "Track C only; Track A must not infer phone latency from parameter count or theoretical compute",
+    "mandatory": [
+      "total_parameter_count",
+      "trainable_parameter_count",
+      "model_state_tensor_bytes_fp32",
+      "input_resolution"
+    ],
+    "models": [
+      "MobileNetV4 direct",
+      "EfficientNet-B0",
+      "ConvNeXt-Tiny",
+      "R13 Differential ViT"
+    ],
+    "optional": ["theoretical_MACs_or_FLOPs"],
+    "optional_compute_rule": "publish theoretical compute only if one pinned profiler is validated on all four models with documented unsupported-op coverage; otherwise omit rather than publish incomparable estimates"
+  },
+  "architecture_three_seed_summary": {
+    "families": [
+      "R04 direct MobileNetV4",
+      "R06 EfficientNet-B0",
+      "R07 ConvNeXt-Tiny",
+      "R13 Differential ViT"
+    ],
+    "hypothesis_tests_authorized": false,
+    "metrics": [
+      "validation_macro_f1",
+      "validation_balanced_accuracy",
+      "validation_accuracy",
+      "validation_nll"
+    ],
+    "report": [
+      "seedwise values",
+      "mean",
+      "sample_SD",
+      "worst_seed",
+      "paired seedwise deltas versus R04",
+      "all pairwise architecture deltas may be shown descriptively if generated from the frozen summary table without significance claims"
+    ]
+  },
+  "classwise": {
+    "hypothesis_tests_authorized": false,
+    "metrics": [
+      "per_class_precision",
+      "per_class_recall",
+      "per_class_f1",
+      "per_class_support"
+    ],
+    "multiple_comparison_p_values_authorized": false,
+    "source": "selected-checkpoint DS-V1-VAL row-level predictions only",
+    "summaries": [
+      "bottom_12_class_mean_f1",
+      "minimum_class_f1",
+      "top_20_directed_off_diagonal_confusions_by_count",
+      "per_family_three_seed mean and sample_SD for per-class F1",
+      "R04-vs-R05 paired per-class delta descriptive summary across S1/S2/S3",
+      "R12-logits-vs-feature paired per-class delta descriptive summary across S1/S2/S3"
+    ]
+  },
+  "mechanism_three_seed_summary": {
+    "families": ["R12 logits", "R12 feature"],
+    "hypothesis_tests_authorized": false,
+    "report": [
+      "seedwise values",
+      "mean",
+      "sample_SD",
+      "paired logits-minus-feature deltas"
+    ]
+  },
+  "modern_backbone_specific_checks": [
+    "report R13 exact upstream pretrained identity and normalization-equivalence parity gate",
+    "report any R13 architecture-specific unsupported operation encountered during analysis without substituting a different model",
+    "R13 may not receive an architecture-specific post-result hyperparameter adjustment"
+  ],
+  "protocol_id": "TRACKA-A1-ANALYSIS-V1.2",
+  "schema_version": "1.2",
+  "status": "PRE_EXECUTION_LOCK",
+  "supersedes": "TRACKA-A1-ANALYSIS-V1"
+}

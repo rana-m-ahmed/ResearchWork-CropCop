@@ -1,0 +1,47 @@
+{
+  "after_training": [
+    "row-level selected-checkpoint DS-V1-VAL replay for every new state",
+    "three-seed summaries",
+    "robustness suite over 9 direct architecture states",
+    "classwise error analysis",
+    "architecture efficiency context"
+  ],
+  "plan_id": "TRACKA-A1-PARALLEL-EXEC-V1",
+  "preconditions": [
+    "amendment lock committed before any new output",
+    "new amendment implementation source receives exact-head CI PASS",
+    "Amendment-G1A seals EFFB0/CNXTT S2/S3 deterministic initializations before training",
+    "existing principal PAIR_INIT_S2/S3 identities reused for R12",
+    "existing official pretrained and historical teacher identities unchanged",
+    "existing calibration/G2 evidence may be reused only if software/hardware/model family/objective execution profile is unchanged; otherwise recalibrate before science"
+  ],
+  "resources_assumed": "three Kaggle accounts, each T4x2",
+  "scheduling_rule": "wave-2 may start as soon as any qualified account is free; no need to wait for all wave-1 accounts if durable topology and owner-bound checkpoints are correct",
+  "schema_version": "1.0",
+  "science_execution_profile": "two independent single-GPU children per notebook; no DDP/DataParallel/FSDP",
+  "status": "PLANNED_NOT_AUTHORIZED_UNTIL_IMPLEMENTATION_QA",
+  "wave_1": [
+    {
+      "account_role": "K1",
+      "gpu0": "R06-EFFB0-CONTEXT-S2",
+      "gpu1": "R07-CNXTT-CONTEXT-S2"
+    },
+    {
+      "account_role": "K2",
+      "gpu0": "R06-EFFB0-CONTEXT-S3",
+      "gpu1": "R07-CNXTT-CONTEXT-S3"
+    },
+    {
+      "account_role": "K3",
+      "gpu0": "R12-MNV4-LOGITS-S2",
+      "gpu1": "R12-MNV4-FEATURE-S2"
+    }
+  ],
+  "wave_2": [
+    {
+      "account_role": "first_available_qualified_account",
+      "gpu0": "R12-MNV4-LOGITS-S3",
+      "gpu1": "R12-MNV4-FEATURE-S3"
+    }
+  ]
+}

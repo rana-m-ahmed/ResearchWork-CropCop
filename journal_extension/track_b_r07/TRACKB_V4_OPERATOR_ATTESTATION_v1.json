@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "attestation_id": "TRACKB_V4_OPERATOR_ATTESTATION_v1",
+  "status": "FROZEN_PRE_RESULTS_OPERATOR_SURFACE",
+  "scientific_change": false,
+  "scientific_authority": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "orchestration_implementation_commit": "f195f5b47d915603b72c98f23bce0b5a606b6500",
+  "files": [
+    {
+      "path": ".github/workflows/trackb-infrastructure-ci.yml",
+      "git_blob_sha1": "9f59c2d88b5778e8ec344c70d71b42d36b88add5"
+    },
+    {
+      "path": "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
+      "git_blob_sha1": "30ead2e55dae70ce110c80261df70e2239f5a167"
+    },
+    {
+      "path": "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb",
+      "git_blob_sha1": "ba4816496846b2e8c4ec7cbc99b4adc9bea75321"
+    },
+    {
+      "path": "journal_extension/scripts/build_trackb_core_package.py",
+      "git_blob_sha1": "115b91fdfebdd8c19b91f5be32fda8383c19f328"
+    },
+    {
+      "path": "journal_extension/scripts/build_trackb_historical_compare.py",
+      "git_blob_sha1": "28778000e2f0accf64c033a2b6aa591c88a850cd"
+    },
+    {
+      "path": "journal_extension/scripts/recover_tracka_v12_terminal_record.py",
+      "git_blob_sha1": "c86c1b9bc4079bcf4051dcd71fca74034a11f2ba"
+    },
+    {
+      "path": "journal_extension/scripts/run_trackb_r07.py",
+      "git_blob_sha1": "3437c276b789d1772039a187dce1e00fcdaea23d"
+    },
+    {
+      "path": "journal_extension/scripts/trackb_v4_execute_attached.py",
+      "git_blob_sha1": "94205cd8afac27c76ba13a83a8ab969e9382ae68"
+    },
+    {
+      "path": "journal_extension/scripts/trackb_v4_materialize.py",
+      "git_blob_sha1": "d5046c7dc3af5378311ebf1283a561a37be5dbb4"
+    },
+    {
+      "path": "journal_extension/scripts/validate_trackb_preinference_qualification.py",
+      "git_blob_sha1": "c3b710f7fa53b77916be0b6ca246d64cb43fa4c2"
+    },
+    {
+      "path": "journal_extension/scripts/validate_trackb_v4_orchestration.py",
+      "git_blob_sha1": "367d8da309f6bdb0f31d75e97db30d9173fb6469"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/tracka_v12.py",
+      "git_blob_sha1": "b133a8554d6f688d33cf078bf5d827363e89f2e1"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/tracka_v12_placement.py",
+      "git_blob_sha1": "fbdd3a04c79a63542f9117cdc77b914093152e04"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/tracka_v12_recovery.py",
+      "git_blob_sha1": "9dc7c39718e68bcf38d1873566ca4f823503615f"
+    },
+    {
+      "path": "journal_extension/src/cropcop_je/trackb_r07_ops.py",
+      "git_blob_sha1": "d207375871ba6b00235ba3a8bff06dde964021d2"
+    },
+    {
+      "path": "journal_extension/track_b_r07/README.md",
+      "git_blob_sha1": "1550719698911d211f87fe6b91aee8d395c677c2"
+    },
+    {
+      "path": "journal_extension/track_b_r07/TRACKB_CODE_ATTESTATION_v3.json",
+      "git_blob_sha1": "4c019f6ee372dab26f7266b1a0eaa71e5568dc85"
+    },
+    {
+      "path": "journal_extension/track_b_r07/TRACKB_INPUT_MATERIALIZATION_LOCK_v1.json",
+      "git_blob_sha1": "252830be1d2f68e2b1c7efebb0e7a974a8885966"
+    },
+    {
+      "path": "journal_extension/track_b_r07/TRACKB_ORCHESTRATION_LOCK_v4.json",
+      "git_blob_sha1": "6616e25be2d701aeca999636bde29dd8dcb1b3d2"
+    },
+    {
+      "path": "journal_extension/track_b_r07/TRACKB_R07_EXECUTION_LOCK_v3.json",
+      "git_blob_sha1": "e70606bfc7883eb37872f1ee2bf74ed01837cbec"
+    },
+    {
+      "path": "journal_extension/track_b_r07/replay_authority/R07_S1_ORIGINAL_RUN_RECORD.json",
+      "git_blob_sha1": "e578f6deb815b285c2bdd955975cc5ce19b831e6"
+    },
+    {
+      "path": "journal_extension/track_b_r07/replay_authority/TRACKA_V12_K3_PUBLIC_REPORT.json",
+      "git_blob_sha1": "e40402cdf240c1bfbb88586c78b7a7bdc8ad1ec1"
+    },
+    {
+      "path": "tests/test_trackb_v4_materialize.py",
+      "git_blob_sha1": "0ee33fb535a13dcea54714bfd7b8e5ffed359ff6"
+    }
+  ],
+  "runtime_snapshot_binding": {
+    "policy": "NOTEBOOK_SOURCE_COMMIT_PLUS_OPERATOR_BLOB_ATTESTATION",
+    "notebook_source_commit": "e4e106073c17dfd0eef167aac37c517cdb031e03"
+  },
+  "release_hardening": {
+    "historical_dino_batch_probe": 64,
+    "explicit_batch_size_assertion": true,
+    "output_disk_preflight": true,
+    "bounded_archive_extraction": true,
+    "external_transport_contract_preflight": true,
+    "low_peak_publication_roundtrip": true,
+    "archive_roundtrip_retries": 3
+  }
+}

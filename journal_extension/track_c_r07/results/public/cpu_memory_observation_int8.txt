@@ -1,0 +1,10 @@
+﻿Stopping: org.cropcop.trackc.benchmark
+Starting: Intent { cmp=org.cropcop.trackc.benchmark/org.cropcop.trackc.BenchmarkActivity (has extras) }
+pid=9287
+  PID CPU  RES[NAME]
+ 9287   1 185M org.cropcop.trackc.benchmark
+  Native Heap    74582    74556        0       20    75796    77848    70815     2471
+  Dalvik Heap     4460     4440        0       65     5276   262144     2957   259187
+         Native Heap:    74556                          75796
+           TOTAL PSS:   109982            TOTAL RSS:   191780       TOTAL SWAP PSS:      144
+Thermal Status: 1

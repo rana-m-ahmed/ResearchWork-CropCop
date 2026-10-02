@@ -1,0 +1,70 @@
+name: Validate Track-A v8 source mitigation
+
+on:
+  push:
+    branches:
+      - fix/tracka-1a-mitigation-v8-20260915
+  pull_request:
+    branches:
+      - je-tracka-strengthening-amendment-v1-20260912
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-mitigation-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1c
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12.13'
+
+      - name: Compile changed execution modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            journal_extension/src/cropcop_je/persistence_v8.py \
+            journal_extension/scripts/run_tracka_v12_training_v121.py \
+            journal_extension/scripts/seal_tracka_v12_g1a.py \
+            tests/test_tracka_v12_mitigation_v8.py
+
+      - name: Run mitigation and frozen boundary regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_tracka_v12_mitigation_v8 \
+            tests.test_tracka_v12_g1a_contract \
+            tests.test_tracka_v12_g2a \
+            tests.test_tracka_v12_g2a_durability \
+            tests.test_tracka_v12_g2a_v122 \
+            tests.test_tracka_v12_authorization \
+            tests.test_tracka_v12_science_go_v123
+
+      - name: Verify protected-surface and compatibility hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          files = [
+              Path('journal_extension/src/cropcop_je/persistence_v8.py'),
+              Path('journal_extension/scripts/run_tracka_v12_training_v121.py'),
+          ]
+          text='\n'.join(path.read_text(encoding='utf-8') for path in files)
+          forbidden=('DS-V1-TEST-CONSUMED','master_g1a_sealer_compat_v6','init_globals','runpy.run_path')
+          found=[value for value in forbidden if value in text]
+          if found:
+              raise SystemExit(f'forbidden mitigation content: {found}')
+          print('protected-surface + compatibility hygiene PASS')
+          PY

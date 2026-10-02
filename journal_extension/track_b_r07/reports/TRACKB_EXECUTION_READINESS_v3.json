@@ -1,0 +1,79 @@
+{
+  "schema_version": "3.0",
+  "report_id": "TRACKB_EXECUTION_READINESS_v3",
+  "generated_date": "2026-09-20",
+  "status": "PASS_IMPLEMENTATION_QA__HOLD_FOR_REAL_KAGGLE_QUALIFICATION",
+  "gate": "IMPLEMENTATION REMEDIATION PASS; DO NOT START PROTECTED EXTERNAL R07 INFERENCE UNTIL Q1/Q2/Q3 PASS",
+  "repository": {
+    "repository": "rana-m-ahmed/ResearchWork-CropCop",
+    "branch": "trackb-r07-remediation-v3-20260920",
+    "audited_implementation_code_head": "d2796cb69daec26a94113e5909719eb353b94832",
+    "baseline_hardened_release": "ef5e2f9d4b8b542e13f33ba5446672f0e9cd60c0",
+    "parent_track_a_closure_commit": "604aafd51e20e70098ce4af647e90c8ff558a9e8"
+  },
+  "authority": {
+    "downstream_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+    "execution_lock_id": "TRACKB_R07_EXECUTION_LOCK_v3",
+    "code_attestation_id": "TRACKB_CODE_ATTESTATION_v3",
+    "lineage_review_id": "TRACKB_EXTERNAL_LINEAGE_REVIEW_v1",
+    "v1_test_status": "CLOSED_FOR_TRACK_B",
+    "new_training_authorized": false,
+    "current_evidence_grade_ceiling": "EXT-S"
+  },
+  "operator": {
+    "supported_notebook": "journal_extension/kaggle/trackb_r07_master.ipynb",
+    "accelerator": "T4x2",
+    "scientific_device": "cuda:0",
+    "internet_required": true,
+    "required_secrets": [
+      "KAGGLE_API_TOKEN"
+    ],
+    "manual_trackb_dataset_attachment_required": false,
+    "persistent_root": "/kaggle/working/trackb_master",
+    "scratch_root": "/kaggle/tmp/cropcop_trackb_r07",
+    "qualification_github_token_required": false,
+    "claim_github_token_required": true,
+    "claim_github_token_secret": "CROPCOP_GITHUB_TOKEN",
+    "execution_mode": "qualification",
+    "protected_external_predictions_in_supported_notebook": false
+  },
+  "candidates": {
+    "gvlid_grape": {
+      "doi": "10.17632/wkymf8bhcg.5",
+      "version": "5",
+      "expected_images": 3477,
+      "scope": "SCOPE-GRAPE-4"
+    },
+    "irish_potato": {
+      "doi": "10.5281/zenodo.8286529",
+      "version": "01",
+      "expected_images": 58709,
+      "scope": "SCOPE-POTATO-3"
+    }
+  },
+  "ci": {
+    "qa_reference_head": "00015260fb2c85b720c044d558f622a4c79b0e99",
+    "trackb_infrastructure_pr_run_id": 35493475660,
+    "validate_secondary_tracka_wave_run_id": 35493475669,
+    "validate_public_evidence_run_id": 35493475536,
+    "conclusions": "ALL_SUCCESS"
+  },
+  "remediation_register": "journal_extension/track_b_r07/reports/TRACKB_REMEDIATION_REGISTER_v1.json",
+  "supersedes_for_current_operation": [
+    "TRACKB_EXECUTION_READINESS_v2.json",
+    "TRACKB_EXECUTION_READINESS_v2.md"
+  ],
+  "qualification": {
+    "Q1": "PENDING_REAL_KAGGLE_EXECUTION",
+    "Q2": "PENDING_REAL_PREDICTION_BLIND_ACQUISITION_AND_AUDIT",
+    "Q3": "PENDING_INDEPENDENT_PREINFERENCE_QA_FROM_REAL_KAGGLE_EVIDENCE",
+    "supported_notebook_stops_before_protected_inference": true,
+    "protected_external_inference_authorized": false
+  },
+  "current_scientific_state": {
+    "protected_external_predictions": false,
+    "candidate_seals_from_final_real_acquired_bytes": false,
+    "track_b_closed": false,
+    "manuscript_results_authorized": false
+  }
+}

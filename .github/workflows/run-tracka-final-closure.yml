@@ -1,0 +1,28 @@
+name: Run Track-A final closure integration
+
+on:
+  push:
+    branches:
+      - tracka-posttraining-closure-prep-20260918
+    paths:
+      - '.github/workflows/run-tracka-final-closure.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  close-track-a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Execute deterministic Track-A final closure
+        run: python journal_extension/scripts/run_tracka_final_closure_orchestrator.py

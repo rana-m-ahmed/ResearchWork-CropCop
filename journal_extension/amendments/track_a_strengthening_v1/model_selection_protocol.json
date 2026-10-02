@@ -1,0 +1,117 @@
+{
+  "anti_fishing": [
+    "No weighted score with post-result weights.",
+    "No new architecture may enter after results.",
+    "No Track-B or Track-C outcome may influence Track-A primary selection.",
+    "No architecture may be retained because it appeared in the preprint.",
+    "The preprint MobileNetV4 remains historical evidence regardless of the journal-primary outcome."
+  ],
+  "candidate_architectures": [
+    {
+      "family": "R04",
+      "name": "MobileNetV4 direct",
+      "seeds": [
+        "S1",
+        "S2",
+        "S3"
+      ]
+    },
+    {
+      "family": "R06",
+      "name": "EfficientNet-B0 direct",
+      "seeds": [
+        "S1",
+        "S2",
+        "S3"
+      ]
+    },
+    {
+      "family": "R07",
+      "name": "ConvNeXt-Tiny direct",
+      "seeds": [
+        "S1",
+        "S2",
+        "S3"
+      ]
+    }
+  ],
+  "decision_rule": {
+    "exact_tie": "If all listed criteria are exactly tied at recorded precision, report co-primary scientific candidates and defer only the tie to a separately frozen deployment-feasibility gate; do not invent another Track-A experiment.",
+    "stage_1": "Construct a Pareto frontier using clean predictive quality, worst-seed reliability, class-tail reliability, corruption robustness, and efficiency. A model is dominated only if another is no worse on every considered dimension and strictly better on at least one.",
+    "stage_2": "If exactly one architecture remains non-dominated, select it as journal-primary.",
+    "stage_3": [
+      "If multiple architectures remain non-dominated, apply this fixed lexicographic order:",
+      "1 highest three-seed mean macro-F1",
+      "2 highest worst-seed macro-F1",
+      "3 lowest mean corruption degradation",
+      "4 highest bottom-12-class mean F1",
+      "5 lowest FP32 model-state tensor bytes",
+      "6 lowest parameter count"
+    ]
+  },
+  "eligibility_gates": [
+    "three intended seeds complete unless a transparent irrecoverable technical failure is documented",
+    "no protected-surface access",
+    "selected checkpoint identity and replay integrity PASS",
+    "no post-lock tuning or added seeds",
+    "architecture implementation remains bound to the frozen family definition"
+  ],
+  "excluded_from_primary_architecture_selection": [
+    "R05 teacher: principal teacher-effect comparator, not a separate architecture candidate",
+    "R12 logits/feature: mechanism ablations within MobileNetV4, not primary architecture candidates"
+  ],
+  "handoff": {
+    "deployment_failure": "If Track C later proves the scientific-primary model infeasible under a pre-frozen deployment requirement, record scientific-primary and deployment-primary separately; any fallback must follow a separately frozen rule and may not rewrite Track-A selection.",
+    "track_b": "After Track-A selection is sealed, run external validity on the selected journal-primary model under Track-B's independent-cohort protocol.",
+    "track_c": "After Track-A selection is sealed, build/validate the journal deployment artifact for the selected architecture. Historical MobileNetV4 PTE evidence remains a historical comparator, not a constraint."
+  },
+  "protocol_id": "TRACKA-A1-MODEL-SELECTION-V1",
+  "purpose": "Select the journal-primary architecture only after all comparative Track-A evidence is complete; no architecture is pre-favored.",
+  "schema_version": "1.0",
+  "selection_evidence": {
+    "class_reliability": [
+      "bottom_12_class_mean_f1 across seeds",
+      "minimum_class_f1 across seeds",
+      "major confusion concentration"
+    ],
+    "efficiency": [
+      "total_parameter_count",
+      "model_state_tensor_bytes_fp32",
+      "theoretical_MACs_or_FLOPs only if one comparable audited profiler passes all architectures"
+    ],
+    "predictive": [
+      "three-seed mean validation_macro_f1",
+      "three-seed sample_SD validation_macro_f1",
+      "worst-seed validation_macro_f1",
+      "three-seed mean balanced_accuracy",
+      "three-seed mean validation_nll"
+    ],
+    "robustness": [
+      "mean_corruption_degradation_pp",
+      "worst_case_macro_f1_delta_pp",
+      "severity_monotonicity_violations_count"
+    ],
+    "xai": [
+      "reported as a trustworthiness/shortcut-detection audit",
+      "not assigned a numerical selection weight",
+      "no lesion-localization claim without ground-truth lesion masks"
+    ]
+  },
+  "selection_timing": {
+    "forbidden_before_selection": [
+      "opening Track-B model predictions on an external candidate",
+      "opening Track-C journal-candidate runtime outcomes",
+      "opening DS-V1-TEST-CONSUMED"
+    ],
+    "must_complete_before_selection": [
+      "all nine direct architecture states terminal or transparently failed",
+      "selected-checkpoint DS-V1-VAL replay for all successful direct states",
+      "three-seed clean metric summaries",
+      "fixed robustness protocol across all successful direct states",
+      "120-class tail/confusion analysis across all successful direct states",
+      "architecture efficiency context",
+      "Grad-CAM++ explainability/faithfulness audit across all successful direct architecture states"
+    ]
+  },
+  "status": "PRE_EXECUTION_LOCK"
+}

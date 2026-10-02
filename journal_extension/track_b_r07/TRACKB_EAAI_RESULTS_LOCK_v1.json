@@ -1,0 +1,171 @@
+{
+  "schema_version": "1.0",
+  "status": "TRACKB_EAAI_RESULTS_LOCKED",
+  "protocol_id": "TRACKB_EAAI_EXTERNAL_VALIDATION_v2",
+  "behavior_commit": "7d9c09dfc6ec6bad640ee8af429abd1f6ab688d1",
+  "final_execution": {
+    "materialization_id": "98ff32c3c7ce2e66ffe52be97932a8b25f3ce50314c844abdd33077c99d90d78",
+    "final_manifest_sha256": "90f4acd8858a6a7550775ea15c8ba87108c85e788086711bfaeacaf1fbd8bafa",
+    "protocol_sha256": "23fa8e2942f032bd64a32d13b13d5b8d33f4cec83b7f0b546c9c4c07acf8f94f",
+    "summary_sha256": "4ff55d013f00a54334119cd4d0acaf3587217758f4faf0ee0ccf9c5ca13fb9c1",
+    "evidence_zip_sha256": "22a6c865ead6f28319a9dc8a4168f3ff7fb60108339710dcbd99e1aa047981a3",
+    "evidence_zip_bytes": 17230077,
+    "external_prediction_count": 186546,
+    "v1_test_accessed": false,
+    "new_training_performed": false
+  },
+  "audit": {
+    "exact_v1_train_val_overlap_count": {
+      "gvlid_grape": 0,
+      "irish_potato": 0
+    },
+    "decode": {
+      "gvlid_grape": {
+        "published": 3477,
+        "valid": 3477,
+        "invalid": 0
+      },
+      "irish_potato": {
+        "published": 58709,
+        "valid": 58705,
+        "invalid": 4,
+        "invalid_support": {
+          "earlyblt": 2,
+          "healthy": 2
+        },
+        "invalid_unique_raw_sha256_count": 3
+      }
+    },
+    "exact_deduplication": {
+      "gvlid_grape": {
+        "valid": 3477,
+        "deduplicated": 2409,
+        "duplicate_groups": 446,
+        "rows_in_duplicate_groups": 1514
+      },
+      "irish_potato": {
+        "valid": 58705,
+        "deduplicated": 38554,
+        "duplicate_groups": 9632,
+        "rows_in_duplicate_groups": 29783
+      }
+    }
+  },
+  "primary_leakage_clean_results": {
+    "gvlid_grape": {
+      "n": 3477,
+      "seed_results": {
+        "S1": {
+          "macro_f1": 0.31676293115876497,
+          "accuracy": 0.3839516824849008,
+          "balanced_accuracy": 0.34654518886450025,
+          "oos_rate": 0.3160770779407535
+        },
+        "S2": {
+          "macro_f1": 0.3288865615690228,
+          "accuracy": 0.3917169974115617,
+          "balanced_accuracy": 0.3542009152417691,
+          "oos_rate": 0.35864250790911706
+        },
+        "S3": {
+          "macro_f1": 0.34879244206999477,
+          "accuracy": 0.38452689099798676,
+          "balanced_accuracy": 0.3453667505551729,
+          "oos_rate": 0.4164509634742594
+        }
+      },
+      "mean": {
+        "macro_f1": 0.33148064493259416,
+        "accuracy": 0.38673185696481643,
+        "balanced_accuracy": 0.3487042848871474,
+        "oos_rate": 0.3637235164413766
+      },
+      "sample_sd": {
+        "macro_f1": 0.016171559716861437,
+        "accuracy": 0.00432682737854347,
+        "balanced_accuracy": 0.004796549609222651,
+        "oos_rate": 0.05037947707203805
+      },
+      "three_seed_mean_macro_f1_95pct_ci": [
+        0.3241483938081626,
+        0.33867137303123673
+      ]
+    },
+    "irish_potato": {
+      "n": 58705,
+      "seed_results": {
+        "S1": {
+          "macro_f1": 0.41518192212719507,
+          "accuracy": 0.2850353462226386,
+          "balanced_accuracy": 0.28814728516694926,
+          "oos_rate": 0.6718848479686569
+        },
+        "S2": {
+          "macro_f1": 0.44902427852019394,
+          "accuracy": 0.32837066689379096,
+          "balanced_accuracy": 0.3305944049492267,
+          "oos_rate": 0.6403713482667576
+        },
+        "S3": {
+          "macro_f1": 0.3838098545130741,
+          "accuracy": 0.2672515117962695,
+          "balanced_accuracy": 0.2670130248077222,
+          "oos_rate": 0.6623626607614342
+        }
+      },
+      "mean": {
+        "macro_f1": 0.41600535172015435,
+        "accuracy": 0.293552508304233,
+        "balanced_accuracy": 0.2952515716412994,
+        "oos_rate": 0.6582062856656162
+      },
+      "sample_sd": {
+        "macro_f1": 0.03261500884356807,
+        "accuracy": 0.031437148684348486,
+        "balanced_accuracy": 0.0323805673191013,
+        "oos_rate": 0.016162665507837938
+      },
+      "three_seed_mean_macro_f1_95pct_ci": [
+        0.4128521813713729,
+        0.4191763901054268
+      ]
+    }
+  },
+  "exact_deduplicated_sensitivity": {
+    "gvlid_grape": {
+      "n": 2409,
+      "mean": {
+        "macro_f1": 0.25065524454290977,
+        "accuracy": 0.35907015359070155,
+        "balanced_accuracy": 0.35171468928624994,
+        "oos_rate": 0.3550574235505743
+      },
+      "delta_vs_primary": {
+        "macro_f1": -0.08082540038968439,
+        "accuracy": -0.027661703374114888,
+        "balanced_accuracy": 0.003010404399102551,
+        "oos_rate": -0.008666092890802335
+      }
+    },
+    "irish_potato": {
+      "n": 38554,
+      "mean": {
+        "macro_f1": 0.36461663348168916,
+        "accuracy": 0.23413912953260363,
+        "balanced_accuracy": 0.2560251267218801,
+        "oos_rate": 0.7177205996783732
+      },
+      "delta_vs_primary": {
+        "macro_f1": -0.05138871823846519,
+        "accuracy": -0.05941337877162939,
+        "balanced_accuracy": -0.03922644491941929,
+        "oos_rate": 0.059514314012756975
+      }
+    }
+  },
+  "interpretation_lock": {
+    "allowed_claim": "Cross-source evaluation revealed substantial domain shift and class-specific generalization weaknesses despite zero exact overlap with the frozen V1 train+validation surface.",
+    "prohibited_overclaim": "Do not describe Track B as strong external validation of all 120 classes or as evidence of field-ready generalization.",
+    "scope": "Seven mapped classes only: four grape classes and three potato classes."
+  }
+}

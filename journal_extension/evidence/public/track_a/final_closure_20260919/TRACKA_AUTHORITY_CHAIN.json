@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "artifact_kind": "track_a_authority_chain_reconciliation",
+  "historical_documents_are_not_rewritten": true,
+  "chain": [
+    {
+      "order": 1,
+      "authority_id": "EAAI-JE-SDL-v2.1-QA",
+      "artifact": "journal_extension/locks/scientific_authority.json",
+      "role": "original scientific design authority",
+      "dataset_images": 109107,
+      "classes": 120
+    },
+    {
+      "order": 2,
+      "artifact": "journal_extension/locks/track_launch_matrix.json",
+      "role": "historical initial Track-A launch matrix",
+      "note": "Contains the earlier ten-state launch surface and is superseded for final Track-A scope by later versioned Track-A v1.2 / post-training closure authority."
+    },
+    {
+      "order": 3,
+      "git_commit": "56023042e57758591df9babb3438f191dbe10312",
+      "role": "frozen Track-A v1.2 training-science source"
+    },
+    {
+      "order": 4,
+      "authority_id": "EAAI-JE-TRACKA-POSTTRAINING-CLOSURE-V1",
+      "artifact": "journal_extension/locks/track_a_posttraining_closure_authority_v1.json",
+      "role": "21-state post-training closure authority"
+    },
+    {
+      "order": 5,
+      "campaign_id": "CROPCOP-TRACKA-POSTTRAINING-CLOSURE-V1",
+      "artifact": "journal_extension/locks/track_a_posttraining_campaign_v1.json",
+      "role": "21-state post-training execution/closure campaign lock",
+      "exit_state_count": 21,
+      "direct_state_count": 12,
+      "auxiliary_state_count": 9
+    },
+    {
+      "order": 6,
+      "git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+      "role": "frozen post-training analysis source used by all 21 state publications"
+    },
+    {
+      "order": 7,
+      "branch": "tracka-posttraining-closure-prep-20260918",
+      "role": "additive closure-preparation/runtime infrastructure; frozen science executors remain byte-identical"
+    },
+    {
+      "order": 8,
+      "branch": "tracka-final-closure-audit-20260919",
+      "role": "audit-only integration branch; no scientific semantics changes"
+    }
+  ],
+  "protected_surface_rule": "DS-V1-TEST-CONSUMED, Track-B predictions, and Track-C candidate outcomes remain closed until Track-A final closure is valid.",
+  "final_scope": "Track A is one 21-state model-science unit: 12 direct candidate states + 9 auxiliary states."
+}

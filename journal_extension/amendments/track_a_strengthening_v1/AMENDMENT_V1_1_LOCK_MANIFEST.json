@@ -1,0 +1,31 @@
+{
+  "created_utc": "2026-09-13",
+  "files_sha256": {
+    "03B_1_TRACK_A_STRENGTHENING_AMENDMENT_v1_1_SUPPLEMENT.md": "2f7ec20df68a57c79822b733427f24d00fcc054bbfb10089b2f05eb42e70d3ef",
+    "journal_extension/amendments/track_a_strengthening_v1/CROSS_TRACK_COORDINATION_v1_1.md": "a01f6546fb876e8a5245958111880c5484c7b3858894da50b4fe3b29646afff0",
+    "journal_extension/amendments/track_a_strengthening_v1/EAAI_STRENGTH_MAPPING.md": "ec0ff5173697fe48474795b68b8b1a68f3fb290e3b35f0d933a6c63eb1127190",
+    "journal_extension/amendments/track_a_strengthening_v1/model_selection_protocol.json": "d707342bd87088494b1b24a0b7f0ba36f22aaec78172a7507b22a647a9acbb2d",
+    "journal_extension/amendments/track_a_strengthening_v1/xai_gradcampp_protocol.json": "3bde5d83197f38f5c7f367124eb34feffa4eb431b2ed1bebf3522f919757b1e0"
+  },
+  "parent_amendment_id": "EAAI-JE-TRACKA-STRENGTHENING-A1",
+  "parent_branch_head_before_supplement": "99b72417a3575d6d2d61130c61c27735f030122c",
+  "schema_version": "1.0",
+  "scientific_outputs_observed_before_this_supplement": false,
+  "status": "LOCKED_PRE_EXECUTION_SUPPLEMENT",
+  "supersession_scope": [
+    "removes any model-specific Track-B/Track-C handoff preference",
+    "adds model-neutral Track-A journal-primary selection gate",
+    "adds Grad-CAM++ explainability/faithfulness protocol",
+    "adds EAAI acceptance-strength mapping"
+  ],
+  "supplement_id": "EAAI-JE-TRACKA-STRENGTHENING-A1.1",
+  "unchanged": [
+    "original Stage-02 and Stage-03A results",
+    "eight-state A1 training plan",
+    "robustness protocol",
+    "analysis protocol",
+    "parallel execution plan",
+    "protected V1-test prohibition",
+    "no-new-model/no-new-seed/no-retuning rule"
+  ]
+}

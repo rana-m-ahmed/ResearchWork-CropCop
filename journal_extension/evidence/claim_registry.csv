@@ -1,0 +1,11 @@
+claim_id,claim_level,required_experiment_ids,pre_results_status,allowed_evidence_surface
+C-P1,Primary,R00-CONTRACT,PRE_RESULTS,metadata + authorized evidence bundles
+C-P2,Primary,R01-EXT-AUDIT-POTATO;R10-EXT-AUDIT-AGRIVISION;R02-EXT-POTATO-FINAL;R11-EXT-AGRIVISION-FINAL,PRE_RESULTS,candidate-specific sealed external only
+C-P3,Primary,R03-DEVICE-V1-PTE;R09-DEVICE-PROFILE,PRE_RESULTS,verified device manifests only
+C-S1,Secondary,R04-MNV4-DIRECT-S1;R04-MNV4-DIRECT-S2;R04-MNV4-DIRECT-S3;R05-MNV4-TEACHER-S1;R05-MNV4-TEACHER-S2;R05-MNV4-TEACHER-S3,PRE_RESULTS,DS-V1-TRAIN + DS-V1-VAL
+C-S2,Secondary,R06-EFFB0-CONTEXT-S1;R07-CNXTT-CONTEXT-S1,PRE_RESULTS,DS-V1-TRAIN + DS-V1-VAL
+C-S3,Secondary,R03-DEVICE-V1-PTE,PRE_RESULTS,DS-DEVICE-TENSOR-256
+C-C1,Contextual,historical V1 lineage,PRE_RESULTS,historical evidence only
+C-C2,Contextual,R08-V1-CONTINUITY-001,PRE_RESULTS,DS-V1-TEST-CONSUMED after G5 only
+C-C3,Contextual,R09-DEVICE-PROFILE,PRE_RESULTS,device storage records
+C-C4,Contextual conditional,R02-EXT-POTATO-FINAL;R11-EXT-AGRIVISION-FINAL,PRE_RESULTS,sealed external only if exact reference presealed

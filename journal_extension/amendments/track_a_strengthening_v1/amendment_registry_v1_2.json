@@ -1,0 +1,71 @@
+{
+  "amendment_id": "EAAI-JE-TRACKA-STRENGTHENING-A1.2",
+  "base_amendment": "EAAI-JE-TRACKA-STRENGTHENING-A1",
+  "base_prelock_head": "27a25d54b482806f924b6030e55c37bcc9e1f106",
+  "candidate_pool_closed_after_this_registry": true,
+  "created_utc": "2026-09-13",
+  "final_track_a_lock_allowed_before_amendment_close": false,
+  "global_invariants": {
+    "A02_authorized": false,
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "ctc_config": "journal_extension/configs/common/ctc_v2.json",
+    "forbidden_surfaces": ["DS-V1-TEST-CONSUMED", "DS-EXT-*-SEALED", "DS-HIST-COMPARE"],
+    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "new_hyperparameter_search_authorized": false,
+    "new_seed_authorized": false,
+    "num_classes": 120,
+    "selection": "CTC-v2 unchanged; 30 epochs; macro-F1 desc, balanced accuracy desc, NLL asc, epoch asc",
+    "train_surface": "DS-V1-TRAIN",
+    "validation_surface": "DS-V1-VAL"
+  },
+  "modern_backbone": {
+    "family": "R13",
+    "g1a_contract": "r13_pretrained_identity_and_normalization_contract_v1_2.json",
+    "model_family": "vit_dlittle_diff",
+    "model_id": "vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k",
+    "objective": {"ce": 1.0, "feature": 0.0, "kd": 0.0},
+    "pretraining_dataset": "ImageNet-1K",
+    "required_timm_version": "1.0.26",
+    "role": "post_results_amendment_modern_transformer_architecture_candidate"
+  },
+  "new_r13_training_states": [
+    {
+      "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+      "family": "R13",
+      "model_family": "vit_dlittle_diff",
+      "objective": {"ce": 1.0, "feature": 0.0, "kd": 0.0},
+      "required_init": "R13_VIT_DLITTLE_INIT_S1.json",
+      "seed": 21270083,
+      "seed_label": "S1"
+    },
+    {
+      "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+      "family": "R13",
+      "model_family": "vit_dlittle_diff",
+      "objective": {"ce": 1.0, "feature": 0.0, "kd": 0.0},
+      "required_init": "R13_VIT_DLITTLE_INIT_S2.json",
+      "seed": 606135704,
+      "seed_label": "S2"
+    },
+    {
+      "experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S3",
+      "family": "R13",
+      "model_family": "vit_dlittle_diff",
+      "objective": {"ce": 1.0, "feature": 0.0, "kd": 0.0},
+      "required_init": "R13_VIT_DLITTLE_INIT_S3.json",
+      "seed": 1153870846,
+      "seed_label": "S3"
+    }
+  ],
+  "post_results_amendment": true,
+  "revised_completion_counts": {
+    "direct_architecture_states_for_model_selection": 12,
+    "new_training_states_added_by_v1": 8,
+    "new_training_states_added_by_v1_2": 3,
+    "total_track_a_scientific_states_after_amendment": 21
+  },
+  "retry_policy": "same A01 scientific identity; continuation only; technical failure does not authorize A02 or science changes",
+  "schema_version": "1.2",
+  "status": "PRE_EXECUTION_LOCK",
+  "supersedes_candidate_pool": "A1.1 three-family candidate pool only; all original results and v1 eight-state plan remain unchanged"
+}

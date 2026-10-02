@@ -1,0 +1,67 @@
+# Exact public-safe excerpts from historical CropCop v7 trainer.
+# Full decoded trainer SHA-256: a1910fb38f3f7114b8ec607b5ed0408ddaf6abda39b8c29e8819e79b2259b83c
+# Excerpts preserve original source text below; separators are evidence annotations.
+
+class DINOv3Classifier(nn.Module):
+    def __init__(self,backbone,num_classes,dropout=.1):
+        super().__init__(); self.backbone=backbone; hidden=int(backbone.config.hidden_sizes[-1])
+        self.dropout=nn.Dropout(dropout); self.head=nn.Linear(hidden,num_classes)
+        nn.init.trunc_normal_(self.head.weight,std=.02); nn.init.zeros_(self.head.bias)
+    def forward(self,x):
+        out=self.backbone(pixel_values=x); return self.head(self.dropout(out.pooler_output))
+    def extract_features(self,x): return self.backbone(pixel_values=x).pooler_output
+
+
+# --- HISTORICAL EXCERPT BOUNDARY ---
+
+MODEL_SPECS={
+    "dino_tiny": ("dinov3_hf","facebook/dinov3-convnext-tiny-pretrain-lvd1689m",.10),
+    "dino_base": ("dinov3_hf","facebook/dinov3-convnext-base-pretrain-lvd1689m",.10),
+    "dino_large": ("dinov3_hf","facebook/dinov3-convnext-large-pretrain-lvd1689m",.10),
+    "repvit_m2_3": ("timm","repvit_m2_3.dist_450e_in1k",0.),
+    "repvit_m1_5": ("timm","repvit_m1_5.dist_450e_in1k",0.),
+    "mobilenetv4_conv_m": ("timm","mobilenetv4_conv_medium.e500_r256_in1k",0.),
+    "convnextv2_tiny": ("timm","convnextv2_tiny.fcmae_ft_in22k_in1k",0.),
+}
+
+
+def build_model(model_key, num_classes, hf_token, pretrained=True):
+    family, model_id, dropout = MODEL_SPECS[model_key]
+    if family=="dinov3_hf":
+        kw={"token":hf_token} if hf_token else {}
+        if pretrained: backbone=AutoModel.from_pretrained(model_id,**kw)
+        else: backbone=AutoModel.from_config(AutoConfig.from_pretrained(model_id,**kw))
+        proc=AutoImageProcessor.from_pretrained(model_id,**kw)
+        prep={"mean":tuple(map(float,proc.image_mean)),"std":tuple(map(float,proc.image_std)),"source":model_id,"family":family}
+        return DINOv3Classifier(backbone,num_classes,dropout),prep
+    if family=="timm":
+        if model_id.startswith("repvit"):
+            base=timm.create_model(model_id,pretrained=pretrained); base.reset_classifier(num_classes=num_classes,distillation=False)
+        else: base=timm.create_model(model_id,pretrained=pretrained,num_classes=num_classes)
+        dc=resolve_model_data_config(base); prep={"mean":tuple(map(float,dc["mean"])),"std":tuple(map(float,dc["std"])),"source":model_id,"family":"timm"}
+        return TimmClassifierAdapter(base),prep
+    raise ValueError(family)
+
+
+# --- HISTORICAL EXCERPT BOUNDARY ---
+
+class ModelEMA:
+    def __init__(self,model,decay=.9998):
+        self.decay=float(decay); self.names=[]; self.shadow=[]
+        for k,v in model.state_dict().items():
+            if torch.is_floating_point(v): self.names.append(k); self.shadow.append(v.detach().clone())
+    @torch.no_grad()
+    def update(self,model):
+        sd=model.state_dict()
+        for i,k in enumerate(self.names): self.shadow[i].mul_(self.decay).add_(sd[k].detach(),alpha=1-self.decay)
+    def state_dict(self): return {"decay":self.decay,"shadow":{k:v for k,v in zip(self.names,self.shadow)}}
+    def load_state_dict(self,s,device):
+        self.decay=float(s["decay"]); self.names=list(s["shadow"].keys()); self.shadow=[v.to(device) for v in s["shadow"].values()]
+    @contextmanager
+    def apply_to(self,model):
+        sd=model.state_dict(); backup=[]
+        for k,v in zip(self.names,self.shadow): backup.append(sd[k].detach().clone()); sd[k].copy_(v.to(sd[k].device))
+        try: yield
+        finally:
+            sd=model.state_dict()
+            for k,v in zip(self.names,backup): sd[k].copy_(v)

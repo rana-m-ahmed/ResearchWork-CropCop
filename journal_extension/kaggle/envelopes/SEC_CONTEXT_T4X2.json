@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "SEC-CONTEXT-T4X2-V1",
+  "phase": "secondary-scientific-dual",
+  "hardware_profile": "T4X2",
+  "logical_lane": "K2",
+  "children": [
+    {"child_id": "r06_effb0", "experiment_id": "R06-EFFB0-CONTEXT-S1", "slot": 0},
+    {"child_id": "r07_cnxtt", "experiment_id": "R07-CNXTT-CONTEXT-S1", "slot": 1}
+  ]
+}

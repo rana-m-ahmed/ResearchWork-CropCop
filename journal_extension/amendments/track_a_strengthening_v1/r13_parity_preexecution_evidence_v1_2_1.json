@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "evidence_id": "TRACKA-A1-R13-PARITY-PREEXECUTION-EVIDENCE-V1.2.1",
+  "status": "PASS",
+  "science_authorized": false,
+  "scientific_metric_computed": false,
+  "classifier_prediction_opened": false,
+  "v1_test_accessed": false,
+  "external_surface_accessed": false,
+  "purpose": "Document the pre-science empirical calibration of the float32 patch-embedding normalization-equivalence max-absolute-difference gate for the exact frozen R13 pretrained artifact.",
+  "pre_amendment_source_git_sha": "f8aea6c2b481f8436653d4c6504f406948a98082",
+  "model": {
+    "model_id": "vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k",
+    "hf_repository": "timm/vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k",
+    "hf_model_add_commit": "10143029df1b2df4c63623de6b740ecccb2b8ea2",
+    "model_safetensors_bytes": 90095744,
+    "model_safetensors_sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed",
+    "required_timm_version": "1.0.26"
+  },
+  "original_contract": {
+    "contract_id": "TRACKA-A1-R13-PRETRAINED-IDENTITY-V1.2",
+    "required_max_abs_difference": 1e-05,
+    "metric": "max absolute difference between native-normalization patch-embedding outputs and CTC-normalization/equivalence-transformed patch-embedding outputs in float32"
+  },
+  "kaggle_observation": {
+    "run_id": 350039883,
+    "account_id": "K1",
+    "hardware": "Tesla T4 x2 host inventory; single-process G1A parity probe",
+    "torch_version": "2.12.1",
+    "total_input_count": 40,
+    "synthetic_input_count": 32,
+    "prediction_blind_validation_input_count": 8,
+    "observed_max_abs_difference": 3.4332275390625e-05,
+    "old_gate_pass": false,
+    "protected_surfaces_opened": false,
+    "scientific_training_started": false
+  },
+  "independent_exact_pretrained_diagnostic": {
+    "github_workflow_run_id": 34959233872,
+    "github_job_id": 104348582552,
+    "diagnostic_commit": "62bdb3656329955b9340301d8cfdb66f6015dd48",
+    "artifact_id": 10392532556,
+    "artifact_name": "r13-pretrained-parity-diagnostic",
+    "python_version": "3.12.13",
+    "torch_version": "2.12.1+cu130",
+    "input_inventory": {
+      "constant": 8,
+      "gradient": 8,
+      "seeded_random": 24,
+      "total": 40
+    },
+    "current_implementation": {
+      "max_abs_difference": 3.4332275390625e-05,
+      "mean_abs_difference": 9.250025527762773e-07,
+      "p999_abs_difference": 9.5367431640625e-06,
+      "constant_max_abs_difference": 3.4332275390625e-05,
+      "gradient_max_abs_difference": 3.0517578125e-05,
+      "random_max_abs_difference": 2.002716064453125e-05
+    },
+    "alternative_parameter_construction_checks": {
+      "literal_contract_bias_summation_max_abs_difference": 3.4332275390625e-05,
+      "float64_elementwise_bias_parameter_construction_max_abs_difference": 3.4332275390625e-05,
+      "float64_literal_bias_parameter_construction_max_abs_difference": 3.4332275390625e-05
+    },
+    "exact_kaggle_max_reproduced": true
+  },
+  "finding": {
+    "classification": "pre-execution numerical acceptance-bound calibration defect",
+    "normalization_equivalence_formula_defect_found": false,
+    "pretrained_artifact_identity_defect_found": false,
+    "kaggle_specific_defect_found": false,
+    "conclusion": "The exact frozen pretrained patch embedding deterministically exceeds the v1.2 1e-5 float32 maximum while retaining sub-1e-6 mean error and <=9.5367431640625e-06 p99.9 error. The v1.2 maximum bound is therefore too tight for the exact artifact and must be superseded before science rather than bypassed at runtime."
+  },
+  "amendment_basis": {
+    "new_required_max_abs_difference": 5e-05,
+    "margin_over_observed_exact_max": 1.4563555555555555,
+    "rationale": "Use the narrowest simple decimal bound above the independently reproduced exact-pretrained float32 maximum while remaining an order of magnitude below 5e-4. No formula, model, data, seed, objective, selector, or protected-surface rule changes."
+  }
+}

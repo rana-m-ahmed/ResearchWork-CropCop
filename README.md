@@ -2,253 +2,233 @@
 
 # CropCop
 
-### An auditable 120-class plant-health model from benchmark reconstruction to a quantised runtime artifact
+### Evidence-separated evaluation for plant-health recognition, external-source transfer, and mobile runtime fidelity
 
-[![arXiv submission](https://img.shields.io/badge/arXiv-submitted-B31B1B?logo=arxiv&logoColor=white)](#preprint-status)
+[![arXiv v1](https://img.shields.io/badge/arXiv-2608.25539-B31B1B?logo=arxiv&logoColor=white)](https://arxiv.org/abs/2608.25539)
 [![Validate Evidence](https://github.com/rana-m-ahmed/ResearchWork-CropCop/actions/workflows/validate-artifacts.yml/badge.svg)](https://github.com/rana-m-ahmed/ResearchWork-CropCop/actions/workflows/validate-artifacts.yml)
-[![Python](https://img.shields.io/badge/Python-%E2%89%A53.10-3776AB?logo=python&logoColor=white)](pyproject.toml)
-[![ExecuTorch](https://img.shields.io/badge/runtime-ExecuTorch%20%2B%20XNNPACK-EE4C2C)](https://pytorch.org/executorch/)
+[![ExecuTorch](https://img.shields.io/badge/runtime-ExecuTorch%201.3.1%20%2B%20XNNPACK-EE4C2C)](https://pytorch.org/executorch/)
 [![License: mixed](https://img.shields.io/badge/license-MIT%20%2B%20CC%20BY%204.0-4c1)](LICENSES.md)
 
-**109,107 frozen images · 120 operational classes · 22.60 MiB executed PTE · 6 / 16,363 changed runtime decisions**
+**EAAI journal extension in submission preparation**  
+**109,107 frozen images · 120 operational classes · prediction-blind external evaluation · exact runtime-artifact lineage · two-device compatibility evidence**
 
-CropCop is a leakage-controlled plant-health recognition study and public reproducibility repository. It connects benchmark forensics, long-tailed model evaluation, compact transfer, validation-only post-training quantisation, and direct execution of an identified ExecuTorch/XNNPACK artifact.
-
-[Results](#headline-results) · [Evidence chain](#evidence-chain) · [Repository map](#repository-map) · [Reproducibility](#reproducibility) · [Limitations](#scope-and-limitations) · [Citation](#citation)
+[Paper status](#paper-lineage) · [Evidence chain](#journal-extension-evidence-chain) · [Results](#journal-extension-results) · [Reproducibility](#reproducibility) · [Repository map](#repository-map) · [Limitations](#scope-and-limitations)
 
 </div>
 
 ---
 
+## Paper lineage
+
+CropCop now has two clearly separated research records.
+
+### Public preprint (v1)
+
+**CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact**  
+Rana Muhammad Ahmed, Sabahat Abbas  
+**arXiv:2608.25539** (2026)
+
+The preprint establishes leakage-controlled internal recognition and software-runtime fidelity. It uses the historical DINOv3 → MobileNetV4 → ExecuTorch/PTE lineage and explicitly does **not** claim physical Android or source-independent field generalization.
+
+### EAAI journal extension
+
+**Separating External-Source Behavior from Runtime Fidelity in Plant-Health Recognition**
+
+The journal extension does not silently replace the preprint. It adds a new, evidence-separated study design around the same reconstructed 120-class benchmark:
+
+1. freeze a controlled candidate-family decision before downstream evidence is opened;
+2. preserve all selected-family states for prediction-blind external evaluation;
+3. bind the deployment branch to a preselected R07-S1 state;
+4. distinguish external-source behavior from FP32→INT8 artifact transformation;
+5. distinguish artifact transformation from physical-device execution;
+6. isolate raw-input preprocessing effects;
+7. test runtime–hardware compatibility on a second smartphone without changing the model artifact.
+
+The journal extension is the current research state of this repository. The arXiv preprint remains a versioned historical record.
+
 ## Why this repository exists
 
-High classification accuracy is not sufficient evidence when a benchmark may contain duplicate image families, the label space is severely imbalanced, or the file intended for deployment was never evaluated directly.
+A high benchmark score does not identify where a deployed classifier begins to fail. Failure can enter through benchmark leakage, candidate selection, acquisition-source shift, artifact conversion, raw-image preprocessing, device execution, or runtime assumptions about target hardware.
 
-CropCop treats the complete research lineage as the object of study:
+CropCop therefore treats **evidence lineage and failure attribution** as first-class research objects. The repository is organized so a reviewer can trace a claim to the dataset/model/runtime identity that generated it without allowing downstream outcomes to rewrite the upstream scientific decision.
 
-1. audit the inherited image collection;
-2. reconstruct a leakage-group-aware benchmark;
-3. freeze the class map, preprocessing contract, and evaluation rows;
-4. evaluate a strong DINOv3 ConvNeXt-Tiny reference;
-5. carry the result into a compact MobileNetV4 lineage;
-6. select post-training quantisation using validation data only;
-7. evaluate the converted INT8 graph;
-8. execute the final serialized PTE on every locked test row;
-9. bind the resulting claims to prediction records, fingerprints, and cryptographic identifiers.
+## Journal-extension evidence chain
 
-The contribution is the **connected evidence chain**. CropCop does not claim a new backbone, loss function, distillation method, or universally superior quantisation scheme.
+\`\`\`mermaid
+flowchart LR
+    A[117,546 audited source images] --> B[109,107-image / 120-class frozen benchmark]
+    B --> C[Track-A controlled candidate-family selection]
+    C --> D[R07 ConvNeXt-Tiny selected family]
+    D --> E[Track-B: S1/S2/S3 external-source evaluation]
+    D --> F[Track-C: preselected R07-S1 runtime lineage]
+    F --> G[FP32 host]
+    G --> H[INT8 host: 252/256 vs FP32]
+    G --> I[Pixel FP32: 256/256 vs FP32 host]
+    H --> J[Pixel INT8: 256/256 vs INT8 host]
+    H --> K[Raw-input path: 254/256 vs INT8 canonical]
+    H --> L[POCO original runtime: SIGILL]
+    H --> M[POCO compatible runtime: executes]
+\`\`\`
 
-## Headline results
+The central methodological rule is **selection isolation**: external predictions and device outcomes cannot reopen the upstream family decision.
 
-### Frozen benchmark
+## Journal-extension results
 
-| Property | Value |
+### Benchmark and selection
+
+| Item | Result |
 | --- | ---: |
 | Audited source images | 117,546 |
-| Final frozen images | 109,107 |
+| Final frozen benchmark | 109,107 |
 | Operational classes | 120 |
-| Train / validation / test | 76,376 / 16,368 / 16,363 |
-| Historical V4 confirmed relationships | 8,672 |
-| Corrected V5 trusted graph | 8,573 |
-| Historical cross-split relationships | 3,233 |
-| Direct-cover duplicate removals | 8,355 |
-| Audited leakage groups crossing final splits | **0** |
-| Largest-to-smallest class ratio | 151.7× |
+| Train / validation / historical test | 76,376 / 16,368 / 16,363 |
+| Corrected trusted duplicate relations | 8,573 |
+| Direct-cover duplicate rows removed | 8,355 |
+| Final trusted leakage-group crossings | 0 |
+| Selected family | R07 / ConvNeXt-Tiny |
+| R07 mean validation macro-F1 | 0.96680861 |
 
-### Model-state performance on the locked internal test
+The frozen selector independently reproduces the R07 family decision from four candidate systems under mean/worst-state macro-F1, class-tail performance, corruption degradation, and model-state size constraints.
 
-| State | Object | Accuracy | Balanced accuracy | Macro-F1 | Errors |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Reference | DINOv3 ConvNeXt-Tiny | 98.5088% | 96.6836% | 96.8700% | 244 |
-| Compact float | MobileNetV4 Conv-Medium | 98.4599% | 96.2435% | 96.2710% | 252 |
-| Converted INT8 | XNNPACK-compatible graph | 98.4538% | 96.1957% | 96.2492% | 253 |
-| Executed runtime | Serialized ExecuTorch/XNNPACK PTE | 98.4599% | 96.2017% | 96.2267% | 252 |
+### Prediction-blind external evaluation
 
-The final runtime artifact contains **23,696,352 bytes (22.60 MiB)**. Its predictions differed from the converted INT8 graph on only **6 of 16,363** rows. The exact PTE SHA-256 is recorded in [`metrics/metric_registry.json`](metrics/metric_registry.json).
+The selected R07 family is evaluated unchanged in three fixed states on two public external cohorts while retaining the native 120-way output space.
 
-The reference-to-PTE comparison showed near parity in aggregate accuracy, but not a completely lossless transition: paired analysis identified a modest reduction in macro-F1 concentrated primarily among low-support and broad fruit-condition categories.
+| Cohort | Valid rows | Family mean macro-F1 | OOS rate | One-per-SHA macro-F1 |
+| --- | ---: | ---: | ---: | ---: |
+| GVLiD v5 | 3,477 | 0.3315 ± 0.0162 | 0.3637 | 0.2507 |
+| Irish Potato v01 | 58,705 | 0.4160 ± 0.0326 | 0.6582 | 0.3646 |
 
-## Evidence chain
+\`OOS\` means **out of mapped scope** under native 120-way inference; it is not an open-set-recognition score. Exact-content deduplication is a composition-sensitivity analysis, not the uniquely “true” performance.
 
-```mermaid
-flowchart LR
-    A[117,546 audited images] --> B[8,573 corrected trusted duplicate relations]
-    B --> C[3,233 historical split crossings]
-    C --> D[109,107-image group-safe benchmark]
-    D --> E[DINOv3 ConvNeXt-Tiny reference]
-    E --> F[MobileNetV4 compact state]
-    F --> G[Validation-only PTQ selection]
-    G --> H[Converted INT8 graph]
-    H --> I[Direct PTE execution]
-    I --> J[Row-level paired audit + SHA-256 identity]
-```
+### Research-to-runtime evidence
 
-Every major transition is represented by one or more of the following:
+The deployment branch is bound to **R07-CNXTT-CONTEXT-S1**, selected epoch 27.
 
-- a frozen data or class-map fingerprint;
-- a configuration fingerprint;
-- stable row identifiers and prediction records;
-- a validation-only selection record;
-- a state-specific metric table;
-- an artifact byte count and SHA-256 digest;
-- a public claim-to-evidence entry.
+| Evidence layer | Comparison | Result |
+| --- | --- | ---: |
+| Validation replay | checkpoint vs frozen validation metrics | all within 1e-6 |
+| Artifact transformation | FP32 host vs INT8 host | 252/256 |
+| FP32 device execution | FP32 host vs Pixel FP32 | 256/256 |
+| INT8 device execution | INT8 host vs Pixel INT8 | 256/256 |
+| Raw-input processing | raw INT8 vs paired canonical INT8 | 254/256 |
+| Original POCO runtime | same INT8 artifact + locked inputs | SIGILL on first forward |
+| Compatible POCO runtime | same artifact + inputs, separately versioned runtime | executes; canonical 255/256; raw 253/256 |
 
-See [`evidence/public/claim_evidence_matrix.csv`](evidence/public/claim_evidence_matrix.csv) for the public claim ledger.
+The four FP32→INT8 top-1 changes occur at canonical indices **11, 27, 155, and 255**. Pixel execution adds no additional canonical disagreement relative to either artifact's own host reference. The raw-input path differs at **11 and 255**.
 
-The recovered dataset chronology and source bridge are documented in [`docs/DATASET_LINEAGE.md`](docs/DATASET_LINEAGE.md), [`docs/DATASET_PROVENANCE.md`](docs/DATASET_PROVENANCE.md), and [`docs/DATASET_AUDIT_HISTORY.md`](docs/DATASET_AUDIT_HISTORY.md).
+The original POCO result is a runtime–hardware compatibility failure, not a model failure. The compatible-runtime campaign changes the runtime configuration while keeping the model artifact and locked inputs fixed; it is **not** a Pixel-versus-POCO speed ranking.
 
-Known historical ingestion sources are conservatively excluded from serving as independent external-validation cohorts unless a future cohort passes source-family and image-overlap independence checks; see [`data_card/provenance/external_evaluation_exclusion_registry.csv`](data_card/provenance/external_evaluation_exclusion_registry.csv).
+## Artifact identities
 
-## Research questions
+| Object | Identity |
+| --- | --- |
+| R07-S1 checkpoint | SHA-256 \`dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974\` |
+| Frozen class map | SHA-256 \`46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2\` |
+| Frozen manifest | SHA-256 \`bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2\` |
+| FP32 ExecuTorch artifact | 111,741,536 B · SHA-256 \`61556330cd9fc4725b4ff4759aef3835696b81865b2cbe030f815a4c0e8d5aec\` |
+| INT8 ExecuTorch artifact | 28,555,872 B · SHA-256 \`2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8\` |
+| Accepted Track-B evidence ZIP | SHA-256 \`22a6c865ead6f28319a9dc8a4168f3ff7fb60108339710dcbd99e1aa047981a3\` |
 
-CropCop is organized around three bounded questions:
+The checkpoint and PTE binaries are identity-bound but are not distributed in ordinary public Git history pending redistribution review.
 
-- **RQ1 — Benchmark validity:** can a heterogeneous image aggregate be reconstructed so that confirmed duplicate families do not cross the final partitions?
-- **RQ2 — Model retention:** how much class-balanced performance remains when a strong reference is carried into a compact MobileNetV4 lineage?
-- **RQ3 — Runtime fidelity:** does the selected quantised graph survive serialization and direct ExecuTorch/XNNPACK execution without materially changing its predictions?
+## Reproducibility
 
-These questions are intentionally narrower than “does the system work on unseen farms?” That requires a source-independent cohort and is not established by the current internal benchmark.
+### Public verification
 
-## Method overview
+\`\`\`bash
+git clone https://github.com/rana-m-ahmed/ResearchWork-CropCop.git
+cd ResearchWork-CropCop
+python scripts/validate_repository.py --strict
+python -m pytest -q
+\`\`\`
 
-### 1. Benchmark reconstruction
+For the journal extension, see:
 
-The inherited partition was rejected after the audit confirmed 3,233 duplicate relationships crossing historical train, validation, and test boundaries. Exact identity, strong hash evidence, corrected feature/geometric verification, conservative direct-cover removal, and a limited manual quality review were used to construct the final benchmark.
+- [\`paper/eaai/README.md\`](paper/eaai/README.md) — paper-facing release map;
+- [\`docs/REPRODUCIBILITY.md\`](docs/REPRODUCIBILITY.md) — current reproduction routes;
+- [\`docs/EVIDENCE_BOUNDARIES.md\`](docs/EVIDENCE_BOUNDARIES.md) — public/restricted and claim boundaries;
+- [\`journal_extension/\`](journal_extension/) — Track-A/B/C protocols, locks, scripts, evidence, and runtime measurements.
 
-### 2. Reference and compact states
+### What is reproducible without restricted research bytes
 
-- **Reference:** fully fine-tuned DINOv3 ConvNeXt-Tiny, selected by validation macro-F1.
-- **Compact state:** MobileNetV4 Conv-Medium, evaluated as the completed teacher-guided lineage.
+- benchmark/source accounting and ontology identities;
+- candidate-family selector reproduction;
+- external-cohort mappings and aggregate/state-level result checks;
+- deterministic calibration-selection algorithm;
+- checkpoint/class-map/manifest lineage verification;
+- FP32→INT8 canonical top-1 transformation from retained host references;
+- Pixel host/device and raw-input fidelity checks;
+- POCO failure/compatibility evidence validation.
 
-The repository does not claim that teacher guidance caused the compact result because a matched direct MobileNetV4 baseline is not preserved.
+### What requires restricted or redistribution-controlled artifacts
 
-### 3. Quantisation and runtime
+- full benchmark-image reruns;
+- exact checkpoint replay without authorized checkpoint access;
+- regeneration of produced PTE bytes when checkpoint access is unavailable;
+- the complete row-level Track-B evidence archive;
+- raw logits and private forensic bundles.
 
-Three predeclared XNNPACK-compatible PTQ candidates were evaluated on the validation split. Dynamic activation quantisation with per-channel weights was selected before locked-test evaluation. The converted graph was then lowered and serialized into the final PTE, which generated its own prediction record on all test rows.
+The repository publishes hashes and fail-closed verification routes for these objects rather than pretending that local preservation equals public availability.
 
 ## Repository map
 
 | Path | Purpose |
 | --- | --- |
-| [`data_card/`](data_card/) | Frozen dataset identity, reconstructed lineage/provenance, audit history, and distribution boundaries |
-| [`metrics/`](metrics/) | Canonical result tables, diagnostic probes, PTQ candidates, and metric registry |
-| [`evidence/public/`](evidence/public/) | Public claim-to-evidence mapping and derived evidence |
-| [`evidence/restricted/`](evidence/restricted/) | Documentation of evidence intentionally excluded from the public repository |
-| [`models/`](models/) | Model-state identifiers, hashes, and non-distribution notice |
-| [`paper/`](paper/) | Manuscript status and paper-release boundary |
-| [`docs/`](docs/) | Reproducibility, dataset lineage/provenance/audit history, intended use, limitations, release policy, and V2 validation planning |
-| [`scripts/`](scripts/) | Repository-contract and consistency validation utilities |
-| [`tests/`](tests/) | Automated repository-contract tests |
-| [`releases/`](releases/) | Release packaging policy |
-
-## Reproducibility
-
-Clone the repository and run the public validation contract:
-
-```bash
-git clone https://github.com/rana-m-ahmed/ResearchWork-CropCop.git
-cd ResearchWork-CropCop
-python scripts/validate_repository.py --strict
-```
-
-Run the repository tests:
-
-```bash
-python -m pytest -q
-```
-
-The public checks validate, among other things:
-
-- frozen dataset counts;
-- presence of all four evaluated model states;
-- final PTE byte count and SHA-256;
-- blocked claims that must remain outside the supported evidence boundary;
-- absence of restricted model binaries and common credential patterns;
-- consistency between registries and public claim records.
-
-Detailed reproducibility notes are available in [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md).
-
-## Public and restricted artifacts
-
-This repository publishes small, inspectable research derivatives such as aggregate metrics, fingerprints, claim ledgers, state registries, verification scripts, and documentation.
-
-The following are **not** distributed in the public Git history:
-
-- the consolidated source image corpus;
-- model checkpoints;
-- the final PTE binary;
-- raw logits and large prediction bundles;
-- restricted forensic evidence;
-- credentials or private working paths.
-
-The exclusions are deliberate. Storage availability does not establish image, checkpoint, or derivative-artifact redistribution rights. See [`docs/EVIDENCE_BOUNDARIES.md`](docs/EVIDENCE_BOUNDARIES.md), [`data_card/DATA_NOT_DISTRIBUTED.md`](data_card/DATA_NOT_DISTRIBUTED.md), and [`models/MODEL_FILES_NOT_DISTRIBUTED.md`](models/MODEL_FILES_NOT_DISTRIBUTED.md).
+| [\`data_card/\`](data_card/) | Frozen benchmark identity, provenance, ontology, audit history, and distribution boundaries |
+| [\`journal_extension/\`](journal_extension/) | Current EAAI Track-A/B/C scientific protocols, locks, scripts, evidence, and physical-device results |
+| [\`evidence/public/\`](evidence/public/) | Public claim/evidence records and benchmark-derived evidence |
+| [\`evidence/restricted/\`](evidence/restricted/) | Documentation for artifacts deliberately excluded from public Git |
+| [\`paper/eaai/\`](paper/eaai/) | Current journal-extension status and paper-facing release metadata |
+| [\`paper/\`](paper/) | Paper-version boundary, including the public preprint lineage |
+| [\`docs/\`](docs/) | Reproducibility, evidence boundaries, limitations, intended use, and release policy |
+| [\`scripts/\`](scripts/) | Repository-contract and evidence-validation utilities |
+| [\`tests/\`](tests/) | Automated research/repository-contract tests |
 
 ## Scope and limitations
 
 > [!IMPORTANT]
-> CropCop is a **closed-set research classifier**, not an autonomous agronomic diagnostic system or treatment recommender.
+> CropCop is a research classifier and evaluation study, not an autonomous agronomic diagnostic or treatment system.
 
-The current results establish leakage-controlled **internal** recognition and software-runtime fidelity. They do not establish:
+The EAAI journal extension establishes bounded evidence about a reconstructed benchmark, controlled candidate selection, source/task transfer on two prespecified external cohorts, deterministic artifact transformation, one identified Pixel 7 execution configuration, and a POCO M3 runtime-compatibility counterexample.
 
-- performance on unseen farms, regions, cultivars, camera pipelines, or acquisition protocols;
-- physical Android latency, memory, energy, delegate fallback, or thermal behavior;
-- multi-seed training stability;
-- causal gains from DINOv3 pretraining or teacher-guided compact training;
-- exact original per-image source paths for 24,961 PlantCity-attributed rows or image-by-image redistribution rights;
-- reliable behavior on unsupported crops, novel diseases, non-plant inputs, or open-set conditions.
-
-The next evidence stage is a source-independent smartphone cohort plus prespecified physical-device evaluation. No new model or threshold should be selected using the already consumed internal test set. The bounded V2 protocol is documented in [`docs/V2_DEPLOYMENT_VALIDATION_PLAN.md`](docs/V2_DEPLOYMENT_VALIDATION_PLAN.md).
-
-See [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) and [`docs/INTENDED_USE.md`](docs/INTENDED_USE.md).
-
-## Preprint status
-
-The manuscript **“CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact”** has been submitted to arXiv.
-
-The public arXiv identifier and canonical abstract-page link will be added only after assignment. Until then, this repository should be cited using the repository citation metadata and the submitted-preprint title. Submission does not imply arXiv announcement, endorsement, or peer review.
-
-The current repository metadata release remains `0.2.0-rc2`. See [`MANUSCRIPT_STATUS.md`](MANUSCRIPT_STATUS.md) for the submission and release boundary.
-
-## Authors
-
-- **Rana Muhammad Ahmed** — Department of Computer Science, Bahria University Islamabad; corresponding author
-- **Sabahat Abbas** — Department of Computer Science, Bahria University Islamabad
-
-Correspondence: [01-134241-039@student.bahria.edu.pk](mailto:01-134241-039@student.bahria.edu.pk)
+It does **not** establish universal field generalization, open-set recognition, production readiness, Android-wide equivalence, universal real-time behavior, energy efficiency, a Pixel-versus-POCO performance ranking, or causal architecture-only superiority.
 
 ## Citation
 
-GitHub can generate a citation from [`CITATION.cff`](CITATION.cff). A BibTeX entry is also available in [`CITATION.bib`](CITATION.bib).
+For the publicly archived preprint, cite:
 
-```bibtex
+\`\`\`bibtex
 @misc{ahmed2026cropcop,
-  author       = {Rana Muhammad Ahmed and Sabahat Abbas},
-  title        = {CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact},
-  year         = {2026},
-  howpublished = {Submitted preprint and reproducibility repository},
-  url          = {https://github.com/rana-m-ahmed/ResearchWork-CropCop},
-  note         = {arXiv identifier pending}
+  author        = {Rana Muhammad Ahmed and Sabahat Abbas},
+  title         = {CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact},
+  year          = {2026},
+  eprint        = {2608.25539},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV},
+  doi           = {10.48550/arXiv.2608.25539}
 }
-```
+\`\`\`
 
-The citation metadata will be updated with the assigned arXiv identifier without changing the scientific claim boundary.
+The EAAI journal extension should be cited only after a public identifier is assigned to that version. Repository citation metadata intentionally keeps these paper versions distinct.
 
-## Contributing and corrections
+## Authors and journal metadata
 
-Reproducibility reports, provenance corrections, and documentation fixes are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request. Use the repository issue templates for evidence or provenance concerns.
+The public arXiv v1 authors are **Rana Muhammad Ahmed** and **Sabahat Abbas**. Final EAAI author order, affiliations, corresponding-author metadata, ORCIDs, CRediT roles, funding, acknowledgments, competing interests, and final AI-assistance declaration remain author-controlled until explicitly approved.
 
-## Licence
+## Licence and redistribution
 
-- Code and validation scripts: **MIT License**
-- Manuscript text, original documentation, and original research tables: **CC BY 4.0**
-- Dataset images, pretrained checkpoints, and restricted artifacts: **not relicensed by this repository**
+- code, tests and validation scripts: **MIT**;
+- original documentation, manuscript source, diagrams and derived tables: **CC BY 4.0**;
+- third-party data/model assets: governed by upstream terms;
+- consolidated images, checkpoints, PTE binaries and private evidence bundles: **not redistributed unless explicitly cleared**.
 
-See [`LICENSES.md`](LICENSES.md) for the complete licensing boundary.
+See [\`LICENSES.md\`](LICENSES.md).
 
 ---
 
 <div align="center">
 
-**Research integrity over headline accuracy.**
+**Freeze the scientific decision first. Then measure where the evidence changes.**
 
 </div>

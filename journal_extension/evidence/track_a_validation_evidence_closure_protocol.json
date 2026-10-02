@@ -1,0 +1,73 @@
+{
+  "acceptance": {
+    "checkpoint_material_public": false,
+    "local_remote_validation_evidence_bytes_must_match": true,
+    "local_remote_validation_predictions_bytes_must_match": true,
+    "metric_replay_max_abs_diff": 1e-06,
+    "optimizer_state_advanced": false,
+    "protected_external_surface_accessed": false,
+    "public_branch_required_files": [
+      "run_record.json",
+      "metrics.json",
+      "segments.jsonl",
+      "validation_evidence.json",
+      "validation_predictions.jsonl"
+    ],
+    "scientific_execution_relaunched": false,
+    "selected_checkpoint_exactly_verified": true,
+    "training_performed": false,
+    "v1_test_accessed": false
+  },
+  "authority": {
+    "id": "EAAI-JE-SDL-v2.1-QA",
+    "sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74"
+  },
+  "dataset": {
+    "authorized_surface": "DS-V1-VAL",
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "consumed_v1_test_authorized": false,
+    "expected_validation_rows": 16368,
+    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2"
+  },
+  "execution_source": {
+    "principal_source_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+    "secondary_closure_source_sha": "8904b100d223e4319776199c87ab397db23600ce"
+  },
+  "exporters": {
+    "principal_exporter": {
+      "git_blob_sha1": "7127ad6a81bbb7eb179438e93f733c848e9f3ae7",
+      "path": "journal_extension/scripts/export_principal_validation.py"
+    },
+    "secondary_exporter": {
+      "path": "journal_extension/evidence/tools/export_secondary_selected_validation_v1.py",
+      "sha256": "1ac5dba34bd7094e3745f07a7164c1659d70570ee9197d62ae6e6ec1014538c5"
+    }
+  },
+  "notes": [
+    "This protocol is frozen before row-level validation replay outputs are opened.",
+    "It does not authorize training, retuning, new seeds, new models, V1-test access, or protected external inference.",
+    "Run-evidence branch history remains provenance and must not be rewritten solely to remove superseded technical-attempt commits."
+  ],
+  "post_completion_required_artifacts": [
+    "02_EAAI_PRINCIPAL_MODEL_SCIENCE_RESULTS.md",
+    "03A_EAAI_BASELINES_ABLATIONS_RESULTS.md",
+    "TRACK_A_CLOSURE_MANIFEST.json"
+  ],
+  "protocol_id": "CROPCOP-TRACKA-VALIDATION-EVIDENCE-CLOSURE-V1",
+  "result_values_in_protocol": false,
+  "runs": [
+    {"durable_owner":"ranaabdulrehmannn","expected_validation_rows":16368,"experiment_id":"R04-MNV4-DIRECT-S1","lane":"K1","role":"principal","run_id":"JE-R04-MNV4-DIRECT-S1-f171309fc7e9-A01","scientific_source_sha":"f171309fc7e9dc22241ecc137ebbb8e4bcdc5433","validation_surface":"DS-V1-VAL"},
+    {"durable_owner":"ranaabdulrehmannn","expected_validation_rows":16368,"experiment_id":"R05-MNV4-TEACHER-S1","lane":"K1","role":"principal","run_id":"JE-R05-MNV4-TEACHER-S1-f171309fc7e9-A01","scientific_source_sha":"f171309fc7e9dc22241ecc137ebbb8e4bcdc5433","validation_surface":"DS-V1-VAL"},
+    {"durable_owner":"sabahatabbas","expected_validation_rows":16368,"experiment_id":"R04-MNV4-DIRECT-S2","lane":"K2","role":"principal","run_id":"JE-R04-MNV4-DIRECT-S2-f171309fc7e9-A01","scientific_source_sha":"f171309fc7e9dc22241ecc137ebbb8e4bcdc5433","validation_surface":"DS-V1-VAL"},
+    {"durable_owner":"sabahatabbas","expected_validation_rows":16368,"experiment_id":"R05-MNV4-TEACHER-S2","lane":"K2","role":"principal","run_id":"JE-R05-MNV4-TEACHER-S2-f171309fc7e9-A01","scientific_source_sha":"f171309fc7e9dc22241ecc137ebbb8e4bcdc5433","validation_surface":"DS-V1-VAL"},
+    {"durable_owner":"ranamuhammadahmed6","expected_validation_rows":16368,"experiment_id":"R04-MNV4-DIRECT-S3","lane":"K3","role":"principal","run_id":"JE-R04-MNV4-DIRECT-S3-f171309fc7e9-A01","scientific_source_sha":"f171309fc7e9dc22241ecc137ebbb8e4bcdc5433","validation_surface":"DS-V1-VAL"},
+    {"durable_owner":"ranamuhammadahmed6","expected_validation_rows":16368,"experiment_id":"R05-MNV4-TEACHER-S3","lane":"K3","role":"principal","run_id":"JE-R05-MNV4-TEACHER-S3-f171309fc7e9-A01","scientific_source_sha":"f171309fc7e9dc22241ecc137ebbb8e4bcdc5433","validation_surface":"DS-V1-VAL"},
+    {"durable_owner":"ranaabdulrehmannn","expected_validation_rows":16368,"experiment_id":"R12-MNV4-LOGITS-S1","lane":"K1","role":"secondary","run_id":"JE-R12-MNV4-LOGITS-S1-8904b100d223-A01","scientific_source_sha":"8904b100d223e4319776199c87ab397db23600ce","validation_surface":"DS-V1-VAL"},
+    {"durable_owner":"ranaabdulrehmannn","expected_validation_rows":16368,"experiment_id":"R12-MNV4-FEATURE-S1","lane":"K1","role":"secondary","run_id":"JE-R12-MNV4-FEATURE-S1-8904b100d223-A01","scientific_source_sha":"8904b100d223e4319776199c87ab397db23600ce","validation_surface":"DS-V1-VAL"},
+    {"durable_owner":"sabahatabbas","expected_validation_rows":16368,"experiment_id":"R06-EFFB0-CONTEXT-S1","lane":"K2","role":"secondary","run_id":"JE-R06-EFFB0-CONTEXT-S1-8904b100d223-A01","scientific_source_sha":"8904b100d223e4319776199c87ab397db23600ce","validation_surface":"DS-V1-VAL"},
+    {"durable_owner":"sabahatabbas","expected_validation_rows":16368,"experiment_id":"R07-CNXTT-CONTEXT-S1","lane":"K2","role":"secondary","run_id":"JE-R07-CNXTT-CONTEXT-S1-8904b100d223-A01","scientific_source_sha":"8904b100d223e4319776199c87ab397db23600ce","validation_surface":"DS-V1-VAL"}
+  ],
+  "schema_version": "1.0",
+  "scientific_semantics_changed": false,
+  "status": "PRE_EVIDENCE_LOCK"
+}

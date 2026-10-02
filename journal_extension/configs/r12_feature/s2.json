@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "experiment_id": "R12-MNV4-FEATURE-S2",
+  "scientific_role": "journal_mechanism_replication",
+  "seed": 606135704,
+  "pair_id": "MNV4-PAIR-S2",
+  "num_classes": 120,
+  "model_family": "mnv4",
+  "model_name": "mobilenetv4_conv_medium.e500_r256_in1k",
+  "ctc_config": "journal_extension/configs/common/ctc_v2.json",
+  "train_surface": "DS-V1-TRAIN",
+  "validation_surface": "DS-V1-VAL",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "required_student_init_evidence": "PAIR_INIT_S2.json",
+  "required_pretrained_evidence": "MNV4_PRETRAINED_PROVENANCE.json",
+  "forbidden_surfaces": ["DS-V1-TEST-CONSUMED", "DS-EXT-*-SEALED", "DS-HIST-COMPARE"],
+  "condition": "teacher",
+  "objective": {"ce": 0.85, "kd": 0.0, "feature": 0.15},
+  "teacher_checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+  "required_teacher_evidence": "DINO_TEACHER.json"
+}

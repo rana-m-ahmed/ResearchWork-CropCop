@@ -1,0 +1,182 @@
+{
+  "amendment_id": "EAAI-JE-TRACKA-STRENGTHENING-A1",
+  "authority": {
+    "id": "EAAI-JE-SDL-v2.1-QA",
+    "sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74"
+  },
+  "base_prelock_head": "27a25d54b482806f924b6030e55c37bcc9e1f106",
+  "closure_requirements": [
+    "eight new states terminal or transparently failed",
+    "selected checkpoints replayed on all 16368 validation rows with <=1e-6 aggregate drift",
+    "three-seed architecture and mechanism summaries complete",
+    "fixed robustness protocol complete on nine direct architecture states",
+    "classwise and efficiency analyses complete",
+    "cross-track B/C boundaries reconciled"
+  ],
+  "created_utc": "2026-09-12",
+  "family_bindings": {
+    "R06": {
+      "model_name": "torchvision.models.efficientnet_b0",
+      "pretrained_evidence": "EFFB0_PRETRAINED_PROVENANCE.json",
+      "role": "post_results_amendment_architecture_replication",
+      "torchvision_version": "0.27.1",
+      "weight_enum": "EfficientNet_B0_Weights.IMAGENET1K_V1"
+    },
+    "R07": {
+      "model_name": "torchvision.models.convnext_tiny",
+      "pretrained_evidence": "CNXTT_PRETRAINED_PROVENANCE.json",
+      "role": "post_results_amendment_architecture_replication",
+      "torchvision_version": "0.27.1",
+      "weight_enum": "ConvNeXt_Tiny_Weights.IMAGENET1K_V1"
+    },
+    "R12_FEATURE": {
+      "model_name": "mobilenetv4_conv_medium.e500_r256_in1k",
+      "pretrained_evidence": "MNV4_PRETRAINED_PROVENANCE.json",
+      "role": "post_results_amendment_mechanism_replication",
+      "teacher_checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+      "teacher_evidence": "DINO_TEACHER.json",
+      "timm_version": "1.0.26"
+    },
+    "R12_LOGITS": {
+      "model_name": "mobilenetv4_conv_medium.e500_r256_in1k",
+      "pretrained_evidence": "MNV4_PRETRAINED_PROVENANCE.json",
+      "role": "post_results_amendment_mechanism_replication",
+      "teacher_checkpoint_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+      "teacher_evidence": "DINO_TEACHER.json",
+      "timm_version": "1.0.26"
+    }
+  },
+  "final_track_a_lock_allowed_before_amendment_close": false,
+  "global_invariants": {
+    "A02_authorized": false,
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+    "ctc_config": "journal_extension/configs/common/ctc_v2.json",
+    "forbidden_surfaces": [
+      "DS-V1-TEST-CONSUMED",
+      "DS-EXT-*-SEALED",
+      "DS-HIST-COMPARE"
+    ],
+    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "new_hyperparameter_search_authorized": false,
+    "new_model_family_authorized": false,
+    "new_seed_authorized": false,
+    "num_classes": 120,
+    "selection": "CTC-v2 unchanged; 30 epochs; macro-F1 desc, balanced accuracy desc, NLL asc, epoch asc",
+    "train_surface": "DS-V1-TRAIN",
+    "validation_surface": "DS-V1-VAL"
+  },
+  "new_training_states": [
+    {
+      "experiment_id": "R06-EFFB0-CONTEXT-S2",
+      "family": "R06",
+      "model_family": "effb0",
+      "objective": {
+        "ce": 1.0,
+        "feature": 0.0,
+        "kd": 0.0
+      },
+      "required_init": "EFFB0_INIT_S2.json",
+      "seed": 606135704,
+      "seed_label": "S2"
+    },
+    {
+      "experiment_id": "R07-CNXTT-CONTEXT-S2",
+      "family": "R07",
+      "model_family": "cnxtt",
+      "objective": {
+        "ce": 1.0,
+        "feature": 0.0,
+        "kd": 0.0
+      },
+      "required_init": "CNXTT_INIT_S2.json",
+      "seed": 606135704,
+      "seed_label": "S2"
+    },
+    {
+      "experiment_id": "R12-MNV4-LOGITS-S2",
+      "family": "R12_LOGITS",
+      "model_family": "mnv4",
+      "objective": {
+        "ce": 0.65,
+        "feature": 0.0,
+        "kd": 0.35
+      },
+      "pair_id": "MNV4-PAIR-S2",
+      "required_init": "PAIR_INIT_S2.json",
+      "seed": 606135704,
+      "seed_label": "S2"
+    },
+    {
+      "experiment_id": "R12-MNV4-FEATURE-S2",
+      "family": "R12_FEATURE",
+      "model_family": "mnv4",
+      "objective": {
+        "ce": 0.85,
+        "feature": 0.15,
+        "kd": 0.0
+      },
+      "pair_id": "MNV4-PAIR-S2",
+      "required_init": "PAIR_INIT_S2.json",
+      "seed": 606135704,
+      "seed_label": "S2"
+    },
+    {
+      "experiment_id": "R06-EFFB0-CONTEXT-S3",
+      "family": "R06",
+      "model_family": "effb0",
+      "objective": {
+        "ce": 1.0,
+        "feature": 0.0,
+        "kd": 0.0
+      },
+      "required_init": "EFFB0_INIT_S3.json",
+      "seed": 1153870846,
+      "seed_label": "S3"
+    },
+    {
+      "experiment_id": "R07-CNXTT-CONTEXT-S3",
+      "family": "R07",
+      "model_family": "cnxtt",
+      "objective": {
+        "ce": 1.0,
+        "feature": 0.0,
+        "kd": 0.0
+      },
+      "required_init": "CNXTT_INIT_S3.json",
+      "seed": 1153870846,
+      "seed_label": "S3"
+    },
+    {
+      "experiment_id": "R12-MNV4-LOGITS-S3",
+      "family": "R12_LOGITS",
+      "model_family": "mnv4",
+      "objective": {
+        "ce": 0.65,
+        "feature": 0.0,
+        "kd": 0.35
+      },
+      "pair_id": "MNV4-PAIR-S3",
+      "required_init": "PAIR_INIT_S3.json",
+      "seed": 1153870846,
+      "seed_label": "S3"
+    },
+    {
+      "experiment_id": "R12-MNV4-FEATURE-S3",
+      "family": "R12_FEATURE",
+      "model_family": "mnv4",
+      "objective": {
+        "ce": 0.85,
+        "feature": 0.15,
+        "kd": 0.0
+      },
+      "pair_id": "MNV4-PAIR-S3",
+      "required_init": "PAIR_INIT_S3.json",
+      "seed": 1153870846,
+      "seed_label": "S3"
+    }
+  ],
+  "post_results_amendment": true,
+  "retry_policy": "same A01 scientific identity; continuation only; technical failure does not authorize A02 or science changes",
+  "schema_version": "1.1",
+  "status": "PRE_EXECUTION_LOCK"
+}

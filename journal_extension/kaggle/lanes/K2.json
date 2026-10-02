@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "lane_id": "K2",
+  "seed_index": 2,
+  "calibration": {
+    "calibration_id": "CAL-MNV4-TEACHER",
+    "kind": "mnv4",
+    "condition": "teacher",
+    "config": "journal_extension/configs/r05_teacher/s2.json"
+  },
+  "principal": [
+    {
+      "experiment_id": "R04-MNV4-DIRECT-S2",
+      "config": "journal_extension/configs/r04_direct/s2.json",
+      "condition": "direct"
+    },
+    {
+      "experiment_id": "R05-MNV4-TEACHER-S2",
+      "config": "journal_extension/configs/r05_teacher/s2.json",
+      "condition": "teacher"
+    }
+  ]
+}

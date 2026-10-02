@@ -1,0 +1,177 @@
+{
+  "schema_version": "1.0",
+  "release_id": "TRACKB_V5_RELEASE_AUTHORITY_v1",
+  "status": "SEALED_PRE_RESULTS_RELEASE",
+  "executable": true,
+  "scientific_change": false,
+  "scientific_authority_id": "EAAI-JE-TRACKBC-R07-DOWNSTREAM-v3",
+  "baseline_operator_head": "f180a8fa21ac8500b42b7a007175f9150ccea571",
+  "baseline_runtime_snapshot": "e4e106073c17dfd0eef167aac37c517cdb031e03",
+  "runtime_source_commit": "c31e11da2980d3d41110b1a767e8829cc4306d4c",
+  "bindings": {
+    "code_attestation_sha256": "f2676e1a6b7ead1bf8ee8f99562609f0c4baa4cd0fbdaa212ed5780704182336",
+    "execution_lock_sha256": "bb8177e699dab55ff9b93dfad29675c2a662c3e1e3e38b219fdf2d65753a6f3e",
+    "materialization_lock_sha256": "698de2181dc89dec54ae66170746e102485c1ba0e9eb710d471aa7d1375e9c74",
+    "external_source_lock_sha256": "e0e036e528b2da17628769ed0be5e15138a81ce77caa3eebd4843263fa3cabdc",
+    "requirements_lock_sha256": "5f29dfb3d245e8311731a22ff925b9f793447da844f35eb9850a2ff7af77c967",
+    "orchestration_lock_sha256": "1e766301fa1da55793e414af179a7c19ed048a401ebef0a8c59d1ab9e8686df9",
+    "operator_attestation_sha256": "8a14b3f80c9ccee632bc071307b269ac0246651b7fb62c0e2c91ec6f3078478c",
+    "operator_notebook_00_blob_sha1": "156d88cd3dd1db2c7b6c27f1147868e26c91c0e4",
+    "operator_notebook_01_blob_sha1": "3cba27c3c62e851199d2666742924ce9d48e4f1c",
+    "operator_v1_guard_hotfix_sha256": "ea582c3a390ae68e15898e9108aeaf2c480d69944094555186f2ee17c8a5da89",
+    "operator_v1_guard_hotfix_blob_sha1": "697f30d62b8a64b68b69a85ae50ea2766119ba60"
+  },
+  "supported_operator_notebooks": [
+    "journal_extension/kaggle/TrackB_00_Readiness_Materialization.ipynb",
+    "journal_extension/kaggle/TrackB_01_Final_Execution.ipynb"
+  ],
+  "required_kaggle_inputs": {
+    "readiness": [
+      "ranamuhammadahmed6/cropcop-finalized-v8-11-2026-1",
+      "sabahatabbas/sec-je-r07-cnxtt-context-s1-8904b100d223-a01",
+      "sabahatabbas/cropcop-r07-cnxtt-context-s2-abce1197-56023042",
+      "sabahatabbas/cropcop-r07-cnxtt-context-s3-f13ca687-56023042",
+      "ranamuhammadahmed6/cropcop-secondary-g1-8904b100"
+    ],
+    "qualification": [
+      "TRACKB_INFRASTRUCTURE",
+      "TRACKB_EXTERNAL"
+    ],
+    "claim": [
+      "TRACKB_INFRASTRUCTURE",
+      "TRACKB_EXTERNAL",
+      "TRACKB_QUALIFICATION"
+    ]
+  },
+  "safety": {
+    "v1_test_accessed": false,
+    "protected_external_predictions_before_claim": 0,
+    "attached_code_must_be_authenticated_before_execution": true,
+    "full_attached_bundle_content_verification_required": true,
+    "claim_requires_single_writer_lease": true,
+    "claim_must_not_recompute_qualification": true,
+    "automatic_deletion_of_existing_authoritative_outputs_forbidden": true
+  },
+  "seal_requirements": [
+    "runtime_source_commit is an exact 40-character commit: SATISFIED",
+    "all release bindings are populated and validator-checked: SATISFIED",
+    "external source lock permits both candidates: SATISFIED",
+    "Notebook 00 and Notebook 01 bind the final runtime snapshot: SATISFIED",
+    "Track-B compile/tests/infrastructure/orchestration QA passed on pre-seal surface: SATISFIED",
+    "protected external predictions before claim remain zero: SATISFIED",
+    "V1 test remains closed: SATISFIED"
+  ],
+  "seal_evidence": {
+    "observed_real_run": {
+      "passed_stages": [
+        "SOURCE_QUALIFICATION",
+        "EXTERNAL_COHORTS",
+        "IMMUTABLE_CORE",
+        "SAFE_HISTORICAL_COMPARISON",
+        "INPUT_CONTRACT_PAIRING",
+        "PRIVATE_INFRASTRUCTURE_PUBLICATION",
+        "WHOLE_ARCHIVE_DOWNLOAD"
+      ],
+      "failed_stage": "WHOLE_ARCHIVE_CONTENT_PARITY",
+      "failure": "Local publication manifest incorrectly included generated core/repository/.../__pycache__/_bootstrap.cpython-312.pyc, while Kaggle round-trip archive did not preserve that ephemeral bytecode artifact.",
+      "elapsed_seconds_at_failure": 8063.2
+    },
+    "remediation": "Transport-stable payload contract: copied repository preparation runs with -B and PYTHONDONTWRITEBYTECODE=1; repository and all four Track-B roles are scrubbed and asserted free of transient runtime/cache artifacts before materialization identity; Kaggle create/version uses --keep-tabular (-t) to preserve exact tabular bytes and defense-in-depth ignore patterns; the early publication capability probe now exact-round-trips nested JSON, Python source, CSV, and binary files before Stage 1. Integrity checks remain fail-closed.",
+    "exact_head_qa": {
+      "status": "PENDING_METADATA_REBIND_VALIDATION",
+      "prior_validated_commit": "2bc235a2c39ef6e1c24fbbfcdd5130fa371de685",
+      "prior_workflow_run_id": 36000552988,
+      "prior_workflow_run_number": 920,
+      "note": "Only QA metadata semantics and attestation binding changed after the exact final behavior head passed. Rebound head must pass the same complete Track-B validation chain."
+    },
+    "protected_external_prediction_count": 0,
+    "v1_test_accessed": false,
+    "validated_commit": "cc39ef1e30fb819cf4e5e796097864875e7d8d70",
+    "trackb_qa_workflow_run_id": 35732283033,
+    "trackb_qa_workflow_run_number": 750,
+    "trackb_qa_conclusion": "success",
+    "targeted_test_count": 90,
+    "transport_portability_qa": "PASS",
+    "exact_byte_kaggle_transport_contract": "PASS",
+    "post_copy_bytecode_regression": "PASS",
+    "final_role_transport_hygiene": "PASS",
+    "latest_transport_failure": {
+      "stage": "LARGE_PRIVATE_DATASET_DOWNLOAD_ALL_ARCHIVE",
+      "symptom": "HTTP 404 from Kaggle download-all endpoint through the 5400-second readiness window after bound manifest visibility",
+      "scientific_execution_affected": false,
+      "protected_external_prediction_count": 0,
+      "v1_test_accessed": false
+    },
+    "latest_remediation": "Large final-bundle readiness now uses exact remote bound-manifest equality plus exact paired-bundle receipt round-trip; the asynchronous download-all archive is not an authority. Notebook 01 rehashes every attached role byte before qualification, and Notebook 00 retains local bundles through readiness closure.",
+    "notebook_01_fail_fast_hardening": {
+      "status": "PASS",
+      "scientific_change": false,
+      "scope": [
+        "authenticated Kaggle owner preflight",
+        "T4 x2 fail-fast hardware preflight",
+        "deterministic private publication and exact multitype byte round-trip probe",
+        "credential scrubbing before fresh scientific subprocess",
+        "qualification/claim attachment-mixup rejection",
+        "paired dataset-root role containment"
+      ],
+      "frozen_runtime_source_commit": "c31e11da2980d3d41110b1a767e8829cc4306d4c",
+      "validated_commit": "c607f6a0a5bd3e37493c7750ea1b51309165a8cb",
+      "workflow_run_id": 35824053472,
+      "workflow_run_number": 813,
+      "targeted_test_count": 97
+    },
+    "notebook_01_v1_guard_remediation": {
+      "status": "PASS",
+      "scientific_change": false,
+      "observed_materialization_id": "98ff32c3c7ce2e66ffe52be97932a8b25f3ce50314c844abdd33077c99d90d78",
+      "observed_failure": "historical_compare manifest explicitly declared v1_test_image_bytes_accessed=false, but legacy substring guard rejected the field name v1_test",
+      "remediation": "Release-bound structural guard hotfix; explicit false access provenance is permitted, actual forbidden test paths/surfaces remain fail-closed. Notebook performs fast patched discovery smoke, while controller performs the single authoritative full-byte role verification before science.",
+      "protected_external_prediction_count_at_failure": 0,
+      "v1_test_accessed": false,
+      "validated_commit": "44fcf8f1bfae64eb70621c51bc3ce4b5b5f6bb46",
+      "workflow_run_id": 35865646837,
+      "workflow_run_number": 845,
+      "targeted_test_count": 101
+    },
+    "notebook_01_timeout_performance_remediation": {
+      "status": "PASS",
+      "scientific_change": false,
+      "observed_failure": "Scientific runner was terminated by the controller's fixed subprocess timeout after 36000 seconds; Kaggle preflight, runtime, publication probe, and fast input discovery had already passed.",
+      "observed_elapsed_seconds": 36860.1,
+      "subprocess_timeout_seconds": 36000,
+      "observed_materialization_id": "98ff32c3c7ce2e66ffe52be97932a8b25f3ce50314c844abdd33077c99d90d78",
+      "protected_external_prediction_count_at_failure": 0,
+      "v1_test_accessed": false,
+      "remediation": [
+        "Exact-equivalent vectorized DINO top-k cutoff-tie detection",
+        "DINO feature/top-k progress logging",
+        "Live scientific subprocess log streaming",
+        "Existing 36000-second science timeout retained as quota safety ceiling"
+      ],
+      "runtime_equivalence_selftest": "REQUIRED_BEFORE_SCIENCE",
+      "silent_child_timeout_enforcement": "SELECTOR_POLLED",
+      "validated_commit": "edda08757e3535c0dcd073fba0e8adf530782389",
+      "workflow_run_id": 35964219360,
+      "workflow_run_number": 898,
+      "targeted_test_count": 104,
+      "targeted_test_skipped_count": 2,
+      "note": "Two PyTorch-specific equivalence unit tests are intentionally skipped in minimal GitHub CI; the exact equivalence self-test is mandatory and executes in the frozen Kaggle Torch runtime before science."
+    },
+    "notebook_01_orb_performance_remediation": {
+      "status": "PASS",
+      "scientific_change": false,
+      "remediation": [
+        "Reuse one stateless cv2.BFMatcher per worker thread instead of constructing one per geometric pair",
+        "Require frozen-runtime exact old-vs-new ORB verifier equivalence self-test before qualification",
+        "Preserve Hamming matcher, Lowe ratio, seeded RANSAC, and all geometric acceptance thresholds"
+      ],
+      "expected_effect": "Reduce per-pair C++ object construction overhead on multi-million-pair geometric verification without changing verification semantics.",
+      "validated_commit": "815e722bbe4bf82c37aabf9218c2017866076526",
+      "workflow_run_id": 36000423473,
+      "workflow_run_number": 916,
+      "targeted_test_count": 104,
+      "targeted_test_skipped_count": 2,
+      "note": "The two runtime-specific equivalence checks execute in the frozen Kaggle OpenCV/Torch runtime before expensive qualification; the operator-only optimization passed the full static and orchestration QA chain."
+    }
+  }
+}

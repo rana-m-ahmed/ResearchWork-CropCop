@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.2.1",
+  "plan_id": "TRACKA-A1-PARALLEL-EXECUTION-V1.2.1",
+  "status": "PRE_SCIENCE_EXECUTION_POLICY",
+  "science_authorized": false,
+  "supersedes_only": "Operational resource/scheduling assumptions in parallel_execution_plan_v1_2.json. Scientific experiment IDs, seeds, configs, initializations and analysis semantics are unchanged.",
+  "resource_envelope": {
+    "kaggle_accounts": 3,
+    "account_labels": ["K1", "K2", "K3"],
+    "gpu_profile_per_account": "T4x2",
+    "gpus_per_account": 2,
+    "total_concurrent_gpu_slots": 6,
+    "fourth_account_assumed": false,
+    "scientific_process_model": "one independent single-GPU child per physical/logical GPU slot",
+    "forbidden_parallelism": ["DDP", "DataParallel", "FSDP", "cross-run gradient synchronization"]
+  },
+  "remaining_state_inventory": [
+    "R06-EFFB0-CONTEXT-S2",
+    "R06-EFFB0-CONTEXT-S3",
+    "R07-CNXTT-CONTEXT-S2",
+    "R07-CNXTT-CONTEXT-S3",
+    "R12-MNV4-LOGITS-S2",
+    "R12-MNV4-LOGITS-S3",
+    "R12-MNV4-FEATURE-S2",
+    "R12-MNV4-FEATURE-S3",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3"
+  ],
+  "qualification_before_priority_freeze": {
+    "required": true,
+    "source": "G2A non-scientific runtime calibration on the exact frozen source, dependency stack, model initialization class and T4 GPU profile",
+    "allowed_measurements": [
+      "wall-clock time for a frozen small number of optimizer steps or an equivalent non-result-bearing throughput probe",
+      "peak allocated GPU memory",
+      "batch-size feasibility under the already-frozen scientific batch semantics",
+      "checkpoint write/restore overhead"
+    ],
+    "forbidden_measurements": [
+      "validation macro-F1",
+      "validation balanced accuracy",
+      "validation NLL",
+      "classwise performance",
+      "corruption performance",
+      "XAI outputs",
+      "V1-test outputs",
+      "external predictions"
+    ]
+  },
+  "priority_freeze_algorithm": {
+    "name": "deterministic_longest_processing_time_first",
+    "purpose": "Minimize expected makespan and maximize six-GPU utilization without changing scientific identity.",
+    "architecture_cost": "For each model/condition execution profile, use the median per-step wall-clock duration from the sealed G2A qualification measurements. Teacher-feature and teacher-logits conditions are distinct profiles if their calibrated costs differ.",
+    "state_priority": "Sort the 11 frozen states by descending sealed architecture/condition cost. Break equal-cost ties lexicographically by experiment_id.",
+    "freeze_point": "Write the resulting ordered state list and the G2A evidence hash to a PRE_SCIENCE_SCHEDULER_FREEZE artifact before any continuation-state scientific optimizer step executes.",
+    "dynamic_dispatch": "Initially dispatch the first six priority states to K1/GPU0, K1/GPU1, K2/GPU0, K2/GPU1, K3/GPU0, K3/GPU1 in that fixed slot order. Thereafter dispatch the next queued state to the first qualified slot that becomes free; simultaneous-free ties resolve by the same fixed slot order.",
+    "retry": "A technical retry retains the exact experiment ID, seed, initialization, config and run scientific identity; retries do not reorder or create new scientific states."
+  },
+  "slot_order": [
+    "K1/GPU0",
+    "K1/GPU1",
+    "K2/GPU0",
+    "K2/GPU1",
+    "K3/GPU0",
+    "K3/GPU1"
+  ],
+  "throughput_invariants": [
+    "six slots may be occupied concurrently after all corresponding G2A profiles pass",
+    "each child sees only its assigned CUDA device",
+    "each run has an isolated output/checkpoint namespace",
+    "durable checkpoint stores remain run-ID scoped and content-addressed",
+    "account or slot assignment may not change a run seed or initialization",
+    "completion order has no effect on analysis or selection eligibility",
+    "no scientific output may be read to change queue priority"
+  ],
+  "failure_policy": {
+    "slot_failure": "Quarantine the affected slot/account until its G2A/runtime qualification is restored; other qualified slots continue.",
+    "run_failure": "Resume or retry the same scientific state according to the existing checkpoint/recovery policy. No A02 run, substitute seed or substitute model is authorized.",
+    "capacity_loss": "Continue with fewer qualified slots without changing scientific identity or priority ordering of not-yet-started states.",
+    "capacity_gain": "No fourth account or additional slot may be introduced without a new pre-science execution-policy addendum; v1.2.1 assumes exactly three accounts/six GPU slots."
+  }
+}

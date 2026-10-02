@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.2.2",
+  "protocol_id": "TRACKA-A1-XAI-OPERATIONALIZATION-V1.2.2",
+  "status": "PRE_REMAINING_SCIENCE_LOCK",
+  "science_authorized": false,
+  "parent_protocol": "xai_gradcampp_protocol_v1_2.json",
+  "r13_interface_authority": "r13_xai_interface_qualification_v1_2_1.json",
+  "outcome_use": "No remaining Track-A continuation-state scientific output or XAI output was used to select these implementation details.",
+  "spatial_working_image": "Apply the frozen CTC deterministic EXIF correction, RGB conversion, square padding and bicubic resize to obtain a 256x256 RGB image. Compute deletion masks on this exact 256x256 coordinate system before tensor normalization.",
+  "deletion_fill": "Per-image RGB channel mean of the 256x256 working image, rounded to nearest uint8 channel value; replace all three channels at every selected spatial pixel.",
+  "saliency_pixel_order": "Sort normalized heatmap values descending; exact saliency ties break by ascending flattened row-major pixel index.",
+  "deleted_pixel_count": "ceil(fraction * 256 * 256) for fractions 0.1, 0.2, 0.3.",
+  "random_control": "For each stable_row_id/model_run_id/fraction/control_index, seed NumPy PCG64 from the first 64 bits of SHA256(stable_row_id || '|' || model_run_id || '|' || fraction || '|' || control_index), then sample exactly the deleted_pixel_count distinct row-major spatial indices without replacement.",
+  "gradcampp": {
+    "target_score": "pre-softmax logit of the clean top-1 predicted class",
+    "formula": "standard Grad-CAM++ alpha weighting from first, second and third powers of target-score gradients; ReLU positive gradients and final non-negative map",
+    "normalization": "bilinear upsample to 256x256, then finite per-map min-max normalization to [0,1]; constant maps are degenerate",
+    "batching": "one image at a time for attribution to avoid cross-example gradient coupling"
+  },
+  "cnn_target_resolution": "Resolve the last leaf torch.nn.Conv2d whose synthetic-zero 1x3x256x256 forward output is 4D with both spatial dimensions >1. Resolution occurs before any DS-V1-VAL XAI output and the exact module path is fixed across all seeds of that family.",
+  "r13_target": "blocks.13.norm1 with [B,257,320] -> drop one prefix token -> [B,256,320] -> [B,16,16,320] -> [B,320,16,16]. Fail closed on any contract drift.",
+  "randomization_sanity": {
+    "subset": "deterministic 30-image subset of the frozen 240-image XAI sample by SHA256(stable_row_id || '|TRACKA-A1-XAI-RANDOMIZE-V1')",
+    "target_class": "retain each image's original clean top-1 class when recomputing the randomized-head attribution",
+    "classifier_randomization": "deterministically reset only classifier-head modules/parameters, leaving the backbone unchanged, then restore exact original classifier bytes/state before any subsequent analysis",
+    "comparison": "Spearman correlation of flattened normalized original versus randomized-head maps"
+  },
+  "flip_consistency": {
+    "subset": "deterministic 30-image subset of the frozen 240-image XAI sample by SHA256(stable_row_id || '|TRACKA-A1-XAI-FLIP-V1')",
+    "target_class": "retain the original clean top-1 class for the horizontally flipped attribution",
+    "comparison": "Spearman correlation of the original normalized map and the horizontally inverse-flipped normalized map from the flipped input"
+  },
+  "qualitative_panel": "Exactly 12 XAI-sample rows by SHA256(stable_row_id || '|TRACKA-A1-XAI-PANEL-V1'); no manual substitution.",
+  "selection_role": "Supporting trustworthiness evidence only. No XAI scalar enters the Pareto or lexicographic model-selection rule."
+}

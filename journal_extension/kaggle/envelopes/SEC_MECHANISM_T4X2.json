@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "SEC-MECHANISM-T4X2-V1",
+  "phase": "secondary-scientific-dual",
+  "hardware_profile": "T4X2",
+  "logical_lane": "K1",
+  "children": [
+    {"child_id": "r12_logits", "experiment_id": "R12-MNV4-LOGITS-S1", "slot": 0},
+    {"child_id": "r12_feature", "experiment_id": "R12-MNV4-FEATURE-S1", "slot": 1}
+  ]
+}

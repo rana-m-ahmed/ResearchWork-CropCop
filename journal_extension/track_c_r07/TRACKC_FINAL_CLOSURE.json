@@ -1,0 +1,142 @@
+{
+  "schema_version": "TRACKC_FINAL_CLOSURE_V1",
+  "terminal_state": "PASS_DEVICE_FP32_INT8",
+  "track_c_closed": true,
+  "claim_status": "PASS_WITH_BOUNDED_DEVICE_SPECIFIC_CLAIMS",
+  "branch": "research/track-c-r07-lean-v1",
+  "authority_base": "d8d627620acfa203a8bd9ba6bf87fb85395faa25",
+  "evidence_head_before_closure": "414d80f8a16f665e205028852c75cd3fd15ef12f",
+  "source": {
+    "model_id": "R07-CNXTT-CONTEXT-S1",
+    "checkpoint_sha256": "dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974",
+    "v1_test_accessed": false,
+    "track_b_protected_results_used_for_selection": false
+  },
+  "device": {
+    "manufacturer": "Google",
+    "model": "Pixel 7",
+    "codename": "panther",
+    "abi": "arm64-v8a",
+    "android_release": "17",
+    "sdk": 37,
+    "runtime": "ExecuTorch Android 1.3.1",
+    "backend": "XNNPACK CPU",
+    "requested_threads": 4
+  },
+  "artifacts": {
+    "int8": {
+      "bytes": 28555872,
+      "sha256": "2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8"
+    },
+    "fp32": {
+      "bytes": 111741536,
+      "sha256": "61556330cd9fc4725b4ff4759aef3835696b81865b2cbe030f815a4c0e8d5aec"
+    },
+    "size_reduction_percent": 74.44471140973039,
+    "size_ratio_fp32_over_int8": 3.9130843561702475
+  },
+  "fidelity": {
+    "int8_canonical": {
+      "matches": 256,
+      "samples": 256,
+      "agreement": 1
+    },
+    "fp32_canonical": {
+      "matches": 256,
+      "samples": 256,
+      "agreement": 1
+    },
+    "raw_pipeline": {
+      "matches": 254,
+      "samples": 256,
+      "agreement": 0.9921875,
+      "mismatch_indices": [
+        11,
+        255
+      ]
+    }
+  },
+  "model_latency_ms": {
+    "int8": {
+      "samples": 1000,
+      "mean": 158.238588699,
+      "median": 175.7252405,
+      "p95": 191.9073915
+    },
+    "fp32": {
+      "samples": 1000,
+      "mean": 357.720710255,
+      "median": 366.2635095,
+      "p95": 377.75026095
+    },
+    "observed_int8_reduction_percent": {
+      "mean": 55.764767271595716,
+      "median": 52.02218186029803,
+      "p95": 49.197284201108374
+    },
+    "stationarity_claim": false
+  },
+  "end_to_end_int8_ms": {
+    "samples": 768,
+    "mean": 366.89455336848954,
+    "median": 234.019816,
+    "p95": 598.41298265,
+    "p99": 2393.074549750041,
+    "max": 4257.321698,
+    "samples_over_1000_ms": 15,
+    "samples_over_3000_ms": 8
+  },
+  "fresh_process_activity_start_load_int8_ms": {
+    "samples": 10,
+    "mean": 249.4,
+    "median": 242,
+    "p95": 284.59999999999997,
+    "boundary": "am_total_ms includes activity/process startup and artifact-loading work"
+  },
+  "public_evidence": {
+    "evidence_manifest_git_blob": "1b2eca39155d9cde20d218b961962613650f1585",
+    "analysis_summary_git_blob": "47418e2dc3483fe1b619aaa39af351fe80d36f30",
+    "build_manifest_git_blob": "b8783f8409e3391909cac4a77f2fe2c66fe45de5",
+    "analysis_script_git_blob": "b7c24e7147c1f2c159c47e4d356451a8b60169ec",
+    "validator_script_git_blob": "a12b4a6737b32d75bd4d949c47406ecc2251137c",
+    "execution_report_git_blob": "4bf7aedd10c4cf109814b39bd49d4176f6eb18fc",
+    "hostile_audit_git_blob": "56d3568d8444c904d5eda2e8553c671af967ecf8",
+    "manuscript_handoff_git_blob": "3754588b00a1ef1ce0866418aca4fbef2e19d363"
+  },
+  "evidence_grade": {
+    "machine_recomputable_primary": [
+      "canonical INT8 fidelity",
+      "canonical FP32 fidelity",
+      "RAW pipeline fidelity",
+      "INT8 model-only latency",
+      "FP32 model-only latency",
+      "INT8 end-to-end latency",
+      "INT8 fresh-process activity-start/load timing",
+      "INT8 warm-up transition timing",
+      "single live PSS/RSS/thermal snapshot"
+    ],
+    "contextual_not_primary_without_raw_transcript": [
+      "higher E2E peak PSS/RSS observation",
+      "final E2E thermal start/end observations",
+      "app-private Track-C directory footprint"
+    ]
+  },
+  "limitations": [
+    "one physical Android device",
+    "requested four-thread policy not independently verified as effective XNNPACK worker count",
+    "model-only campaigns show within-run latency drift and are not claimed thermally stationary",
+    "E2E distribution is heavy-tailed",
+    "only a spot CPU observation is public; no robust campaign-level CPU utilization estimate",
+    "energy not measured",
+    "FP32 and INT8 latency campaigns used separate APK revisions on the same device/runtime policy"
+  ],
+  "forbidden_claims": [
+    "Android-wide performance",
+    "production readiness across phones",
+    "field generalization",
+    "universal real-time capability",
+    "NPU or GPU performance",
+    "energy efficiency"
+  ],
+  "audit_portability_note": "Evidence hash and byte-count validation use Git-canonical LF text bytes so Windows CRLF checkout conversion cannot create a false failure."
+}

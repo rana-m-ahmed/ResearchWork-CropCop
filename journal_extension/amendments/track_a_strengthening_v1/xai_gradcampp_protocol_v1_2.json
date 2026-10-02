@@ -1,0 +1,81 @@
+{
+  "cnn_target_layer_rule": "For R04/R06/R07 implementations, select the last torch.nn.Conv2d leaf module whose forward output on the frozen 256x256 input path is 4D with both spatial dimensions > 1. Resolve and record the exact module path before reading XAI results; use the same path for all three seeds of an architecture.",
+  "heatmap_processing": [
+    "compute Grad-CAM++ at the frozen target-layer representation",
+    "ReLU non-negative attribution",
+    "bilinear upsample to 256x256",
+    "normalize each map to [0,1] using its own finite min/max; constant maps are recorded as degenerate"
+  ],
+  "method": "Grad-CAM++",
+  "models": [
+    "R04-MNV4-DIRECT-S1",
+    "R04-MNV4-DIRECT-S2",
+    "R04-MNV4-DIRECT-S3",
+    "R06-EFFB0-CONTEXT-S1",
+    "R06-EFFB0-CONTEXT-S2",
+    "R06-EFFB0-CONTEXT-S3",
+    "R07-CNXTT-CONTEXT-S1",
+    "R07-CNXTT-CONTEXT-S2",
+    "R07-CNXTT-CONTEXT-S3",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+    "R13-VIT-DLITTLE-DIFF-CONTEXT-S3"
+  ],
+  "protocol_id": "TRACKA-A1-XAI-GRADCAMPP-V1.2",
+  "qualitative_panels": {
+    "contents": ["original image", "predicted class", "confidence", "Grad-CAM++ overlay"],
+    "may_add_error_panel": "A separate error panel may use a prospectively specified rule (lowest-confidence incorrect predictions, deterministic tie-break) and must be labeled post-prediction diagnostic.",
+    "rule": "Generate a fixed reproducible panel after quantitative computation: 12 images chosen from the 240-sample set by deterministic hash, not by visual attractiveness."
+  },
+  "quantitative_faithfulness": {
+    "fractions": [0.1, 0.2, 0.3],
+    "masking": "replace selected pixels with the per-image RGB mean computed after EXIF correction/RGB conversion and before CTC normalization",
+    "metric": "saliency-guided deletion confidence drop relative to matched random deletion",
+    "outputs": [
+      "predicted-class probability before masking",
+      "probability after saliency deletion",
+      "mean probability after matched random deletion",
+      "saliency_minus_random confidence-drop advantage",
+      "architecture/seed mean and bootstrap-free descriptive distribution summaries"
+    ],
+    "random_control": "10 deterministic matched-area random masks per image/fraction seeded from SHA256(stable_row_id || model_run_id || fraction || control_index)"
+  },
+  "sample_selection": {
+    "count": 240,
+    "prediction_blind": true,
+    "rule": "exactly two rows per class, chosen independently of prediction outcome by ascending SHA256(stable_row_id || '|TRACKA-A1-XAI-V1') within each class"
+  },
+  "sanity_checks": [
+    "record degenerate-map rate",
+    "record finite-map rate",
+    "classifier-head randomization sanity check on a deterministic 30-image subset; compare normalized-map Spearman correlation before/after randomization",
+    "horizontal-flip consistency on a deterministic 30-image subset using inverse-flipped heatmap comparison"
+  ],
+  "schema_version": "1.2",
+  "scientific_role": "supporting explainability, shortcut-detection and faithfulness audit; not a lesion-segmentation or agronomic-causality experiment",
+  "selection_role": "XAI is completed before the final Track-A model-selection gate but has no weighted ranking term. It is reported as supporting trustworthiness evidence and may trigger a transparent methodological warning, not silent model switching.",
+  "status": "PRE_EXECUTION_LOCK",
+  "supersedes": "TRACKA-A1-XAI-GRADCAMPP-V1",
+  "surface": "DS-V1-VAL",
+  "target_class": "the model's top-1 predicted class for quantitative faithfulness; ground-truth class maps may be generated only as clearly labeled secondary diagnostics",
+  "training_or_adaptation_allowed": false,
+  "transformer_target_rule": {
+    "architecture": "R13 vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k",
+    "qualification_before_outputs": [
+      "instantiate the exact frozen timm model and resolve model.blocks[-1].in_norm; if that exact module path is absent, fail closed rather than substitute another target after seeing XAI outputs",
+      "record model.num_prefix_tokens and model.patch_embed.grid_size from the exact qualified model",
+      "require a square patch grid of 16x16 at the frozen 256x256 input and patch16 configuration",
+      "require the target activation to be a 3D token tensor [B,N,C] and N - num_prefix_tokens == 256"
+    ],
+    "reshape_transform": "drop the first model.num_prefix_tokens tokens, reshape the remaining 256 patch tokens to [B,16,16,C], then permute to [B,C,16,16] before Grad-CAM++",
+    "same_target_across_seeds": true,
+    "reason": "token-aware late semantic representation; do not use the patch-embedding convolution as a surrogate late feature map"
+  },
+  "forbidden_claims": [
+    "heatmap proves disease lesion localization",
+    "heatmap proves causal biological reasoning",
+    "heatmap proves agronomic correctness",
+    "higher visual appeal means better model",
+    "XAI result may be used to add/tune architectures, seeds, losses or corruption severities"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "review_id": "TRACKB_EXTERNAL_LINEAGE_REVIEW_v1",
+  "status": "PRE_RESULTS_FROZEN",
+  "created_date": "2026-09-20",
+  "scope": "Prediction-blind provenance review for the two frozen Track-B v2 external cohorts. This review does not establish absolute source independence; unresolved uncertainty is retained and therefore cannot raise either cohort above EXT-S under the current safe historical-comparison route.",
+  "historical_reference": {
+    "cropcop_dataset": "CropCop_Final_v1",
+    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "comparison_scope": "V1_TRAIN_VAL_ONLY",
+    "comparison_image_count": 92744,
+    "v1_test_status": "CLOSED_FOR_TRACK_B"
+  },
+  "candidates": {
+    "gvlid_v5": {
+      "candidate_id": "gvlid_grape",
+      "doi": "10.17632/wkymf8bhcg.5",
+      "version": "5",
+      "known_historical_contributor_relationship": false,
+      "lineage_review_status": "RESIDUAL_UNCERTAINTY",
+      "review_basis": [
+        "GVLiD is a separately published 2026 Mendeley Data dataset with its own named contributor group and a documented 2023 vineyard acquisition campaign in Maharashtra, India.",
+        "No documented direct contributor/source relationship to the frozen CropCop historical dataset provenance was identified in the pre-results repository review.",
+        "Absence of a documented relationship is not treated as proof of full independence; residual uncertainty is intentionally retained."
+      ]
+    },
+    "irish_potato": {
+      "candidate_id": "irish_potato",
+      "doi": "10.5281/zenodo.8286529",
+      "version": "01",
+      "known_historical_contributor_relationship": false,
+      "lineage_review_status": "RESIDUAL_UNCERTAINTY",
+      "review_basis": [
+        "Irish Potato Version 01 is a separately archived Zenodo field-image dataset with its own acquisition record and class archives.",
+        "No documented direct contributor/source relationship to the frozen CropCop historical dataset provenance was identified in the pre-results repository review.",
+        "Absence of a documented relationship is not treated as proof of full independence; residual uncertainty is intentionally retained."
+      ]
+    }
+  },
+  "rules": {
+    "known_relationship_forces_ext_x": true,
+    "residual_uncertainty_caps_at_ext_s": true,
+    "external_performance_may_not_modify_review": true,
+    "post_prediction_lineage_reclassification_for_grade_improvement_forbidden": true
+  }
+}

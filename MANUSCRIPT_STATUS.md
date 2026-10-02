@@ -1,68 +1,50 @@
-# CropCop manuscript status — v0.2.0-rc2
+# CropCop manuscript status — EAAI journal-extension release candidate
 
-## Current status
+## Current research record
 
-The manuscript **“CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact”** has been submitted to arXiv.
+CropCop has two versioned paper states.
 
-- Submission state: **submitted; public arXiv identifier pending**
-- Submission does not imply public announcement, endorsement, acceptance, or peer review.
-- The repository will add the canonical arXiv abstract-page URL and identifier only after assignment.
-- The scientific claim boundary remains unchanged while the identifier is pending.
+### arXiv v1 — public historical preprint
 
-## Authorship
+**CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact**  
+Rana Muhammad Ahmed, Sabahat Abbas  
+arXiv:2608.25539 · DOI: 10.48550/arXiv.2608.25539
 
-- Rana Muhammad Ahmed — corresponding author
-- Sabahat Abbas — co-author
-- Department of Computer Science, Bahria University Islamabad, Islamabad, Pakistan
+This preprint reports the earlier internal benchmark/model-retention/software-runtime lineage. It does not establish physical Android or source-independent field generalization.
 
-## Submitted manuscript identity
+### EAAI journal extension — current manuscript
 
-The submitted paper reports the final 120-class audit-to-runtime study, including:
+**Separating External-Source Behavior from Runtime Fidelity in Plant-Health Recognition**
 
-- 117,546 audited source images;
-- a 109,107-image frozen benchmark;
-- 3,233 confirmed historical cross-split duplicate relationships;
-- zero crossings among the audited trusted leakage groups in the final split;
-- a DINOv3 ConvNeXt-Tiny reference;
-- a compact MobileNetV4 Conv-Medium lineage;
-- validation-only post-training quantisation selection;
-- direct execution of the final 22.60 MiB ExecuTorch/XNNPACK PTE;
-- row-level and paired analysis of the final runtime state.
+Status: **submission-production stage**. Part 1 (main manuscript) and Part 2 (Supplement + reproducibility package) have been prepared and scientifically cross-checked. Final Editorial Manager metadata, declarations and author-controlled archival decisions remain outside this repository release candidate.
 
-The public repository identifies the evaluated dataset, model states, and runtime artifact through fingerprints and cryptographic hashes. Restricted binaries and source data remain outside public Git history.
+The journal extension adds controlled four-family Track-A selection, prediction-blind external-cohort selection, three-state R07 external evaluation, exact-content sensitivity, exact R07-S1 reconstruction/replay, a single frozen PT2E/XNNPACK export route, Pixel physical execution, and POCO runtime-compatibility evidence.
 
-## Completed editorial and integrity checks
+## Scientific freeze
 
-- Both authors are listed consistently in manuscript and repository citation metadata.
-- The manuscript links to the exact companion repository URL.
-- Human-facing metadata uses the capitalization **arXiv** consistently.
-- The paper distinguishes software-runtime execution from physical Android evidence.
-- Host latency claims are excluded where CPU, thread-count, and operating-system details were not archived.
-- Internal recognition results are not presented as field generalisation.
-- The compact-model result is not presented as causal evidence for a new distillation method.
-- Dataset, model, and runtime identities are bound to public registries and checksums.
+The journal manuscript's central upstream decision is R07 / ConvNeXt-Tiny. External and device outcomes do not reopen that selection. Track C is bound to the preselected \`R07-CNXTT-CONTEXT-S1\` state.
 
-## Repository release boundary
+Key identities:
 
-The current repository metadata version is `0.2.0-rc2`.
+- R07-S1 checkpoint SHA-256: \`dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974\`
+- class-map SHA-256: \`46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2\`
+- frozen manifest SHA-256: \`bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2\`
+- FP32 PTE SHA-256: \`61556330cd9fc4725b4ff4759aef3835696b81865b2cbe030f815a4c0e8d5aec\`
+- INT8 PTE SHA-256: \`2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8\`
+- accepted Track-B evidence ZIP SHA-256: \`22a6c865ead6f28319a9dc8a4168f3ff7fb60108339710dcbd99e1aa047981a3\`
 
-This branch publishes the public evidence bootstrap, metric registry, claim ledger, model/data identity records, validation utilities, and submission-aware documentation. It does not publish:
+## Public/restricted boundary
 
-- raw source images;
-- model checkpoints;
-- the final PTE binary;
-- raw logits or large prediction bundles;
-- credentials;
-- restricted forensic evidence.
+Public Git contains research code, protocols, locks, aggregate/derived evidence, runtime measurement tables, validators and paper-facing documentation. Ordinary public Git does not redistribute the consolidated source-image corpus, final model checkpoint, generated PTE binaries, raw logits or the complete accepted private Track-B evidence archive.
 
-The complete submitted source package and compiled paper should be synchronized only through a reviewed release process that preserves the exact submitted version and excludes restricted material.
+## Remaining author-controlled actions
 
-## Next release action
+Before actual EAAI submission/release:
 
-After arXiv assigns the identifier:
+1. approve final author order, affiliations, corresponding author, ORCIDs and CRediT roles;
+2. approve funding, acknowledgments, competing-interest and AI-assistance declarations;
+3. decide whether checkpoint/PTE redistribution is legally permitted;
+4. decide whether the private Track-B evidence archive may be publicly/reviewer archived;
+5. create the final immutable archival release/tag and optional Zenodo DOI after the paper-facing repository commit is frozen.
 
-1. verify the public abstract-page metadata against the submitted title and author order;
-2. update `README.md`, `CITATION.cff`, and `CITATION.bib` with the canonical identifier and URL;
-3. bind the repository release manifest to the submitted PDF/source package and checksums;
-4. create an immutable preprint tag only after repository validation passes;
-5. avoid changing scientific results under the same release identity.
+No further training or claim-producing model experiment is required for these administrative/release actions.

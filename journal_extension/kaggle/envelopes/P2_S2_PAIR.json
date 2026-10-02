@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "MGPU-P2-S2PAIR-V1",
+  "phase": "principal-dual",
+  "hardware_profile": "T4X2",
+  "children": [
+    {
+      "child_id": "P2-DIRECT",
+      "lane": "K2",
+      "experiment_id": "R04-MNV4-DIRECT-S2",
+      "slot": 0
+    },
+    {
+      "child_id": "P2-TEACHER",
+      "lane": "K2",
+      "experiment_id": "R05-MNV4-TEACHER-S2",
+      "slot": 1
+    }
+  ]
+}

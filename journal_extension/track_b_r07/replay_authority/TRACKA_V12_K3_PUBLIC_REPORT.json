@@ -1,0 +1,58 @@
+{
+  "account_id": "K3",
+  "child_git_credentials_removed": true,
+  "cross_gpu_gradient_synchronization": false,
+  "execution_errors": [],
+  "operator_publication_count": 0,
+  "operator_runtime_sha": "1144858173698faf698a962e9296b34ba873456d",
+  "scheduler_freeze_sha256": "7c7eba73096c13eb7fa754143b9fe84548c16ac05ab80f6aa3e1aeeb128c3787",
+  "schema_version": "1.2.1",
+  "science_authorization_sha256": "58d65a9c9f0c06222c00541feca9b2aaa005ebda850d2261d4df3e0e1fe7fbb7",
+  "science_complete": true,
+  "science_source_sha": "56023042e57758591df9babb3438f191dbe10312",
+  "scientific_runner_git_publication_requested": false,
+  "slot_results": {
+    "K3/GPU0": [
+      {
+        "continuation_required": false,
+        "experiment_id": "R06-EFFB0-CONTEXT-S2",
+        "operator_publication": null,
+        "return_code": 0,
+        "run_id": "JE-R06-EFFB0-CONTEXT-S2-56023042e577-A01",
+        "run_status": "PASS",
+        "selected_checkpoint_sha256": "f0de7831758a18339d1e1f9de60686e48725aa29fe12f0187c1dd8f446085c39"
+      },
+      {
+        "continuation_required": false,
+        "experiment_id": "R07-CNXTT-CONTEXT-S2",
+        "operator_publication": null,
+        "return_code": 0,
+        "run_id": "JE-R07-CNXTT-CONTEXT-S2-56023042e577-A01",
+        "run_status": "PASS",
+        "selected_checkpoint_sha256": "199afb9f7043e599fbb2239fb3babcfb431324a3c3219250ae6dd0359d8bc310"
+      }
+    ],
+    "K3/GPU1": [
+      {
+        "continuation_required": false,
+        "experiment_id": "R06-EFFB0-CONTEXT-S3",
+        "operator_publication": null,
+        "return_code": 0,
+        "run_id": "JE-R06-EFFB0-CONTEXT-S3-56023042e577-A01",
+        "run_status": "PASS",
+        "selected_checkpoint_sha256": "fa895a5a6c3ae81c15ab2af3969556ccbd4eabc8bf87cfac540a9f39ed6854ba"
+      },
+      {
+        "continuation_required": false,
+        "experiment_id": "R07-CNXTT-CONTEXT-S3",
+        "operator_publication": null,
+        "return_code": 0,
+        "run_id": "JE-R07-CNXTT-CONTEXT-S3-56023042e577-A01",
+        "run_status": "PASS",
+        "selected_checkpoint_sha256": "621c2e6cfecd23da21b4f17d2244bd068b5a3602ee5240f0dcc95ae4360beb37"
+      }
+    ]
+  },
+  "stage": "TRACKA_V12_MASTER_ACCOUNT",
+  "status": "PASS"
+}

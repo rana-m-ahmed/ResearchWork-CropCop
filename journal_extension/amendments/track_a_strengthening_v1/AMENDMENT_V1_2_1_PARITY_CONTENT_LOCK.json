@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "lock_id": "TRACKA-A1-R13-PARITY-AMENDMENT-V1.2.1-LOCK",
+  "status": "LOCKED_CONTENT_PENDING_EXACT_HEAD_ATTESTATION",
+  "science_authorized": false,
+  "created_utc": "2026-09-15",
+  "parent_content_lock": "journal_extension/amendments/track_a_strengthening_v1/AMENDMENT_V1_2_CONTENT_LOCK.json",
+  "parent_contract": "journal_extension/amendments/track_a_strengthening_v1/r13_pretrained_identity_and_normalization_contract_v1_2.json",
+  "parent_required_max_abs_difference": 1e-05,
+  "superseding_contract": "journal_extension/amendments/track_a_strengthening_v1/r13_pretrained_identity_and_normalization_contract_v1_2_1.json",
+  "superseding_required_max_abs_difference": 5e-05,
+  "pre_science_only": true,
+  "r13_scientific_training_started_before_lock": false,
+  "protected_surfaces_opened_before_lock": false,
+  "files_git_blob_sha": {
+    "journal_extension/amendments/track_a_strengthening_v1/R13_PARITY_PREEXECUTION_AMENDMENT_v1_2_1.md": "040f6c073f37bf4bc9fafc8d48cab687aa2f22ab",
+    "journal_extension/amendments/track_a_strengthening_v1/r13_parity_preexecution_evidence_v1_2_1.json": "ad2604e8cf9bf58f05922916907e22c950c171bd",
+    "journal_extension/amendments/track_a_strengthening_v1/r13_pretrained_identity_and_normalization_contract_v1_2_1.json": "017315a1f7c4eb90facd96d65e807019b4dabf39"
+  },
+  "frozen_model_artifact": {
+    "model_id": "vit_dlittle_patch16_reg1_gap_256.sbb_nadamuon_in1k",
+    "model_safetensors_bytes": 90095744,
+    "model_safetensors_sha256": "92ec2d996329be8c9a449d4e38f847e79c34fadc32b6491739bacdaf425ab0ed"
+  },
+  "exact_pretrained_diagnostic": {
+    "github_workflow_run_id": 34959233872,
+    "github_job_id": 104348582552,
+    "observed_max_abs_difference": 3.4332275390625e-05
+  },
+  "allowed_change": "R13 pre-execution float32 normalization-equivalence maximum absolute-difference bound only",
+  "forbidden_changes": [
+    "model identity",
+    "pretrained bytes or upstream commit",
+    "normalization formulas",
+    "dataset identity or surfaces",
+    "seed",
+    "objective",
+    "training hyperparameters",
+    "candidate pool",
+    "selection protocol",
+    "scientific metrics"
+  ]
+}

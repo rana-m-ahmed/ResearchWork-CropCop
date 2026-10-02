@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0",
+  "artifact": "01A_MGPU_01_SCIENCE_DIFF_SENTINEL.json",
+  "snapshot_created_at": "2026-09-07T00:10:00+05:00",
+  "snapshot_source_git_sha": "1d6ce71c62411132e0b32643fd4f9bcc2169abc1",
+  "authority": {
+    "stage03r_id": "EAAI-JE-SDL-v2.1-QA",
+    "stage03r_sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74",
+    "stage04_id": "EAAI-JE-REA-v2.2-LEAN",
+    "stage04_sha256": "a1bc1f8bb2d7a133a46c3f59f83dd2ba8ca3bf0fa8d77ae323553276931bc079"
+  },
+  "protected_git_blobs": {
+    "journal_extension/src/cropcop_je/train.py": "a259f7c825942e7f3031b20e29f33fc55f1d9d7f",
+    "journal_extension/src/cropcop_je/data.py": "9871ece382e0345bcab2e832d3116611855c3de7",
+    "journal_extension/src/cropcop_je/models.py": "c7db1155de1621e751c4bdbad7e9c4096ab06746",
+    "journal_extension/configs/common/ctc_v2.json": "517d6fcc38e3a8e480fb1edcd97bac87907c5b5c",
+    "journal_extension/configs/r04_direct/s1.json": "4f6e985c08210f425b0c651c8bc10e61ad3db5f8",
+    "journal_extension/configs/r04_direct/s2.json": "9d6f85ac6656588397ef96e76e694cf09e2203d1",
+    "journal_extension/configs/r04_direct/s3.json": "d08f78619c22ae47115865bed2da52ac67c74625",
+    "journal_extension/configs/r05_teacher/s1.json": "2607f803d7d0ee9ded564dd52f9d91d4d0ef35a3",
+    "journal_extension/configs/r05_teacher/s2.json": "79cb7d5ecbd4674a7ce70718dae07df5de2a1b9b",
+    "journal_extension/configs/r05_teacher/s3.json": "6df147239c652d9c64368208e240b63c9ad5f61f",
+    "journal_extension/locks/experiment_registry.json": "ac83f61eba78a24e0a40e387a817a27bcdef2bed",
+    "journal_extension/scripts/run_training.py": "4faaad598175cd2bcdf841fe3f8a0e8c878c8d2e",
+    "journal_extension/src/cropcop_je/frozen_v1_manifest.py": "121834f7f573d0818ac914b67e290cc4f20546ed"
+  },
+  "locked_training_semantics": {
+    "micro_batch_size": 16,
+    "gradient_accumulation": 4,
+    "effective_batch_size": 64,
+    "epochs": 30,
+    "optimizer": "AdamW",
+    "mixed_precision": "FP16_autocast_GradScaler_when_supported",
+    "gradient_clip_norm": 1,
+    "ema": false,
+    "drop_last": false,
+    "sampling": "uniform_row_shuffle",
+    "early_stopping": false,
+    "validation_selection_order": [
+      "validation_macro_f1_desc",
+      "validation_balanced_accuracy_desc",
+      "validation_nll_asc",
+      "epoch_asc"
+    ]
+  },
+  "scientific_identities": {
+    "student_model": "mobilenetv4_conv_medium.e500_r256_in1k",
+    "student_package": "timm==1.0.26",
+    "historical_teacher_sha256": "74b4701b8931976c9227845ead50788ae47e3596f575f2817b7352a715f53b79",
+    "seeds": {
+      "S1": 21270083,
+      "S2": 606135704,
+      "S3": 1153870846
+    },
+    "pairs": {
+      "S1": {
+        "pair_id": "MNV4-PAIR-S1",
+        "direct": "R04-MNV4-DIRECT-S1",
+        "teacher": "R05-MNV4-TEACHER-S1"
+      },
+      "S2": {
+        "pair_id": "MNV4-PAIR-S2",
+        "direct": "R04-MNV4-DIRECT-S2",
+        "teacher": "R05-MNV4-TEACHER-S2"
+      },
+      "S3": {
+        "pair_id": "MNV4-PAIR-S3",
+        "direct": "R04-MNV4-DIRECT-S3",
+        "teacher": "R05-MNV4-TEACHER-S3"
+      }
+    },
+    "objectives": {
+      "R04_direct": {
+        "ce": 1,
+        "kd": 0,
+        "feature": 0
+      },
+      "R05_teacher": {
+        "ce": 0.5,
+        "kd": 0.35,
+        "feature": 0.15
+      }
+    }
+  },
+  "surface_contract": {
+    "allowed_for_r04_r05": [
+      "DS-V1-TRAIN",
+      "DS-V1-VAL"
+    ],
+    "forbidden_for_r04_r05": [
+      "DS-V1-TEST-CONSUMED",
+      "DS-EXT-*-SEALED",
+      "DS-HIST-COMPARE"
+    ],
+    "selection_surface": "DS-V1-VAL"
+  },
+  "post_refactor_policy": {
+    "require_stage03r_sha_unchanged": true,
+    "require_protected_git_blobs_unchanged": true,
+    "require_locked_training_semantics_unchanged": true,
+    "require_scientific_identities_unchanged": true,
+    "physical_gpu_slot_is_scientific_identity": false,
+    "ddp_or_dataparallel_authorized_for_principal": false,
+    "frozen_v1_schema_adapter": {
+      "status": "REMEDIATED_AND_REFROZEN",
+      "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+      "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+      "row_id_column": "record_key",
+      "path_column": "portable_relpath",
+      "split_column": "split",
+      "label_column": "label",
+      "target_derivation": "locked class_to_idx.json",
+      "scientific_semantics_changed": false
+    },
+    "g2_preflight_remediation": {
+      "status": "CI_GREEN_PRE_FREEZE",
+      "validated_head": "1d6ce71c62411132e0b32643fd4f9bcc2169abc1",
+      "ci_run_number": 257,
+      "cpu_safe_tests": 337,
+      "deterministic_blockers_closed": [
+        "frozen_v1_target_derivation",
+        "terminal_envelope_publication_reachability",
+        "cnxtt_control_identity_binding",
+        "private_durable_store_preflight"
+      ],
+      "scientific_semantics_changed": false
+    }
+  }
+}

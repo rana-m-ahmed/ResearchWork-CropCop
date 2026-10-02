@@ -1,0 +1,95 @@
+name: Validate Track-A v9 source mitigation
+
+on:
+  push:
+    branches:
+      - fix/tracka-g2a-exact-roundtrip-v9-20260915
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-mitigation-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up frozen Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Compile changed execution modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            journal_extension/src/cropcop_je/persistence_v8.py \
+            journal_extension/scripts/run_tracka_v12_training_v121.py \
+            journal_extension/scripts/qualify_tracka_v12_profile_v122.py \
+            tests/test_tracka_v12_mitigation_v8.py \
+            tests/test_tracka_v12_mitigation_v9.py
+
+      - name: Run generation-settlement and frozen-boundary regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_tracka_v12_mitigation_v8 \
+            tests.test_tracka_v12_mitigation_v9 \
+            tests.test_tracka_v12_g1a_contract \
+            tests.test_tracka_v12_g2a \
+            tests.test_tracka_v12_g2a_durability \
+            tests.test_tracka_v12_g2a_v122 \
+            tests.test_tracka_v12_authorization \
+            tests.test_tracka_v12_science_go_v123
+
+      - name: Verify narrow source delta from previous qualified science head
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='4ced2fd7c764c07fa47fb57fbea38376d2ce61a4'
+          git diff --name-only "$BASE"...HEAD | sort > /tmp/changed.txt
+          cat /tmp/changed.txt
+          python - <<'PY'
+          from pathlib import Path
+          allowed={
+              '.github/workflows/validate-tracka-v9-source-mitigation.yml',
+              'journal_extension/src/cropcop_je/persistence_v8.py',
+              'tests/test_tracka_v12_mitigation_v9.py',
+          }
+          changed={line.strip() for line in Path('/tmp/changed.txt').read_text().splitlines() if line.strip()}
+          extra=changed-allowed
+          missing={'journal_extension/src/cropcop_je/persistence_v8.py','tests/test_tracka_v12_mitigation_v9.py'}-changed
+          if extra or missing:
+              raise SystemExit(f'unexpected v9 source delta extra={sorted(extra)} missing={sorted(missing)}')
+          print('narrow v9 source delta PASS')
+          PY
+
+      - name: Verify frozen scientific semantics and protected surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          changed=Path('journal_extension/src/cropcop_je/persistence_v8.py').read_text(encoding='utf-8')
+          for forbidden in ('DS-V1-TEST-CONSUMED','master_g1a_sealer_compat_v6','init_globals','runpy.run_path'):
+              if forbidden in changed:
+                  raise SystemExit(f'forbidden mitigation content: {forbidden}')
+          required=(
+              '_wait_for_exact_downloadable_generation',
+              'expected_nonce',
+              'checkpoint-index hash mismatch',
+              'GenerationNotCurrentError',
+          )
+          for token in required:
+              if token not in changed:
+                  raise SystemExit(f'missing v9 durability control: {token}')
+          print('scientific-boundary + protected-surface hygiene PASS')
+          PY

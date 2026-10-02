@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.2.1",
+  "authority_id": "EAAI-JE-TRACKA-COMPREHENSIVE-EXECUTION-V1.2.1",
+  "status": "PRE_EXECUTION_QA",
+  "science_authorized": false,
+  "parent_scientific_authority": {
+    "id": "EAAI-JE-SDL-v2.1-QA",
+    "sha256": "aab17b65b0873dcb1ecedb061eb02ff60ccb09f8b830184f5e2231a600278f74"
+  },
+  "canonical_journal_interpretation": {
+    "preprint_relationship": "The preprint is prior/background evidence. It is not the journal experiment and does not predetermine the journal-primary model.",
+    "track_a_relationship": "Track A is one comprehensive model-neutral journal experiment executed in multiple computational waves. Earlier completed states and later locked states are components of the same journal Track-A programme.",
+    "protocol_revision_relationship": "Historical v1/v1.1/v1.2 amendment filenames and chronology are preserved for provenance. For journal interpretation, the later locks correct and complete the comprehensive Track-A design before its final closure; they are not presented as a separate scientific study.",
+    "history_policy": "Do not rewrite or delete historical evidence, commits, filenames, results or lock artifacts solely to simplify manuscript narrative. Reconcile them through this additive authority layer.",
+    "cross_track_rule": "Track A selects the scientific primary model. Track B evaluates external generalization and Track C evaluates deployment/runtime only after Track-A selection is sealed. Track-B or Track-C outcomes may not alter Track-A scientific selection."
+  },
+  "frozen_dataset": {
+    "name": "CropCop_Final_v1",
+    "images": 109107,
+    "classes": 120,
+    "train": 76376,
+    "validation": 16368,
+    "test": 16363,
+    "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+    "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2"
+  },
+  "completed_wave_evidence": {
+    "source_branch": "je-tracka-results-closure-20260912",
+    "base_sha": "27a25d54b482806f924b6030e55c37bcc9e1f106",
+    "principal_science_source_sha": "f171309fc7e9dc22241ecc137ebbb8e4bcdc5433",
+    "secondary_science_source_sha": "8904b100d223e4319776199c87ab397db23600ce",
+    "state_count": 10,
+    "validation_replay_count": 10,
+    "validation_rows_per_replay": 16368,
+    "max_aggregate_metric_replay_abs_diff": 0.0,
+    "training_during_replay": false,
+    "optimizer_state_advanced_during_replay": false,
+    "scientific_retuning_after_outcomes": false,
+    "v1_test_accessed": false,
+    "protected_external_surface_accessed": false,
+    "checkpoint_material_public": false,
+    "evidence_artifacts": [
+      "02_EAAI_PRINCIPAL_MODEL_SCIENCE_RESULTS.md",
+      "03A_EAAI_BASELINES_ABLATIONS_RESULTS.md",
+      "journal_extension/evidence/public/track_a/WAVE1_PRINCIPAL_VALIDATION_CLOSURE.json",
+      "journal_extension/evidence/public/track_a/WAVE2_SECONDARY_VALIDATION_CLOSURE.json",
+      "journal_extension/evidence/public/track_a/WAVE2_EXECUTION_TOOL_RECONCILIATION.json",
+      "journal_extension/evidence/public/track_a/TRACK_A_PRELOCK_READINESS.json"
+    ],
+    "experiment_ids": [
+      "R04-MNV4-DIRECT-S1",
+      "R05-MNV4-TEACHER-S1",
+      "R04-MNV4-DIRECT-S2",
+      "R05-MNV4-TEACHER-S2",
+      "R04-MNV4-DIRECT-S3",
+      "R05-MNV4-TEACHER-S3",
+      "R12-MNV4-LOGITS-S1",
+      "R12-MNV4-FEATURE-S1",
+      "R06-EFFB0-CONTEXT-S1",
+      "R07-CNXTT-CONTEXT-S1"
+    ]
+  },
+  "remaining_locked_training_states": [
+    {"experiment_id": "R06-EFFB0-CONTEXT-S2", "seed": 606135704, "role": "primary_architecture_replication"},
+    {"experiment_id": "R07-CNXTT-CONTEXT-S2", "seed": 606135704, "role": "primary_architecture_replication"},
+    {"experiment_id": "R12-MNV4-LOGITS-S2", "seed": 606135704, "role": "mechanism_replication"},
+    {"experiment_id": "R12-MNV4-FEATURE-S2", "seed": 606135704, "role": "mechanism_replication"},
+    {"experiment_id": "R06-EFFB0-CONTEXT-S3", "seed": 1153870846, "role": "primary_architecture_replication"},
+    {"experiment_id": "R07-CNXTT-CONTEXT-S3", "seed": 1153870846, "role": "primary_architecture_replication"},
+    {"experiment_id": "R12-MNV4-LOGITS-S3", "seed": 1153870846, "role": "mechanism_replication"},
+    {"experiment_id": "R12-MNV4-FEATURE-S3", "seed": 1153870846, "role": "mechanism_replication"},
+    {"experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S1", "seed": 21270083, "role": "primary_architecture_candidate"},
+    {"experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S2", "seed": 606135704, "role": "primary_architecture_candidate"},
+    {"experiment_id": "R13-VIT-DLITTLE-DIFF-CONTEXT-S3", "seed": 1153870846, "role": "primary_architecture_candidate"}
+  ],
+  "journal_primary_candidate_pool": {
+    "closed": true,
+    "families": ["R04", "R06", "R07", "R13"],
+    "direct_states": 12,
+    "seeds_per_family": 3,
+    "teacher_comparator_excluded": "R05",
+    "mechanism_ablations_excluded": ["R12-MNV4-LOGITS", "R12-MNV4-FEATURE"],
+    "selection_protocol": "journal_extension/amendments/track_a_strengthening_v1/model_selection_protocol_v1_2.json"
+  },
+  "protected_surfaces": {
+    "closed_during_training_and_model_selection": ["DS-V1-TEST-CONSUMED", "DS-EXT-*-SEALED", "DS-HIST-COMPARE"],
+    "track_b_predictions_before_track_a_selection": false,
+    "track_c_candidate_runtime_outcomes_before_track_a_selection": false
+  },
+  "prospective_internal_test_rule": {
+    "status": "FROZEN_BEFORE_REMAINING_TRACK_A_SCIENCE",
+    "when": "Only after the Track-A journal-primary architecture and exact selected checkpoint are irreversibly sealed.",
+    "evaluation_count": 1,
+    "surface": "DS-V1-TEST-CONSUMED",
+    "retraining_after_open": false,
+    "retuning_after_open": false,
+    "threshold_tuning_after_open": false,
+    "architecture_fallback_due_to_test_result": false,
+    "checkpoint_fallback_due_to_test_result": false,
+    "purpose": "One-shot internal held-out performance estimation after all validation-driven model selection is complete."
+  },
+  "execution_resources": {
+    "kaggle_accounts": 3,
+    "gpus_per_account": 2,
+    "total_gpus": 6,
+    "gpu_profile": "T4x2 per account",
+    "scientific_process_model": "two independent single-GPU children per account; no DDP/DataParallel/FSDP",
+    "scheduling_may_change_scientific_identity": false
+  },
+  "pre_science_gates": [
+    "exact-head repository CI PASS",
+    "v1.2 and additive correction-lock integrity PASS",
+    "R13 exact architecture/runtime/XAI target qualification PASS",
+    "G1A exact pretrained and deterministic initialization identities PASS for every remaining state",
+    "G2A execution/calibration qualification PASS for every architecture-resource profile that is not already covered by reusable evidence",
+    "seed/config/init mismatch failure-injection tests PASS",
+    "science-diff confirms completed historical evidence and scientific semantics are unchanged",
+    "analysis and final model-selection implementations are deterministic and tested",
+    "six-GPU scheduler preserves frozen experiment IDs, seeds, configs, initializations and checkpoint lineage"
+  ],
+  "science_authorization_rule": "This file does not authorize scientific execution. Authorization requires a later exact-head qualification artifact showing every pre-science gate PASS."
+}

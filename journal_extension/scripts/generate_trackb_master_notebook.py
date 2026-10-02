@@ -1,0 +1,189 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+
+def md(text: str):
+    return {"cell_type": "markdown", "metadata": {}, "source": text.splitlines(keepends=True)}
+
+
+def code(text: str):
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": text.splitlines(keepends=True),
+    }
+
+
+def build_notebook():
+    cells = [
+        md("""# CropCop Track B — R07 Automated Master v3
+
+This is the **single operator-facing Track-B qualification notebook**. It is fail-closed: the default execution mode is prediction-blind qualification and stops before any external R07 forward pass.
+
+One-time Kaggle setup:
+- add secret KAGGLE_API_TOKEN;
+- enable Internet;
+- select **T4 x2**.
+
+Do **not** manually attach or publish Track-B input/evidence datasets.
+
+Kaggle's stock image is allowed to start with a different Torch stack. Before any scientific import, the notebook applies the exact Track-B requirements lock to the active Kaggle interpreter using the same execution pattern already qualified by CropCop Track A. Scientific code is then launched only in a **fresh subprocess**, so stale modules from the notebook process cannot contaminate Track B.
+
+The consumed V1 test remains forbidden. The classifier family/seeds are frozen. GVLiD is the frozen external grape cohort (documented source acquisition includes in-situ vineyard and ex-situ imagery); Irish Potato is the complementary harder stress cohort. Candidate substitution after any external prediction is forbidden. Large mutable inputs use /kaggle/tmp; only qualification evidence is retained under /kaggle/working. A separate exact-SHA claim notebook may be frozen only after Q1/Q2/Q3 qualification passes.
+"""),
+        code("""from pathlib import Path
+import json, os, shutil, subprocess, sys
+
+WORK = Path('/kaggle/working')
+REPO = WORK / 'ResearchWork-CropCop-trackb-v3'
+REPO_URL = 'https://github.com/rana-m-ahmed/ResearchWork-CropCop.git'
+SOURCE_COMMIT = '73e07bb23d94e67bd2ad8f9d63226cd4488caf70'
+
+if REPO.exists():
+    shutil.rmtree(REPO)
+subprocess.run(
+    ['git', 'clone', '--filter=blob:none', '--no-checkout', REPO_URL, str(REPO)],
+    check=True,
+)
+subprocess.run(
+    ['git', '-C', str(REPO), 'checkout', '--detach', SOURCE_COMMIT],
+    check=True,
+)
+HEAD = subprocess.check_output(['git', '-C', str(REPO), 'rev-parse', 'HEAD'], text=True).strip()
+if HEAD != SOURCE_COMMIT:
+    raise RuntimeError(f'Frozen Track-B source mismatch: expected {SOURCE_COMMIT}, got {HEAD}')
+print('Frozen Track-B qualification source:', HEAD)
+
+from kaggle_secrets import UserSecretsClient
+_secret_client = UserSecretsClient()
+_value = (_secret_client.get_secret('KAGGLE_API_TOKEN') or '').strip()
+if not _value:
+    raise RuntimeError('Required Kaggle secret is empty: KAGGLE_API_TOKEN')
+if any(ch.isspace() for ch in _value):
+    raise RuntimeError('KAGGLE_API_TOKEN contains whitespace/newline')
+os.environ['KAGGLE_API_TOKEN'] = _value
+del _value, _secret_client
+print('Kaggle API secret loaded: PASS')
+print('GitHub credential/preflight: SKIPPED for prediction-blind qualification')
+"""),
+        code("""BOOTSTRAP = REPO / 'journal_extension/scripts/bootstrap_trackb_runtime.py'
+LOCKFILE = REPO / 'journal_extension/track_b_r07/requirements-trackb.lock.txt'
+BOOTSTRAP_RECEIPT = WORK / 'TRACKB_RUNTIME_BOOTSTRAP.json'
+
+if not BOOTSTRAP.is_file():
+    raise RuntimeError(f'Track-B runtime bootstrap missing: {BOOTSTRAP}')
+if not LOCKFILE.is_file():
+    raise RuntimeError(f'Track-B requirements lock missing: {LOCKFILE}')
+
+subprocess.run(
+    [
+        sys.executable,
+        str(BOOTSTRAP),
+        '--requirements', str(LOCKFILE),
+        '--receipt', str(BOOTSTRAP_RECEIPT),
+    ],
+    cwd=REPO,
+    check=True,
+    env=os.environ.copy(),
+)
+
+bootstrap = json.loads(BOOTSTRAP_RECEIPT.read_text())
+if bootstrap.get('status') != 'PASS':
+    raise RuntimeError('Track-B runtime repair/verification did not PASS')
+if bootstrap.get('scientific_execution_requires_fresh_subprocess') is not True:
+    raise RuntimeError('Track-B runtime receipt does not require a fresh scientific subprocess')
+
+print(json.dumps({
+    'runtime_status': bootstrap['status'],
+    'runtime_mode': bootstrap['mode'],
+    'python_expected': bootstrap['python_expected'],
+    'pre_install_drift': bootstrap['pre_install_drift'],
+    'versions': bootstrap['probe']['versions'],
+    'torch_runtime_version': bootstrap['probe']['torch_runtime_version'],
+    'torch_cuda_version': bootstrap['probe']['torch_cuda_version'],
+    'cuda_available': bootstrap['probe']['cuda_available'],
+    'cuda_devices': bootstrap['probe']['cuda_devices'],
+    'opencv_runtime_version': bootstrap['probe']['opencv_runtime_version'],
+}, indent=2, sort_keys=True))
+"""),
+        code("""MASTER = REPO / 'journal_extension/scripts/run_trackb_r07_master.py'
+if not MASTER.is_file():
+    raise RuntimeError(f'Automated Track-B controller missing: {MASTER}')
+
+WORKSPACE = WORK / 'trackb_master'
+if WORKSPACE.exists():
+    shutil.rmtree(WORKSPACE)
+
+# IMPORTANT: scientific execution starts in a fresh interpreter after the exact
+# package lock has been repaired. Do not import torch/torchvision/timm in the
+# notebook process before this point.
+subprocess.run(
+    [
+        sys.executable,
+        str(MASTER),
+        '--repo-root', str(REPO),
+        '--workspace', str(WORKSPACE),
+        '--scratch-root', '/kaggle/tmp/cropcop_trackb_r07',
+        '--device', 'cuda:0',
+        '--execution-mode', 'qualification',
+    ],
+    cwd=REPO,
+    check=True,
+    env=os.environ.copy(),
+)
+"""),
+        code("""OUT = Path('/kaggle/working/trackb_master/trackb_r07')
+receipt = json.loads((OUT / 'TRACKB_AUTOMATION_RECEIPT.json').read_text())
+qualification = json.loads((OUT / 'TRACKB_PREINFERENCE_QUALIFICATION.json').read_text())
+qa = json.loads((OUT / 'TRACKB_PREINFERENCE_QA.json').read_text())
+
+if receipt.get('status') != 'PASS_TRACKB_PREINFERENCE_QUALIFICATION':
+    raise RuntimeError(f"Track-B qualification receipt is not terminal PASS: {receipt.get('status')}")
+if qualification.get('status') != 'PASS_PREDICTION_BLIND_QUALIFICATION':
+    raise RuntimeError('Track-B prediction-blind qualification artifact is not PASS')
+if qa.get('status') != 'PASS_INDEPENDENT_PREINFERENCE_QA':
+    raise RuntimeError('Track-B independent pre-inference QA is not PASS')
+if int(qa.get('protected_external_prediction_count', -1)) != 0:
+    raise RuntimeError('Protected external predictions were produced during qualification')
+
+print(json.dumps({
+    'automation_status': receipt['status'],
+    'qualification_status': qualification['status'],
+    'qualification_sha256': qualification['qualification_sha256'],
+    'qualification_science_sha256': qualification['qualification_science_sha256'],
+    'preinference_qa_status': qa['status'],
+    'preinference_qa_sha256': qa['qa_sha256'],
+    'protected_external_prediction_count': qa['protected_external_prediction_count'],
+    'v1_test_accessed': qa['v1_test_accessed'],
+    'source_head': HEAD,
+    'next_gate': 'Review qualification_science_sha256, then freeze the claim run with that exact digest.',
+}, indent=2, sort_keys=True))
+"""),
+    ]
+    return {
+        "cells": cells,
+        "metadata": {
+            "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+            "language_info": {"name": "python", "version": "3.12"},
+        },
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+
+
+def main():
+    out = Path(__file__).resolve().parents[1] / "kaggle" / "trackb_r07_master.ipynb"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
+        json.dumps(build_notebook(), indent=1, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(out)
+
+
+if __name__ == "__main__":
+    main()

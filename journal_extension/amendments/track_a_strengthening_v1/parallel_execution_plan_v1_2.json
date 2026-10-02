@@ -1,0 +1,59 @@
+{
+  "after_training": [
+    "row-level selected-checkpoint DS-V1-VAL replay for every new state",
+    "four-family three-seed direct-architecture summaries",
+    "R12 three-seed mechanism summaries",
+    "robustness suite over 12 direct architecture states",
+    "classwise error analysis",
+    "architecture efficiency context",
+    "Grad-CAM++ faithfulness/sanity audit over 12 direct states",
+    "apply the frozen four-family model-selection gate only after all preceding evidence is complete"
+  ],
+  "plan_id": "TRACKA-A1-PARALLEL-EXEC-V1.2",
+  "preconditions": [
+    "v1/v1.1/v1.2 amendment locks committed before any new scientific output",
+    "amendment implementation source receives exact-head CI PASS",
+    "Amendment-G1A seals EFFB0/CNXTT S2/S3 deterministic initializations before their training",
+    "Amendment-G1A seals exact R13 timm code/pretrained bytes and deterministic S1/S2/S3 120-class initializations before R13 training",
+    "existing principal PAIR_INIT_S2/S3 identities reused for R12",
+    "existing official pretrained and historical teacher identities unchanged",
+    "R13 receives architecture-specific G2A scheduling/calibration qualification before scientific launch",
+    "existing calibration/G2 evidence may be reused for existing families only if software/hardware/model-family/objective execution profile is unchanged; otherwise recalibrate before science"
+  ],
+  "resources_assumed": "three primary Kaggle T4x2 accounts plus one otherwise-idle qualified Kaggle account when available",
+  "schema_version": "1.2",
+  "science_execution_profile": "two independent single-GPU children per T4x2 notebook; no DDP/DataParallel/FSDP",
+  "status": "PLANNED_NOT_AUTHORIZED_UNTIL_UPDATED_IMPLEMENTATION_QA",
+  "supersedes": "TRACKA-A1-PARALLEL-EXEC-V1",
+  "wave_1_existing_amendment": [
+    {"account_role": "K1", "gpu0": "R06-EFFB0-CONTEXT-S2", "gpu1": "R07-CNXTT-CONTEXT-S2"},
+    {"account_role": "K2", "gpu0": "R06-EFFB0-CONTEXT-S3", "gpu1": "R07-CNXTT-CONTEXT-S3"},
+    {"account_role": "K3", "gpu0": "R12-MNV4-LOGITS-S2", "gpu1": "R12-MNV4-FEATURE-S2"}
+  ],
+  "wave_1_modern_vit": [
+    {
+      "account_role": "K4_IDLE_IF_QUALIFIED",
+      "gpu0": "R13-VIT-DLITTLE-DIFF-CONTEXT-S1",
+      "gpu1": "R13-VIT-DLITTLE-DIFF-CONTEXT-S2",
+      "fallback": "if no idle fourth account is available, wait for the first qualified T4x2 account released by the existing amendment wave; do not change run identities"
+    }
+  ],
+  "wave_2": [
+    {
+      "account_role": "first_available_qualified_account",
+      "gpu0": "R12-MNV4-LOGITS-S3",
+      "gpu1": "R12-MNV4-FEATURE-S3"
+    },
+    {
+      "account_role": "first_available_qualified_gpu_after_R13_S1_S2",
+      "gpu0": "R13-VIT-DLITTLE-DIFF-CONTEXT-S3",
+      "gpu1": "idle_or_non_scientific_only"
+    }
+  ],
+  "scheduling_rules": [
+    "Wave-2 R12 and R13 S3 may start as soon as independently qualified capacity is free; they do not need to wait for every Wave-1 lane.",
+    "R13 scheduling must not delay, reorder, alter, or restart any already frozen A1 scientific identity.",
+    "No account switch may change the scientific run ID, seed, config, initialization, checkpoint lineage, or selected-state evidence contract.",
+    "A technical retry is continuation of the same A01 identity; A02 is not authorized."
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "MGPU-G2-T4X2-V1",
+  "phase": "calibration-dual",
+  "hardware_profile": "T4X2",
+  "children": [
+    {
+      "child_id": "G2-DIRECT",
+      "lane": "K1",
+      "experiment_id": "CAL-MNV4-DIRECT",
+      "slot": 0
+    },
+    {
+      "child_id": "G2-TEACHER",
+      "lane": "K2",
+      "experiment_id": "CAL-MNV4-TEACHER",
+      "slot": 1
+    },
+    {
+      "child_id": "G2-CNXTT",
+      "lane": "K3",
+      "experiment_id": "CAL-CNXTT",
+      "slot": "first_free"
+    }
+  ]
+}

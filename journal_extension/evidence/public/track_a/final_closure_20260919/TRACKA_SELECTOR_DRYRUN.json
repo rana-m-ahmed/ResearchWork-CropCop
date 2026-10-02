@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "artifact_kind": "track_a_frozen_selector_independent_dry_run",
+  "authoritative": false,
+  "analysis_source_git_commit": "e08e471cc033902694622c12ceef03a19707b6dc",
+  "selector_implementation": "journal_extension/scripts/seal_tracka_v12_selection.py + cropcop_je.tracka_v12_analysis",
+  "rows": [
+    {
+      "family": "R04",
+      "mean_validation_macro_f1": 0.9598438550336276,
+      "worst_seed_validation_macro_f1": 0.9579954271437358,
+      "bottom_12_class_mean_f1": 0.758648663013766,
+      "mean_corruption_degradation_pp": 3.81359254350348,
+      "model_state_tensor_bytes_fp32": 34625160,
+      "total_parameter_count": 8588232,
+      "sample_sd_validation_macro_f1": 0.001639078359497051
+    },
+    {
+      "family": "R06",
+      "mean_validation_macro_f1": 0.9663862523954164,
+      "worst_seed_validation_macro_f1": 0.9657250751129591,
+      "bottom_12_class_mean_f1": 0.791383428843108,
+      "mean_corruption_degradation_pp": 3.8507057524832917,
+      "model_state_tensor_bytes_fp32": 16813528,
+      "total_parameter_count": 4161268,
+      "sample_sd_validation_macro_f1": 0.0006380664704465103
+    },
+    {
+      "family": "R07",
+      "mean_validation_macro_f1": 0.9668086146251177,
+      "worst_seed_validation_macro_f1": 0.9648243840537297,
+      "bottom_12_class_mean_f1": 0.8015285176061283,
+      "mean_corruption_degradation_pp": 2.9745730570083286,
+      "model_state_tensor_bytes_fp32": 111649632,
+      "total_parameter_count": 27912408,
+      "sample_sd_validation_macro_f1": 0.0017563408909317076
+    },
+    {
+      "family": "R13",
+      "mean_validation_macro_f1": 0.9617073060536009,
+      "worst_seed_validation_macro_f1": 0.9604340634186521,
+      "bottom_12_class_mean_f1": 0.763692681825655,
+      "mean_corruption_degradation_pp": 4.456848500489786,
+      "model_state_tensor_bytes_fp32": 88941024,
+      "total_parameter_count": 22235256,
+      "sample_sd_validation_macro_f1": 0.0016139573861934711
+    }
+  ],
+  "selection": {
+    "status": "SELECTED",
+    "selection_stage": "frozen_lexicographic",
+    "journal_primary_family": "R07",
+    "co_primary_families": [],
+    "pareto_frontier": [
+      "R04",
+      "R06",
+      "R07"
+    ]
+  },
+  "note": "This is an independent reproduction of the already-frozen selector from the completed public evidence. It is not the official sealed selector because the frozen global evidence-audit gate has not yet been run with the three original terminal account manifests."
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.2.1",
+  "claim_boundary_id": "TRACKA-A1-CANDIDATE-COMPARISON-CLAIMS-V1.2.1",
+  "status": "PRE_SCIENCE_CLAIM_LOCK",
+  "science_authorized": false,
+  "parent_model_selection_protocol": "model_selection_protocol_v1_2.json",
+  "candidate_families": [
+    "R04 MobileNetV4 direct",
+    "R06 EfficientNet-B0 direct",
+    "R07 ConvNeXt-Tiny direct",
+    "R13 Differential ViT direct"
+  ],
+  "comparison_unit": "A frozen pretrained candidate backbone configuration together with its prospectively locked initialization identity, evaluated under the common CropCop CTC-v2 downstream training, validation, robustness and analysis protocol.",
+  "controlled_downstream_factors": [
+    "DS-V1-TRAIN and DS-V1-VAL identities",
+    "120-class ontology and class-index map",
+    "CTC-v2 256x256 preprocessing and augmentation",
+    "30-epoch schedule",
+    "AdamW optimizer family and frozen learning-rate schedule",
+    "effective batch semantics",
+    "FP16 training path",
+    "S1/S2/S3 seed identities",
+    "selected-checkpoint rule",
+    "selected-checkpoint replay rule",
+    "robustness protocol",
+    "class-reliability analysis",
+    "efficiency definitions",
+    "XAI/faithfulness protocol",
+    "final Pareto and lexicographic model-selection rule"
+  ],
+  "recognized_nonisolated_factors": [
+    "The four candidates do not share an identical upstream pretraining recipe or architecture-specific upstream optimization history, even though they remain within the broad ImageNet-1K transfer-learning regime.",
+    "R13 requires a prospectively frozen patch-embedding normalization-equivalence transform so that the common CTC-v2 normalized tensor preserves its upstream patch-embedding function.",
+    "Architecture family and frozen upstream pretrained initialization therefore cannot be causally separated by this Track-A design."
+  ],
+  "authorized_claims": [
+    "which frozen candidate system is selected as journal-primary under the prospectively locked Track-A decision rule",
+    "descriptive three-seed differences among the four frozen candidate systems",
+    "descriptive reliability, corruption robustness, class-tail, efficiency and XAI differences under the frozen protocol",
+    "engineering conclusions about the selected candidate within the CropCop study"
+  ],
+  "forbidden_claims": [
+    "one architecture family is intrinsically or universally superior to another",
+    "observed differences are caused solely by architecture independent of upstream pretrained initialization or recipe",
+    "Track-A results establish superiority outside the frozen CropCop data, training and candidate definitions",
+    "a favorable result may justify changing the candidate pool, seeds, upstream weights, training hyperparameters or selector"
+  ],
+  "manuscript_language_rule": "Use candidate-system/backbone-under-the-frozen-protocol language for comparative conclusions. If the word architecture is used descriptively, do not imply an architecture-only causal effect.",
+  "outcome_use_in_this_lock": "No new v1.2 continuation-state scientific output was used to define this claim boundary."
+}

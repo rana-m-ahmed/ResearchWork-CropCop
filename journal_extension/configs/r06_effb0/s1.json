@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "authority_id": "EAAI-JE-SDL-v2.1-QA",
+  "experiment_id": "R06-EFFB0-CONTEXT-S1",
+  "scientific_role": "descriptive_context_baseline",
+  "seed": 21270083,
+  "num_classes": 120,
+  "model_family": "effb0",
+  "model_name": "torchvision.models.efficientnet_b0",
+  "torchvision_version": "0.27.1",
+  "weight_enum": "EfficientNet_B0_Weights.IMAGENET1K_V1",
+  "ctc_config": "journal_extension/configs/common/ctc_v2.json",
+  "train_surface": "DS-V1-TRAIN",
+  "validation_surface": "DS-V1-VAL",
+  "manifest_sha256": "bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2",
+  "class_map_sha256": "46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2",
+  "required_model_init_evidence": "EFFB0_INIT_S1.json",
+  "required_pretrained_evidence": "EFFB0_PRETRAINED_PROVENANCE.json",
+  "forbidden_surfaces": ["DS-V1-TEST-CONSUMED", "DS-EXT-*-SEALED", "DS-HIST-COMPARE"],
+  "condition": "direct",
+  "objective": {"ce": 1.0, "kd": 0.0, "feature": 0.0}
+}

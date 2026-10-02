@@ -1,27 +1,19 @@
-# Paper
+# Paper versions
 
-The CropCop manuscript has been **submitted to arXiv**. The public arXiv identifier and canonical abstract-page URL are pending assignment.
+CropCop has a public preprint and a distinct EAAI journal extension. This directory keeps their identities separate.
 
-## Submitted title
+## Public arXiv preprint
 
-**CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact**
+**CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact**  
+Rana Muhammad Ahmed, Sabahat Abbas  
+arXiv:2608.25539 (2026) · DOI: 10.48550/arXiv.2608.25539
 
-## Authors
+The arXiv preprint is the historical v1 record. It establishes leakage-controlled internal recognition and software-runtime fidelity, but not source-independent external validation or physical Android evidence.
 
-- Rana Muhammad Ahmed — corresponding author
-- Sabahat Abbas
-- Department of Computer Science, Bahria University Islamabad, Islamabad, Pakistan
+## Current EAAI journal extension
 
-## Repository boundary
+**Separating External-Source Behavior from Runtime Fidelity in Plant-Health Recognition**
 
-This directory records the paper-release status. The complete submitted source package and compiled PDF are not currently mirrored in ordinary public Git history. They should be synchronized through a reviewed release process that:
+The journal extension adds controlled family selection, prediction-blind external evaluation, exact research-to-runtime lineage, physical Pixel execution and a POCO runtime-compatibility counterexample. Its paper-facing materials live under [\`eaai/\`](eaai/).
 
-- preserves the exact submitted manuscript identity;
-- records checksums for the PDF and source archive;
-- excludes raw images, checkpoints, the PTE binary, credentials, and restricted evidence;
-- updates citation metadata only after the public arXiv identifier is assigned;
-- does not silently revise scientific claims under an existing release tag.
-
-The public research evidence supporting the manuscript is organized under [`../metrics/`](../metrics/), [`../evidence/`](../evidence/), [`../models/`](../models/), and [`../data_card/`](../data_card/).
-
-See [`../MANUSCRIPT_STATUS.md`](../MANUSCRIPT_STATUS.md) for the current submission state and [`../docs/RELEASE_POLICY.md`](../docs/RELEASE_POLICY.md) for the release boundary.
+Final journal authorship metadata and declarations remain author-controlled until submission approval.
