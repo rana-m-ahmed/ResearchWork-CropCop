@@ -16,7 +16,7 @@ This preprint reports the earlier internal benchmark/model-retention/software-ru
 
 **Separating External-Source Behavior from Runtime Fidelity in Plant-Health Recognition**
 
-Status: **submission-production stage**. Part 1 (main manuscript) and Part 2 (Supplement + reproducibility package) have been prepared and scientifically cross-checked. Final Editorial Manager metadata, declarations and author-controlled archival decisions remain outside this repository release candidate.
+Status: **submission-production stage**. Part 1 (main manuscript) and Part 2 (Supplement + reproducibility package) have both completed dedicated QA-enhancement passes and are scientifically cross-checked. Final Editorial Manager metadata, declarations and author-controlled archival decisions remain outside this repository release candidate.
 
 The journal extension adds controlled four-family Track-A selection, prediction-blind external-cohort selection, three-state R07 external evaluation, exact-content sensitivity, exact R07-S1 reconstruction/replay, a single frozen PT2E/XNNPACK export route, Pixel physical execution, and POCO runtime-compatibility evidence.
 
