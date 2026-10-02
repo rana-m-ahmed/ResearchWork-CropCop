@@ -54,7 +54,7 @@ CropCop therefore treats **evidence lineage and failure attribution** as first-c
 
 ## Journal-extension evidence chain
 
-\`\`\`mermaid
+```mermaid
 flowchart LR
     A[117,546 audited source images] --> B[109,107-image / 120-class frozen benchmark]
     B --> C[Track-A controlled candidate-family selection]
@@ -68,7 +68,7 @@ flowchart LR
     H --> K[Raw-input path: 254/256 vs INT8 canonical]
     H --> L[POCO original runtime: SIGILL]
     H --> M[POCO compatible runtime: executes]
-\`\`\`
+```
 
 The central methodological rule is **selection isolation**: external predictions and device outcomes cannot reopen the upstream family decision.
 
@@ -99,7 +99,7 @@ The selected R07 family is evaluated unchanged in three fixed states on two publ
 | GVLiD v5 | 3,477 | 0.3315 ± 0.0162 | 0.3637 | 0.2507 |
 | Irish Potato v01 | 58,705 | 0.4160 ± 0.0326 | 0.6582 | 0.3646 |
 
-\`OOS\` means **out of mapped scope** under native 120-way inference; it is not an open-set-recognition score. Exact-content deduplication is a composition-sensitivity analysis, not the uniquely “true” performance.
+`OOS` means **out of mapped scope** under native 120-way inference; it is not an open-set-recognition score. Exact-content deduplication is a composition-sensitivity analysis, not the uniquely “true” performance.
 
 ### Research-to-runtime evidence
 
@@ -123,12 +123,12 @@ The original POCO result is a runtime–hardware compatibility failure, not a mo
 
 | Object | Identity |
 | --- | --- |
-| R07-S1 checkpoint | SHA-256 \`dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974\` |
-| Frozen class map | SHA-256 \`46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2\` |
-| Frozen manifest | SHA-256 \`bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2\` |
-| FP32 ExecuTorch artifact | 111,741,536 B · SHA-256 \`61556330cd9fc4725b4ff4759aef3835696b81865b2cbe030f815a4c0e8d5aec\` |
-| INT8 ExecuTorch artifact | 28,555,872 B · SHA-256 \`2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8\` |
-| Accepted Track-B evidence ZIP | SHA-256 \`22a6c865ead6f28319a9dc8a4168f3ff7fb60108339710dcbd99e1aa047981a3\` |
+| R07-S1 checkpoint | SHA-256 `dc7fea2e8db91bf1fc023cb5e792b23b67659edec22e10a7c1d46b4010db3974` |
+| Frozen class map | SHA-256 `46f7811726c19c42bd7213b2d8178b19a5a182a1b763f60a94ee2c0e5f6688d2` |
+| Frozen manifest | SHA-256 `bdb82211ccc2059153724eea178a1680893a6b38ecc243fae484baa91dbf68e2` |
+| FP32 ExecuTorch artifact | 111,741,536 B · SHA-256 `61556330cd9fc4725b4ff4759aef3835696b81865b2cbe030f815a4c0e8d5aec` |
+| INT8 ExecuTorch artifact | 28,555,872 B · SHA-256 `2e0c54a1b5bb7c0018d0159a642e49e4f4bd79fcc1f940e215a40734a2695bb8` |
+| Accepted Track-B evidence ZIP | SHA-256 `22a6c865ead6f28319a9dc8a4168f3ff7fb60108339710dcbd99e1aa047981a3` |
 
 The checkpoint and PTE binaries are identity-bound but are not distributed in ordinary public Git history pending redistribution review.
 
@@ -136,19 +136,19 @@ The checkpoint and PTE binaries are identity-bound but are not distributed in or
 
 ### Public verification
 
-\`\`\`bash
+```bash
 git clone https://github.com/rana-m-ahmed/ResearchWork-CropCop.git
 cd ResearchWork-CropCop
 python scripts/validate_repository.py --strict
 python -m pytest -q
-\`\`\`
+```
 
 For the journal extension, see:
 
-- [\`paper/eaai/README.md\`](paper/eaai/README.md) — paper-facing release map;
-- [\`docs/REPRODUCIBILITY.md\`](docs/REPRODUCIBILITY.md) — current reproduction routes;
-- [\`docs/EVIDENCE_BOUNDARIES.md\`](docs/EVIDENCE_BOUNDARIES.md) — public/restricted and claim boundaries;
-- [\`journal_extension/\`](journal_extension/) — Track-A/B/C protocols, locks, scripts, evidence, and runtime measurements.
+- [`paper/eaai/README.md`](paper/eaai/README.md) — paper-facing release map;
+- [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) — current reproduction routes;
+- [`docs/EVIDENCE_BOUNDARIES.md`](docs/EVIDENCE_BOUNDARIES.md) — public/restricted and claim boundaries;
+- [`journal_extension/`](journal_extension/) — Track-A/B/C protocols, locks, scripts, evidence, and runtime measurements.
 
 ### What is reproducible without restricted research bytes
 
@@ -175,15 +175,15 @@ The repository publishes hashes and fail-closed verification routes for these ob
 
 | Path | Purpose |
 | --- | --- |
-| [\`data_card/\`](data_card/) | Frozen benchmark identity, provenance, ontology, audit history, and distribution boundaries |
-| [\`journal_extension/\`](journal_extension/) | Current EAAI Track-A/B/C scientific protocols, locks, scripts, evidence, and physical-device results |
-| [\`evidence/public/\`](evidence/public/) | Public claim/evidence records and benchmark-derived evidence |
-| [\`evidence/restricted/\`](evidence/restricted/) | Documentation for artifacts deliberately excluded from public Git |
-| [\`paper/eaai/\`](paper/eaai/) | Current journal-extension status and paper-facing release metadata |
-| [\`paper/\`](paper/) | Paper-version boundary, including the public preprint lineage |
-| [\`docs/\`](docs/) | Reproducibility, evidence boundaries, limitations, intended use, and release policy |
-| [\`scripts/\`](scripts/) | Repository-contract and evidence-validation utilities |
-| [\`tests/\`](tests/) | Automated research/repository-contract tests |
+| [`data_card/`](data_card/) | Frozen benchmark identity, provenance, ontology, audit history, and distribution boundaries |
+| [`journal_extension/`](journal_extension/) | Current EAAI Track-A/B/C scientific protocols, locks, scripts, evidence, and physical-device results |
+| [`evidence/public/`](evidence/public/) | Public claim/evidence records and benchmark-derived evidence |
+| [`evidence/restricted/`](evidence/restricted/) | Documentation for artifacts deliberately excluded from public Git |
+| [`paper/eaai/`](paper/eaai/) | Current journal-extension status and paper-facing release metadata |
+| [`paper/`](paper/) | Paper-version boundary, including the public preprint lineage |
+| [`docs/`](docs/) | Reproducibility, evidence boundaries, limitations, intended use, and release policy |
+| [`scripts/`](scripts/) | Repository-contract and evidence-validation utilities |
+| [`tests/`](tests/) | Automated research/repository-contract tests |
 
 ## Scope and limitations
 
@@ -198,7 +198,7 @@ It does **not** establish universal field generalization, open-set recognition, 
 
 For the publicly archived preprint, cite:
 
-\`\`\`bibtex
+```bibtex
 @misc{ahmed2026cropcop,
   author        = {Rana Muhammad Ahmed and Sabahat Abbas},
   title         = {CropCop: An Auditable 120-Class Plant-Health Model from Benchmark Reconstruction to a Quantised Runtime Artifact},
@@ -208,7 +208,7 @@ For the publicly archived preprint, cite:
   primaryClass  = {cs.CV},
   doi           = {10.48550/arXiv.2608.25539}
 }
-\`\`\`
+```
 
 The EAAI journal extension should be cited only after a public identifier is assigned to that version. Repository citation metadata intentionally keeps these paper versions distinct.
 
@@ -223,7 +223,7 @@ The public arXiv v1 authors are **Rana Muhammad Ahmed** and **Sabahat Abbas**. F
 - third-party data/model assets: governed by upstream terms;
 - consolidated images, checkpoints, PTE binaries and private evidence bundles: **not redistributed unless explicitly cleared**.
 
-See [\`LICENSES.md\`](LICENSES.md).
+See [`LICENSES.md`](LICENSES.md).
 
 ---
 
