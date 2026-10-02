@@ -2,24 +2,34 @@
 
 ## Production status
 
-**Step 3 submission bundle: PASS, subject to final author metadata/declaration sign-off.**
+**Submission-engineering and targeted reviewer hardening: PASS.**
 
-Step 3 converts the QA-enhanced Part 1 manuscript and Part 2 Supplement/reproducibility package into a submission-facing handoff. It does not reopen the scientific study.
+Step 3 converts the QA-enhanced manuscript and Supplement/reproducibility package into a submission-facing handoff. It does not reopen the frozen scientific results.
 
-## Completed
+## Final author/declaration layer
 
-- main manuscript rebuilt with the no-specific-grant funding statement;
-- title/frontmatter retains an explicit author-list placeholder rather than inventing names;
-- CRediT, competing-interest and acknowledgments sections clearly marked as requiring final author confirmation;
-- cover letter drafted;
-- four Elsevier-compliant highlights prepared;
-- title-page template prepared;
-- portal metadata copy/paste sheet prepared;
-- preprint disclosure prepared;
-- final author/declaration sign-off form prepared;
-- Editorial Manager upload map prepared;
-- manual graphical-abstract production specification prepared;
-- Step-3 manuscript clean-build and visual-regression checks completed.
+The author-controlled metadata gate is closed in the submission package:
+
+1. Rana Muhammad Ahmed — first and corresponding author;
+2. Sabahat Abbas;
+3. Arshad Farhad — supervisory role;
+4. Rida Riaz.
+
+Affiliations, supplied ORCIDs, CRediT roles, no-specific-grant funding statement, no-competing-interest declaration and no-acknowledgment statement are finalized in the submission handoff.
+
+## Targeted hardening completed
+
+- modular main-manuscript and Supplement Overleaf projects;
+- author-identifying and anonymized review entry points;
+- main/Supplement consistency repair for Track-B per-class/confusion evidence;
+- explicit rationale for keeping the previously consumed historical test closed;
+- explicit selector boundary that upstream family selection was not a mobile-deployment Pareto optimizer;
+- current 2026 EAAI plant-recognition literature positioning;
+- representative rather than rank-ordered S13 adjacent-work comparison;
+- prospective statistical boundary for the row-level bootstrap and exact-content sensitivity;
+- clarified AI-assisted schematic/layout disclosure with quantitative values bound to frozen evidence;
+- final author/declaration and release-status metadata synchronization;
+- clean LaTeX builds and rendered visual QA.
 
 ## Funding
 
@@ -27,24 +37,20 @@ Finalized statement:
 
 > This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
 
-## Author-controlled gate
+## Remaining release actions
 
-Before actual upload, the final author team must still confirm:
+These are release/portal actions rather than missing scientific experiments:
 
-1. author list and order;
-2. affiliations/postal addresses;
-3. corresponding author/email;
-4. ORCIDs, if used;
-5. CRediT roles;
-6. competing-interest declaration;
-7. acknowledgments;
-8. exclusive-submission/originality confirmation;
-9. final archive/redistribution choices.
+1. decide whether checkpoint/PTE redistribution is legally permitted;
+2. decide whether the private Track-B evidence archive may be made public or reviewer-only;
+3. create an immutable journal-facing tag/release and optional Zenodo DOI if desired;
+4. use the author-identifying or anonymized review variant according to the live Editorial Manager workflow;
+5. inspect the portal-generated combined PDF before final submission.
 
 ## Graphical abstract
 
-The Step-3 handoff intentionally does not contain an AI-generated graphical abstract. Current Elsevier journal policy prohibits general-purpose generative-AI tools from creating graphical abstracts. A manual build specification is included in the submission bundle.
+The handoff does not contain an AI-generated graphical abstract. A manual build specification is retained for use only if a graphical abstract is requested.
 
 ## Final release rule
 
-Create the immutable journal-facing GitHub release/tag only after the author/declaration layer is frozen. If a persistent DOI is minted, update the manuscript/portal metadata only after the locator actually exists.
+If a persistent DOI or immutable release tag is created, update the manuscript/portal locator only after that identifier actually exists.
