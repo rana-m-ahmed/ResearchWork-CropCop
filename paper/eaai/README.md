@@ -18,26 +18,30 @@ This directory is the paper-facing bridge between the EAAI manuscript/Supplement
 - exact checkpoint, class-map, manifest, FP32 and INT8 artifact identities;
 - layered interpretation: **artifact transformation ≠ device execution ≠ raw-input processing ≠ runtime–hardware compatibility**.
 
-## Part 1
+## Main manuscript
 
-The QA-enhanced Part-1 delivery contains:
+The targeted-hardened delivery contains:
 
-- the 19-page EAAI main manuscript;
-- clean Overleaf and flat Editorial Manager LaTeX source;
-- exact approved Figures 1–4;
-- scientific-regression, reference, typography, rendered-PDF and build-reproduction audits.
+- a **20-page** author-identifying EAAI manuscript;
+- a parallel anonymized review entry point;
+- modular Overleaf source plus flat Editorial Manager source;
+- exact approved Figures 1-4;
+- updated 2026 literature positioning and reviewer-risk clarifications;
+- clean-build, citation/reference, typography and rendered-PDF QA.
 
-See [`PART1_RELEASE_STATUS.md`](PART1_RELEASE_STATUS.md) for the manuscript production state.
+See [`PART1_RELEASE_STATUS.md`](PART1_RELEASE_STATUS.md) for the earlier Part-1 production baseline and [`PART3_RELEASE_STATUS.md`](PART3_RELEASE_STATUS.md) for the final submission-facing state.
 
-## Part 2
+## Supplement
 
-The QA-enhanced Part-2 delivery contains:
+The targeted-hardened delivery contains:
 
-- readable, standalone Supplement S1–S13 PDF;
-- clean Overleaf/LaTeX source;
+- readable, standalone **12-page** Supplement S1-S13 PDF;
+- author-identifying and anonymized review entry points;
+- modular Overleaf/LaTeX source;
 - exhaustive machine-readable Supplement source data;
 - reproducibility release with identity/replay, quantization/artifact and Pixel/POCO evidence;
-- refreshed claim/evidence and Part-1↔Part-2 consistency audits;
+- refreshed main↔Supplement consistency boundaries;
+- representative adjacent-work comparison with current EAAI context;
 - explicit public/restricted release boundaries.
 
 The Supplement intentionally keeps exhaustive inventories in machine-readable companion files rather than shrinking them into unreadable PDF tables.
@@ -53,11 +57,11 @@ See:
 - [`../../docs/REPRODUCIBILITY.md`](../../docs/REPRODUCIBILITY.md) — reproduction routes;
 - [`../../docs/EVIDENCE_BOUNDARIES.md`](../../docs/EVIDENCE_BOUNDARIES.md) — claim boundaries.
 
-## Step 3
+## Submission engineering
 
-The submission-engineering layer contains the final manuscript/declaration pass, cover letter, highlights, title-page template, portal metadata, preprint disclosure, author sign-off checklist, and Editorial Manager upload map.
+Final author metadata, affiliations, supplied ORCIDs, CRediT roles, funding, competing-interest and acknowledgment declarations are closed in the submission handoff. The remaining items are release/portal decisions (restricted-byte redistribution, immutable tag/DOI if desired, and portal-generated PDF inspection), not additional claim-producing science.
 
-See [`PART3_RELEASE_STATUS.md`](PART3_RELEASE_STATUS.md). The remaining gate is author-controlled metadata/declaration confirmation, not additional scientific experimentation.
+See [`PART3_RELEASE_STATUS.md`](PART3_RELEASE_STATUS.md).
 
 ## Availability boundary
 
